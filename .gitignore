@@ -5,3 +5,8 @@ node_modules/
 *.tsbuildinfo
 *.log
 test-results/
+
+# Mac metadata and duplicate extraction copies
+.DS_Store
+* 2.*
+.gitignore 2
