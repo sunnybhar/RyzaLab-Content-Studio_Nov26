@@ -1,10 +1,10 @@
-# RyzaLab Content Studio
+# RyzaLab Content Studio — rebuild branch
 
-A Next.js Campaign Command Center for an invited team. Seven workspaces: YouTube, LinkedIn, Instagram, TikTok, Facebook, Hub, and Reddit. Includes Claude-generated content packs, editable drafts, a shared campaign brief, local brand wording checks, two carousel templates, PNG ZIP / PDF exports, and OpenAI concept images.
+Founder-first editorial workspace for ideas, nine content channels, versioned agent workflows, human review, immutable approved packages, Google Docs/DOCX, editable media, calendar tasks, scoped profiles and manual publication. No Notion or automated social posting. Branch `studio-rebuild` is an implementation/preview checkpoint, **not production release approval**.
 
-## Run in VS Code
+## Local use in VS Code
 
-Requires Node.js 22+ and npm. Open this folder in VS Code, then:
+Node.js22+; Node24 LTS recommended. Open this folder, then:
 
 ```sh
 npm ci
@@ -12,58 +12,79 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open http://localhost:3005 in your browser. Without Supabase credentials, the app opens a **labelled local demo**, with sample drafts stored in this browser. Demo mode cannot call paid APIs, invite users, or impersonate a real member. Edit sample drafts and test carousel exports, or create your own text manually. No production data is seeded.
+The dev/start scripts use port3005. Without public Supabase settings the app opens an explicit isolated browser demo. It never calls paid APIs, sends email, uploads files, or pretends to fetch Google Docs. Demo changes are stored in this browser; demo API-key entries are discarded. Clear browser storage to reset.
 
-## Enable invite-only email/password login and team storage
+## Existing Supabase migration — do not replace the live database blindly
 
-1. Create a Supabase project. Run `supabase/schema.sql` in its SQL editor (skip this if already applied).
-2. In Authentication > Sign In / Providers, enable Email and **disable new user signups**. OTP and custom SMTP are not needed by this version. There is no public signup form or password-reset email flow.
-3. Fill `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and **server-only** `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`. Existing API keys remain the same. Use `http://localhost:3005` for your local Site URL.
-4. From the VS Code terminal, run `npm run account:password -- your-email@example.com`. Enter and confirm a unique 12–128 character password when prompted (input is hidden). The command creates the auth account if missing, or sets a new password for an existing OTP account. It confirms the email as an administrator action and sends no email. It does not grant membership or change roles. Only trusted administrators with the service-role key should run it.
-5. In the Supabase SQL editor, grant the first admin membership, using your actual lower-case email:
+1. Back up your current database and review the migration on a preview project first.
+2. New project: apply `supabase/schema.sql`, then `supabase/migrations/20261027_studio_v2.sql`. Existing project: apply only the new migration after checking the original tables exist.
+3. The migration preserves old tables/rows, closes their broad browser mutation policies and adds private server-command state, immutable release/audit records, encrypted secrets, private asset metadata, and the notification outbox. The **old UI will lose write access** after this migration; coordinate UI rollout and recovery. Do not apply it to production while still serving the old app.
+4. Set Supabase URL, public anon key and server-only service-role key in `.env.local`. First initialization requires an existing legacy admin account; legacy members and drafts are imported, without turning prior review status into release approval. Legacy drafts are initially assigned to the initializing admin because original user IDs are not mapped to emails automatically; reassign explicitly in Studio. Original tables remain recovery sources.
+5. Once initialized, Studio state is the membership authority. All commands and workers check it. Public signups stay disabled. Google identities still need an assigned membership.
+6. Create/update an auth password with `npm run account:password -- your-email@example.com`; this is a trusted local admin tool and sends no email. Add the first admin to legacy `public.members` only if not already present (see schema footer). New team auth accounts can be created with the optional initial-password field in People, then profiles assigned. Email/password does not require SMTP.
 
-   ```sql
-   insert into public.members(email, role)
-   values ('your-email@example.com', 'admin')
-   on conflict (email) do update set role = 'admin', revoked_at = null;
-   ```
+## Profiles and workflows
 
-6. Restart `npm run dev`, then sign in with your email and password. No email code is required.
-7. On Members, add a colleague using their email and an initial 12–128 character password. Share the initial password through a private channel. No invitation email is sent. Members can change their own passwords on the Members page. Account creation is restricted to workspace admins and marks the email confirmed; administrators are responsible for verifying the member’s identity.
-8. If a member forgets their password, a trusted administrator runs the same `account:password` command locally. For pre-existing Supabase accounts not yet in the member list, set their password with that helper, then add their lower-case email to `public.members` with role `member` in the SQL editor. Never put passwords in SQL, command arguments, chat, or repository files.
+Admin user management is distinct from founder editorial authority. The initial existing admin can explicitly assign Founder (including to themselves) through an audited action. Profiles: Founder, Administrator, Manager, Editor, Creator, Viewer. Multiple profiles allowed. Per-function/channel/account/content grants are checked together within one grant. Explicit grants replace profile defaults for non-admin/non-founder users. Assigned content is required for ordinary content access. Founder-only protected rules are separate from writer-editable workflow configuration.
 
-Membership is checked by row-level security and every paid/API operation. Revoking a member immediately blocks further database and AI access even if their auth session remains valid. Removing membership cannot erase content already downloaded by that person. Admin-to-admin changes and restoring revoked memberships are managed in Supabase. All members collaborate on drafts and the current brief. The interface currently loads the latest campaign by week; campaign archives and multi-campaign switching are not implemented.
+Unified Workflow Settings contains instructions, audience, guardrails, selected brand/source/example references, output format, checks and per-function AI bindings. Save creates a draft version; submit then activate. Activation and new approvals never mutate earlier approved packages. Text edits leave media revisions alone. Human approval captures exact text/media/workflow/rule/reference snapshots; stale review requests fail rather than silently approving unseen versions. Price/“free” wording currently fails closed pending a separately implemented scoped founder-exception command; evidence-priced article handling is not yet fully contextual.
 
-## AI providers
+Publication is manual. Calendar tasks select approved packages explicitly. A person posts externally and supplies a matching HTTPS URL; state is **human confirmed**, never platform verified. No social account credentials are requested.
 
-- Set `ANTHROPIC_API_KEY`. Default model is `claude-sonnet-4-6`; override `ANTHROPIC_MODEL` if needed for your account. Content generation loads your uploaded markdown reference files from `knowledge/`, including the brand brain and selected channel playbook. User briefs are treated as source material, not system instructions.
-- Set `IMAGE_API_KEY` for images. Default `OPENAI_IMAGE_MODEL=gpt-image-1`. Your OpenAI account must have access/billing for that model; provider verification may be required. Image generation is a separate provider from Claude. Cost controls: 30 text requests and 8 image requests per user/hour, enforced atomically in Supabase. Failed provider calls also consume quota. Configure additional spend limits with each provider.
-- API keys are read only by server routes. Never prefix them with `NEXT_PUBLIC_`, commit `.env.local`, or put them in browser settings. `.env.example` contains names only.
-- Generated images are **session-only** and must be downloaded before leaving the workspace. They are not uploaded to storage or persisted with drafts. Carousels export at 1080 × 1350; images are original 1024 × 1024 PNG. Image concepts and exports carry synthetic-image disclosure. No finished video generation or direct social publishing.
+## API credentials and generation
 
-## Brand review and exports
-
-The supplied knowledge is product reference material. `lib/brand.ts` adapts supplied regex rules to JavaScript, including audience filtering, sentence-level exceptions, medical disclaimer reminders, pending price checks, and placeholders. This is a wording check; it does not verify factual truth, source currency, consent, or implied claims. Claude also receives the source guardrails. Only Ryan can approve publication; “Send to Ryan” saves a review status and does not send email or publish. There is no automatic approval state. Exports remain available for revisions and require human review before use.
-
-The visual identity supplied was provisional. The wordmark in the app is a text placeholder, not an approved logo asset. Replace it with the real logo when available. Inter and Manrope are served locally from font packages. The reference materials include draft campaign plans and pending offers; those are not represented as approved campaign decisions.
-
-## Validate
+Generate a **server-only** encryption key once:
 
 ```sh
-npm run test
-npm run typecheck
-npm run build
-# Optional real browser checks, against a running demo server:
-npx playwright install chromium
-npm run test:browser
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-For a credentialed acceptance test: create a second member, verify their email/password login and password change, save a brief, generate a LinkedIn pack, edit/save/reload the draft, generate an image and export a carousel as PNG ZIP/PDF. Revoke that member and confirm further API/database access is denied. Verify a non-member and missing-token requests cannot generate content. Real password authentication, account administration, provider calls, and cross-user RLS require your project credentials; local demo tests do not validate those services.
+Save it as `STUDIO_ENCRYPTION_KEY` in secure local/hosting environment settings. Keep a secure backup and do not casually rotate it: existing encrypted connections require the original key. Never commit or share it.
 
-## GitHub and Vercel
+Founder/permitted admins add provider credentials in AI Connections. Each function has its own provider/model connection. Stored keys use AES-256-GCM with unique nonces; responses contain metadata only. Read-only model access validation lists models through fixed official endpoints. It does not prove generation quality or price. Workflow bindings determine connections; creators cannot override them at request time.
 
-Commit these files and push to your repository when ready. Import the repository into Vercel as Next.js. Add the environment variables from `.env.example` in Vercel settings, apply the Supabase schema, and configure the final Site URL. Redeploy after changing public environment variables (they are baked into the client build). Routes request 120-second text / 180-second image execution; choose a hosting plan that supports these durations. Do not share a production deployment in demo configuration if it should be a private workspace. Demo contains only bundled samples and does not grant API access.
+Text adapters exist for Anthropic, OpenAI and Google. OpenAI image and speech adapters exist. Research and AI scene-video adapters are deliberately unqualified until actual provider capabilities and sample results are evaluated; no fake web research or video success is returned. Model IDs must be verified with your account. Claude is not an image-generation service.
 
-Publishing this repository or deploying to Vercel has not been performed by the app. API keys and infrastructure are your own. No secret values are included.
+Paid jobs require all of: non-zero applicable budgets; a qualified server `STUDIO_RATE_CARD`; approved connection allowance; validated model access; `STUDIO_ALLOW_PROVIDER_EXECUTION=true`; and an authenticated worker. **Leave execution false until costs and tests are authorized.** No actual credentials or guessed rate card is shipped.
 
-Local development and production start commands use port **3005**. For Supabase local testing, set Site URL and the allowed redirect URL to `http://localhost:3005`.
+Rate-card entries are JSON with provider/model/function, USD input/output cents per million, maxInputBytes/maxOutputTokens, optional fixedCents, authoritative source URL, verifiedAt and qualified:true. Server calculation uses the frozen prompt/reference UTF-8 byte upper bound plus protocol allowance and bounded output. Qualification must validate provider-specific token/extra-charge assumptions; the JSON flag alone is not evidence. Large input, absent pricing, old-month reservations and changed qualifications block dispatch. User-supplied estimates never authorize charges. Successful output leaves conservative spend reserved pending actual invoice reconciliation; it is not relabelled actual spend.
+
+A durable queued job persists frozen inputs, budgets, workflow/rules/references and idempotency identity before dispatch. Claims persist leases/dispatch markers first. Unknown transport outcomes retain reservations and never auto-retry. Worker is portable but **not deployed**. Run `npm run worker` only after configuring server/worker environment. It polls maintenance, notifications and generation routes; do not expose its token to browsers.
+
+## Google Docs
+
+Configure Google sign-in in Supabase separately. Optional Docs connection requires Google Cloud OAuth credentials (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) and `STUDIO_APP_URL`. Register `${STUDIO_APP_URL}/api/studio/google/callback` as the authorized redirect. The connector uses read-only Docs access because editing happens in Google's editor. Tokens/refresh tokens are encrypted server-side. Each draft links a document ID; manual Fetch latest preserves displaced Studio text and does not alter approved packages. OAuth errors are visible; no credentials have been live-tested here. Automatic sync setting is a retained requirement, not a completed background connector in this checkpoint; manual fetch is implemented.
+
+DOCX import/export works locally. Imports text, not arbitrary Word layout/comments/tracked-change fidelity. PDF written exports and carousel PNG/PDF are generated from the selected version. Media project JSON retains editable layout/scenes/audio/captions; no native .fig/PPTX promise.
+
+## Media and real MP4 composition
+
+Private direct-to-storage uploads use signed paths to avoid serverless body size limits, up to50MB each. Keys are unique; approved files cannot be overwritten through the application. Exports fetch authorized private assets; external URLs cannot masquerade as approved media. Actual Supabase storage remains a credentialed acceptance test.
+
+The local composition worker is real, not a mock. Requires FFmpeg, FFprobe and DejaVu Sans for burned captions:
+
+```sh
+npm run render:video -- --project project.source.json --assets-dir ./assets --output ./final.mp4 --aspect 9:16 --captions
+```
+
+Exports1080×1920,1920×1080 or1080×1080 H264/AAC. Uses local video/still sources, source/preserved or replacement audio, editable SRT and retained source JSON. No network fetching or paid generation. Local asset paths must remain inside the allowed asset directory. Source clips can be generated elsewhere/uploaded; full hosted AI scene generation and in-Studio render dispatch remain unqualified integration work, not demonstrated finished AI generation.
+
+## Notifications, retention and hosting
+
+Inbox events work. Optional Resend adapter requires EMAIL_API_KEY and a verified EMAIL_FROM; it is separate from login SMTP. Durable delivery claims and provider idempotency avoid repeated event sends; unknown delivery needs reconciliation. No real emails were sent in development. Provider selection can change behind the adapter.
+
+Timezone defaults New York. Unmatched review/task routing uses founder, with initial admin fallback until founder is configured. Due unready tasks block and require explicit rescheduling. Recurring occurrences currently pause with a clear authorization event instead of silently spending; automated qualified recurring generation/research confirmation remains incomplete. Trash retains working content90days and protects package/task dependencies. Approved/released snapshots remain retained. Canonical Trash expiry does not erase legacy import tables or external backups; their deletion policy needs coordinated migration ownership.
+
+See `docs/HOSTING-COMPARISON.md` before selecting web/worker hosting. No host migration, production database change, main-branch merge or production deployment has been performed.
+
+## Validation
+
+```sh
+npm test
+npm run typecheck
+npm run build
+```
+
+Tests include PostgreSQL migration/immutability/CAS using PGlite, permission and approval regressions, budgets, Docs conflict history, source/DOCX round trips, and actual FFmpeg video/audio/caption outputs when installed. Browser checks use `npm run test:browser` against the new labelled demo. Live password/Google authentication, Supabase RLS/storage, Google Docs, notification delivery and actual provider billing require your preview credentials and are not validated by demo tests.
+
+Development models: GPT-6.1 Sol implements/fixes and refines screens; GPT-6 Astra reviews architecture and permission/approval/manual-publication integrity before implementation and before release. These are separate from Studio runtime API models. See `docs/REVIEW-CHECKPOINTS.md`.

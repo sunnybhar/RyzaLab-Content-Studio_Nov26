@@ -1,2 +1,2 @@
-import Studio from '@/components/studio';
-export default function Page(){return <Studio/>}
+import StudioEntry from '@/components/studio-entry';
+export default function Page(){return <StudioEntry/>}

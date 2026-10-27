@@ -1,0 +1,94 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { initialState, DEMO_ACTOR } from "../lib/studio/seed";
+import { applyCommand } from "../lib/studio/engine";
+function fixture() {
+  const state = initialState(DEMO_ACTOR, true);
+  state.contents[0].text =
+    "A useful handoff explains account access and recovery.";
+  return state;
+}
+function approve(s: ReturnType<typeof fixture>, extra = {}) {
+  return applyCommand(
+    s,
+    DEMO_ACTOR,
+    {
+      type: "package.approve",
+      contentId: s.contents[0].id,
+      expectedRevision: s.contents[0].revision,
+      expectedWorkflowId: "seed-linkedin",
+      expectedRuleVersion: s.settings.protectedVersion,
+      ...extra,
+    },
+    { demo: true },
+  );
+}
+test("approval rejects unseen workflow and protected policy versions", () => {
+  const state = fixture();
+  assert.throws(
+    () => approve(state, { expectedWorkflowId: "old-workflow" }),
+    /changed/,
+  );
+  assert.throws(
+    () => approve(state, { expectedRuleVersion: "old-rules" }),
+    /changed/,
+  );
+  const next = approve(state);
+  assert.equal(
+    (next.packages[0] as unknown as { rulesSnapshot: string }).rulesSnapshot,
+    state.settings.protectedRules,
+  );
+});
+test("arbitrary URLs cannot masquerade as retained approved video or image assets", () => {
+  const state = fixture();
+  state.contents[0].media.scenes = [
+    {
+      id: "scene",
+      title: "test",
+      script: "A real scene.",
+      duration: 2,
+      sourceUrl: "x",
+      preserveAudio: true,
+    },
+  ];
+  assert.throws(() => approve(state), /immutable/);
+  state.contents[0].media.scenes = [];
+  state.contents[0].media.imageUrl = "https://example.com/mutable.png";
+  assert.throws(() => approve(state), /immutable/);
+});
+test("human confirmation rejects a package changed after the person published", () => {
+  let state = approve(fixture());
+  state = applyCommand(state, DEMO_ACTOR, {
+    type: "schedule.create",
+    contentId: state.contents[0].id,
+    packageId: state.packages[0].id,
+    at: "2026-11-01T00:00:00Z",
+  });
+  assert.throws(
+    () =>
+      applyCommand(state, DEMO_ACTOR, {
+        type: "schedule.confirm",
+        id: state.schedules[0].id,
+        url: "https://linkedin.com/posts/example",
+        expectedPackageId: "the-package-I-published",
+      }),
+    /package changed/,
+  );
+});
+
+test("founder price exception is exact-revision scoped and cannot waive misinformation checks", () => {
+  let state = fixture();
+  state.contents[0].text = "Book a free intro call.";
+  assert.throws(() => approve(state), /founder exception/);
+  state = applyCommand(state, DEMO_ACTOR, {
+    type: "exception.record",
+    contentId: state.contents[0].id,
+    expectedRevision: 1,
+    wording: "Book a free intro call.",
+    reason: "Founder confirms the offer and authorizes this exact CTA.",
+  });
+  assert.equal(approve(state).packages.length, 1);
+  state.contents[0].text =
+    "Nothing ever leaves your home.\nBook a free intro call.";
+  assert.throws(() => approve(state), /blocking/);
+});

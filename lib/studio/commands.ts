@@ -1,0 +1,234 @@
+import { z } from "zod";
+import { CHANNELS, ROLES, FUNCTIONS } from "./types";
+const id = z.string().min(1).max(150),
+  text = z.string().max(60000),
+  short = z.string().min(1).max(200),
+  email = z
+    .email()
+    .max(254)
+    .transform((s) => s.toLowerCase()),
+  money = z.number().int().min(0).max(100000000),
+  channel = z.enum(CHANNELS);
+const slide = z
+  .object({
+    id,
+    title: z.string().max(180),
+    body: z.string().max(2000),
+    image: z.string().max(8000000).optional(),
+    color: z.string().regex(/^#[\da-f]{6}$/i),
+    background: z.string().regex(/^#[\da-f]{6}$/i),
+    x: z.number().min(0).max(100),
+    y: z.number().min(0).max(100),
+    fontSize: z.number().min(12).max(180),
+  })
+  .strict();
+const scene = z
+  .object({
+    id,
+    title: short,
+    script: text,
+    duration: z.number().min(0.1).max(120),
+    sourceUrl: z.string().max(8000000).optional(),
+    audioUrl: z.string().max(8000000).optional(),
+    preserveAudio: z.boolean(),
+  })
+  .strict();
+export const mediaSchema = z
+  .object({
+    slides: z.array(slide).max(30),
+    scenes: z.array(scene).max(60),
+    imagePrompt: text,
+    imageUrl: z.string().max(8000000).optional(),
+    narration: text,
+    captions: text,
+    aspect: z.enum(["9:16", "16:9", "1:1"]),
+    templateId: id.optional(),
+  })
+  .strict();
+const grant = z
+  .object({
+    action: z.enum([
+      "read",
+      "export",
+      "idea.edit",
+      "idea.review",
+      "content.create",
+      "content.edit",
+      "content.assign",
+      "package.approve",
+      "schedule.manage",
+      "publication.confirm",
+      "workflow.edit",
+      "workflow.review",
+      "workflow.activate",
+      "reference.edit",
+      "job.create",
+      "template.edit",
+      "template.approve",
+      "connections.manage",
+    ]),
+    channel: channel.optional(),
+    contentId: id.optional(),
+    account: short.optional(),
+    function: z.enum(FUNCTIONS).optional(),
+  })
+  .strict();
+const command = <T extends string, S extends z.ZodRawShape>(
+  type: T,
+  shape: S,
+) => z.object({ type: z.literal(type), ...shape }).strict();
+export const commandSchema = z.discriminatedUnion("type", [
+  command("idea.create", { title: short, brief: text, channel }),
+  command("idea.review", {
+    id,
+    decision: z.enum(["approved", "rejected"]),
+    reason: z.string().max(2000).optional(),
+  }),
+  command("idea.reuse", { id, mode: z.enum(["copy", "revise"]) }),
+  command("content.create", {
+    channel,
+    title: short,
+    format: short,
+    ideaId: id.optional(),
+    account: z.string().max(200).optional(),
+  }),
+  command("content.save", {
+    id,
+    expectedRevision: z.number().int().positive(),
+    text,
+    title: short,
+    metadata: text,
+    media: mediaSchema,
+    format: short.optional(),
+    collection: z.string().max(100).optional(),
+  }),
+  command("content.submit", { id }),
+  command("content.restore", { id, revisionId: id }),
+  command("content.trash", { id }),
+  command("content.untrash", { id }),
+  command("content.assign", { id, email }),
+  command("package.approve", {
+    contentId: id,
+    expectedRevision: z.number().int().positive(),
+    expectedWorkflowId: id,
+    expectedRuleVersion: short,
+  }),
+  command("package.reject", { contentId: id, reason: short }),
+  command("schedule.create", {
+    contentId: id,
+    packageId: id.optional(),
+    at: z.iso.datetime({ offset: true }),
+    groupId: id.optional(),
+  }),
+  command("schedule.move", { id, at: z.iso.datetime({ offset: true }) }),
+  command("schedule.replace", {
+    id,
+    packageId: id,
+    expectedPackageId: id.optional(),
+  }),
+  command("schedule.confirm", {
+    id,
+    url: z.url().max(2000),
+    expectedPackageId: id,
+  }),
+  command("schedule.block", { id }),
+  command("workflow.save", {
+    id: id.optional(),
+    channel,
+    title: short,
+    audience: text,
+    instructions: text,
+    guardrails: text,
+    references: z.array(id).max(50),
+    examples: text,
+    outputFormat: text,
+    checks: text,
+    connectionId: z.string().max(150),
+    functionConnections: z
+      .record(z.enum(FUNCTIONS), z.string().max(150))
+      .optional(),
+  }),
+  command("workflow.submit", { id }),
+  command("workflow.activate", { id }),
+  command("reference.create", {
+    title: short,
+    content: text,
+    channel: z.union([channel, z.literal("Shared")]),
+    kind: z.enum(["brand", "source", "example"]),
+  }),
+  command("template.save", {
+    title: short,
+    channel,
+    slides: z.array(slide).max(30),
+  }),
+  command("template.approve", { id }),
+  command("member.save", {
+    email,
+    roles: z.array(z.enum(ROLES)).min(1).max(6),
+    grants: z.array(grant).max(100),
+  }),
+  command("member.revoke", { email }),
+  command("settings.save", {
+    timezone: short,
+    trashDays: z.literal(90),
+    monthlyCap: money,
+    requestCap: money,
+    confirmationThreshold: money,
+    currency: z.literal("USD"),
+    functionCaps: z.record(z.enum(FUNCTIONS), money).optional(),
+    userCaps: z.record(email, money).optional(),
+    channelCaps: z.record(channel, money).optional(),
+    accountCaps: z.record(short, money).optional(),
+    emailEnabled: z.boolean().optional(),
+    docsMode: z.enum(["manual", "automatic"]).optional(),
+  }),
+  command("policy.save", { rules: text }),
+  command("exception.record", {
+    contentId: id,
+    expectedRevision: z.number().int().positive(),
+    wording: z.string().min(4).max(2000),
+    reason: short,
+  }),
+  command("notice.read", { id }),
+  command("recurrence.save", {
+    title: short,
+    channel,
+    quantity: z.number().int().min(1).max(30),
+    nextAt: z.iso.datetime({ offset: true }),
+    research: z.boolean(),
+  }),
+  command("recurrence.pause", { id }),
+  command("recurrence.research", {
+    id,
+    occurrence: z.iso.datetime({ offset: true }),
+    allowed: z.boolean(),
+  }),
+  command("job.enqueue", {
+    kind: z.enum(FUNCTIONS),
+    channel,
+    contentId: id.optional(),
+    prompt: text,
+    connectionId: id,
+    estimate: money,
+    idempotencyKey: id,
+    confirmed: z.boolean().optional(),
+  }),
+  command("job.confirm", { id }),
+  command("job.reconcile", {
+    id,
+    actual: money,
+    reason: short,
+    outcome: z.enum(["succeeded", "failed"]),
+  }),
+  command("job.cancel", { id }),
+  command("docs.link", {
+    contentId: id,
+    docId: z.string().regex(/^[A-Za-z0-9_-]{10,200}$/),
+  }),
+  command("docs.import", {
+    contentId: id,
+    text,
+    expectedRevision: z.number().int().positive(),
+  }),
+]);
+export type ValidCommand = z.infer<typeof commandSchema>;
