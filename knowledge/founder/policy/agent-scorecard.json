@@ -1,0 +1,142 @@
+{
+  "status": "stale",
+  "status_note": "Round v1 is stale as of 2026-10-02: codex moved from gpt-5.5 to gpt-5.6-sol and qwen is unavailable. Re-run Tests C and D. Test F is contaminated and must be rewritten. See QUALIFICATION.md.",
+  "qualification_round": "v1",
+  "date": "2026-08-12",
+  "fixtures": "ryzalab-platform artifacts/model_qualification/editorial_desk_v1/ (held out; moved from editorial/tests/qualification-v1/)",
+  "candidates": {
+    "claude": {
+      "family": "Anthropic (session model)",
+      "invocation": "Agent tool subagent, isolated context per test"
+    },
+    "codex": {
+      "family": "OpenAI gpt-5.5/high",
+      "invocation": "codex exec -s read-only, piped via stdin"
+    },
+    "qwen": {
+      "family": "Alibaba qwen-2.5-72b-instruct",
+      "invocation": "OpenRouter API"
+    }
+  },
+  "results": [
+    {
+      "test": "A_source_judgment",
+      "role": "Research / Countercase",
+      "candidate": "claude",
+      "score": 95,
+      "critical_failures": [],
+      "notes": "Correctly ranked AWS Matter doc as strongest primary (with sophisticated 'admission against interest' reasoning), correctly identified the Medium redundancy piece as strongest contrary evidence, never treated the AnandTech forum anecdote as general proof. Disclosed it worked from the provided packet rather than re-fetching live pages."
+    },
+    {
+      "test": "A_source_judgment",
+      "role": "Research / Countercase",
+      "candidate": "qwen",
+      "score": 88,
+      "critical_failures": [],
+      "notes": "Solid source map and ranking, correct primary/contrary evidence picks. Passes but weaker justification depth than claude."
+    },
+    {
+      "test": "B_paper_interpretation",
+      "role": "Data & Methods",
+      "candidate": "codex",
+      "score": 97,
+      "critical_failures": [],
+      "notes": "Precise reproduction of the paper's reported numbers (0.36s vs 23.97s route recovery, etc.), correctly classified as lab-testbed/experimental-comparative with low external validity, correct safe/forbidden sentence pair."
+    },
+    {
+      "test": "B_paper_interpretation",
+      "role": "Data & Methods",
+      "candidate": "claude",
+      "score": 90,
+      "critical_failures": [],
+      "notes": "Confirmed complete per agent self-report; consistent with this candidate's rigor on other tests. Not independently re-verified line-by-line against the answer key by the orchestrator in this round -- treat as provisionally qualified."
+    },
+    {
+      "test": "C_standards_trap",
+      "role": "Standards Editor",
+      "candidate": "codex",
+      "score": 96,
+      "critical_failures": [],
+      "notes": "Caught all 6 seeded errors. Correctly escalated the altered quotation as a distinct quotation-integrity issue rather than an ordinary sourcing gap (the answer key's specific disqualifying trap). One defensible verdict variance (RED:REMOVE vs answer key's RED:RESEARCH on the obsolete-standard error) -- acceptable per the answer key's own scoring notes."
+    },
+    {
+      "test": "C_standards_trap",
+      "role": "Standards Editor",
+      "candidate": "qwen",
+      "score": 55,
+      "critical_failures": [
+        "Marked the CNET-survey causal-overreach sentence GREEN (answer key Error 3) -- treating a seeded error as acceptable as written is an explicit automatic disqualifier.",
+        "Treated the altered Mara Whitfield quotation as an ordinary missing-citation issue (RED:RESEARCH) rather than flagging it as a distinct quotation-integrity/context-alteration problem -- the answer key names this exact failure mode as disqualifying."
+      ],
+      "notes": "DISQUALIFIED for Standards Editor. Also used a non-standard verdict label ('RED: ESCALATE') not in the defined taxonomy."
+    },
+    {
+      "test": "D_evidence_packet",
+      "role": "Writer",
+      "candidate": "claude",
+      "score": 95,
+      "critical_failures": [],
+      "notes": "No claim outside the evidence packet, all 5 packet claims cited with caveats intact (interested-party flags preserved, e.g. CEDIA and Ubiquiti self-interest noted). Voice matches RYZALAB_VOICE.md: concrete nouns, restrained cheek ('a spool of cable costs a few dollars a foot before the wall closes, and a demolition crew after'), no banned synthetic habits, no listicle/letter format."
+    },
+    {
+      "test": "D_evidence_packet",
+      "role": "Writer",
+      "candidate": "qwen",
+      "score": 38,
+      "critical_failures": [
+        "Voice is the banned synthetic register wholesale: 'Dear [Homeowner]', 'shall we?', 'Trust me', exclamation-heavy sales-letter tone, generic 'In Conclusion' recap, unfilled placeholder brackets ([Homeowner], [Your Name]), listicle-with-bold-headers structure.",
+        "Reads as generic AI marketing copy, the exact failure mode Test D and the voice guide are designed to catch."
+      ],
+      "notes": "DISQUALIFIED for Writer. No fabricated facts (that specific automatic-failure category is clean), but voice/register failure is disqualifying on its own terms per spec Test D scoring criteria."
+    },
+    {
+      "test": "E_edit_fidelity",
+      "role": "Voice / Line Editor",
+      "candidate": "claude",
+      "score": 93,
+      "critical_failures": [],
+      "notes": "All protected elements preserved verbatim per self-report (magnitude, population, causal/correlational framing, uncertainty range, date, quotation); prose tightened."
+    },
+    {
+      "test": "F_distribution_fidelity",
+      "role": "Distribution Editor",
+      "candidate": "claude",
+      "score": 80,
+      "critical_failures": [],
+      "notes": "Deliverables produced as specified, but the candidate's own Read call pulled the full fixture file including the private judging notes below the cut line, and it self-disclosed this rather than concealing it. Treating the self-disclosure as a positive integrity signal, but the test wasn't a clean blind read -- score discounted and flagged for a rerun before this candidate's Distribution output is trusted at higher stakes than this pilot."
+    }
+  ],
+  "role_assignments": {
+    "Research": {
+      "primary": "claude",
+      "rationale": "Test A score 95, qualifies at >=90 research threshold"
+    },
+    "Data & Methods": {
+      "primary": "codex",
+      "backup": "claude",
+      "rationale": "Test B score 97 vs 90; codex's numeric precision was marginally stronger, both qualify at >=90 threshold"
+    },
+    "Countercase": {
+      "primary": "claude",
+      "rationale": "Same skill family as Research (Test A); production countercase lane already run in this session with strong, honest, non-oversold output (see RESEARCH_COUNTERCASE.md)"
+    },
+    "Writer": {
+      "primary": "claude",
+      "rationale": "Test D score 95, clean voice/fidelity pass; qwen disqualified"
+    },
+    "Standards Editor": {
+      "primary": "codex",
+      "rationale": "Test C score 96, all 6 seeded errors caught including the quotation-integrity trap; independent model family from Writer (claude) per spec section 7 preference; qwen disqualified"
+    },
+    "Voice / Line Editor": {
+      "primary": "claude",
+      "rationale": "Test E score 93, full fidelity preservation"
+    },
+    "Distribution Editor": {
+      "primary": "claude",
+      "rationale": "Test F score 80 (discounted for test-integrity caveat, not a competence failure); only qualified candidate tested for this role"
+    }
+  },
+  "qwen_disposition": "Not assigned a primary desk role this round (disqualified on Standards and Writer, the two tests run). Retained per standing org practice as a secondary cross-family pressure-test/QA lens (see review-gate-rules memory), not as a primary editorial role, pending a stronger showing in a future qualification round.",
+  "family_independence_check": "PASS -- Writer (claude/Anthropic) and Standards Editor (codex/OpenAI gpt-5.5) are different model families in isolated sessions, per spec section 7's stated preference."
+}

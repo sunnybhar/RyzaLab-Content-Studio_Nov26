@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "objective": "PREPARE_NOTE_AND_LINKEDIN_HANDOFF",
+  "operator": "SUNNY",
+  "author": "UNCONFIRMED",
+  "content_id": "example-note",
+  "phase": "G1_COPY",
+  "revisions": {
+    "g1": 0,
+    "g2": 0,
+    "g3": 0
+  },
+  "artifacts": {
+    "BLOG_COPY": {
+      "availability": "MISSING",
+      "selection": "DRAFT",
+      "source_path": null,
+      "sha256": null
+    },
+    "BLOG_IMAGE": {
+      "availability": "MISSING",
+      "selection": "DRAFT",
+      "source_path": null,
+      "sha256": null
+    },
+    "LINKEDIN_COPY": {
+      "availability": "MISSING",
+      "selection": "DRAFT",
+      "source_path": null,
+      "sha256": null
+    },
+    "LINKEDIN_IMAGE": {
+      "availability": "MISSING",
+      "selection": "DRAFT",
+      "source_path": null,
+      "sha256": null
+    }
+  },
+  "approvals": {
+    "g1": null,
+    "g2": null,
+    "g3": null
+  },
+  "cta": {
+    "blog_region": null,
+    "linkedin_region": null,
+    "price_exceptions": []
+  },
+  "note_live": null,
+  "tracking": null,
+  "posted": null,
+  "drive_handoff": {
+    "BLOG_COPY": {
+      "status": "PENDING",
+      "source_sha256": null,
+      "selection": "DRAFT",
+      "parent_folder_id": "1tIec4mM6Ysj1YZK5fn8xD0VSHGPYW6-K",
+      "representation": "SOURCE_BYTES",
+      "file_id": null,
+      "url": null,
+      "attested_by": null,
+      "evidence": null,
+      "name": null,
+      "revision_id": null,
+      "md5_checksum": null,
+      "sha256_checksum": null
+    },
+    "BLOG_IMAGE": {
+      "status": "PENDING",
+      "source_sha256": null,
+      "selection": "DRAFT",
+      "parent_folder_id": "1tIec4mM6Ysj1YZK5fn8xD0VSHGPYW6-K",
+      "representation": "SOURCE_BYTES",
+      "file_id": null,
+      "url": null,
+      "attested_by": null,
+      "evidence": null,
+      "name": null,
+      "revision_id": null,
+      "md5_checksum": null,
+      "sha256_checksum": null
+    },
+    "LINKEDIN_COPY": {
+      "status": "PENDING",
+      "source_sha256": null,
+      "selection": "DRAFT",
+      "parent_folder_id": "1BPuAUXLTvwfTzhQ5VTCD4rf6nsJuQXDS",
+      "representation": "SOURCE_BYTES",
+      "file_id": null,
+      "url": null,
+      "attested_by": null,
+      "evidence": null,
+      "name": null,
+      "revision_id": null,
+      "md5_checksum": null,
+      "sha256_checksum": null
+    },
+    "LINKEDIN_IMAGE": {
+      "status": "PENDING",
+      "source_sha256": null,
+      "selection": "DRAFT",
+      "parent_folder_id": "1BPuAUXLTvwfTzhQ5VTCD4rf6nsJuQXDS",
+      "representation": "SOURCE_BYTES",
+      "file_id": null,
+      "url": null,
+      "attested_by": null,
+      "evidence": null,
+      "name": null,
+      "revision_id": null,
+      "md5_checksum": null,
+      "sha256_checksum": null
+    }
+  }
+}

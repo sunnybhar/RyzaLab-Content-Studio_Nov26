@@ -1,0 +1,125 @@
+{
+  "source": "uploaded ryzalab-content-main.zip",
+  "files": [
+    {
+      "path": "policy/EDITORIAL_LOOP.md",
+      "sha256": "d2087a4c4ac86b3d4b8ac0e0afd49c9cb0e128ec5fd3b4170af0d3fbb4aea9fc"
+    },
+    {
+      "path": "policy/GOVERNANCE.md",
+      "sha256": "9fca6ad62c1e13abe5de2ac296c9f7fdb513aaaae31e4d9ee09402cf2d094a92"
+    },
+    {
+      "path": "policy/QUALIFICATION.md",
+      "sha256": "6f30e415117d680f5b8741c838939ce0409e48d01786baac8e77035a9a9fd3f7"
+    },
+    {
+      "path": "policy/README.md",
+      "sha256": "9c3535be6b86bb03a27a6636600264198c95482fb51487151de55d1746679555"
+    },
+    {
+      "path": "policy/SOURCES.md",
+      "sha256": "047ee3293796cf7aad5dcacbf09a175aabd92ec7f05cf005089fa932fb26eea3"
+    },
+    {
+      "path": "policy/SPEC.md",
+      "sha256": "1ed892d540b59e0bc7a9ceafbe17df2ad704d48ccb8089281bd4054d525d4ca5"
+    },
+    {
+      "path": "policy/agent-scorecard.json",
+      "sha256": "d13c865f6b4886766b041181e7e69472ff35ce496d26ccdb508cef0926773b7c"
+    },
+    {
+      "path": "policy/media/GOAL.md",
+      "sha256": "bbea608d812709aa86c3c9ac0acb0a7441b1b5d4d4602b426c6ab47f525a7636"
+    },
+    {
+      "path": "policy/media/MANIFEST.json",
+      "sha256": "88e309edfa7fb8567307ca20ba15c6bd3fff68675fccbb5b887ea222182db946"
+    },
+    {
+      "path": "policy/media/MEDIA_SPEC.md",
+      "sha256": "352023e5a5855020d11602bd740e39bbd468b0e42d9be2b17ac7b1c08c40dd0f"
+    },
+    {
+      "path": "policy/media/PLAN.md",
+      "sha256": "dc6bb0f70377953e888af3ca5662f472c0b0082450a61cd0881bd317f900bb41"
+    },
+    {
+      "path": "policy/media/QA.md",
+      "sha256": "bd6b282a0f2e7ed1fb7c7a422b84d3cdf75d625c5931dff3172122a371655b9a"
+    },
+    {
+      "path": "policy/media/README.md",
+      "sha256": "751b41f4845e084478b0187fa76e3172eb738aeb543cabe38d6d43e3ce062b7a"
+    },
+    {
+      "path": "policy/media/STANDARD.md",
+      "sha256": "e0a7143dd3131e672087b5aa978bfce6353f90c528b790513c0f96538aae41dd"
+    },
+    {
+      "path": "policy/media/TEST_PLAN.md",
+      "sha256": "f0d5b4b0fb7eb4ce32ab1f5429d59c301f531c4ce4520e59fd1fe7cf3b1dcaa0"
+    },
+    {
+      "path": "policy/offer.md",
+      "sha256": "aad0e9c7f21fd2b8b3898d567d33615cfb5c72aad8c331f575af2f3f92959afe"
+    },
+    {
+      "path": "policy/templates/assignment.yaml",
+      "sha256": "72c2aeeabdf273ebcb17f8c33c193c26f5155ec644f7c738d7d78fa1008ea9dc"
+    },
+    {
+      "path": "policy/templates/claim-ledger.csv",
+      "sha256": "ed6d852d6c248ac98bb27b7c42ff52e77c97e9c0281656fc332fcedaf118843d"
+    },
+    {
+      "path": "policy/templates/grok/CONTROL_TEMPLATE.json",
+      "sha256": "13e05879ecf8aabc8065b6f4fa5862f68883e6de4e843a30c7ed354518ddcfdc"
+    },
+    {
+      "path": "policy/templates/grok/EDITORIAL_LOOP_PROMPT.md",
+      "sha256": "683da090b40d26aea05d079363d4b080c9ebeac27ca9c6d46a4ef51c982d7d48"
+    },
+    {
+      "path": "policy/templates/grok/README.md",
+      "sha256": "0dd325256fc88ea67ab004e23f180cd4823fc4825cc850208c58eb9840e40e82"
+    },
+    {
+      "path": "policy/templates/paper-digest.md",
+      "sha256": "c7551b1bc3390ea4f8022c2e9a71ae163883c30315da390d30b3d54b33bc1e95"
+    },
+    {
+      "path": "policy/templates/release-packet.md",
+      "sha256": "5bc9b9398fb30657686dc0e51c9c361b798b335e5bd6384e8a378e46f64ba933"
+    },
+    {
+      "path": "policy/templates/review-prompts/README.md",
+      "sha256": "b95ac4b81d07f5ec64b315533e41efae877ef37da7f9e4136b463140a5d85bd0"
+    },
+    {
+      "path": "policy/templates/review-prompts/image-review.md",
+      "sha256": "c8592c06ac71e30fd2f32d43aefa7c7e054286591ce114e8b1e3a7ad5a6fb680"
+    },
+    {
+      "path": "policy/templates/review-prompts/readiness-rereview.md",
+      "sha256": "b58bdf39ff1667395ad948adff0859ddd12e0d9e1155ba9afc17737c746419d7"
+    },
+    {
+      "path": "policy/templates/review-prompts/readiness.md",
+      "sha256": "b49645494966e48219c323ebd94b85f6e1fc528425dac65e113a3af2e00b87b5"
+    },
+    {
+      "path": "policy/templates/review-prompts/scorecard.md",
+      "sha256": "1ccfa294f82029f96199ed9a234d7c16c671811faa882cf9e687b1289847a2be"
+    },
+    {
+      "path": "policy/templates/source-map.md",
+      "sha256": "4a422b6b1494d6fe2953a08eb9b4e8199bf6d540e7fe0100d796e8b989acf823"
+    },
+    {
+      "path": "policy/voice/RYZALAB_VOICE.md",
+      "sha256": "4d7002c8d1f1cf1ddcfc0666d4c7c54fbba20282542e946053dd5e3fb704e861"
+    }
+  ]
+}

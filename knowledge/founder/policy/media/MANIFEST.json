@@ -1,0 +1,29 @@
+{
+  "as_of": "2026-09-29",
+  "files": {
+    "GOAL_RZL_MEDIA_EDITORIAL_SYSTEM_v0.1.md": {
+      "sha256": "187a24c58d1904b0465a796f1ee65818dc9e67b168c5e20ff583d8a785530526",
+      "bytes": 5355
+    },
+    "SPEC_RZL_MEDIA_EDITORIAL_AND_CALENDAR_v0.1.md": {
+      "sha256": "7f3dbfc2d19d83ece901d8af53cd8376746bdde0879fc95a0e7b78be40912189",
+      "bytes": 9791
+    },
+    "PLAN_RZL_MEDIA_EDITORIAL_CALENDAR_PILOT_v0.1.md": {
+      "sha256": "750390aa7eeada71490c19958bf7c9fe2798a70ad532b239d4e337e79b493430",
+      "bytes": 7898
+    },
+    "STANDARD_RZL_MEDIA_REPORTING_DISTRIBUTION_MEASUREMENT_v0.1.md": {
+      "sha256": "c2105380167c75feff75e785b47c41689c7d6ebdbeed56b891e1430b69f64081",
+      "bytes": 6488
+    },
+    "TEST_PLAN_RZL_MEDIA_EDITORIAL_CALENDAR_v0.1.md": {
+      "sha256": "972dbd36261d5660e2481d1c01b49abcf52899bd5d4c69d06089755f066eb5d5",
+      "bytes": 5732
+    },
+    "QA_RZL_MEDIA_EDITORIAL_PACKAGE_v0.1.md": {
+      "sha256": "c5d802913d07e5c579db1698bb7b2518926a3a48b9d7483eea58d9a3f4d16908",
+      "bytes": 6434
+    }
+  }
+}
