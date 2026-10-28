@@ -26,15 +26,20 @@ export function IdeaGenerationStatus({
     [syncError, setSyncError] = useState("");
   const refreshRef = useRef(refresh);
   refreshRef.current = refresh;
-  const jobs = state.jobs
+  const matchingJobs = state.jobs
     .filter(
       (j) =>
         j.kind === "ideas" &&
         (channel === "All channels" || j.channel === channel),
     )
     .slice()
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .slice(0, 5);
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const active = (state: string) =>
+    ["awaiting_confirmation", "queued", "running"].includes(state);
+  const jobs = [
+    ...matchingJobs.filter((j) => active(j.state)),
+    ...matchingJobs.filter((j) => !active(j.state)).slice(0, 5),
+  ];
   const pending = jobs.some((j) =>
     ["awaiting_confirmation", "queued", "running"].includes(j.state),
   );
