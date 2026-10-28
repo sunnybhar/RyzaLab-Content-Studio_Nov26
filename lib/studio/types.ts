@@ -84,10 +84,10 @@ export interface Idea {
   createdBy: string;
   createdAt: string;
   sources: string[];
-  origin?:'manual'|'demo_sample'|'agent';
-  audience?:string;
-  format?:string;
-  generationRunId?:string;
+  origin?: "manual" | "demo_sample" | "agent";
+  audience?: string;
+  format?: string;
+  generationRunId?: string;
 }
 export interface Slide {
   id: string;
@@ -129,9 +129,32 @@ export interface Revision {
   createdAt: string;
   reason: string;
 }
-export const STAGE_KEYS=['intake','evidence','creation','independent_review','visual_review','release_check','human_approval','handoff','publication_record'] as const;
-export type StageKey=typeof STAGE_KEYS[number];
-export interface StageRecord {key:StageKey;status:'pending'|'pass'|'revise'|'hold'|'na';reason:string;evidence:string;actor:string;at:string;textRevision:number;mediaRevision:number;factsRevision?:number;workflowId:string;ruleVersion:string;packageId?:string}
+export const STAGE_KEYS = [
+  "intake",
+  "evidence",
+  "creation",
+  "independent_review",
+  "visual_review",
+  "release_check",
+  "human_approval",
+  "handoff",
+  "publication_record",
+] as const;
+export type StageKey = (typeof STAGE_KEYS)[number];
+export interface StageRecord {
+  key: StageKey;
+  status: "pending" | "pass" | "revise" | "hold" | "na";
+  reason: string;
+  evidence: string;
+  actor: string;
+  at: string;
+  textRevision: number;
+  mediaRevision: number;
+  factsRevision?: number;
+  workflowId: string;
+  ruleVersion: string;
+  packageId?: string;
+}
 export interface Content {
   id: string;
   channel: Channel;
@@ -144,7 +167,7 @@ export interface Content {
   ideaId?: string;
   assignedTo: string;
   revision: number;
-  factsRevision?:number;
+  factsRevision?: number;
   textRevision?: number;
   mediaRevision?: number;
   history: Revision[];
@@ -157,7 +180,7 @@ export interface Content {
   updatedAt: string;
   deletedAt?: string;
   collection?: string;
-  stages?:StageRecord[];
+  stages?: StageRecord[];
 }
 export interface Package {
   id: string;

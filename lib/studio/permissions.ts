@@ -60,7 +60,7 @@ export function can(
       [
         "idea.edit",
         "idea.review",
-      "stage.review",
+        "stage.review",
         "content.create",
         "content.edit",
         "content.assign",

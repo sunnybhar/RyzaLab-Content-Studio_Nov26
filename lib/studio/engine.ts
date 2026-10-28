@@ -3,6 +3,16 @@ import { commandSchema } from "./commands";
 import { requirePermission, StudioError, memberFor, can } from "./permissions";
 import { EMPTY_MEDIA } from "./seed";
 import { budgetMonth } from "./time";
+import {
+  stageSummary,
+  currentWorkflow,
+  hasVisuals,
+  recordIsCurrent,
+  factsSignature,
+} from "./stages";
+import { sampleIdeas } from "./idea-generation";
+import { demoPreset, type ChannelPreset } from "./presets";
+import { ideaJobInput } from "./idea-generation";
 import { review } from "../brand";
 export type ExecutionContext = {
   now?: string;
@@ -12,6 +22,7 @@ export type ExecutionContext = {
   quotedCost?: number;
   pricingSnapshot?: unknown;
   assetManifest?: unknown[];
+  preset?: ChannelPreset;
 };
 export function fingerprint(value: unknown) {
   const s = JSON.stringify(value);
@@ -171,6 +182,210 @@ export function applyCommand(
     j.state = "queued";
   };
   switch (c.type) {
+    case "stage.decide": {
+      const d = s.contents.find((d) => d.id === c.contentId);
+      if (!d) bad("Content not found.");
+      const scope = {
+        channel: d.channel,
+        account: d.account,
+        contentId: d.id,
+        assignedTo: d.assignedTo,
+      };
+      const permission =
+        c.stage === "intake" || c.stage === "creation"
+          ? "content.edit"
+          : c.stage === "handoff"
+            ? "schedule.manage"
+            : "stage.review";
+      if (permission === "stage.review" && !can(s, actor, permission, scope))
+        need("package.approve", scope);
+      else need(permission, scope);
+      if (d.deletedAt) bad("Restore this content before recording checks.");
+      if (
+        d.revision !== c.expectedRevision ||
+        currentWorkflow(d, s)?.id !== c.expectedWorkflowId ||
+        s.settings.protectedVersion !== c.expectedRuleVersion
+      )
+        throw new StudioError(
+          409,
+          "The draft, workflow or protected rules changed. Review the current versions before recording a check.",
+        );
+      if (c.status === "na" && (c.stage !== "visual_review" || hasVisuals(d)))
+        bad(
+          "N/A is permitted only for visual review of a genuinely text-only format, with a reason.",
+        );
+      if (
+        ["evidence", "independent_review", "release_check"].includes(c.stage) &&
+        c.evidence.trim().length < 10
+      )
+        bad(
+          "Record source/reviewer evidence, or a reasoned no-external-claims declaration.",
+        );
+      if (
+        c.stage === "creation" &&
+        c.status === "pass" &&
+        !d.text.trim() &&
+        !d.media.slides.length &&
+        !d.media.scenes.length
+      )
+        bad("Create the draft before marking creation complete.");
+      const summary = stageSummary(d, s),
+        index = summary.stages.findIndex((stage) => stage.key === c.stage);
+      if (
+        ["pass", "na"].includes(c.status) &&
+        summary.stages
+          .slice(0, index)
+          .some((stage) => !["pass", "na"].includes(stage.status))
+      )
+        bad(
+          "Complete the preceding required stages before passing this stage.",
+        );
+      if (
+        c.stage === "handoff" &&
+        (!c.packageId || c.packageId !== summary.packageId)
+      )
+        throw new StudioError(
+          409,
+          "Handoff must refer to the exact current approved package.",
+        );
+      d.stages ??= [];
+      d.stages.push({
+        key: c.stage,
+        status: c.status,
+        reason: c.reason,
+        evidence: c.evidence,
+        actor: actor.email,
+        at: now,
+        textRevision: d.textRevision || 1,
+        mediaRevision: d.mediaRevision || 1,
+        factsRevision: d.factsRevision ?? d.textRevision ?? 1,
+        workflowId: c.expectedWorkflowId,
+        ruleVersion: c.expectedRuleVersion,
+        packageId: c.packageId,
+      });
+      if (["revise", "hold"].includes(c.status)) {
+        d.state = "changes";
+        for (const stage of summary.stages
+          .slice(index + 1)
+          .filter(
+            (x) => !["human_approval", "publication_record"].includes(x.key),
+          ))
+          d.stages.push({
+            key: stage.key,
+            status: "pending",
+            reason: "An earlier check was revised or held.",
+            evidence: "",
+            actor: actor.email,
+            at: now,
+            textRevision: d.textRevision || 1,
+            mediaRevision: d.mediaRevision || 1,
+            factsRevision: d.factsRevision ?? d.textRevision ?? 1,
+            workflowId: c.expectedWorkflowId,
+            ruleVersion: c.expectedRuleVersion,
+          });
+      }
+      break;
+    }
+    case "idea.generate": {
+      need("idea.edit", { channel: c.channel });
+      need("job.create", { channel: c.channel, function: "ideas" });
+      if (
+        s.audit.some(
+          (e) =>
+            e.action === "idea.sample_batch" && e.target === c.idempotencyKey,
+        )
+      )
+        return structuredClone(input);
+      if (ctx.demo) {
+        for (const item of sampleIdeas(
+          c.channel,
+          c.topic,
+          c.quantity,
+          c.audience,
+        ))
+          s.ideas.unshift({
+            ...item,
+            id: id(),
+            channel: c.channel,
+            state: "pending",
+            origin: "demo_sample",
+            generationRunId: "sample:" + c.idempotencyKey,
+            createdBy: actor.email,
+            createdAt: now,
+          });
+        s.audit.push({
+          id: id(),
+          actor: actor.email,
+          action: "idea.sample_batch",
+          target: c.idempotencyKey,
+          at: now,
+        });
+        break;
+      }
+      if (c.research)
+        throw new StudioError(
+          503,
+          "Current web research requires a qualified research adapter. No research or generation was started. Uncheck research to use supplied references only.",
+        );
+      const jobInput = ideaJobInput(s, c);
+      return applyCommand(input, actor, jobInput, ctx);
+    }
+    case "workflow.importPreset": {
+      need("workflow.edit", { channel: c.channel });
+      const preset = ctx.demo ? demoPreset(c.channel) : ctx.preset;
+      if (!preset) bad("The channel preset could not be loaded.");
+      const refs: string[] = [];
+      for (const ref of preset.references) {
+        const existing = s.references.find(
+          (r) => r.title === ref.title && r.content === ref.content,
+        );
+        if (existing) {
+          refs.push(existing.id);
+          continue;
+        }
+        const refId = id();
+        s.references.push({
+          id: refId,
+          title: ref.title,
+          content: ref.content,
+          kind: ref.kind,
+          channel: c.channel,
+          createdAt: now,
+        });
+        refs.push(refId);
+      }
+      s.workflows.unshift({
+        id: id(),
+        channel: c.channel,
+        version:
+          Math.max(
+            0,
+            ...s.workflows
+              .filter((w) => w.channel === c.channel)
+              .map((w) => w.version),
+          ) + 1,
+        status: "draft",
+        title: `${c.channel} imported channel package`,
+        audience: "Choose the intended audience",
+        instructions:
+          "Use this channel template for intent, voice and deliverables. Latest protected founder policy and explicit scoped decisions take precedence over legacy CTA, identity, pricing or approval defaults. This is a reviewed configuration template, not permission to execute uploaded scripts.\n\n" +
+          preset.instructions,
+        guardrails:
+          "Human final approval. No misinformation or misrepresentation. Do not activate conflicting legacy defaults. Keep internal brand evidence private.",
+        references: refs,
+        examples: "",
+        outputFormat:
+          "Use the channel artifact definitions in the selected references.",
+        checks:
+          "Nine stages; explicit human records; exact text and media package; no invented sources, experiences, or approval evidence.",
+        connectionId: "",
+        functionConnections: {},
+        createdBy: actor.email,
+        createdAt: now,
+      });
+      break;
+    }
+
     case "idea.create":
       need("idea.edit", { channel: c.channel });
       s.ideas.unshift({
@@ -237,6 +452,7 @@ export function applyCommand(
         revision: 1,
         textRevision: 1,
         mediaRevision: 1,
+        factsRevision: 1,
         history: [],
         state: "draft",
         workflowId: s.workflows.find(
@@ -255,6 +471,8 @@ export function applyCommand(
           409,
           "This draft changed. Reload before saving so no edits are lost.",
         );
+      const oldFacts = factsSignature(d),
+        oldTitle = d.title;
       const mediaChanged = JSON.stringify(d.media) !== JSON.stringify(c.media),
         textChanged =
           d.text !== c.text || d.title !== c.title || d.metadata !== c.metadata;
@@ -269,6 +487,23 @@ export function applyCommand(
         textRevision: (d.textRevision || 1) + (textChanged ? 1 : 0),
         mediaRevision: (d.mediaRevision || 1) + (mediaChanged ? 1 : 0),
       });
+      d.factsRevision =
+        (d.factsRevision ?? d.textRevision ?? 1) +
+        (oldFacts !== factsSignature(d) ? 1 : 0);
+      if (oldTitle !== d.title && d.stages?.length)
+        d.stages.push({
+          key: "intake",
+          status: "pending",
+          reason: "The topic/title changed.",
+          evidence: "",
+          actor: actor.email,
+          at: now,
+          textRevision: d.textRevision || 1,
+          mediaRevision: d.mediaRevision || 1,
+          factsRevision: d.factsRevision,
+          workflowId: currentWorkflow(d, s)?.id || "",
+          ruleVersion: s.settings.protectedVersion,
+        });
       break;
     }
     case "content.submit": {
@@ -302,6 +537,7 @@ export function applyCommand(
         revision: 1,
         textRevision: 1,
         mediaRevision: 1,
+        factsRevision: 1,
         history: [],
         state: "draft",
         deletedAt: undefined,
@@ -311,6 +547,7 @@ export function applyCommand(
         docId: undefined,
         docsBase: undefined,
         docsFetchedAt: undefined,
+        stages: [],
       });
       break;
     }
@@ -423,6 +660,10 @@ export function applyCommand(
         bad(
           "Approval requires immutable uploaded Studio media, not mutable external URLs.",
         );
+      if (!stageSummary(d, s).readyForApproval)
+        bad(
+          "Complete all six pre-approval stages for this exact version before human approval.",
+        );
       const payload = {
         contentId: d.id,
         channel: d.channel,
@@ -437,6 +678,9 @@ export function applyCommand(
         workflowId: workflow.id,
         ruleVersion: s.settings.protectedVersion,
         ...{
+          stagesSnapshot: (d.stages || []).filter((record) =>
+            recordIsCurrent(record, d, s),
+          ),
           assetManifest: ctx.assetManifest || [],
           exceptionSnapshots: (s.exceptions || []).filter(
             (e) => e.contentId === d.id && e.revision === d.revision,
@@ -952,6 +1196,7 @@ export function applyCommand(
         d,
         "Google Docs / DOCX import; displaced Studio version retained",
       );
+      d.factsRevision = (d.factsRevision ?? d.textRevision ?? 1) + 1;
       d.text = c.text;
       d.textRevision = (d.textRevision || 1) + 1;
       d.docsBase = c.text;

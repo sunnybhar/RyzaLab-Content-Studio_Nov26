@@ -1,2 +1,24 @@
-import fs from 'node:fs/promises';import path from 'node:path';import type {Channel} from './types';import type {ChannelPreset} from './presets';
-export async function loadChannelPreset(channel:Channel):Promise<ChannelPreset>{const slug=channel==='TikTok'?'instagram':channel.toLowerCase();if(!['youtube','linkedin','reddit','instagram','hub','facebook'].includes(slug))return {instructions:`${channel} follows the latest founder editorial workflow, selected brand sources and required human review.`,references:[]};return JSON.parse(await fs.readFile(path.join(process.cwd(),'knowledge','channel-packages',slug+'.json'),'utf8'))}
+import fs from "node:fs/promises";
+import path from "node:path";
+import type { Channel } from "./types";
+import type { ChannelPreset } from "./presets";
+export async function loadChannelPreset(
+  channel: Channel,
+): Promise<ChannelPreset> {
+  const slug = channel === "TikTok" ? "instagram" : channel.toLowerCase();
+  if (
+    !["youtube", "linkedin", "reddit", "instagram", "hub", "facebook"].includes(
+      slug,
+    )
+  )
+    return {
+      instructions: `${channel} follows the latest founder editorial workflow, selected brand sources and required human review.`,
+      references: [],
+    };
+  return JSON.parse(
+    await fs.readFile(
+      path.join(process.cwd(), "knowledge", "channel-packages", slug + ".json"),
+      "utf8",
+    ),
+  );
+}

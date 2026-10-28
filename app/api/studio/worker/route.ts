@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { database, loadState, persist, decrypt } from "@/lib/studio/store";
 import { can, StudioError } from "@/lib/studio/permissions";
 import { budgetMonth } from "@/lib/studio/time";
+import { parseGeneratedIdeas } from "@/lib/studio/idea-generation";
 import { readRates } from "@/lib/studio/pricing";
 import { runProvider, ProviderFailure } from "@/lib/studio/providers";
 import { failure } from "@/lib/studio/http";
@@ -215,12 +216,32 @@ export async function POST(req: NextRequest) {
         j.result =
           storedMedia ||
           "Media returned without a draft attachment; reconcile the stored provider result.";
-        j.error =
+        j.error ||=
           "Provider completed; cost remains conservatively reserved pending invoice reconciliation.";
       } else {
         j.state = "succeeded";
         j.result = outcome?.text || "";
-        j.error =
+        if (j.kind === "ideas" && outcome?.text) {
+          try {
+            const items = parseGeneratedIdeas(outcome.text);
+            for (const item of items)
+              next.ideas.unshift({
+                ...item,
+                id: crypto.randomUUID(),
+                channel: j.channel,
+                state: "pending",
+                origin: "agent",
+                generationRunId: j.id,
+                createdBy: j.createdBy,
+                createdAt: new Date().toISOString(),
+              });
+          } catch {
+            j.error =
+              "The provider returned an incomplete idea-card set. The raw result is retained; no idea cards were fabricated.";
+          }
+        }
+
+        j.error ||=
           "Provider completed; cost remains conservatively reserved pending invoice reconciliation.";
       }
       next.version++;

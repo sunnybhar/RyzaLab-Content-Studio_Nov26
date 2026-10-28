@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate, loadState, persist, hash } from "@/lib/studio/store";
+import { ideaJobInput } from "@/lib/studio/idea-generation";
+import { loadChannelPreset } from "@/lib/studio/preset-store";
 import { quote } from "@/lib/studio/pricing";
 import { commandSchema } from "@/lib/studio/commands";
 import { applyCommand } from "@/lib/studio/engine";
@@ -64,12 +66,20 @@ export async function POST(req: NextRequest) {
       }
     }
     const priced =
-      command.type === "job.enqueue" ? quote(state, command) : undefined;
+      command.type === "job.enqueue"
+        ? quote(state, command)
+        : command.type === "idea.generate" && !command.research
+          ? quote(state, ideaJobInput(state, command))
+          : undefined;
     const next = applyCommand(state, actor, command, {
       hash,
       quotedCost: priced?.cost,
       pricingSnapshot: priced?.pricingSnapshot,
       assetManifest,
+      preset:
+        command.type === "workflow.importPreset"
+          ? await loadChannelPreset(command.channel)
+          : undefined,
     });
     if (Buffer.byteLength(JSON.stringify(next)) > 24000000)
       throw new StudioError(
