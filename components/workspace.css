@@ -4060,3 +4060,6 @@
 .studio-v2 .s-training-links { padding-left:22px; }
 .studio-v2 .s-training-links li { padding:9px 0; }
 .studio-v2 .s-training-links a { color:var(--s-accent); text-decoration:underline; text-underline-offset:3px; }
+.studio-v2 .s-connection-feedback { max-width:600px; overflow-wrap:anywhere; padding:10px 12px; border:1px solid var(--s-line); border-radius:6px; color:var(--s-text); background:var(--s-paper); }
+.studio-v2 .s-connection-feedback.s-check-error { color:var(--s-danger); border-color:var(--s-danger); }
+.studio-v2 .s-connection-feedback.s-check-success { color:var(--s-accent); border-color:var(--s-accent); }

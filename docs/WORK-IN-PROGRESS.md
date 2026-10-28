@@ -19,3 +19,9 @@ Account controls, provisional tab icon/title, discoverable themes/layouts, draft
 Validation: 88 tests, TypeScript, production build and expanded browser flow pass. Profile/theme persistence, calendar target opening, Analytics and Word/Excel downloads exercised. Documents parsed and ZIP checked; manual QA statuses all intentionally Not run. Backlog marks local completion separately from live acceptance. Official logo asset still needed; favicon is a provisional Studio monogram. Live providers, Google, email and database configuration remain pending as previously documented.
 
 Next: user runs module 00 then section-by-section manual acceptance. Collect defect IDs/results in the workbook. Continue live integration work only within authorized configuration/provider scope; do not represent preview samples as live AI. Preserve five-minute checkpoints during active work.
+
+## Live setup progress and validation feedback fix
+
+User backed up the public schema locally (pg_restore read verified), applied migration in Supabase and confirmed all six tables/private bucket exist. Vercel Supabase variables and encryption key saved/redeployed. User screenshot confirms live workspace as administrator and manual idea saved. AI connection model remains unverified; user entered claude-sonnet-5-5 and reported no visible result from Check model access. Do not assume this ID exists or claim provider success.
+
+Fixed feedback visibility: per-connection checking/success/error messages, button progress text, stale error cleared and a 30-second HTTP timeout. Production build/typecheck and existing browser walkthrough pass. Actual credentialed validation has not been performed by this agent. Next: after Vercel deploys the feedback fix, have user retry and report exact result. Keep allowance zero; no paid generation yet. Qualified pricing, worker and workflow binding remain pending.

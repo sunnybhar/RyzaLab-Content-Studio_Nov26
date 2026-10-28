@@ -404,6 +404,12 @@ export default function Workspace() {
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [busy, setBusy] = useState(false);
+  const [connectionChecks, setConnectionChecks] = useState<
+    Record<
+      string,
+      { status: "checking" | "success" | "error"; message: string }
+    >
+  >({});
   const [notice, setNotice] = useState("");
   const [localError, setLocalError] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
@@ -865,6 +871,14 @@ export default function Workspace() {
       return;
     }
     setBusy(true);
+    setLocalError("");
+    setConnectionChecks((previous) => ({
+      ...previous,
+      [id]: {
+        status: "checking",
+        message: "Checking model access with your provider…",
+      },
+    }));
     try {
       const session = await supabase?.auth.getSession();
       const token = session?.data.session?.access_token;
@@ -876,18 +890,36 @@ export default function Workspace() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ id }),
+        signal: AbortSignal.timeout(30000),
       });
       const result = await response.json();
       if (!response.ok)
         throw new Error(result.error || "Provider validation failed.");
       await refresh();
+      setConnectionChecks((previous) => ({
+        ...previous,
+        [id]: {
+          status: "success",
+          message:
+            "Model access checked successfully. Generation remains subject to pricing and budget setup.",
+        },
+      }));
       setNotice(
         "Model access validated. Review output quality and spending allowances before generation.",
       );
     } catch (e) {
-      setLocalError(
-        e instanceof Error ? e.message : "Provider validation failed.",
-      );
+      const message =
+        e instanceof Error &&
+        (e.name === "TimeoutError" || e.name === "AbortError")
+          ? "The access check timed out. No content generation was requested. Retry the model access check."
+          : e instanceof Error
+            ? e.message
+            : "Provider validation failed.";
+      setConnectionChecks((previous) => ({
+        ...previous,
+        [id]: { status: "error", message },
+      }));
+      setLocalError(message);
     } finally {
       setBusy(false);
     }
@@ -3658,6 +3690,19 @@ export default function Workspace() {
                       <p>
                         {c.provider} · {c.model} · {c.function}
                       </p>
+                      {connectionChecks[c.id] && (
+                        <p
+                          className={`s-connection-feedback s-check-${connectionChecks[c.id].status}`}
+                          role={
+                            connectionChecks[c.id].status === "error"
+                              ? "alert"
+                              : "status"
+                          }
+                          aria-live="polite"
+                        >
+                          {connectionChecks[c.id].message}
+                        </p>
+                      )}
                     </div>
                     <Badge tone={c.status === "validated" ? "green" : "amber"}>
                       {c.status === "validated"
@@ -3674,7 +3719,9 @@ export default function Workspace() {
                       disabled={!admin || busy}
                       onClick={() => void validateAI(c.id)}
                     >
-                      Check model access
+                      {connectionChecks[c.id]?.status === "checking"
+                        ? "Checking model access…"
+                        : "Check model access"}
                     </button>
                   </div>
                 ))}
