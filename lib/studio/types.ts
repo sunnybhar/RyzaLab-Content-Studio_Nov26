@@ -90,7 +90,26 @@ export interface Idea {
   format?: string;
   generationRunId?: string;
 }
+export type SlideLayer = {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  opacity: number;
+} & (
+  | {
+      kind: "text";
+      text: string;
+      color: string;
+      fontSize: number;
+      weight: 400 | 700;
+      align: "left" | "center" | "right";
+    }
+  | { kind: "shape"; shape: "rectangle" | "ellipse"; fill: string }
+);
 export interface Slide {
+  layers?: SlideLayer[];
   id: string;
   title: string;
   body: string;

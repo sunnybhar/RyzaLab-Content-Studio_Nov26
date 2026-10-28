@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { slideLayersSchema } from "./layers";
 import type { MediaProject, Package, Scene, Slide } from "./types";
 
 // The editable source is deliberately versioned independently of application state.
@@ -51,6 +52,7 @@ const color = z
   );
 const slideSchema = z
   .object({
+    layers: slideLayersSchema.optional(),
     id: z.string().min(1).max(200),
     title: z.string().max(2000),
     body: z.string().max(20000),
@@ -324,6 +326,50 @@ export async function renderSlide(slide: Slide): Promise<HTMLCanvasElement> {
   for (const line of wrapText(ctx, slide.body, width)) {
     ctx.fillText(line, x, y);
     y += slide.fontSize * 0.55 * 1.5;
+  }
+  for (const layer of slide.layers || []) {
+    ctx.save();
+    ctx.globalAlpha = layer.opacity;
+    const lx = (layer.x / 100) * canvas.width,
+      ly = (layer.y / 100) * canvas.height,
+      lw = (layer.width / 100) * canvas.width,
+      lh = (layer.height / 100) * canvas.height;
+    ctx.beginPath();
+    ctx.rect(lx, ly, lw, lh);
+    ctx.clip();
+    if (layer.kind === "shape") {
+      ctx.fillStyle = layer.fill;
+      if (layer.shape === "ellipse") {
+        ctx.beginPath();
+        ctx.ellipse(
+          lx + lw / 2,
+          ly + lh / 2,
+          lw / 2,
+          lh / 2,
+          0,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
+      } else ctx.fillRect(lx, ly, lw, lh);
+    } else {
+      ctx.fillStyle = layer.color;
+      ctx.textAlign = layer.align;
+      ctx.textBaseline = "top";
+      ctx.font = `${layer.weight} ${layer.fontSize}px Inter, sans-serif`;
+      let lineY = ly;
+      const textX =
+        layer.align === "center"
+          ? lx + lw / 2
+          : layer.align === "right"
+            ? lx + lw
+            : lx;
+      for (const line of wrapText(ctx, layer.text, lw)) {
+        ctx.fillText(line, textX, lineY);
+        lineY += layer.fontSize * 1.2;
+      }
+    }
+    ctx.restore();
   }
   return canvas;
 }

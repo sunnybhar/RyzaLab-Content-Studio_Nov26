@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { slideLayersSchema } from "./layers";
 import { CHANNELS, ROLES, FUNCTIONS } from "./types";
 const id = z.string().min(1).max(150),
   text = z.string().max(60000),
@@ -12,6 +13,7 @@ const id = z.string().min(1).max(150),
 const slide = z
   .object({
     id,
+    layers: slideLayersSchema.optional(),
     title: z.string().max(180),
     body: z.string().max(2000),
     image: z.string().max(8000000).optional(),

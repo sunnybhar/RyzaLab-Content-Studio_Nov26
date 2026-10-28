@@ -75,6 +75,7 @@ import {
 } from "@/lib/studio/exports";
 import { can, type Scope } from "@/lib/studio/permissions";
 import { stageSummary } from "@/lib/studio/stages";
+import { SlideLayerEditor, SlideLayerPreview } from "./slide-layers";
 import { StudioOperations } from "./studio-operations";
 import { StudioAnalytics } from "./studio-analytics";
 import { IdeaGenerationStatus } from "./idea-generation-status";
@@ -4692,6 +4693,7 @@ function Editor({
   const [media, setMedia] = useState<MediaProject>(c.media || initialMedia());
   const [tab, setTab] = useState("Write");
   const [slideIndex, setSlideIndex] = useState(0);
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [docsText, setDocsText] = useState("");
   useEffect(() => {
@@ -5061,8 +5063,34 @@ function Editor({
                           {slide.body}
                         </p>
                       </div>
+                      {(slide.layers || []).map((layer) => (
+                        <SlideLayerPreview
+                          key={layer.id}
+                          layer={layer}
+                          selected={
+                            layer.id ===
+                            (selectedLayerId || (slide.layers || [])[0]?.id)
+                          }
+                          onSelect={() => setSelectedLayerId(layer.id)}
+                          onMove={(moved) =>
+                            updateSlide({
+                              layers: (slide.layers || []).map((l) =>
+                                l.id === moved.id ? moved : l,
+                              ),
+                            })
+                          }
+                          readOnly={readOnly}
+                        />
+                      ))}
                     </div>
                   </div>
+                  <SlideLayerEditor
+                    layers={slide.layers || []}
+                    onChange={(layers) => updateSlide({ layers })}
+                    selectedId={selectedLayerId}
+                    onSelect={setSelectedLayerId}
+                    readOnly={readOnly}
+                  />
                   <div className="s-slide-fields">
                     <label className="s-field">
                       Slide title

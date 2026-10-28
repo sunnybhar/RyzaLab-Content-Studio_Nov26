@@ -4084,3 +4084,8 @@
 .studio-v2 .s-health-checks > div { padding:12px; border:1px solid var(--s-line); border-radius:6px; }
 .studio-v2 .s-health-checks dt { text-transform:capitalize; font-weight:600; }.studio-v2 .s-health-checks dd { margin:6px 0 0; overflow-wrap:anywhere; }
 @media(max-width:760px){.studio-v2 .s-health-checks {grid-template-columns:1fr;}}
+.studio-v2 .s-design-layer { position:absolute; overflow:hidden; white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.2; touch-action:none; cursor:move; user-select:none; }
+.studio-v2 .s-design-layer-selected { outline:2px dashed #ffb000; outline-offset:2px; }
+.studio-v2 .s-design-layer:focus-visible { outline:3px solid #ffb000; outline-offset:3px; }
+.studio-v2 .s-slide-layer-controls { border:1px solid var(--s-line); padding:18px; border-radius:8px; margin:18px 0; }
+.studio-v2 .s-slide-layer-controls label { display:grid; gap:8px; margin-top:12px; }.studio-v2 .s-slide-layer-controls .s-actions { margin-top:12px; flex-wrap:wrap; }

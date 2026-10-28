@@ -13,6 +13,7 @@ import {
 import { sampleIdeas, parseGeneratedIdeas } from "./idea-generation";
 import { demoPreset, type ChannelPreset } from "./presets";
 import { ideaJobInput } from "./idea-generation";
+import { contentWording } from "./content-wording";
 import { savedResearchSchema } from "./research";
 import { review } from "../brand";
 export type ExecutionContext = {
@@ -784,20 +785,7 @@ export function applyCommand(
           "The content changed after review. Open the current revision before approving.",
         );
       if (!d.text.trim()) bad("Add final written content before approval.");
-      const all =
-        d.title +
-        "\n" +
-        d.text +
-        "\n" +
-        d.metadata +
-        "\n" +
-        d.media.narration +
-        "\n" +
-        d.media.captions +
-        "\n" +
-        d.media.slides.map((x) => x.title + " " + x.body).join("\n") +
-        "\n" +
-        d.media.scenes.map((x) => x.script).join("\n");
+      const all = contentWording(d);
       const check = review(all, "general");
       if (
         check.issues.some((x) => x.severity === "BLOCK") ||
@@ -1217,7 +1205,7 @@ export function applyCommand(
           "Content changed; review the exact wording first.",
         );
       if (
-        !(d.text + "\n" + d.metadata + "\n" + d.title)
+        !contentWording(d)
           .split("\n")
           .some((line) => line.trim() === c.wording.trim())
       )

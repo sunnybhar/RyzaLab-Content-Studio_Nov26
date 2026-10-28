@@ -178,6 +178,10 @@ export function factsSignature(
       title: s.title,
       body: s.body,
       image: s.image,
+      textLayers: (s.layers || [])
+        .filter((l) => l.kind === "text")
+        .map((l) => ({ id: l.id, text: l.kind === "text" ? l.text : "" }))
+        .sort((a, b) => a.id.localeCompare(b.id)),
     })),
     scenes: c.media.scenes.map((s) => ({
       title: s.title,
