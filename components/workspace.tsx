@@ -2578,7 +2578,7 @@ export default function Workspace() {
                 </a>
               </div>
               <p>
-                The QA workbook has 127 cases, a defect log and blank manual
+                The QA workbook has 137 cases, a defect log and blank manual
                 results. Live integration cases require a configured test
                 workspace.
               </p>
@@ -3766,7 +3766,7 @@ export default function Workspace() {
                   </button>
                 </div>
                 {state.connections.map((c) => (
-                  <div className="s-list-row" key={c.id}>
+                  <div className="s-list-row s-connection-row" key={c.id}>
                     <span className="s-provider-icon">
                       <Sparkles size={20} />
                     </span>

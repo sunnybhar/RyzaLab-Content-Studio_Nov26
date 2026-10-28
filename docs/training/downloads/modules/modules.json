@@ -73,7 +73,7 @@
       "For agent-assisted candidates, click Generate with agent. Enter Topic / Brief, Audience, Quantity, Channel and source notes or URLs.",
       "In preview, submit Preview sample ideas. These are local examples, explicitly labelled, and do not use a paid API.",
       "In live mode, review the configured model and budget settings first. Submit only when you authorize the request. Paid jobs can wait for cost confirmation. Current-web research remains unavailable until its adapter is built; supplied sources are not automatically browsed.",
-      "Read each returned card. Check specificity, supporting evidence needed, channel fit and repetition. Agent results remain pending and do not approve themselves.",
+      "Idea generation status now shows waiting confirmation, queue and running states. If a completed response was not imported, use Import saved ideas \u2014 no AI call to recover it once without a new provider charge. Read each returned card. Check specificity, supporting evidence needed, channel fit and repetition. Agent results remain pending and do not approve themselves.",
       "Explicitly approve, reject or revise the idea. Use Create draft on an approved idea to start a separate content item.",
       "For recurring idea work, use the recurrence controls where available. A recurring reminder is not standing permission to bypass budget confirmation or run a paid job."
     ],
@@ -224,7 +224,7 @@
       "In preview, keys are discarded and validation is unavailable. In live mode, validate supported model access and qualify sample quality before activation.",
       "Configure conservative request allowances and qualified pricing. Missing/unqualified prices keep paid execution blocked.",
       "Set monthly/per-request and relevant function/user/channel caps. Choose confirmation thresholds only after sample cost evaluation.",
-      "Activate the intended connection mapping in the channel workflow. Creating a connection alone does not switch an active workflow.",
+      "Use Edit allowance to change a saved connection budget without creating another connection. Disconnect clears its saved key and retains history; Delete is for unused connections only. Resolve active jobs first. Activate the intended connection mapping in the channel workflow. Creating a connection alone does not switch an active workflow.",
       "Review queued jobs and reservations. Confirm an awaiting-confirmation job only after checking scope and estimated cost.",
       "If a dispatched outcome is unknown, reconcile it before retrying. Do not automatically rerun a potentially charged request.",
       "Compare actual reconciled costs with reservations. Hosting/storage are separate from AI budget caps."

@@ -127,6 +127,10 @@ async function main() {
       null,
       "A new browser context must start without persisted demo state",
     );
+    await page
+      .getByLabel("Studio version", { exact: true })
+      .getByText(/v0\.2\.0/)
+      .waitFor();
     await page.screenshot({
       path: "/tmp/studio-v2-desktop.png",
       fullPage: true,
@@ -702,6 +706,78 @@ async function main() {
       "Demo connector controls must never make external requests",
     );
 
+    const connectionRow = page
+      .locator(".s-connection-row")
+      .filter({ hasText: "Browser demo metadata" });
+    await connectionRow
+      .getByRole("button", { name: "Edit allowance", exact: true })
+      .click();
+    await dialog()
+      .getByLabel("Per-request allowance ($)", { exact: true })
+      .fill("0.50");
+    await dialog()
+      .getByRole("button", { name: "Save changes", exact: true })
+      .click();
+    await dialog().waitFor({ state: "hidden" });
+    assert.equal(
+      (await state()).connections.find(
+        (c) => c.title === "Browser demo metadata",
+      ).maxRequestCost,
+      50,
+    );
+    await connectionRow
+      .getByRole("button", {
+        name: "Disconnect Browser demo metadata",
+        exact: true,
+      })
+      .click();
+    await dialog()
+      .getByRole("button", { name: "Disconnect", exact: true })
+      .click();
+    await dialog().waitFor({ state: "hidden" });
+    await connectionRow.getByText("Disconnected", { exact: true }).waitFor();
+    assert.equal(
+      await connectionRow
+        .getByRole("button", { name: "Check model access", exact: true })
+        .isDisabled(),
+      true,
+    );
+    await connectionRow
+      .getByRole("button", {
+        name: "Delete Browser demo metadata",
+        exact: true,
+      })
+      .click();
+    await dialog()
+      .getByRole("button", { name: "Delete connection", exact: true })
+      .click();
+    await dialog().waitFor({ state: "hidden" });
+    assert.equal(
+      (await state()).connections.some(
+        (c) => c.title === "Browser demo metadata",
+      ),
+      false,
+    );
+    await navigate("Library");
+    await page
+      .getByRole("button", { name: "Export campaign / inventory", exact: true })
+      .click();
+    await dialog()
+      .getByLabel("Include unapproved working copies", { exact: true })
+      .check();
+    const campaignFile = await saveDownload(
+      () =>
+        dialog()
+          .getByRole("button", { name: "Download campaign ZIP", exact: true })
+          .click(),
+      "campaign.zip",
+    );
+    const { default: JSZip } = await import("jszip");
+    const campaignZip = await JSZip.loadAsync(fs.readFileSync(campaignFile));
+    assert.ok(campaignZip.file("inventory.csv"));
+    assert.ok(campaignZip.file("manifest.json"));
+    await dialog().waitFor({ state: "hidden" });
+
     // Every main surface remains usable on a narrow mobile viewport.
     await page.setViewportSize({ width: 390, height: 844 });
     for (const name of [
@@ -923,6 +999,30 @@ async function main() {
           .count(),
         0,
       );
+      // Fake browser clock verifies expiry and identical-message timer restart without sleeping.
+      await progressPage.clock.install();
+      const addToastIdea = async (title) => {
+        await progressPage
+          .getByRole("button", { name: "Add idea", exact: true })
+          .click();
+        const modal = progressPage.getByRole("dialog");
+        await modal.getByLabel("Idea title", { exact: true }).fill(title);
+        await modal
+          .getByLabel("What is the angle?", { exact: true })
+          .fill("Toast timer UI fixture");
+        await modal
+          .getByRole("button", { name: "Add idea", exact: true })
+          .click();
+        await modal.waitFor({ state: "hidden" });
+      };
+      await addToastIdea("Toast timer first fixture");
+      await progressPage.locator(".s-toast").waitFor();
+      await progressPage.clock.fastForward(6000);
+      await addToastIdea("Toast timer second fixture");
+      await progressPage.clock.fastForward(5000);
+      assert.equal(await progressPage.locator(".s-toast").isVisible(), true);
+      await progressPage.clock.fastForward(6000);
+      assert.equal(await progressPage.locator(".s-toast").count(), 0);
     } finally {
       await progressContext.close();
     }

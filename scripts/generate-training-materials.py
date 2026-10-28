@@ -50,7 +50,7 @@ module('03-Ideas','Ideas — Manual and Agent-Assisted','Creator, editor, manage
 'For agent-assisted candidates, click Generate with agent. Enter Topic / Brief, Audience, Quantity, Channel and source notes or URLs.',
 'In preview, submit Preview sample ideas. These are local examples, explicitly labelled, and do not use a paid API.',
 'In live mode, review the configured model and budget settings first. Submit only when you authorize the request. Paid jobs can wait for cost confirmation. Current-web research remains unavailable until its adapter is built; supplied sources are not automatically browsed.',
-'Read each returned card. Check specificity, supporting evidence needed, channel fit and repetition. Agent results remain pending and do not approve themselves.',
+'Idea generation status now shows waiting confirmation, queue and running states. If a completed response was not imported, use Import saved ideas — no AI call to recover it once without a new provider charge. Read each returned card. Check specificity, supporting evidence needed, channel fit and repetition. Agent results remain pending and do not approve themselves.',
 'Explicitly approve, reject or revise the idea. Use Create draft on an approved idea to start a separate content item.',
 'For recurring idea work, use the recurrence controls where available. A recurring reminder is not standing permission to bypass budget confirmation or run a paid job.'
 ],'Ideas keep their origin and pending status until a human decides; approved ideas can seed drafts.','Generate three preview ideas about recovery routines for family caregivers, approve one and create a draft.','Missing provider connection: configure the Ideas function in AI & budgets and activate the mapping. Research unavailable is an honest limitation, not a successful search. Never cite a source the agent did not actually access.')
@@ -124,7 +124,7 @@ module('10-AI-and-Budgets','AI and Budgets — Providers, Models and Cost Contro
 'In preview, keys are discarded and validation is unavailable. In live mode, validate supported model access and qualify sample quality before activation.',
 'Configure conservative request allowances and qualified pricing. Missing/unqualified prices keep paid execution blocked.',
 'Set monthly/per-request and relevant function/user/channel caps. Choose confirmation thresholds only after sample cost evaluation.',
-'Activate the intended connection mapping in the channel workflow. Creating a connection alone does not switch an active workflow.',
+'Use Edit allowance to change a saved connection budget without creating another connection. Disconnect clears its saved key and retains history; Delete is for unused connections only. Resolve active jobs first. Activate the intended connection mapping in the channel workflow. Creating a connection alone does not switch an active workflow.',
 'Review queued jobs and reservations. Confirm an awaiting-confirmation job only after checking scope and estimated cost.',
 'If a dispatched outcome is unknown, reconcile it before retrying. Do not automatically rerun a potentially charged request.',
 'Compare actual reconciled costs with reservations. Hosting/storage are separate from AI budget caps.'
@@ -332,6 +332,17 @@ for f,st,ex in [
  ('Word module download','Download Calendar (Word); open in Word or Google Docs.','One readable standalone module contains steps, exercise and known limitations.'),
  ('QA workbook download','Download QA workbook; open in Excel.','QA Cases, QA Summary, Backlog, Defects, Test Data and Training Index exist; manual statuses begin Not run.'),
  ('Backlog download','Download backlog; filter Status.','Done, Built—needs live validation, Pending build and Decision needed are clearly distinguished.')]:add('Training and QA',f,st,ex)
+for feature,steps,result,env in [
+ ('Visible build version','Inspect top-right RyzaLab Studio header.','Version and short deployment commit appear directly below the label.','Preview'),
+ ('Edit connection allowance','AI & budgets → Edit allowance; save $0.50 with no active jobs.','Only allowance changes; model and credential remain unchanged.','Preview'),
+ ('Disconnect credential','Disconnect an unused authorized test connection; inspect state and private saved credential through authorized administration.','Disconnected state cannot quote, confirm or dispatch; saved key is atomically cleared.','Live'),
+ ('Active-job guard','Attempt disconnect/delete/allowance edit with queued, running or unknown test job.','Operation blocks; no credential is cleared or ambiguous job retried.','Live'),
+ ('Delete unused connection','Create unused demo connection; delete after explicit confirmation.','Metadata disappears; existing used connections remain unchanged.','Preview'),
+ ('History protects connection','Try deleting a connection referenced by workflow/job history.','Delete blocks and recommends disconnect; immutable history remains.','Preview'),
+ ('Success toast timeout','Perform successful save and wait 10 seconds.','Success toast auto-dismisses; manual close remains.','Preview'),
+ ('Toast timer reset','Save; after 6 seconds save again with same success message.','Toast remains 10 seconds after the second message, then dismisses.','Preview'),
+ ('Campaign exact release bundle','Library → Export campaign / inventory; include draft copies; download ZIP.','Manifest and nested exact approved packages/assets retained; drafts explicitly unapproved; no credentials included.','Preview'),
+ ('Spreadsheet-safe inventory','Export inventory with a test title starting = or @.','Formula-like values are escaped; channel/collection and export permission scope respected.','Preview')]:add('Backlog follow-up',feature,steps,result,env,priority='P0' if 'credential' in feature.lower() or 'guard' in feature else 'P1')
 for row in cases:qa.append(row)
 status=DataValidation(type='list',formula1='"Not run,Pass,Fail,Blocked,Not applicable"');status.errorTitle='Choose a test status';status.error='Select a listed status.';status.showErrorMessage=True;qa.add_data_validation(status);status.add(f'I2:I{qa.max_row}')
 for val,color in [('Pass','D9EAD3'),('Fail','F4CCCC'),('Blocked','FCE5CD'),('Not run','E7EEF3')]:qa.conditional_formatting.add(f'I2:I{qa.max_row}',FormulaRule(formula=[f'I2="{val}"'],fill=PatternFill('solid',fgColor=color)))
@@ -390,7 +401,14 @@ for area,name,criteria,dep in [
  ('Analytics','Define optional social performance ingestion','Decide manual metrics import or separate authorized read-only analytics integration; no account access assumed.','User scope decision; publishing remains manual')]:item(area,name,N,'P2',criteria,dep)
 item('AI connections','Disconnect and delete AI connections',P,'P0','Permitted admins can clear saved credentials and disconnect a connection; unused connections can be deleted; active jobs, workflow dependencies and immutable history are protected.','Explicit user instruction: backlog only; do not implement now.')
 item('Notifications UX','Auto-dismiss saved success toast after 10 seconds',P,'P2','Success toasts dismiss automatically after 10 seconds and remain manually dismissible; a new success message resets the timer. Do not silently dismiss errors or required approvals.','User explicitly requested backlog only; no implementation now.')
-for row in items:backlog.append(row)
+item('Branding','Visible Studio version and build commit',D,'P1','Top-right RyzaLab Studio header shows version below title and short deployed commit.','',notes='Version v0.2.0; commit injected at build time; browser verified.')
+overrides_path=ROOT/'docs/backlog-status.json'
+overrides=json.loads(overrides_path.read_text()) if overrides_path.exists() else {}
+for row in items:
+ override=overrides.get(row[0],{})
+ for key,index in [('status',3),('priority',4),('criteria',5),('dependency',6),('notes',9)]:
+  if key in override:row[index]=override[key]
+ backlog.append(row)
 bstatus=DataValidation(type='list',formula1='"Done,Built—needs live validation,In progress,Pending build,Decision needed,Deferred"');backlog.add_data_validation(bstatus);bstatus.add(f'D2:D{backlog.max_row}')
 summary=wb.create_sheet('QA Summary',1);summary.append(['Metric','Count']);summary.append(['Total test cases',f'=COUNTA(\'QA Cases\'!A2:A{qa.max_row})'])
 for val in ['Not run','Pass','Fail','Blocked','Not applicable']:summary.append([val,f'=COUNTIF(\'QA Cases\'!I2:I{qa.max_row},"{val}")'])

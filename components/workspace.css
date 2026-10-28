@@ -4075,3 +4075,6 @@
 .studio-v2 .s-top-actions .s-release-label { order:10; }
 @media(max-width:760px) { .studio-v2 .s-release-label strong { font-size:12px; } .studio-v2 .s-release-label small { font-size:11px; } }
 .studio-v2 .s-connection-actions { flex-basis:100%; justify-content:flex-end; flex-wrap:wrap; }
+.studio-v2 .s-connection-row { flex-wrap:wrap; }
+.studio-v2 .s-connection-row > div:first-of-type { min-width:0; flex:1 1 220px; }
+.studio-v2 .s-connection-row p { overflow-wrap:anywhere; }

@@ -1,15 +1,60 @@
 {
-  "BL-020": {"notes":"User applied migration; six tables/private bucket verified; live administrator and manual save confirmed. Full preservation/recovery acceptance still pending."},
-  "BL-024": {"notes":"Claude Ideas model validated and returned three cards; internal-citation importer/recovery fixed. User recovery confirmation and separate Text qualification remain."},
-  "BL-029": {"status":"Built—needs live validation","dependency":"Render worker deployed by user; restart/timeout/reconciliation acceptance remains.","notes":"Render live screenshot: maintenance 200. Execution initially blocked as designed; later enabled for capped Ideas sample."},
-  "BL-030": {"status":"Deferred","dependency":"User chose Claude-only scope; no video provider/sample spending selected."},
-  "BL-031": {"status":"Deferred","dependency":"User chose Claude-only scope; image/audio/video integrations pending."},
-  "BL-032": {"status":"Deferred","dependency":"User chose Claude-only scope; no image provider credentials or paid evaluation."},
-  "BL-035": {"status":"In progress","dependency":"Build/browser validation in progress.","notes":"Scoped campaign ZIP and formula-safe inventory implemented with exact package/asset dependencies and optional unapproved working copies."},
-  "BL-040": {"status":"Done","dependency":"","notes":"User selected and deployed Render background worker alongside Vercel/Supabase; selected plan shown as $7/month."},
-  "BL-041": {"notes":"Initial Ideas pilot: $5 studio monthly, $0.50 per request/connection, $0 confirmation threshold. Permanent multi-function budgets remain a later sample-based decision."},
-  "BL-042": {"status":"Deferred","dependency":"User explicitly leaves video/audio/image selection pending."},
-  "BL-044": {"status":"Deferred","dependency":"User declined manual social metrics; awaiting read-only platform integration selection."},
-  "BL-045": {"status":"In progress","dependency":"Authorization superseded backlog-only deferral; implementation/testing active.","notes":"Connection disconnect/delete and allowance editing implemented. Active/uncertain jobs protect credentials; history blocks deletion; atomic secret erasure uses existing CAS."},
-  "BL-046": {"status":"In progress","dependency":"User now authorized backlog execution.","notes":"10-second success toast timer implemented; repeated success messages restart timer; error/approval controls unaffected. Browser verification pending."}
+  "BL-020": {
+    "notes": "User applied migration; six tables/private bucket verified; live administrator and manual save confirmed. Full preservation/recovery acceptance still pending."
+  },
+  "BL-024": {
+    "notes": "Claude Ideas model validated and returned three cards; internal-citation importer/recovery fixed. User recovery confirmation and separate Text qualification remain."
+  },
+  "BL-029": {
+    "status": "Built\u2014needs live validation",
+    "dependency": "Render worker deployed by user; restart/timeout/reconciliation acceptance remains.",
+    "notes": "Render live screenshot: maintenance 200. Execution initially blocked as designed; later enabled for capped Ideas sample."
+  },
+  "BL-030": {
+    "status": "Deferred",
+    "dependency": "User chose Claude-only scope; no video provider/sample spending selected."
+  },
+  "BL-031": {
+    "status": "Deferred",
+    "dependency": "User chose Claude-only scope; image/audio/video integrations pending."
+  },
+  "BL-032": {
+    "status": "Deferred",
+    "dependency": "User chose Claude-only scope; no image provider credentials or paid evaluation."
+  },
+  "BL-035": {
+    "status": "Done",
+    "dependency": "",
+    "notes": "Scoped campaign ZIP and formula-safe inventory implemented with exact package/asset dependencies and optional unapproved working copies. Verified by automated tests/build/browser walkthrough."
+  },
+  "BL-040": {
+    "status": "Done",
+    "dependency": "",
+    "notes": "User selected and deployed Render background worker alongside Vercel/Supabase; selected plan shown as $7/month."
+  },
+  "BL-041": {
+    "notes": "Initial Ideas pilot: $5 studio monthly, $0.50 per request/connection, $0 confirmation threshold. Permanent multi-function budgets remain a later sample-based decision."
+  },
+  "BL-042": {
+    "status": "Deferred",
+    "dependency": "User explicitly leaves video/audio/image selection pending."
+  },
+  "BL-044": {
+    "status": "Deferred",
+    "dependency": "User declined manual social metrics; awaiting read-only platform integration selection."
+  },
+  "BL-045": {
+    "status": "Done",
+    "dependency": "",
+    "notes": "Connection disconnect/delete and allowance editing implemented. Active/uncertain jobs protect credentials; history blocks deletion; atomic secret erasure uses existing CAS. Verified by domain tests, build and browser walkthrough; live credential clearing follows user action after deployment."
+  },
+  "BL-046": {
+    "status": "Done",
+    "dependency": "",
+    "notes": "10-second success toast timer implemented; repeated success messages restart timer; error/approval controls unaffected. Browser verification pending. Verified by automated tests/build/browser walkthrough."
+  },
+  "BL-047": {
+    "status": "Done",
+    "notes": "Top-right RyzaLab Studio label shows v0.2.0 and build commit; verified in browser."
+  }
 }

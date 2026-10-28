@@ -17,7 +17,7 @@ Available in preview. Live operation requires the configured /studio workspace.
 3. For agent-assisted candidates, click Generate with agent. Enter Topic / Brief, Audience, Quantity, Channel and source notes or URLs.
 4. In preview, submit Preview sample ideas. These are local examples, explicitly labelled, and do not use a paid API.
 5. In live mode, review the configured model and budget settings first. Submit only when you authorize the request. Paid jobs can wait for cost confirmation. Current-web research remains unavailable until its adapter is built; supplied sources are not automatically browsed.
-6. Read each returned card. Check specificity, supporting evidence needed, channel fit and repetition. Agent results remain pending and do not approve themselves.
+6. Idea generation status now shows waiting confirmation, queue and running states. If a completed response was not imported, use Import saved ideas — no AI call to recover it once without a new provider charge. Read each returned card. Check specificity, supporting evidence needed, channel fit and repetition. Agent results remain pending and do not approve themselves.
 7. Explicitly approve, reject or revise the idea. Use Create draft on an approved idea to start a separate content item.
 8. For recurring idea work, use the recurrence controls where available. A recurring reminder is not standing permission to bypass budget confirmation or run a paid job.
 
