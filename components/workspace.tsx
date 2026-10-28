@@ -62,6 +62,7 @@ import {
   type Scene,
   type FunctionKind,
 } from "@/lib/studio/types";
+import { downloadCampaignArchive } from "@/lib/studio/campaign-export";
 import { downloadText } from "@/lib/export";
 import {
   exportContentDocument,
@@ -2954,6 +2955,64 @@ export default function Workspace() {
           )}
           {page === "Library" && (
             <>
+              <div className="s-actions s-calendar-quick-actions">
+                <button
+                  className="s-btn"
+                  disabled={busy}
+                  onClick={() =>
+                    setDialog({
+                      title: "Export campaign and inventory",
+                      description:
+                        "Only records you can read and export are included. Approved packages preserve exact versions/assets; publication-task dependencies are included even when all-versions is off. Working copies are optional and explicitly unapproved. Large exports must be split.",
+                      submit: "Download campaign ZIP",
+                      fields: [
+                        {
+                          name: "channel",
+                          label: "Export channel",
+                          options: ["All channels", ...CHANNELS],
+                          value: channel,
+                        },
+                        field(
+                          "collection",
+                          "Campaign / collection (blank for all)",
+                        ),
+                        {
+                          name: "drafts",
+                          label: "Include unapproved working copies",
+                          type: "checkbox",
+                        },
+                        {
+                          name: "versions",
+                          label: "Include all approved versions",
+                          type: "checkbox",
+                        },
+                      ],
+                      onSubmit: async (data) => {
+                        setBusy(true);
+                        try {
+                          await downloadCampaignArchive(state, actor, {
+                            channel: val(data, "channel") as
+                              Channel | "All channels",
+                            collection: val(data, "collection") || undefined,
+                            includeDrafts: data.get("drafts") === "on",
+                            allVersions: data.get("versions") === "on",
+                          });
+                          setDialog(null);
+                          setNotice("Campaign export downloaded");
+                        } catch (e) {
+                          setLocalError(
+                            e instanceof Error ? e.message : "Export failed.",
+                          );
+                        } finally {
+                          setBusy(false);
+                        }
+                      },
+                    })
+                  }
+                >
+                  <ArrowDownToLine size={16} /> Export campaign / inventory
+                </button>
+              </div>
               <div className="s-toolbar">
                 <div className="s-view-tabs">
                   {[
@@ -3716,19 +3775,20 @@ export default function Workspace() {
                       <p>
                         {c.provider} · {c.model} · {c.function}
                       </p>
-                      {connectionChecks[c.id] && (
-                        <p
-                          className={`s-connection-feedback s-check-${connectionChecks[c.id].status}`}
-                          role={
-                            connectionChecks[c.id].status === "error"
-                              ? "alert"
-                              : "status"
-                          }
-                          aria-live="polite"
-                        >
-                          {connectionChecks[c.id].message}
-                        </p>
-                      )}
+                      {connectionChecks[c.id] &&
+                        c.status !== "disconnected" && (
+                          <p
+                            className={`s-connection-feedback s-check-${connectionChecks[c.id].status}`}
+                            role={
+                              connectionChecks[c.id].status === "error"
+                                ? "alert"
+                                : "status"
+                            }
+                            aria-live="polite"
+                          >
+                            {connectionChecks[c.id].message}
+                          </p>
+                        )}
                     </div>
                     <Badge tone={c.status === "validated" ? "green" : "amber"}>
                       {c.status === "disconnected"
