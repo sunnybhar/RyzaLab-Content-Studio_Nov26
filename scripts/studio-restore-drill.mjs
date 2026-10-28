@@ -25,6 +25,9 @@ export async function restoreDrill(snapshot) {
     );
     const state = structuredClone(snapshot.state);
     state.version = 0;
+    // The archive excludes delivery idempotency evidence. Recovery must never
+    // enable dispatch until historical sent/unknown deliveries are reconciled.
+    state.settings.emailEnabled = false;
     await db.query("select studio_commit(-1,$1::jsonb)", [
       JSON.stringify(state),
     ]);
@@ -57,6 +60,7 @@ export async function restoreDrill(snapshot) {
       packages: counts.rows[0].packages,
       audit: counts.rows[0].audit,
       assets: snapshot.assets.length,
+      emailEnabled: state.settings.emailEnabled,
     };
   } finally {
     await db.close();

@@ -41,3 +41,9 @@ Validation: 88 domain/export/database/video tests pass, TypeScript and productio
 ## Saved Ideas response recovery
 
 Internal file/section citations now import as bounded plain-text sources; citations are not verified URLs or executable links. Longer format descriptions are retained. Completed Ideas jobs with a saved response and no imported cards offer Import saved ideas — no AI call. Recovery reads the server-retained result only, checks permissions, imports the whole valid set as pending once, leaves dispatch attempts/raw response/budget reservation untouched and never calls a provider. Invalid/partial results still reject. 93 tests and production build pass; browser fixture verifies the recovery button creates a visible pending card from internal citations. Actual user recovery awaits their explicit click after deployment.
+
+## Backlog execution checkpoint — 2026-10-28
+
+Main release 018b42b added connection management, version/build label, success-toast expiry and campaign exports. Working-branch follow-up adds editable text/shape layers, optional conflict-safe Docs synchronization, administrator Operations, encrypted app backups/local SQL restore verification and a gated Claude research adapter. No live research, Google sync, email or backup acceptance has been performed by this agent. User-reported Supabase/Render/Claude Ideas setup supersedes the original no-live-setup baseline above.
+
+124 automated tests and final production build pass. Expanded browser verification and the user-requested focused independent review are pending at this checkpoint. Keep the follow-up on studio-rebuild until required review is completed. Archive cutover remains in design; media providers and social metrics remain deferred by user choice. Training contains 14 modules and 153 manual QA cases whose statuses remain Not run.

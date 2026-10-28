@@ -13,3 +13,9 @@ GPT-6 Astra reproduced stale workflow/policy approval, stale manual-publication 
 Astra also required server-qualified pricing rather than trusting user estimates, reservation-month checking before dispatch, function scope for connection configuration, and queue progress around blocked jobs. Implementation adds a qualified server rate-card gate, frozen pricing/output bounds, blocked old-month dispatch, function-scoped checks and quarantined blocked jobs. Provider success does not invent actual billing: the conservative reservation remains until reconciliation.
 
 No reviewer claimed live Supabase/Google/email/provider tests, paid media generation, production migration, or deployment. Those remain explicit external configuration/authorization gates. A final code review checkpoint is required before merge to main.
+
+## Backlog follow-up — final focused review 2026-10-28
+
+GPT-6 Astra identified four blockers: stale incoming-Docs modal imports, incoming branch loss on baseline reversion/relink, incomplete/object-error research misclassified as cited, and an undeclared notification-outbox recovery gap. Fixes pin the displayed incoming timestamp, retain both branch-clearing paths in history, require completed end_turn research with no tool errors, and explicitly exclude delivery evidence while forcing email-disabled local recovery until reconciliation. Astra re-reviewed the changes and all 19 focused tests passed; no remaining blockers found in that reviewed scope.
+
+The full 126-test suite and optimized build pass. Live provider qualification, production recovery acceptance and archive cutover remain separate. This review does not claim live Google/provider/email tests or completed archival.

@@ -198,3 +198,31 @@ test("only founder authority can change automatic Docs policy; ordinary administ
   const unchanged = applyCommand(s, admin, { ...settings, docsMode: "manual" });
   assert.equal(unchanged.settings.docsMode, "manual");
 });
+
+test("remote reversion and relinking preserve an unimported conflict branch", () => {
+  for (const action of ["revert", "relink"]) {
+    const s = fixture();
+    const c = s.contents[0];
+    c.docsIncoming = {
+      text: "Unimported Google branch",
+      fetchedAt: now,
+      reason: "Conflict",
+    };
+    const next =
+      action === "revert"
+        ? syncGoogleText(s, DEMO_ACTOR, c.id, c.revision, c.docsBase!, now)
+        : applyCommand(s, DEMO_ACTOR, {
+            type: "docs.link",
+            contentId: c.id,
+            docId: "replacement-document",
+          });
+    assert.equal(next.contents[0].docsIncoming, undefined);
+    assert.ok(
+      next.contents[0].history.some(
+        (h) => h.text === "Unimported Google branch",
+      ),
+    );
+    assert.equal(next.contents[0].text, c.text);
+    assert.deepEqual(next.packages, s.packages);
+  }
+});

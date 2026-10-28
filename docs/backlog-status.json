@@ -51,10 +51,45 @@
   "BL-046": {
     "status": "Done",
     "dependency": "",
-    "notes": "10-second success toast timer implemented; repeated success messages restart timer; error/approval controls unaffected. Browser verification pending. Verified by automated tests/build/browser walkthrough."
+    "notes": "10-second success toast expiry and repeated-message timer reset verified in browser; errors and required confirmations remain visible."
   },
   "BL-047": {
     "status": "Done",
     "notes": "Top-right RyzaLab Studio label shows v0.2.0 and build commit; verified in browser."
+  },
+  "BL-028": {
+    "status": "Built\u2014needs live validation",
+    "dependency": "Claude model/tool support, complete fixed-cost qualification and human-confirmed live sample remain required.",
+    "notes": "Bounded single-search adapter retains citations, rejects incomplete/tool-error results and saves reviewed untrusted references. No live research calls made."
+  },
+  "BL-033": {
+    "status": "Built\u2014needs live validation",
+    "dependency": "Google OAuth/renewal and credentialed conflict acceptance pending; manual remains default.",
+    "notes": "Founder-controlled automatic checks retain Studio and incoming branches, protect approved snapshots, and require initial manual baseline/authorized owner."
+  },
+  "BL-034": {
+    "status": "Done",
+    "dependency": "",
+    "notes": "Editable text/rectangle/ellipse layers with position, order, opacity, keyboard/pointer movement and source/PNG/PDF export. Wording participates in approval integrity. Automated and production browser checks pass."
+  },
+  "BL-036": {
+    "status": "In progress",
+    "dependency": "Coordinated archive migration needs architecture review and staging acceptance.",
+    "notes": "Concrete design in docs/ARCHIVE-DESIGN.md. No canonical evidence trimmed or archive cutover deployed; current state size remains bounded."
+  },
+  "BL-037": {
+    "status": "Built\u2014needs live validation",
+    "dependency": "Platform Auth/storage ACL and staging disaster-recovery acceptance remain.",
+    "notes": "Encrypted app archive integrity and in-memory SQL restore drill tested. Auth/environment key and notification outbox excluded; recovery keeps email disabled until reconciliation. No production backup/restore executed."
+  },
+  "BL-038": {
+    "status": "Built\u2014needs live validation",
+    "dependency": "Live administrator health/incident acceptance and worker heartbeat integration remain.",
+    "notes": "Operations reports actual jobs, storage/config and database health; no heartbeat inferred from reachability."
+  },
+  "BL-039": {
+    "status": "Built\u2014needs live validation",
+    "dependency": "Live multi-user/service acceptance remains; final focused code safety review completed.",
+    "notes": "Astra identified four blockers, verified fixes and passed all 19 focused tests; full126-test suite/build pass. Live recovery/provider/Google acceptance remains separate."
   }
 }

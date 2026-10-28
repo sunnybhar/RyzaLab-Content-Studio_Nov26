@@ -16,11 +16,15 @@ const citation = z.object({
   citedText: z.string().max(10000),
 });
 export function extractResearchResult(value: unknown) {
-  const json = value as { content?: unknown[] };
+  const json = value as { content?: unknown[]; stop_reason?: unknown };
   const summaries: string[] = [];
   const citations: z.infer<typeof citation>[] = [];
   let searches = 0;
   const errors: string[] = [];
+  const stopReason =
+    typeof json?.stop_reason === "string" ? json.stop_reason : "missing";
+  if (stopReason !== "end_turn")
+    errors.push("incomplete_response:" + stopReason);
   for (const raw of json?.content || []) {
     if (!raw || typeof raw !== "object") continue;
     const block = raw as Record<string, unknown>;
@@ -41,8 +45,11 @@ export function extractResearchResult(value: unknown) {
         if (parsed.success) citations.push(parsed.data);
       }
     }
-    if (block.type === "web_search_tool_result" && Array.isArray(block.content))
-      for (const raw of block.content) {
+    if (block.type === "web_search_tool_result")
+      for (const raw of Array.isArray(block.content)
+        ? block.content
+        : [block.content]) {
+        if (!raw || typeof raw !== "object") continue;
         const result = raw as Record<string, unknown>;
         if (result?.type === "web_search_tool_result_error")
           errors.push(String(result.error_code || "search_unavailable"));
@@ -56,6 +63,7 @@ export function extractResearchResult(value: unknown) {
     summary: summaries.join("\n"),
     citations: unique,
     searchesObserved: searches,
+    stopReason,
     errors,
     status:
       searches > 0 && unique.length > 0 && !errors.length
@@ -72,6 +80,7 @@ export const savedResearchSchema = z
     summary: z.string().min(1).max(40000),
     citations: z.array(citation).min(1).max(50),
     searchesObserved: z.literal(1),
+    stopReason: z.literal("end_turn"),
     errors: z.array(z.string()).max(0),
     status: z.literal("cited_research"),
     notice: z.string().max(2000),

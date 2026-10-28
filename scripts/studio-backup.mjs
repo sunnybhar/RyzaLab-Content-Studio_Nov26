@@ -104,9 +104,10 @@ export async function buildBackupArchive(snapshot) {
       "Supabase Auth passwords and provider accounts",
       "Database roles/settings and unused legacy import tables",
       "STUDIO_ENCRYPTION_KEY and other environment secrets",
+      "studio_deliveries notification outbox: sent/unknown delivery evidence requires separate recovery",
     ],
     required:
-      "Keep the original STUDIO_ENCRYPTION_KEY separately to recover encrypted provider/OAuth credentials. Auth identities need separate platform recovery.",
+      "Keep the original STUDIO_ENCRYPTION_KEY separately to recover encrypted provider/OAuth credentials. Auth identities need separate platform recovery. Restore with email disabled until delivery outbox reconciliation; never replay historical notices blindly.",
   };
   zip.file("state.json", JSON.stringify(state));
   zip.file("releases.json", JSON.stringify(releases));

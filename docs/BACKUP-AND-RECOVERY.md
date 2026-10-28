@@ -1,6 +1,6 @@
 # Encrypted application backups and local recovery drills
 
-This tooling covers Studio application state, exact immutable release/audit payloads, available retained private assets and encrypted credential ciphertext. It is not a complete Supabase project/Auth backup. Auth passwords/identities, database roles/settings, unused legacy import tables and environment secrets require separate platform recovery. Keep the original STUDIO_ENCRYPTION_KEY independently; it is never bundled. A lost backup passphrase cannot be recovered.
+This tooling covers Studio application state, exact immutable release/audit payloads, available retained private assets and encrypted credential ciphertext. It excludes the notification delivery outbox (`studio_deliveries`) and is not a complete Supabase project/Auth backup. Auth passwords/identities, database roles/settings, unused legacy import tables and environment secrets require separate platform recovery. Keep the original STUDIO_ENCRYPTION_KEY independently; it is never bundled. A lost backup passphrase cannot be recovered.
 
 ## Capture (trusted operator machine only)
 
@@ -26,8 +26,8 @@ The tool authenticates/decrypts the file, validates state/evidence agreement and
 node scripts/studio-restore-drill.mjs /private/path/file.rzlbackup
 ```
 
-This starts an in-memory PGlite database, applies the application migration and restores canonical state, immutable release/audit rows, asset metadata and encrypted credential records locally. Private asset bytes are hash-verified in the archive. It has no production database URL/write path. Auth rows are explicit local stubs; this does not validate Supabase login restoration, storage ACLs or actual bucket upload recovery. Workspace CAS version restarts at zero in this isolated drill; content/release revisions retain their values.
+This starts an in-memory PGlite database, applies the application migration and restores canonical state, immutable release/audit rows, asset metadata and encrypted credential records locally. Private asset bytes are hash-verified in the archive. It has no production database URL/write path. Auth rows are explicit local stubs; this does not validate Supabase login restoration, storage ACLs or actual bucket upload recovery. The drill forces email disabled because delivery idempotency evidence is excluded. Workspace CAS version restarts at zero in this isolated drill; content/release revisions retain their values.
 
 ## Before a real disaster recovery
 
-Prepare a staging target with verified Auth identities and private bucket/RLS, restore through a reviewed operator procedure, verify actual object hashes/ACLs, provider-key decryption using separate original key material, invitation/access scopes, immutable release hashes and human release gates. Do not replay queued or uncertain jobs. Rotate/reconnect OAuth/provider accounts as appropriate after restoration. Record RPO/RTO and recovery result before claiming production acceptance. No production restore was executed during development.
+Prepare a staging target with verified Auth identities and private bucket/RLS, restore through a reviewed operator procedure, verify actual object hashes/ACLs, provider-key decryption using separate original key material, invitation/access scopes, immutable release hashes and human release gates. Keep email disabled on the recovery target until sent/unknown notification delivery records are separately restored or reconciled; never replay historical notifications blindly. Do not replay queued or uncertain jobs. Rotate/reconnect OAuth/provider accounts as appropriate after restoration. Record RPO/RTO and recovery result before claiming production acceptance. No production restore was executed during development.

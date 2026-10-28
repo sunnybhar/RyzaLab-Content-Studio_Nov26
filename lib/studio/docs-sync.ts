@@ -79,6 +79,17 @@ export function syncGoogleText(
     );
     d = next.contents.find((c) => c.id === contentId)!;
   } else if (d.docsIncoming) {
+    d.history.push({
+      id: crypto.randomUUID(),
+      text: d.docsIncoming.text,
+      title: d.title,
+      metadata: structuredClone(d.metadata),
+      media: structuredClone(d.media),
+      createdBy: actor.email,
+      createdAt: d.docsIncoming.fetchedAt,
+      reason:
+        "Google incoming branch retained after remote reversion to baseline",
+    });
     delete d.docsIncoming;
   }
   d.docsLastCheckedAt = now;

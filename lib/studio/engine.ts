@@ -1432,6 +1432,17 @@ export function applyCommand(
         )
       )
         bad("Use a separate Google Doc for each platform draft.");
+      if (d.docsIncoming)
+        d.history.push({
+          id: id(),
+          text: d.docsIncoming.text,
+          title: d.title,
+          metadata: structuredClone(d.metadata),
+          media: structuredClone(d.media),
+          createdBy: actor.email,
+          createdAt: d.docsIncoming.fetchedAt,
+          reason: "Google incoming branch retained before document relink",
+        });
       d.docId = c.docId;
       d.docsOwnerId = actor.id;
       d.docsOwnerEmail = actor.email;

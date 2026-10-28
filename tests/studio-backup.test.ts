@@ -12,6 +12,7 @@ const password = "Local test passphrase only 2026";
 function snapshot() {
   const state = initialState(DEMO_ACTOR, true);
   state.version = 7;
+  state.settings.emailEnabled = true;
   state.contents[0].title = "Private app backup fixture";
   state.audit.push({
     id: "event1",
@@ -66,7 +67,13 @@ test("encrypted app backup verifies state/evidence/assets and local SQL restore 
     restored.manifest.exclusions.some((s: string) => s.includes("Auth")),
   );
   const result = await restoreDrill(restored);
-  assert.deepEqual(result, { contents: 1, packages: 0, audit: 1, assets: 1 });
+  assert.deepEqual(result, {
+    contents: 1,
+    packages: 0,
+    audit: 1,
+    assets: 1,
+    emailEnabled: false,
+  });
 });
 test("wrong passphrase, ciphertext tampering and private asset hash mismatch reject", async () => {
   const {

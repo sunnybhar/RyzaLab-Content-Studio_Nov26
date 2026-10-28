@@ -25,6 +25,7 @@ const rate: Rate = {
   qualified: true,
 };
 const response = {
+  stop_reason: "end_turn",
   content: [
     { type: "server_tool_use", name: "web_search", id: "search1" },
     {
@@ -148,6 +149,7 @@ test("Claude research sends a single bounded search only with qualified snapshot
 });
 test("search tool errors remain needs-review with no fabricated citations", () => {
   const result = extractResearchResult({
+    stop_reason: "end_turn",
     content: [
       { type: "server_tool_use", name: "web_search" },
       {
@@ -201,5 +203,37 @@ test("saved cited research becomes a reference once without spending or activati
   assert.deepEqual(
     applyCommand(next, DEMO_ACTOR, command, { demo: true }),
     next,
+  );
+});
+
+test("truncated/refused/paused research and object-shaped tool errors cannot become accepted references", () => {
+  for (const stop_reason of [
+    "max_tokens",
+    "pause_turn",
+    "refusal",
+    undefined,
+  ]) {
+    const result = extractResearchResult({ ...response, stop_reason });
+    assert.equal(result.status, "needs_source_review");
+    assert.ok(result.errors.length);
+  }
+  const result = extractResearchResult({
+    ...response,
+    content: [
+      ...response.content,
+      {
+        type: "web_search_tool_result",
+        content: {
+          type: "web_search_tool_result_error",
+          error_code: "unavailable",
+        },
+      },
+    ],
+  });
+  assert.equal(result.status, "needs_source_review");
+  assert.ok(result.errors.includes("unavailable"));
+  assert.ok(
+    result.citations.length,
+    "provenance remains visible for human inspection",
   );
 });

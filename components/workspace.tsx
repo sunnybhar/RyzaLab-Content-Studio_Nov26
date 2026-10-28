@@ -5657,6 +5657,7 @@ function Editor({
                           type: "docs.import",
                           contentId: c.id,
                           text: c.docsIncoming!.text,
+                          expectedIncomingFetchedAt: c.docsIncoming!.fetchedAt,
                           expectedRevision: c.revision,
                         }),
                         "The displaced Studio text stays in history, unchanged media is retained and approved snapshots remain immutable. Required text checks reopen.",
