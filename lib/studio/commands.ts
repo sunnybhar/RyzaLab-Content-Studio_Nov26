@@ -50,6 +50,7 @@ const grant = z
     action: z.enum([
       "read",
       "export",
+      "stage.review",
       "idea.edit",
       "idea.review",
       "content.create",
@@ -78,6 +79,9 @@ const command = <T extends string, S extends z.ZodRawShape>(
   shape: S,
 ) => z.object({ type: z.literal(type), ...shape }).strict();
 export const commandSchema = z.discriminatedUnion("type", [
+  command('idea.generate',{channel,topic:z.string().min(5).max(4000),audience:z.string().min(2).max(500),quantity:z.number().int().min(1).max(20),research:z.boolean(),sourceText:z.string().max(12000),idempotencyKey:id}),
+  command('stage.decide',{contentId:id,stage:z.enum(['intake','evidence','creation','independent_review','visual_review','release_check','handoff']),status:z.enum(['pass','revise','hold','na']),reason:z.string().min(5).max(2000),evidence:z.string().max(12000),expectedRevision:z.number().int().positive(),expectedWorkflowId:id,expectedRuleVersion:short,packageId:id.optional()}),
+  command('workflow.importPreset',{channel}),
   command("idea.create", { title: short, brief: text, channel }),
   command("idea.review", {
     id,

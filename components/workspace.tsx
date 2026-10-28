@@ -29,6 +29,10 @@ import {
   Menu,
   MoreHorizontal,
   Plus,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Pin,
+  PinOff,
   Search,
   Settings2,
   ShieldCheck,
@@ -46,6 +50,7 @@ import {
   FUNCTIONS,
   ROLES,
   type Channel,
+  type Actor,
   type Command,
   type Content,
   type MediaProject,
@@ -65,6 +70,8 @@ import {
   exportSubtitles,
 } from "@/lib/studio/exports";
 import { can, type Scope } from "@/lib/studio/permissions";
+import { stageSummary } from "@/lib/studio/stages";
+import { StageTracker } from "./stage-tracker";
 import { PasswordLogin } from "./password-login";
 import { configured, supabase } from "@/lib/supabase";
 import "./workspace.css";
@@ -90,6 +97,9 @@ type Field = {
   optionLabels?: Record<string, string>;
   required?: boolean;
   hint?: string;
+  min?: number;
+  max?: number;
+  step?: number;
 };
 type Dialog = {
   title: string;
@@ -327,7 +337,15 @@ function FieldInput({ item }: { item: Field }) {
   return (
     <label className="s-field">
       {item.label}
-      {item.type === "textarea" ? (
+      {item.type === "checkbox" ? (
+        <input
+          aria-label={item.label}
+          type="checkbox"
+          name={item.name}
+          required={item.required}
+          defaultChecked={item.value === "true"}
+        />
+      ) : item.type === "textarea" ? (
         <textarea
           aria-label={item.label}
           name={item.name}
@@ -356,8 +374,9 @@ function FieldInput({ item }: { item: Field }) {
           placeholder={item.placeholder}
           type={item.type || "text"}
           required={item.required}
-          min={item.type === "number" ? 0 : undefined}
-          step={item.type === "number" ? "0.01" : undefined}
+          min={item.min ?? (item.type === "number" ? 0 : undefined)}
+          max={item.max}
+          step={item.step ?? (item.type === "number" ? "0.01" : undefined)}
           autoComplete={item.type === "password" ? "new-password" : undefined}
         />
       )}{" "}
@@ -386,10 +405,102 @@ export default function Workspace() {
     new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileNavigation, setMobileNavigation] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 760px)");
+    const update = () => {
+      setMobileNavigation(media.matches);
+      setMenuOpen(false);
+    };
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
   const [queueTarget, setQueueTarget] = useState<Content | "general" | null>(
     null,
   );
   const [workflowChannel, setWorkflowChannel] = useState<Channel>("LinkedIn");
+  const [layout, setLayout] = useState<"command" | "board">("command");
+  const [sidebarPinned, setSidebarPinned] = useState(true);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [preferenceActor, setPreferenceActor] = useState("");
+  const preferenceKey = actor
+    ? `ryzalab:workspace-preferences:v1:${actor.id}`
+    : "";
+  useEffect(() => {
+    if (!preferenceKey) {
+      setPreferenceActor("");
+      return;
+    }
+    let preferences: { layout?: string; pinned?: boolean; expanded?: boolean } =
+      {};
+    try {
+      preferences = JSON.parse(localStorage.getItem(preferenceKey) || "{}");
+    } catch {
+      /* Device storage may be unavailable. */
+    }
+    setLayout(preferences.layout === "board" ? "board" : "command");
+    setSidebarPinned(preferences.pinned !== false);
+    setSidebarExpanded(preferences.expanded !== false);
+    setMenuOpen(false);
+    setPreferenceActor(preferenceKey);
+  }, [preferenceKey]);
+  useEffect(() => {
+    if (!preferenceKey || preferenceActor !== preferenceKey) return;
+    try {
+      localStorage.setItem(
+        preferenceKey,
+        JSON.stringify({
+          layout,
+          pinned: sidebarPinned,
+          expanded: sidebarExpanded,
+        }),
+      );
+    } catch {
+      /* Keep preferences for this session. */
+    }
+  }, [preferenceKey, preferenceActor, layout, sidebarPinned, sidebarExpanded]);
+  useEffect(() => {
+    if (!dialog && !queueTarget && !menuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const previous = document.activeElement as HTMLElement | null;
+    const container = document.querySelector<HTMLElement>(
+      dialog || queueTarget ? '[role="dialog"]' : "#workspace-navigation",
+    );
+    const focusable = () =>
+      Array.from(
+        container?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href], [tabindex="0"]',
+        ) || [],
+      ).filter((el) => el.getClientRects().length > 0);
+    focusable()[0]?.focus();
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busy) {
+        setDialog(null);
+        setQueueTarget(null);
+        setMenuOpen(false);
+      }
+      if (event.key === "Tab") {
+        const items = focusable();
+        const first = items[0],
+          last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", keydown);
+    return () => {
+      document.removeEventListener("keydown", keydown);
+      document.body.style.overflow = previousOverflow;
+      previous?.focus();
+    };
+  }, [dialog, queueTarget, menuOpen, busy]);
   async function execute(command: Command, message = "Changes saved") {
     setBusy(true);
     setLocalError("");
@@ -819,14 +930,70 @@ export default function Workspace() {
   };
   const heading =
     page === "Home"
-      ? "Your campaign command center"
+      ? layout === "board"
+        ? "Your production board"
+        : "Your campaign command center"
       : page === "Workflow settings"
         ? "Built around your brand"
         : page;
   return (
-    <div className="studio-v2">
-      <aside className={`s-sidebar ${menuOpen ? "s-open" : ""}`}>
-        <button className="s-brand" onClick={() => move("Home")}>
+    <div
+      className={`studio-v2 ${sidebarPinned ? "s-sidebar-pinned" : "s-sidebar-unpinned"} ${sidebarExpanded ? "s-sidebar-expanded" : "s-sidebar-collapsed"}`}
+    >
+      {menuOpen && (
+        <button
+          className="s-navigation-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+      <aside
+        id="workspace-navigation"
+        aria-label="Workspace navigation"
+        inert={!menuOpen && (!sidebarPinned || mobileNavigation)}
+        role={menuOpen ? "dialog" : undefined}
+        aria-modal={menuOpen ? true : undefined}
+        className={`s-sidebar ${menuOpen ? "s-open" : ""}`}
+      >
+        <div className="s-sidebar-controls">
+          <button
+            className="s-icon-button s-collapse-control"
+            aria-label={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+            title={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+            onClick={() => setSidebarExpanded(!sidebarExpanded)}
+          >
+            {sidebarExpanded ? (
+              <PanelLeftClose size={19} />
+            ) : (
+              <PanelLeftOpen size={19} />
+            )}
+          </button>
+          <button
+            className="s-icon-button s-pin-control"
+            aria-label={sidebarPinned ? "Unpin sidebar" : "Pin sidebar"}
+            aria-pressed={sidebarPinned}
+            title={sidebarPinned ? "Unpin sidebar" : "Pin sidebar"}
+            onClick={() => {
+              setSidebarPinned(!sidebarPinned);
+              setMenuOpen(false);
+            }}
+          >
+            {sidebarPinned ? <Pin size={17} /> : <PinOff size={17} />}
+          </button>
+          <button
+            className="s-icon-button s-close-navigation"
+            aria-label="Close navigation"
+            onClick={() => setMenuOpen(false)}
+          >
+            <X size={19} />
+          </button>
+        </div>
+        <button
+          className="s-brand"
+          aria-label="RyzaLab Studio home"
+          title="RyzaLab Studio home"
+          onClick={() => move("Home")}
+        >
           RyzaLab<span>STUDIO</span>
         </button>
         <div className="s-workspace-switch">
@@ -842,6 +1009,9 @@ export default function Workspace() {
           {nav.map(({ name, icon: Icon }) => (
             <button
               key={name}
+              aria-label={name}
+              title={name}
+              aria-current={page === name ? "page" : undefined}
               className={page === name ? "s-active" : ""}
               onClick={() => move(name)}
             >
@@ -857,6 +1027,8 @@ export default function Workspace() {
         <span className="s-nav-label">MANAGE</span>
         <nav>
           <button
+            aria-label="Workflow settings"
+            title="Workflow settings"
             className={page === "Workflow settings" ? "s-active" : ""}
             onClick={() => move("Workflow settings")}
           >
@@ -864,6 +1036,8 @@ export default function Workspace() {
             <span>Workflow settings</span>
           </button>
           <button
+            aria-label="People & access"
+            title="People & access"
             className={page === "People" ? "s-active" : ""}
             onClick={() => move("People")}
           >
@@ -871,6 +1045,8 @@ export default function Workspace() {
             <span>People & access</span>
           </button>
           <button
+            aria-label="AI & budgets"
+            title="AI & budgets"
             className={page === "AI & budgets" ? "s-active" : ""}
             onClick={() => move("AI & budgets")}
           >
@@ -892,6 +1068,7 @@ export default function Workspace() {
             className="s-user"
             onClick={() => void signOut()}
             title="Sign out"
+            aria-label="Sign out"
           >
             <span>{actor.email.slice(0, 2).toUpperCase()}</span>
             <span>
@@ -907,7 +1084,9 @@ export default function Workspace() {
           <div className="s-breadcrumb">
             <button
               className="s-mobile-menu"
-              aria-label="Open menu"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              aria-controls="workspace-navigation"
               onClick={() => setMenuOpen(!menuOpen)}
             >
               <Menu size={20} />
@@ -915,6 +1094,32 @@ export default function Workspace() {
             <span>Workspace</span>
             <ChevronRight size={13} />
             <strong>{page}</strong>
+          </div>
+          <div
+            className="s-layout-toggle"
+            role="group"
+            aria-label="Workspace layout"
+          >
+            <button
+              aria-pressed={layout === "command"}
+              onClick={() => {
+                setLayout("command");
+                move("Home");
+              }}
+            >
+              <House size={15} />
+              <span>Command Center</span>
+            </button>
+            <button
+              aria-pressed={layout === "board"}
+              onClick={() => {
+                setLayout("board");
+                move("Home");
+              }}
+            >
+              <Grid2X2 size={15} />
+              <span>Production Board</span>
+            </button>
           </div>
           <div className="s-top-actions">
             {mode === "demo" && (
@@ -984,36 +1189,114 @@ export default function Workspace() {
                   <Plus size={16} /> Plan a publication
                 </button>
               ) : page === "Ideas" ? (
-                <button
-                  disabled={readOnly}
-                  className="s-btn s-primary"
-                  onClick={() =>
-                    openForm(
-                      "Capture a new idea",
-                      [
-                        { ...field("title", "Idea title"), required: true },
-                        {
-                          name: "channel",
-                          label: "Channel",
-                          options: CHANNELS,
-                          value:
-                            channel === "All channels" ? "LinkedIn" : channel,
-                        },
-                        field("brief", "What is the angle?", "", "textarea"),
-                      ],
-                      (d) => ({
-                        type: "idea.create",
-                        title: val(d, "title"),
-                        brief: val(d, "brief"),
-                        channel: val(d, "channel"),
-                      }),
-                      undefined,
-                      "Add idea",
-                    )
-                  }
-                >
-                  <Plus size={16} /> Add idea
-                </button>
+                <>
+                  <button
+                    disabled={readOnly}
+                    className="s-btn s-primary"
+                    onClick={() =>
+                      openForm(
+                        "Generate ideas with an agent",
+                        [
+                          {
+                            ...field("topic", "Topic / Brief", "", "textarea"),
+                            required: true,
+                          },
+                          { ...field("audience", "Audience"), required: true },
+                          {
+                            ...field("quantity", "Quantity", 3, "number"),
+                            min: 1,
+                            max: 20,
+                            step: 1,
+                            required: true,
+                          },
+                          {
+                            name: "channel",
+                            label: "Channel",
+                            options: CHANNELS,
+                            value:
+                              channel === "All channels" ? "LinkedIn" : channel,
+                          },
+                          {
+                            name: "research",
+                            label: "Use web research",
+                            type: "checkbox",
+                            hint: "Research is optional and only runs with your explicit choice.",
+                          },
+                          {
+                            ...field(
+                              "sourceText",
+                              "Source references / source text",
+                              "",
+                              "textarea",
+                            ),
+                            hint: "Paste source URLs, excerpts, or reference notes.",
+                          },
+                          ...(mode === "demo"
+                            ? []
+                            : [
+                                {
+                                  name: "consent",
+                                  label:
+                                    "I authorize this AI request and its configured budget usage",
+                                  type: "checkbox",
+                                  required: true,
+                                },
+                              ]),
+                        ],
+                        (d) => ({
+                          type: "idea.generate",
+                          channel: val(d, "channel"),
+                          topic: val(d, "topic"),
+                          audience: val(d, "audience"),
+                          quantity: Number(val(d, "quantity")),
+                          research: d.get("research") === "on",
+                          sourceText: val(d, "sourceText"),
+                          idempotencyKey: key(),
+                        }),
+                        mode === "demo"
+                          ? "Preview clearly labelled sample ideas. This demo does not call a paid agent."
+                          : "This request uses your active workflow and validated AI binding. Submitting explicitly queues an AI request within your configured budget; provider and model follow workspace settings.",
+                        mode === "demo"
+                          ? "Preview sample ideas"
+                          : "Generate ideas",
+                      )
+                    }
+                  >
+                    <WandSparkles size={17} /> Generate with agent
+                  </button>
+                  <button
+                    disabled={readOnly}
+                    className="s-btn"
+                    aria-label="Add idea"
+                    title="Add manually"
+                    onClick={() =>
+                      openForm(
+                        "Capture a new idea",
+                        [
+                          { ...field("title", "Idea title"), required: true },
+                          {
+                            name: "channel",
+                            label: "Channel",
+                            options: CHANNELS,
+                            value:
+                              channel === "All channels" ? "LinkedIn" : channel,
+                          },
+                          field("brief", "What is the angle?", "", "textarea"),
+                        ],
+                        (d) => ({
+                          type: "idea.create",
+                          title: val(d, "title"),
+                          brief: val(d, "brief"),
+                          channel: val(d, "channel"),
+                        }),
+                        undefined,
+                        "Add idea",
+                      )
+                    }
+                  >
+                    <Plus size={16} /> Add manually
+                  </button>
+                </>
               ) : page === "People" ? (
                 <button
                   disabled={!admin}
@@ -1063,7 +1346,16 @@ export default function Workspace() {
               ))}
             </div>
           )}
-          {page === "Home" && (
+          {page === "Home" && layout === "board" && (
+            <ProductionBoard
+              state={state}
+              contents={filtered}
+              ideas={state.ideas.filter(matches)}
+              openContent={openContent}
+              openIdeas={() => move("Ideas")}
+            />
+          )}
+          {page === "Home" && layout === "command" && (
             <>
               <div className="s-stats">
                 <Stat
@@ -1408,6 +1700,23 @@ export default function Workspace() {
                         <p>{i.brief || "An idea waiting to take shape."}</p>
                         {i.rejection && (
                           <div className="s-feedback">{i.rejection}</div>
+                        )}
+                        <Badge>
+                          {i.origin === "demo_sample"
+                            ? "Demo sample · no agent run"
+                            : i.origin === "agent"
+                              ? "Agent generated"
+                              : "Added manually"}
+                        </Badge>
+                        {i.sources?.length > 0 && (
+                          <details className="s-idea-sources">
+                            <summary>
+                              Source references ({i.sources.length})
+                            </summary>
+                            {i.sources.map((source, index) => (
+                              <p key={index}>{source}</p>
+                            ))}
+                          </details>
                         )}
                         <small className="s-muted">
                           Added {stamp(i.createdAt)}
@@ -1841,6 +2150,8 @@ export default function Workspace() {
               <Editor
                 key={activeContent.id}
                 content={activeContent}
+                actor={actor}
+                send={send}
                 state={state}
                 readOnly={readOnly}
                 busy={busy}
@@ -1899,6 +2210,13 @@ export default function Workspace() {
                       )?.version || "not configured"}{" "}
                       · Protected rules {state.settings.protectedVersion}
                     </div>
+                    <StageTracker
+                      content={c}
+                      state={state}
+                      actor={actor}
+                      send={send}
+                      onError={setLocalError}
+                    />
                     <details className="s-review-policy">
                       <summary>Review current workflow & brand rules</summary>
                       <h4>Channel workflow</h4>
@@ -2322,6 +2640,21 @@ export default function Workspace() {
                         <p>A clear creative brief, every time.</p>
                       </div>
                     </div>
+                    <button
+                      className="s-btn"
+                      disabled={readOnly || busy}
+                      onClick={() =>
+                        void execute(
+                          {
+                            type: "workflow.importPreset",
+                            channel: workflowChannel,
+                          },
+                          "Channel preset imported as a draft workflow for review",
+                        )
+                      }
+                    >
+                      <BookOpen size={16} /> Import channel preset
+                    </button>
                     <button
                       disabled={readOnly}
                       className="s-btn s-primary"
@@ -3218,6 +3551,110 @@ export default function Workspace() {
   );
 }
 
+function ProductionBoard({
+  state,
+  contents,
+  ideas,
+  openContent,
+  openIdeas,
+}: {
+  state: StudioState;
+  contents: Content[];
+  ideas: StudioState["ideas"];
+  openContent: (content: Content) => void;
+  openIdeas: () => void;
+}) {
+  const buckets = [
+    "Ideas",
+    "Drafting",
+    "Human review",
+    "Ready to export",
+    "Published",
+  ] as const;
+  const bucketFor = (content: Content) => stageSummary(content, state).bucket;
+  return (
+    <section className="s-production-board" aria-label="Production Board">
+      {buckets.map((bucket) => {
+        const cards = contents.filter(
+          (content) => bucketFor(content) === bucket,
+        );
+        return (
+          <section className="s-board-column" key={bucket} aria-label={bucket}>
+            <div className="s-board-column-heading">
+              <h2>{bucket}</h2>
+              <Badge>{bucket === "Ideas" ? ideas.length : cards.length}</Badge>
+            </div>
+            {bucket === "Ideas" ? (
+              <>
+                <button className="s-btn s-board-add" onClick={openIdeas}>
+                  <WandSparkles size={16} /> Generate or add ideas
+                </button>
+                {ideas.map((idea) => (
+                  <button
+                    key={idea.id}
+                    className="s-board-card"
+                    onClick={openIdeas}
+                    aria-label={`Open idea ${idea.title}`}
+                  >
+                    <ChannelIcon channel={idea.channel} small />
+                    <h3>{idea.title}</h3>
+                    <p>{idea.brief || "Ready to shape into a story."}</p>
+                    <Badge>{idea.state}</Badge>
+                    <small>
+                      {idea.origin === "demo_sample"
+                        ? "Demo sample"
+                        : idea.origin === "agent"
+                          ? "Agent generated"
+                          : "Added manually"}
+                    </small>
+                  </button>
+                ))}
+              </>
+            ) : (
+              cards.map((content) => (
+                <button
+                  key={content.id}
+                  className="s-board-card"
+                  onClick={() => openContent(content)}
+                  aria-label={`Open ${content.title}`}
+                >
+                  <div className="s-inline">
+                    <ChannelIcon channel={content.channel} small />
+                    <span>{content.channel}</span>
+                  </div>
+                  <h3>{content.title}</h3>
+                  <p>
+                    {content.text ? content.text.slice(0, 120) : content.format}
+                  </p>
+                  <Badge>
+                    {content.state === "changes" ? "Changes requested" : bucket}
+                  </Badge>
+                  <small>
+                    {stageSummary(content, state).label} ·{" "}
+                    {stageSummary(content, state).completed}/9 checks
+                  </small>
+                  <small>
+                    Revision {content.revision} · Updated{" "}
+                    {stamp(content.updatedAt)}
+                  </small>
+                  <span className="s-text-button">
+                    Open content <ArrowRight size={15} />
+                  </span>
+                </button>
+              ))
+            )}
+            {(bucket === "Ideas" ? ideas.length === 0 : cards.length === 0) && (
+              <p className="s-board-empty">
+                No {bucket.toLowerCase()} records.
+              </p>
+            )}
+          </section>
+        );
+      })}
+    </section>
+  );
+}
+
 function QueueRequest({
   state,
   content,
@@ -3435,6 +3872,8 @@ function Stat({
 
 function Editor({
   content: c,
+  actor,
+  send,
   state,
   readOnly,
   busy,
@@ -3447,6 +3886,8 @@ function Editor({
   queue,
 }: {
   content: Content;
+  actor: Actor;
+  send: (command: Command) => Promise<unknown>;
   state: StudioState;
   readOnly: boolean;
   busy: boolean;
@@ -3664,6 +4105,13 @@ function Editor({
           </button>
         </div>
       </div>
+      <StageTracker
+        content={c}
+        state={state}
+        actor={actor}
+        send={send}
+        onError={onError}
+      />
       <div className="s-editor-layout">
         <section className="s-panel s-editor-main">
           <div className="s-editor-title">
