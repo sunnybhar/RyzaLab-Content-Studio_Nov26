@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
         "The qualified pricing snapshot is missing or changed. Reauthorize this request.",
       );
     const connection = state.connections.find((c) => c.id === job.connectionId);
-    if (!connection || connection.status !== "validated")
+    if (!connection || !connection.hasKey || connection.status !== "validated")
       return blockJob("Validate the selected provider/model before execution.");
     const { data: secret } = await db
       .from("studio_secrets")

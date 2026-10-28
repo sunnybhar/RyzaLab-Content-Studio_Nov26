@@ -54,6 +54,11 @@ export function quote(
       400,
       "Select a configured connection and active workflow.",
     );
+  if (!connection.hasKey || connection.status !== "validated")
+    throw new StudioError(
+      400,
+      "Validate a connected provider credential before requesting a paid quote.",
+    );
   const card = rates.find(
     (r) =>
       r.provider === connection.provider &&

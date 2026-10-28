@@ -411,7 +411,17 @@ export default function Workspace() {
       { status: "checking" | "success" | "error"; message: string }
     >
   >({});
-  const [notice, setNotice] = useState("");
+  const [notice, setNoticeState] = useState("");
+  const [noticeSequence, setNoticeSequence] = useState(0);
+  const setNotice = (message: string) => {
+    setNoticeState(message);
+    setNoticeSequence((n) => n + 1);
+  };
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNoticeState(""), 10000);
+    return () => clearTimeout(timer);
+  }, [notice, noticeSequence]);
   const [localError, setLocalError] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [libraryTab, setLibraryTab] = useState("Content");
@@ -1318,6 +1328,13 @@ export default function Workspace() {
             </button>
           </div>
           <div className="s-top-actions">
+            <div className="s-release-label" aria-label="Studio version">
+              <strong>RyzaLab Studio</strong>
+              <small>
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.2.0"} ·{" "}
+                {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
+              </small>
+            </div>
             <button
               className="s-btn s-small-btn"
               aria-label="Appearance and layout"
@@ -3714,9 +3731,11 @@ export default function Workspace() {
                       )}
                     </div>
                     <Badge tone={c.status === "validated" ? "green" : "amber"}>
-                      {c.status === "validated"
-                        ? "Model access checked"
-                        : "Unverified"}
+                      {c.status === "disconnected"
+                        ? "Disconnected"
+                        : c.status === "validated"
+                          ? "Model access checked"
+                          : "Unverified"}
                     </Badge>
                     <span className="s-muted">
                       {c.hasKey
@@ -3725,13 +3744,98 @@ export default function Workspace() {
                     </span>
                     <button
                       className="s-btn s-small-btn"
-                      disabled={!admin || busy}
+                      disabled={!admin || busy || c.status === "disconnected"}
                       onClick={() => void validateAI(c.id)}
                     >
                       {connectionChecks[c.id]?.status === "checking"
                         ? "Checking model access…"
                         : "Check model access"}
                     </button>
+                    {allowed("connections.manage", {
+                      function: c.function,
+                    }) && (
+                      <div className="s-actions s-connection-actions">
+                        <button
+                          className="s-btn s-small-btn"
+                          disabled={busy || c.status === "disconnected"}
+                          onClick={() =>
+                            openForm(
+                              "Edit connection allowance",
+                              [
+                                {
+                                  ...field(
+                                    "allowance",
+                                    "Per-request allowance ($)",
+                                    (
+                                      c as typeof c & {
+                                        maxRequestCost?: number;
+                                      }
+                                    ).maxRequestCost
+                                      ? (
+                                          c as typeof c & {
+                                            maxRequestCost: number;
+                                          }
+                                        ).maxRequestCost / 100
+                                      : 0,
+                                    "number",
+                                  ),
+                                  required: true,
+                                },
+                              ],
+                              (d) => ({
+                                type: "connection.allowance",
+                                id: c.id,
+                                expectedUpdatedAt: c.updatedAt,
+                                maxRequestCost: cents(d, "allowance"),
+                              }),
+                              "This edits only the request allowance. Credentials and model stay unchanged. Resolve active jobs first.",
+                            )
+                          }
+                        >
+                          Edit allowance
+                        </button>
+                        <button
+                          className="s-btn s-small-btn"
+                          disabled={busy || c.status === "disconnected"}
+                          aria-label={`Disconnect ${c.title}`}
+                          onClick={() =>
+                            openForm(
+                              "Disconnect AI connection",
+                              [],
+                              () => ({
+                                type: "connection.disconnect",
+                                id: c.id,
+                                expectedUpdatedAt: c.updatedAt,
+                              }),
+                              `Clear the saved API key for “${c.title}” and prevent future use. History and workflow versions remain. Active jobs must be resolved first. This does not revoke the key at the provider or disconnect other connections using the same key.`,
+                              "Disconnect",
+                            )
+                          }
+                        >
+                          Disconnect
+                        </button>
+                        <button
+                          className="s-btn s-small-btn"
+                          disabled={busy}
+                          aria-label={`Delete ${c.title}`}
+                          onClick={() =>
+                            openForm(
+                              "Delete unused AI connection",
+                              [],
+                              () => ({
+                                type: "connection.delete",
+                                id: c.id,
+                                expectedUpdatedAt: c.updatedAt,
+                              }),
+                              `Delete “${c.title}” and clear its saved credential. Allowed only with no job history or workflow references. Otherwise disconnect to retain history.`,
+                              "Delete connection",
+                            )
+                          }
+                        >
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {!state.connections.length && (

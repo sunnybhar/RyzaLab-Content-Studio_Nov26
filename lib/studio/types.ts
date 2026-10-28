@@ -222,7 +222,7 @@ export interface Connection {
   function: FunctionKind;
   model: string;
   hasKey: boolean;
-  status: "unverified" | "validated";
+  status: "unverified" | "validated" | "disconnected";
   updatedAt: string;
 }
 export interface Job {

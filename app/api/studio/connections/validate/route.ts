@@ -17,6 +17,11 @@ export async function POST(req: NextRequest) {
     requirePermission(state, actor, "connections.manage", {
       function: connection.function,
     });
+    if (connection.status === "disconnected" || !connection.hasKey)
+      throw new StudioError(
+        400,
+        "This connection is disconnected. Add a replacement credential.",
+      );
     const { data } = await db
       .from("studio_secrets")
       .select("ciphertext")
@@ -25,7 +30,10 @@ export async function POST(req: NextRequest) {
     if (!data) throw new StudioError(503, "Credential is unavailable.");
     await validateConnection(connection, decrypt(data.ciphertext));
     const next = structuredClone(state);
-    next.connections.find((c) => c.id === id)!.status = "validated";
+    Object.assign(
+      next.connections.find((c) => c.id === id)!,
+      { status: "validated", updatedAt: new Date().toISOString() },
+    );
     next.version++;
     next.audit.push({
       id: crypto.randomUUID(),

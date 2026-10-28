@@ -68,3 +68,67 @@ test("real PostgreSQL migration denies browser writes, atomically CASes, and pro
     await db.close();
   }
 });
+
+test("credential clearing and lifecycle metadata commit atomically; stale clearing cannot erase a newer key", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(bootstrap);
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/20261027_studio_v2.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    const s = initialState(DEMO_ACTOR, true);
+    s.connections.push({
+      id: "key-test",
+      title: "Local test only",
+      provider: "anthropic",
+      function: "ideas",
+      model: "model",
+      hasKey: true,
+      status: "validated",
+      updatedAt: "2026-10-28T12:00:00Z",
+    });
+    await db.query("select studio_commit(-1,$1::jsonb,$2::jsonb)", [
+      JSON.stringify(s),
+      JSON.stringify({ id: "key-test", ciphertext: "test-cipher-before" }),
+    ]);
+    const next = structuredClone(s);
+    next.version++;
+    next.connections[0].hasKey = false;
+    next.connections[0].status = "disconnected";
+    await db.query("select studio_commit($1,$2::jsonb,$3::jsonb)", [
+      s.version,
+      JSON.stringify(next),
+      JSON.stringify({
+        id: "key-test",
+        ciphertext: "test-encrypted-empty-tombstone",
+      }),
+    ]);
+    const result = await db.query<{ ciphertext: string }>(
+      "select ciphertext from studio_secrets where id=$1",
+      ["key-test"],
+    );
+    assert.equal(result.rows[0].ciphertext, "test-encrypted-empty-tombstone");
+    await assert.rejects(
+      () =>
+        db.query("select studio_commit($1,$2::jsonb,$3::jsonb)", [
+          s.version,
+          JSON.stringify(next),
+          JSON.stringify({ id: "key-test", ciphertext: "stale-secret-write" }),
+        ]),
+      /studio_version_conflict/,
+    );
+    const retained = await db.query<{ ciphertext: string }>(
+      "select ciphertext from studio_secrets where id=$1",
+      ["key-test"],
+    );
+    assert.equal(retained.rows[0].ciphertext, "test-encrypted-empty-tombstone");
+  } finally {
+    await db.close();
+  }
+});

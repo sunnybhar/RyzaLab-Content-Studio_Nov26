@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticate, loadState, persist, hash } from "@/lib/studio/store";
+import {
+  authenticate,
+  loadState,
+  persist,
+  hash,
+  encrypt,
+} from "@/lib/studio/store";
 import { ideaJobInput } from "@/lib/studio/idea-generation";
 import { loadChannelPreset } from "@/lib/studio/preset-store";
 import { quote } from "@/lib/studio/pricing";
@@ -99,7 +105,14 @@ export async function POST(req: NextRequest) {
         413,
         "Workspace history reached its current storage limit. Archive design is required before growing further.",
       );
-    await persist(db, state, next);
+    // Atomically erase the credential alongside disconnect/delete, with a nonsecret
+    // encrypted-empty tombstone accepted by the existing deployed commit function.
+    const secret =
+      command.type === "connection.disconnect" ||
+      command.type === "connection.delete"
+        ? { id: command.id, ciphertext: encrypt("") }
+        : undefined;
+    await persist(db, state, next, secret);
     return NextResponse.json({
       state: filteredState(next, actor),
       actor,

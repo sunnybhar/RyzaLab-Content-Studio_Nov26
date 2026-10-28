@@ -114,6 +114,14 @@ export function applyCommand(
     return j;
   };
   const reserve = (j: Job) => {
+    const connection = s.connections.find((c) => c.id === j.connectionId);
+    if (
+      connection?.status === "disconnected" ||
+      (!ctx.demo && (!connection?.hasKey || connection.status !== "validated"))
+    )
+      bad(
+        "Validate a connected provider credential before reserving generation.",
+      );
     const period = budgetMonth(now, s.settings.timezone),
       monthly = s.jobs.filter((x) => x.period === period && x.id !== j.id),
       amount = j.estimate;
@@ -201,6 +209,58 @@ export function applyCommand(
     }
   }
   switch (c.type) {
+    case "connection.disconnect":
+    case "connection.delete":
+    case "connection.allowance": {
+      const connection = s.connections.find((x) => x.id === c.id);
+      if (!connection) bad("Connection not found.");
+      need("connections.manage", { function: connection.function });
+      if (connection.updatedAt !== c.expectedUpdatedAt)
+        throw new StudioError(
+          409,
+          "Connection changed. Refresh before continuing.",
+        );
+      if (
+        s.jobs.some(
+          (j) =>
+            j.connectionId === c.id &&
+            ["queued", "awaiting_confirmation", "running", "unknown"].includes(
+              j.state,
+            ),
+        )
+      )
+        bad(
+          "Cancel waiting jobs or reconcile running/unknown jobs before changing this connection.",
+        );
+      if (c.type === "connection.delete") {
+        if (
+          s.jobs.some((j) => j.connectionId === c.id) ||
+          s.workflows.some(
+            (w) =>
+              w.connectionId === c.id ||
+              Object.values(w.functionConnections || {}).includes(c.id),
+          )
+        )
+          bad(
+            "This connection has job history or workflow references. Disconnect it instead to retain its history.",
+          );
+        s.connections = s.connections.filter((x) => x.id !== c.id);
+      } else if (c.type === "connection.disconnect") {
+        connection.status = "disconnected";
+        connection.hasKey = false;
+        connection.updatedAt = now;
+      } else {
+        if (connection.status === "disconnected")
+          bad(
+            "Add a replacement before configuring a disconnected connection.",
+          );
+        Object.assign(connection, {
+          maxRequestCost: c.maxRequestCost,
+          updatedAt: now,
+        });
+      }
+      break;
+    }
     case "idea.importSavedResult": {
       const job = jobFor(c.jobId);
       need("idea.edit", { channel: job.channel });
@@ -1188,6 +1248,11 @@ export function applyCommand(
       );
       if (!connection)
         bad("Configure an AI connection for this function first.");
+      if (
+        connection.status === "disconnected" ||
+        (!ctx.demo && (!connection.hasKey || connection.status !== "validated"))
+      )
+        bad("Validate a connected provider credential before generation.");
       const workflow = s.workflows.find(
         (w) => w.channel === c.channel && w.status === "active",
       );
