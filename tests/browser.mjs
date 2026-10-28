@@ -132,6 +132,59 @@ async function main() {
       fullPage: true,
     });
 
+    // Layout and sidebar choices persist for this actor without changing content records.
+    await page
+      .getByRole("button", { name: "Production Board", exact: true })
+      .click();
+    await page
+      .getByRole("heading", { name: "Your production board", exact: true })
+      .waitFor();
+    await page.reload();
+    await page
+      .getByRole("heading", { name: "Your production board", exact: true })
+      .waitFor();
+    await page
+      .getByRole("button", { name: "Command Center", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Collapse sidebar", exact: true })
+      .click();
+    await page.reload();
+    await page
+      .getByRole("button", { name: "Expand sidebar", exact: true })
+      .waitFor();
+    await page
+      .getByRole("button", { name: "Expand sidebar", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Unpin sidebar", exact: true })
+      .click();
+    await page.getByRole("button", { name: "Open menu", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Pin sidebar", exact: true })
+      .click();
+    await navigate("Ideas");
+    await page
+      .getByRole("button", { name: "Generate with agent", exact: true })
+      .click();
+    await dialog()
+      .getByLabel("Topic / Brief", { exact: true })
+      .fill("Documenting recovery routines");
+    await dialog()
+      .getByLabel("Audience", { exact: true })
+      .fill("Family caregivers");
+    await dialog().getByLabel("Quantity", { exact: true }).fill("3");
+    await dialog()
+      .getByRole("button", { name: "Preview sample ideas", exact: true })
+      .click();
+    await dialog().waitFor({ state: "hidden" });
+    const generated = (await state()).ideas.filter(
+      (idea) => idea.origin === "demo_sample",
+    );
+    assert.equal(generated.length, 3);
+    assert.ok(generated.every((idea) => idea.state === "pending"));
+    await dismissNotice();
+
     // An idea becomes a draft only after an explicit human approval.
     const title = "Browser verification — a thoughtful story";
     await navigate("Ideas");
@@ -249,13 +302,30 @@ async function main() {
     await navigate("Reviews");
     const review = page.locator(".s-review-card").filter({ hasText: title });
     await review.getByText(/Active workflow v1/).waitFor();
-    for (const stage of ['Intake', 'Evidence', 'Creation', 'Independent review', 'Visual review', 'Release check']) {
-      await review.getByRole('button', {name:`Record ${stage} check`, exact:true}).click();
-      const form = review.locator('.s-stage-form');
-      await form.getByLabel('Reason / finding').fill('Human inspected this exact version and selected media.');
-      await form.getByLabel('Evidence / reviewer reference').fill('Human review: provided sources and current content inspected; no automated reviewer is claimed.');
-      await form.getByRole('button', {name:'Save check',exact:true}).click();
-      await form.waitFor({state:'hidden'});
+    for (const stage of [
+      "Intake",
+      "Evidence",
+      "Creation",
+      "Independent review",
+      "Visual review",
+      "Release check",
+    ]) {
+      await review
+        .getByRole("button", { name: `Record ${stage} check`, exact: true })
+        .click();
+      const form = review.locator(".s-stage-form");
+      await form
+        .getByLabel("Reason / finding")
+        .fill("Human inspected this exact version and selected media.");
+      await form
+        .getByLabel("Evidence / reviewer reference")
+        .fill(
+          "Human review: provided sources and current content inspected; no automated reviewer is claimed.",
+        );
+      await form
+        .getByRole("button", { name: "Save check", exact: true })
+        .click();
+      await form.waitFor({ state: "hidden" });
     }
     await review
       .getByRole("button", { name: "Approve revision", exact: true })

@@ -1689,7 +1689,7 @@
   bottom: 24px;
   left: calc(50% + 90px);
   transform: translateX(-50%);
-  z-index: 120;
+  z-index: 90;
   display: flex;
   align-items: center;
   gap: 12px;

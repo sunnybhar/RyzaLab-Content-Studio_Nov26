@@ -36,6 +36,19 @@ export async function POST(req: NextRequest) {
       );
     const state = await loadState(db, actor),
       command = commandSchema.parse(await req.json());
+    if (command.type === "idea.generate") {
+      requirePermission(state, actor, "idea.edit", {
+        channel: command.channel,
+      });
+      requirePermission(state, actor, "job.create", {
+        channel: command.channel,
+        function: "ideas",
+      });
+    }
+    if (command.type === "workflow.importPreset")
+      requirePermission(state, actor, "workflow.edit", {
+        channel: command.channel,
+      });
     let assetManifest: unknown[] = [];
     if (command.type === "package.approve") {
       const content = state.contents.find((d) => d.id === command.contentId);
@@ -69,7 +82,7 @@ export async function POST(req: NextRequest) {
       command.type === "job.enqueue"
         ? quote(state, command)
         : command.type === "idea.generate" && !command.research
-          ? quote(state, ideaJobInput(state, command))
+          ? quote(state, ideaJobInput(state, actor, command))
           : undefined;
     const next = applyCommand(state, actor, command, {
       hash,

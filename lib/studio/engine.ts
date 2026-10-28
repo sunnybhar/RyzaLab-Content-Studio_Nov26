@@ -327,7 +327,7 @@ export function applyCommand(
           503,
           "Current web research requires a qualified research adapter. No research or generation was started. Uncheck research to use supplied references only.",
         );
-      const jobInput = ideaJobInput(s, c);
+      const jobInput = ideaJobInput(s, actor, c);
       return applyCommand(input, actor, jobInput, ctx);
     }
     case "workflow.importPreset": {
@@ -477,7 +477,9 @@ export function applyCommand(
       const oldFacts = factsSignature(d),
         oldFactsRevision = d.factsRevision ?? d.textRevision ?? 1,
         oldTitle = d.title;
-      const mediaChanged = JSON.stringify(d.media) !== JSON.stringify(c.media),
+      const mediaChanged =
+          JSON.stringify(d.media) !== JSON.stringify(c.media) ||
+          (c.format !== undefined && c.format !== d.format),
         textChanged =
           d.text !== c.text || d.title !== c.title || d.metadata !== c.metadata;
       remember(d, "Studio edit");

@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { Channel, Idea, StudioState } from "./types";
+import { StudioError, filteredState } from "./permissions";
+import type { Actor, Channel, Idea, StudioState } from "./types";
 export const generatedIdeasSchema = z
   .object({
     ideas: z
@@ -62,6 +63,7 @@ export function sampleIdeas(
 }
 export function ideaJobInput(
   state: StudioState,
+  actor: Actor,
   c: {
     channel: Channel;
     topic: string;
@@ -72,14 +74,16 @@ export function ideaJobInput(
     idempotencyKey: string;
   },
 ) {
-  const workflow = state.workflows.find(
+  const visible = filteredState(state, actor);
+  const workflow = visible.workflows.find(
     (w) => w.channel === c.channel && w.status === "active",
   );
   const connectionId =
     workflow?.functionConnections?.ideas ||
     state.connections.find((conn) => conn.function === "ideas")?.id;
   if (!connectionId)
-    throw new Error(
+    throw new StudioError(
+      400,
       "Configure and activate an Ideas function connection in Workflow Settings first.",
     );
   return {
@@ -95,11 +99,11 @@ export function ideaJobInput(
       topic: c.topic,
       audience: c.audience,
       sourceText: c.sourceText,
-      previousIdeas: state.ideas
+      previousIdeas: visible.ideas
         .filter((i) => i.channel === c.channel)
         .slice(0, 30)
         .map((i) => ({ title: i.title, state: i.state })),
-      priorContent: state.contents
+      priorContent: visible.contents
         .filter((d) => d.channel === c.channel)
         .slice(0, 15)
         .map((d) => d.title),

@@ -173,3 +173,93 @@ test("malformed idea sets are rejected without importing partial results", () =>
     /no partial/,
   );
 });
+
+test("changing intended format invalidates visual N/A even before assets are added", () => {
+  let s = fixture();
+  s.contents[0].format = "Text post";
+  s.contents[0].media.slides = [];
+  s = completeChecks(s, DEMO_ACTOR, s.contents[0].id, ctx);
+  assert.equal(stageSummary(s.contents[0], s).stages[4].status, "na");
+  const d = s.contents[0];
+  s = applyCommand(
+    s,
+    DEMO_ACTOR,
+    {
+      type: "content.save",
+      id: d.id,
+      expectedRevision: d.revision,
+      title: d.title,
+      text: d.text,
+      metadata: d.metadata,
+      media: d.media,
+      format: "Video",
+    },
+    ctx,
+  );
+  assert.equal(stageSummary(s.contents[0], s).stages[4].status, "pending");
+  assert.throws(
+    () => applyCommand(s, DEMO_ACTOR, approval(s), ctx),
+    /six pre-approval/,
+  );
+});
+test("handoff is bound to the exact current approved package", () => {
+  let s = fixture();
+  s = completeChecks(s, DEMO_ACTOR, s.contents[0].id, ctx);
+  s = applyCommand(s, DEMO_ACTOR, approval(s), ctx);
+  const old = s.packages[0].id;
+  s = applyCommand(
+    s,
+    DEMO_ACTOR,
+    decision(s, { stage: "handoff", packageId: old }),
+    ctx,
+  );
+  assert.equal(stageSummary(s.contents[0], s).stages[7].status, "pass");
+  s = applyCommand(s, DEMO_ACTOR, approval(s), ctx);
+  assert.equal(stageSummary(s.contents[0], s).stages[7].status, "pending");
+  assert.throws(
+    () =>
+      applyCommand(
+        s,
+        DEMO_ACTOR,
+        decision(s, { stage: "handoff", packageId: old }),
+        ctx,
+      ),
+    /exact current/,
+  );
+});
+
+test("idea generation context excludes drafts outside the requesting creator read scope", async () => {
+  const { ideaJobInput } = await import("../lib/studio/idea-generation");
+  const s = fixture();
+  const actor = { id: "limited-creator", email: "limited@example.com" };
+  s.members.push({ ...actor, roles: ["creator"], grants: [], revoked: false });
+  s.contents[0].title = "Confidential unassigned founder draft";
+  s.connections.push({
+    id: "ideas-provider",
+    title: "Ideas model",
+    function: "ideas",
+    provider: "openai",
+    model: "configured-model",
+    hasKey: true,
+    status: "validated",
+  });
+  const command = {
+    channel: "LinkedIn" as const,
+    topic: "Recovery routines",
+    audience: "Caregivers",
+    quantity: 3,
+    research: false,
+    sourceText: "Provided notes",
+    idempotencyKey: "scoped-ideas",
+  };
+  const job = ideaJobInput(s, actor, command);
+  assert.equal(
+    job.prompt.includes("Confidential unassigned founder draft"),
+    false,
+  );
+  const founderJob = ideaJobInput(s, DEMO_ACTOR, command);
+  assert.equal(
+    founderJob.prompt.includes("Confidential unassigned founder draft"),
+    true,
+  );
+});

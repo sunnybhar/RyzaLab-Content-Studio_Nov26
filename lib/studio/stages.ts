@@ -104,7 +104,10 @@ export function recordIsCurrent(
   if (!shared) return false;
   if (record.key === "intake") return true;
   if (record.key === "visual_review")
-    return record.mediaRevision === (c.mediaRevision || 1);
+    return (
+      record.mediaRevision === (c.mediaRevision || 1) &&
+      !(record.status === "na" && hasVisuals(c))
+    );
   if (record.key === "evidence")
     return (
       (record.factsRevision ?? record.textRevision) ===
