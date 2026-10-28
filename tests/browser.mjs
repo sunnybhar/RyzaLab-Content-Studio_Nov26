@@ -185,6 +185,113 @@ async function main() {
     assert.ok(generated.every((idea) => idea.state === "pending"));
     await dismissNotice();
 
+    // Account controls, theme persistence and non-publication calendar work.
+    assert.equal(await page.title(), "Content Studio RyzaLab");
+    const iconHref = await page
+      .locator('link[rel="icon"]')
+      .first()
+      .getAttribute("href");
+    assert.ok(iconHref?.includes("studio-icon.svg"));
+    assert.equal((await page.request.get(iconHref)).status(), 200);
+    await page
+      .getByRole("button", { name: "Open profile", exact: true })
+      .click();
+    await page
+      .getByRole("heading", { name: "Your account", exact: true })
+      .waitFor();
+    await page
+      .getByRole("button", { name: "Daylight Teal", exact: true })
+      .click();
+    await page.reload();
+    await page
+      .getByRole("button", { name: "Open profile", exact: true })
+      .click();
+    assert.ok(
+      await page
+        .locator(".studio-v2")
+        .evaluate((el) => el.classList.contains("s-theme-daylight")),
+    );
+    await page.screenshot({
+      path: "/tmp/studio-daylight-account.png",
+      fullPage: true,
+    });
+    await page
+      .getByRole("button", { name: "Midnight Teal", exact: true })
+      .click();
+    await navigate("Home");
+    await page
+      .getByRole("button", { name: "Open account and appearance", exact: true })
+      .click();
+    await page
+      .getByRole("heading", { name: "Your account", exact: true })
+      .waitFor();
+    await navigate("Calendar");
+    await page
+      .getByRole("button", { name: "Add to calendar", exact: true })
+      .click();
+    await dialog()
+      .getByLabel("What do you want to schedule?", { exact: true })
+      .selectOption("Editing");
+    await dialog()
+      .getByRole("button", { name: "Continue", exact: true })
+      .click();
+    await dialog()
+      .getByLabel("Task title", { exact: true })
+      .fill("QA editing appointment");
+    const taskDay = new Date(Date.now() + 86400000 * 3);
+    const taskDate = `${taskDay.getFullYear()}-${String(taskDay.getMonth() + 1).padStart(2, "0")}-${String(taskDay.getDate()).padStart(2, "0")}T11:00`;
+    await dialog()
+      .getByLabel(/Task time/)
+      .fill(taskDate);
+    await dialog()
+      .getByRole("button", { name: "Save planning task", exact: true })
+      .click();
+    await dialog().waitFor({ state: "hidden" });
+    const taskRow = page
+      .locator(".s-planning-list .s-list-row")
+      .filter({ hasText: "QA editing appointment" });
+    await taskRow
+      .getByRole("button", { name: "Open draft", exact: true })
+      .click();
+    await page.getByLabel("Content text", { exact: true }).waitFor();
+    await navigate("Calendar");
+    await taskRow
+      .getByRole("button", { name: "Mark done", exact: true })
+      .click();
+    await taskRow.getByText(/done/).waitFor();
+    await page
+      .getByRole("button", { name: "Plan workflow", exact: true })
+      .click();
+    await dialog()
+      .getByLabel("Task title", { exact: true })
+      .fill("QA workflow appointment");
+    await dialog()
+      .getByLabel(/Task time/)
+      .fill(taskDate);
+    await dialog()
+      .getByRole("button", { name: "Save planning task", exact: true })
+      .click();
+    await dialog().waitFor({ state: "hidden" });
+    await page
+      .locator(".s-planning-list .s-list-row")
+      .filter({ hasText: "QA workflow appointment" })
+      .getByRole("button", { name: "Open workflow", exact: true })
+      .click();
+    await page
+      .getByRole("heading", { name: "Built around your brand", exact: true })
+      .waitFor();
+    await navigate("Analytics");
+    await page
+      .getByRole("heading", { name: "Content by channel", exact: true })
+      .waitFor();
+    await page.getByLabel("Activity period", { exact: true }).selectOption("7");
+    await page.getByText("Not connected", { exact: true }).waitFor();
+    await page.screenshot({
+      path: "/tmp/studio-analytics.png",
+      fullPage: true,
+    });
+    await dismissNotice();
+
     // An idea becomes a draft only after an explicit human approval.
     const title = "Browser verification — a thoughtful story";
     await navigate("Ideas");

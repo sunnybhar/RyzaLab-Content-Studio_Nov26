@@ -15,3 +15,5 @@ Next: user reviews visual/workflow changes; then configure and qualify live inte
 ## Follow-up requests in progress
 
 User requested working profile controls, tab branding, discoverable themes/layouts, draft/editing/workflow calendar tasks and analytics. Implemented first pass, TypeScript passes; browser and domain verification pending. User also requested one training document per section; writing modules after verifying feature labels. Do not release this follow-up until checked.
+
+Training deliverables drafted: 13 standalone Word/Markdown modules, 123 manual QA cases and 44 delivery backlog entries. Workbook has status dropdowns, summary formulas, defects, test data and training index. Python generator in scripts/generate-training-materials.py (requires python-docx and openpyxl). Follow-up domain checks: 88 tests pass. Browser verification of appearance/calendar/analytics underway; main unchanged.

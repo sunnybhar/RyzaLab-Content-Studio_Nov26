@@ -1,0 +1,278 @@
+[
+  {
+    "slug": "00-Start-Here",
+    "title": "Start Here \u2014 Complete User Journey",
+    "role": "All users",
+    "purpose": "Understand the complete content journey and distinguish preview from live work.",
+    "prereq": "Open the deployed Studio in Chrome. Use a desktop for your first exercise.",
+    "steps": [
+      "Check the mode label. Preview says \u201cDemo mode \u00b7 saved on this device\u201d. DE is the preview identity, not your personal account. Preview data is local to this browser; it is not shared team storage.",
+      "Open either avatar, then Account & appearance. Choose your theme and home layout. Use Appearance in the top bar to return to these controls.",
+      "Open Workflow settings. Choose the channel and review its instructions, brand references, guardrails and output requirements. Import channel packages as drafts, then submit and activate only after review.",
+      "Open Ideas. Add an idea manually or choose Generate with agent. Preview generates labelled local samples. Review the idea, explicitly approve it, then create a draft.",
+      "Open Create and select the draft. Write or edit the content, maintain separate text/media, and Save draft. Build slides or scenes only when required by the intended format.",
+      "Complete Intake, Evidence, Creation, Independent review, Visual review and Release check for the current version. Submit for review and explicitly approve the complete revision in Reviews.",
+      "Record Publication handoff for the exact approved package. Open Calendar and plan its manual publication. For drafting, editing or workflow reminders, use the separate planning actions.",
+      "A person publishes outside Studio. Return to Calendar \u2192 Agenda and Confirm published with the live URL and correct approved revision.",
+      "Open Analytics to inspect current inventory and recorded activity. Keep social reach and engagement separate: these are not connected.",
+      "Use the QA workbook during acceptance testing. Record failures and actual results; do not mark a feature passed because its button is visible."
+    ],
+    "expected": "You can explain each stage and complete one sample post without claiming a real provider call or real publication occurred.",
+    "exercise": "Create a sample LinkedIn text post about documenting a routine. Complete its checks using honest human evidence. Stop before Confirm published unless you actually published a test item.",
+    "troubleshooting": "If a control is disabled, check your profile, assignment, channel and active workflow. Do not paste API keys into training files or QA evidence.",
+    "availability": "Available in preview. Live operation requires the configured /studio workspace."
+  },
+  {
+    "slug": "01-Home-and-Navigation",
+    "title": "Home and Navigation",
+    "role": "All users",
+    "purpose": "Find work quickly using the dashboard, channel filter, layouts and sidebar.",
+    "prereq": "Have access to preview or a live workspace.",
+    "steps": [
+      "Open Home. Read the current mode before entering important work.",
+      "Choose Command Center or Production Board in the top bar. Command Center shows channel tiles, totals and upcoming work; Production Board groups the same content by progress.",
+      "Choose All channels or a channel to narrow the visible records. Changing layout does not create copies of your content.",
+      "Use the sidebar icons to open Ideas, Calendar, Create, Reviews, Library, Analytics, Workflow settings, People & access, AI & budgets and Notifications.",
+      "Use Collapse sidebar / Expand sidebar to change its width. Use Unpin sidebar for an on-demand drawer; Open menu opens it. Pin sidebar makes it persistent on desktop.",
+      "On mobile, Open menu reveals navigation. Close it with the close control or Escape. The drawer should not remain over the selected page.",
+      "Open Appearance to choose display settings, then Open selected layout to return Home."
+    ],
+    "expected": "The selected layout and navigation preferences survive a refresh for the same account on that device.",
+    "exercise": "Switch to Production Board, refresh, switch back, collapse the sidebar, unpin it and reopen it.",
+    "troubleshooting": "If records seem missing, check the channel filter and search. Browser preferences are local and are not account settings synchronized across devices.",
+    "availability": "Available in preview. Live operation requires the configured /studio workspace."
+  },
+  {
+    "slug": "02-Account-and-Appearance",
+    "title": "Account and Appearance",
+    "role": "All users",
+    "purpose": "Inspect your identity and choose an accessible theme, layout and navigation style.",
+    "prereq": "Your workspace has loaded.",
+    "steps": [
+      "Click the initials avatar at the top right or the user control at the bottom of the sidebar. Both open Account & appearance.",
+      "Read Email, Assigned profiles and Workspace mode. In preview, the identity is a sample account; there is no live account to sign out.",
+      "Under Home layout, select Command Center or Production Board. Click Open selected layout to see it.",
+      "Under Color theme, choose Midnight Teal or Daylight Teal. Check that text, forms, calendar events and focus outlines remain readable.",
+      "Under Navigation, set Pin sidebar and Expand sidebar as preferred. Refresh and verify the choices remain.",
+      "In a live session, use Sign out on this page. In preview, Open live sign-in takes you to /studio; actual authentication depends on live configuration."
+    ],
+    "expected": "Both avatars open a useful account page; theme and layout choices visibly apply and persist.",
+    "exercise": "Select Daylight Teal, refresh, return to Midnight Teal, and confirm your email/profile labels.",
+    "troubleshooting": "Role changes are managed in People & access, not by clicking your own role label. Appearance changes do not grant permissions.",
+    "availability": "Available in preview. Live operation requires the configured /studio workspace."
+  },
+  {
+    "slug": "03-Ideas",
+    "title": "Ideas \u2014 Manual and Agent-Assisted",
+    "role": "Creator, editor, manager, founder or permitted administrator",
+    "purpose": "Capture ideas, request candidate ideas and require human selection before drafting.",
+    "prereq": "Have an active channel workflow. Live generation additionally needs an Ideas provider binding, validated pricing, budgets and a worker.",
+    "steps": [
+      "Open Ideas and select the relevant channel. Review existing ideas to avoid duplicates.",
+      "For your own idea, click Add manually, enter its title, angle and channel, then save. The idea begins pending.",
+      "For agent-assisted candidates, click Generate with agent. Enter Topic / Brief, Audience, Quantity, Channel and source notes or URLs.",
+      "In preview, submit Preview sample ideas. These are local examples, explicitly labelled, and do not use a paid API.",
+      "In live mode, review the configured model and budget settings first. Submit only when you authorize the request. Paid jobs can wait for cost confirmation. Current-web research remains unavailable until its adapter is built; supplied sources are not automatically browsed.",
+      "Read each returned card. Check specificity, supporting evidence needed, channel fit and repetition. Agent results remain pending and do not approve themselves.",
+      "Explicitly approve, reject or revise the idea. Use Create draft on an approved idea to start a separate content item.",
+      "For recurring idea work, use the recurrence controls where available. A recurring reminder is not standing permission to bypass budget confirmation or run a paid job."
+    ],
+    "expected": "Ideas keep their origin and pending status until a human decides; approved ideas can seed drafts.",
+    "exercise": "Generate three preview ideas about recovery routines for family caregivers, approve one and create a draft.",
+    "troubleshooting": "Missing provider connection: configure the Ideas function in AI & budgets and activate the mapping. Research unavailable is an honest limitation, not a successful search. Never cite a source the agent did not actually access.",
+    "availability": "Available in preview. Live operation requires the configured /studio workspace."
+  },
+  {
+    "slug": "04-Create",
+    "title": "Create \u2014 Writing, Slides and Scenes",
+    "role": "Creator or editor assigned to the item; founder/admin as permitted",
+    "purpose": "Create and maintain the written draft and selected media as separate dependencies.",
+    "prereq": "Start from an approved idea or Create content. Know your intended channel and format.",
+    "steps": [
+      "Open Create and click a content title, or Create content and enter its working title, channel, format and optional publication account.",
+      "Edit Content text, title and metadata. Replace placeholders with verified facts; do not invent personal experience or unsupported promises.",
+      "Save draft before switching work. Concurrent edits can be rejected rather than silently overwriting another editor; reload and compare versions.",
+      "For carousels, use the slide editor to edit copy and supported layout fields. For video, use scenes, scripts, narration, captions and aspect ratio controls. Script-only scenes are not finished rendered video.",
+      "Use available generation controls only with a live qualified provider; preview must not be treated as genuine model output. Review every generated result.",
+      "Use DOCX import/export as needed. A linked Google Doc requires live OAuth configuration; preview fetching intentionally reports unavailable rather than pretending to sync.",
+      "Use editable source export to retain supported slide/scene data. PNG/PDF are flattened exports; they are not a full design-editor source format.",
+      "Complete the visible stage checks and Submit for review. Do not claim Independent review was an agent review unless a real review result supports it.",
+      "When changing approved text, keep the old approval snapshot. Recheck affected stages; unchanged media need not be generated again."
+    ],
+    "expected": "The draft saves with a new revision; text edits preserve unchanged visual review while affected factual/release checks reopen.",
+    "exercise": "Create a text post, save it, export DOCX, change one paragraph and save again. Verify the previous version remains in history.",
+    "troubleshooting": "Cannot approve video: complete scene media, not just scripts. Cannot save: check stale revision errors and required fields. Uploaded media must be retained Studio assets for live package approval.",
+    "availability": "Available in preview. Live operation requires the configured /studio workspace."
+  },
+  {
+    "slug": "05-Reviews-and-Approvals",
+    "title": "Reviews \u2014 Nine Stages and Human Approval",
+    "role": "Reviewer/manager with grants, founder or authorized approver",
+    "purpose": "Release the exact reviewed package while preserving evidence and human authority.",
+    "prereq": "Have a saved draft and active workflow. Only authorized profiles can approve packages.",
+    "steps": [
+      "Open the draft stage tracker. Intake confirms topic, audience, channel and selected source.",
+      "Record Evidence after checking factual claims, provenance and permissions. If there are no external factual claims, explain that explicitly; do not skip the stage.",
+      "Record Creation once the required text and media are present. Record Independent review with the actual reviewer and findings. Founder self-review is allowed but must be described truthfully.",
+      "Record Visual review after inspecting required images, slides, crops, captions or scenes. N/A is only for a genuinely text-only format and needs a meaningful reason.",
+      "Record Release check against the exact current text, media, active workflow and protected rules. A hold or revise decision reopens later checks.",
+      "In Reviews, compare the submitted revision and choose Approve revision, request changes or reject as appropriate. All six prior checks must be current before approval.",
+      "Approval creates an immutable package snapshot. It does not publish anything, and it cannot waive misinformation or misrepresentation controls.",
+      "Open the approved content and record Publication handoff for the exact package to be exported or copied. A different approved package needs its own handoff.",
+      "After a person actually publishes, record Publication record through Calendar \u2192 Confirm published and provide the correct URL."
+    ],
+    "expected": "Only a human can approve; approval, handoff and publication refer to the exact package and retain their history.",
+    "exercise": "Try approving before the six checks: it must fail. Complete the checks, approve, edit text and verify the old package is retained.",
+    "troubleshooting": "Stale workflow/rule/revision: reread current content and repeat affected checks. Founder pricing exceptions are exact-wording/revision scoped; they do not override factual blockers.",
+    "availability": "Available in preview. Live operation requires the configured /studio workspace."
+  },
+  {
+    "slug": "06-Calendar",
+    "title": "Calendar \u2014 Drafting, Editing, Workflows and Publication",
+    "role": "Users permitted to edit the target; authorized publication planners",
+    "purpose": "Plan work and manual publication, open the correct target, and record completion.",
+    "prereq": "A draft or workflow must already exist for work tasks. Publication requires an approved package.",
+    "steps": [
+      "Open Calendar. Choose Month or Agenda. Read the displayed Studio timezone; times are entered in that timezone.",
+      "Click Add to calendar, choose Drafting, Editing, Workflow work or Approved publication, then Continue. Alternatively use Plan drafting, Plan editing, Plan workflow or Plan publication.",
+      "For a work task, enter Task title, select the existing Draft or Workflow, choose a future Task time, add notes and Save planning task. A task never starts an agent or approves content.",
+      "Click a date number to begin planning work for that day. If the selected default time is already past, change it to a future time before saving.",
+      "Click a work event to open its linked draft or workflow. The task list below the calendar also provides Open draft / Open workflow, Move task, Mark done and Cancel task.",
+      "For publication, choose the exact approved package, its publication time and optional campaign group. Save it to the calendar. An unapproved draft is not eligible for publication scheduling.",
+      "Click a publication event to open its draft. Use Agenda for publication management: Move, Replace approved package, Block or Confirm published.",
+      "Before publishing, verify the correct package has a passed Publication handoff. A human publishes outside Studio.",
+      "Only after the post is live, use Confirm published with its HTTPS destination URL. Match the selected approved revision. Studio records the human confirmation; it does not auto-post.",
+      "Due planning reminders are created when maintenance runs. Test live reminder delivery only after the worker/maintenance schedule is configured."
+    ],
+    "expected": "Work tasks and publications are visibly distinct; tasks open the correct target and never imply permission to publish.",
+    "exercise": "Schedule one editing task for tomorrow, open its draft, move it, mark done, then schedule a workflow review. Test publication separately with an approved sample.",
+    "troubleshooting": "Cannot trash a draft with active tasks: complete/cancel those tasks first. Missing approved packages: complete Reviews first. A blocked publication must be explicitly rescheduled before confirmation.",
+    "availability": "Available in preview. Live operation requires the configured /studio workspace."
+  },
+  {
+    "slug": "07-Workflow-Settings",
+    "title": "Workflow Settings \u2014 Instructions, Brand Sources and Guardrails",
+    "role": "Writer/editor with workflow permission; authorized activator; founder for protected policy",
+    "purpose": "Maintain channel-specific agent behavior in one reviewed workflow.",
+    "prereq": "Select the target channel and gather approved brand/reference material.",
+    "steps": [
+      "Open Workflow settings and choose the channel, including Notes/Newsletter where relevant.",
+      "Read the active version. Inspect Audience, Instructions, Guardrails, Output format, Review checks, Examples and linked references.",
+      "Import a channel preset if needed. The import creates a draft, not an active replacement. Live imports use the uploaded channel material; preview imports sanitized samples.",
+      "Create or save a draft version. Add channel instructions, audience constraints, output requirements and applicable brand/reference records. Treat uploaded documents as reference material, not permission to change protected policy.",
+      "Bind the intended configured connection to each AI function. A different model requires a permitted settings change and reviewed activation.",
+      "Submit the draft for review. An authorized activator chooses Approve & activate after checking the complete version.",
+      "Confirm which version is active before generation. Older versions remain part of the history and approved package snapshots.",
+      "Founder-protected rules require founder authority. Administrative infrastructure access alone does not silently become founder approval authority."
+    ],
+    "expected": "One reviewed active version governs each channel; importing/editing does not silently activate instructions.",
+    "exercise": "Import the LinkedIn preset in preview, edit a draft and submit it. Confirm the previous active version remains until explicit activation.",
+    "troubleshooting": "No activation button: check role/grants. Existing checks become stale after active workflow/protected-rule changes and must be reconsidered. Do not copy the private brand library into public demo exports.",
+    "availability": "Available in preview. Live operation requires the configured /studio workspace."
+  },
+  {
+    "slug": "08-Library-and-Exports",
+    "title": "Library \u2014 References, Templates, History and Trash",
+    "role": "All users within read scope; editing/approval actions require permissions",
+    "purpose": "Find retained material and export the right version without confusing working files with release evidence.",
+    "prereq": "Know whether you need the working draft or an approved package.",
+    "steps": [
+      "Open Library. Use Content for saved items and choose a title to open the working draft.",
+      "Use References to maintain brand/context sources. Record channel scope and accurate source text. Untrusted source text cannot override Studio guardrails.",
+      "Use Templates for reusable supported slide structures. Templates awaiting approval should not be presented as founder-approved assets.",
+      "Use History to inspect who changed what. Restore an older content version as a new draft; it must pass review again and does not inherit old approvals.",
+      "For written content, export DOCX or PDF as offered. For slides, export PNG/PDF. Use source JSON for supported editable structure and subtitles for caption timing.",
+      "Export an approved package from Reviews when preparing a release. Do not substitute a later edited draft for the approved version.",
+      "Use Trash for deleted working content. Recovery is subject to the 90-day policy and dependency protections. Approved release snapshots are retained separately.",
+      "For MP4, distinguish the implemented local composition tool from pending fully hosted AI scene-generation/render orchestration. A script export is not an MP4."
+    ],
+    "expected": "Exports contain the selected version; restored drafts re-enter review and protected snapshots remain retained.",
+    "exercise": "Export a draft as DOCX and a slide as PNG, then restore an earlier text version and inspect its new draft status.",
+    "troubleshooting": "Missing media export: ensure assets exist and are supported/accessible. Flattened PDF/PNG are not editable design layers. Active planning/publication dependencies can prevent Trash actions.",
+    "availability": "Available in preview. Live operation requires the configured /studio workspace."
+  },
+  {
+    "slug": "09-People-and-Permissions",
+    "title": "People and Access \u2014 Profiles and Scoped Grants",
+    "role": "Administrator with membership permission; founder for founder policy",
+    "purpose": "Assign membership by email while supporting a solo founder or a larger team.",
+    "prereq": "Live authentication and database must be configured for actual teammate access.",
+    "steps": [
+      "Open People & access. Review existing members, profiles and any scoped grants.",
+      "Choose the add-member control. Enter the teammate email exactly. Assign only the profiles needed: founder, administrator, manager, editor, creator or viewer.",
+      "When supported by the live member form, use an initial password to create a sign-in account without an invitation email. Share it through a separate secure channel; never put it in the QA workbook.",
+      "One person can have multiple profiles. Explicitly assigning Founder grants founder authority and must be deliberate and auditable.",
+      "Use scoped grants only if needed. The current advanced form accepts JSON. Channel/content/account/function restrictions must match within one grant; ask the administrator to validate complex grants.",
+      "Test the member in a separate browser profile. Verify assigned drafts, read visibility and allowed actions before granting broader access.",
+      "Edit profiles or revoke membership as responsibilities change. Confirm the account loses access after revocation.",
+      "In preview, member changes are local demonstrations; they do not invite a real person or create a Supabase account."
+    ],
+    "expected": "Access is enforced by server/database rules and scoped grants, not just hidden UI controls.",
+    "exercise": "In preview, add a sample viewer profile. For live acceptance, test a real invited viewer in a separate session and verify editing/approval are denied.",
+    "troubleshooting": "Cannot log in: verify actual account provisioning and membership, not just a preview row. Founder authority and administrator access are distinct. Keep email addresses used in QA limited to test accounts.",
+    "availability": "Available in preview. Live operation requires the configured /studio workspace."
+  },
+  {
+    "slug": "10-AI-and-Budgets",
+    "title": "AI and Budgets \u2014 Providers, Models and Cost Controls",
+    "role": "Founder and administrators granted AI-settings access",
+    "purpose": "Configure providers by function and control paid requests and retries.",
+    "prereq": "Use live credentials only in the secure settings form or server environment; never in documents.",
+    "steps": [
+      "Open AI & budgets. Choose the function: research, ideas, text, review, image, video or audio.",
+      "Add the supported provider, exact accessible model ID and relevant API key. Different functions can have different connections. A text-only model does not become an image/video generator because it has a key.",
+      "In preview, keys are discarded and validation is unavailable. In live mode, validate supported model access and qualify sample quality before activation.",
+      "Configure conservative request allowances and qualified pricing. Missing/unqualified prices keep paid execution blocked.",
+      "Set monthly/per-request and relevant function/user/channel caps. Choose confirmation thresholds only after sample cost evaluation.",
+      "Activate the intended connection mapping in the channel workflow. Creating a connection alone does not switch an active workflow.",
+      "Review queued jobs and reservations. Confirm an awaiting-confirmation job only after checking scope and estimated cost.",
+      "If a dispatched outcome is unknown, reconcile it before retrying. Do not automatically rerun a potentially charged request.",
+      "Compare actual reconciled costs with reservations. Hosting/storage are separate from AI budget caps."
+    ],
+    "expected": "Paid generation stays blocked until provider, pricing, budget and execution requirements are met.",
+    "exercise": "Preview an unconfigured generation request and verify it reports the missing setup honestly. Perform paid sample tests only in a separately authorized live test.",
+    "troubleshooting": "Invalid model: use an ID your provider account actually exposes. No request allowance/rate card: configure and qualify it; do not invent prices or bypass caps. Full video/audio provider qualification remains pending.",
+    "availability": "Available in preview. Live operation requires the configured /studio workspace."
+  },
+  {
+    "slug": "11-Analytics",
+    "title": "Analytics \u2014 Content, Publication and Activity",
+    "role": "All users within their permitted read scope",
+    "purpose": "Interpret real Studio metrics without confusing records with social engagement.",
+    "prereq": "Create content and test planning/review flows first to generate meaningful records.",
+    "steps": [
+      "Open Analytics in the sidebar. Check the channel filter; metrics reflect records visible to your profile.",
+      "Read current inventory: Content items, In human review, Approved content, Published content, Planned publications and Open planning tasks. These inventory totals are all time.",
+      "Choose Activity period: Last 7, 30 or 90 days. Read items updated, approval snapshots and human publication confirmations for that rolling period.",
+      "Inspect the daily chart and View daily activity data. Daily grouping is labelled UTC. Approval counts are snapshots, so one content item can produce several approvals.",
+      "Read Content by channel. Approved/published content totals count unique content items, not every approval or repost task.",
+      "Review Next required checks to see where unpublished work is waiting. Review changes requested and blocked publication tasks.",
+      "Inspect AI usage and cost. Recorded actual cost requires reconciliation; reservations are budget holds, not confirmed charges.",
+      "Read Social performance. Views, impressions, clicks, followers and engagement are Not connected and must not be reported as zero performance."
+    ],
+    "expected": "Metrics change in line with actual records and filters; no social engagement is fabricated.",
+    "exercise": "Create an editing task, check Open planning tasks, mark it done and verify the count decreases. Compare approval snapshots with unique approved content.",
+    "troubleshooting": "Missing teammate records may be correct permission filtering. Published means a human supplied a URL, not independently verified reach. Deleted working content is excluded from current inventory.",
+    "availability": "Available in preview. Live operation requires the configured /studio workspace."
+  },
+  {
+    "slug": "12-Notifications",
+    "title": "Notifications \u2014 Inbox and Reminders",
+    "role": "Each member for their own inbox",
+    "purpose": "Read workflow reminders and understand delivery prerequisites.",
+    "prereq": "Have an event that creates a notice. Due reminders require maintenance to run.",
+    "steps": [
+      "Click the bell or Notifications to open your inbox.",
+      "Read the event and affected content/task. Open the corresponding section to take the required action.",
+      "Use available read/dismiss controls to clear the unread state after reviewing the message.",
+      "For due planning work, open Calendar and use Open draft / Open workflow. Complete or move the task as appropriate.",
+      "For publication reminders, inspect the exact package and handoff before posting. A reminder never publishes automatically.",
+      "Test email only after the transactional email service and dispatch schedule are configured. Password login is independent of notification email.",
+      "If no reminder appears, check the task time, timezone, maintenance schedule and your membership before assuming an event failed."
+    ],
+    "expected": "Inbox notices identify events honestly and never substitute for approval or publication.",
+    "exercise": "Read the sample welcome notice, then test a due task reminder in an authorized maintenance test.",
+    "troubleshooting": "Preview actions do not send email. Repeated maintenance should not duplicate the same due reminder. A stale reminder can remain in history after the underlying task changes.",
+    "availability": "Available in preview. Live operation requires the configured /studio workspace."
+  }
+]

@@ -211,8 +211,9 @@ export function applyCommand(
       if (Date.parse(c.at) <= Date.parse(now))
         bad("Choose a future task time.");
       s.planningTasks ??= [];
+      const { type: _commandType, ...taskData } = c;
       s.planningTasks.unshift({
-        ...c,
+        ...taskData,
         id: id(),
         owner: actor.email,
         state: "planned",
@@ -612,6 +613,14 @@ export function applyCommand(
       )
         bad(
           "Resolve active publication tasks before moving this content to Trash.",
+        );
+      if (
+        s.planningTasks?.some(
+          (t) => t.contentId === d.id && t.state === "planned",
+        )
+      )
+        bad(
+          "Resolve active planning tasks before moving this content to Trash.",
         );
       d.deletedAt = now;
       break;

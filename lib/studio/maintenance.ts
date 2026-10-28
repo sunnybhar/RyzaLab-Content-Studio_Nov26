@@ -28,6 +28,16 @@ export function maintenance(
     });
     changed = true;
   };
+  for (const task of (state.planningTasks || []).filter(
+    (t) => t.state === "planned" && t.at <= now,
+  )) {
+    notify(
+      task.owner,
+      "Planning task due",
+      `${task.title}: open Studio to complete the ${task.kind} task. No generation or publication was started.`,
+      `planning-due:${task.id}:${task.at}`,
+    );
+  }
   for (const task of state.schedules.filter(
     (t) => t.state === "planned" && t.at <= now,
   )) {
@@ -150,7 +160,10 @@ export function maintenance(
     if (!c.deletedAt || c.deletedAt > threshold) return true;
     if (
       state.packages.some((p) => p.contentId === c.id) ||
-      state.schedules.some((s) => s.contentId === c.id)
+      state.schedules.some((s) => s.contentId === c.id) ||
+      state.planningTasks?.some(
+        (t) => t.contentId === c.id && t.state === "planned",
+      )
     )
       return true;
     changed = true;
