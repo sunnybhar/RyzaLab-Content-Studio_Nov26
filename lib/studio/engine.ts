@@ -10,7 +10,7 @@ import {
   recordIsCurrent,
   factsSignature,
 } from "./stages";
-import { sampleIdeas } from "./idea-generation";
+import { sampleIdeas, parseGeneratedIdeas } from "./idea-generation";
 import { demoPreset, type ChannelPreset } from "./presets";
 import { ideaJobInput } from "./idea-generation";
 import { review } from "../brand";
@@ -201,6 +201,43 @@ export function applyCommand(
     }
   }
   switch (c.type) {
+    case "idea.importSavedResult": {
+      const job = jobFor(c.jobId);
+      need("idea.edit", { channel: job.channel });
+      if (job.createdBy !== actor.email && !can(s, actor, "users.manage"))
+        throw new StudioError(
+          403,
+          "You cannot import another member's private job result.",
+        );
+      if (job.kind !== "ideas" || job.state !== "succeeded" || !job.result)
+        bad(
+          "Select a completed Ideas job with a saved provider result. No provider request was made.",
+        );
+      if (s.ideas.some((i) => i.generationRunId === job.id))
+        return structuredClone(input);
+      let items: ReturnType<typeof parseGeneratedIdeas>;
+      try {
+        items = parseGeneratedIdeas(job.result!);
+      } catch {
+        bad(
+          "The saved result still does not match the complete idea-card format. No partial cards were imported and no provider request was made.",
+        );
+      }
+      for (const item of items!)
+        s.ideas.unshift({
+          ...item,
+          id: id(),
+          channel: job.channel,
+          state: "pending",
+          origin: "agent",
+          generationRunId: job.id,
+          createdBy: job.createdBy,
+          createdAt: now,
+        });
+      job.error =
+        "Saved response imported without another provider request. Budget reservation is unchanged pending billing reconciliation.";
+      break;
+    }
     case "task.create": {
       taskAccess(c);
       if (

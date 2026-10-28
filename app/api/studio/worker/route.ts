@@ -237,7 +237,7 @@ export async function POST(req: NextRequest) {
               });
           } catch {
             j.error =
-              "The provider returned an incomplete idea-card set. The raw result is retained; no idea cards were fabricated.";
+              "The provider response did not match the idea-card format. The raw result is retained for import/review; no partial cards were imported.";
           }
         }
 

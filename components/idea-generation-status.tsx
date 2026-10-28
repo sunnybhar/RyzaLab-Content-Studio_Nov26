@@ -226,11 +226,28 @@ export function IdeaGenerationStatus({
                 {job.error}
               </p>
             )}
+            {job.state === "succeeded" && !count && job.result && (
+              <button
+                className="s-btn s-primary"
+                disabled={
+                  busy ||
+                  !authorized ||
+                  !can(state, actor, "idea.edit", { channel: job.channel })
+                }
+                onClick={() =>
+                  void command({
+                    type: "idea.importSavedResult",
+                    jobId: job.id,
+                  })
+                }
+              >
+                Import saved ideas — no AI call
+              </button>
+            )}
             {job.state === "succeeded" && !count && (
               <p>
-                No idea cards were imported from this result. Inspect the
-                provider result in AI & budgets before requesting another paid
-                run.
+                No idea cards were imported yet. Use Import saved ideas above to
+                retry importing this response without another provider request.
               </p>
             )}
             {["unknown", "failed", "blocked"].includes(job.state) && (

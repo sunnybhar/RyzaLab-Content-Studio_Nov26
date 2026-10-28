@@ -876,20 +876,34 @@ async function main() {
       await progressPage
         .getByText("LinkedIn · Agent is generating ideas", { exact: true })
         .waitFor();
-      await transition("succeeded", [
-        {
-          id: "ui-card-fixture",
-          title: "UI fixture — imported idea",
-          brief: "Synthetic UI fixture only, not actual agent output.",
-          channel: "LinkedIn",
-          state: "pending",
-          sources: [],
-          origin: "agent",
-          generationRunId: "ui-progress-only",
-          createdBy: actorEmail,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      await progressPage.evaluate((key) => {
+        const s = JSON.parse(localStorage.getItem(key));
+        s.jobs[0].result = JSON.stringify({
+          ideas: [
+            {
+              title: "UI fixture — imported idea",
+              brief: "Synthetic saved response, not an actual provider call.",
+              audience: "Test readers",
+              format:
+                "A descriptive LinkedIn format with a checklist and optional visual, intentionally longer than the old one-hundred-and-fifty-character format field limit for regression coverage.",
+              sources: ["brand-brain.md (Approved reference section)"],
+            },
+          ],
+        });
+        localStorage.setItem(key, JSON.stringify(s));
+      }, stateKey);
+      await transition("succeeded");
+      await progressPage
+        .getByText("LinkedIn · Provider finished — result needs attention", {
+          exact: true,
+        })
+        .waitFor();
+      await progressPage
+        .getByRole("button", {
+          name: "Import saved ideas — no AI call",
+          exact: true,
+        })
+        .click();
       await progressPage
         .getByText("LinkedIn · 1 ideas ready for review", { exact: true })
         .waitFor();

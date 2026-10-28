@@ -10,8 +10,10 @@ export const generatedIdeasSchema = z
             title: z.string().min(3).max(200),
             brief: z.string().min(5).max(4000),
             audience: z.string().max(500),
-            format: z.string().max(150),
-            sources: z.array(z.url()).max(20),
+            format: z.string().max(1000),
+            // Citations can name uploaded internal references as well as web URLs.
+            // They remain unverified plain text, never instructions or executable links.
+            sources: z.array(z.string().trim().min(1).max(2000)).max(20),
           })
           .strict(),
       )
@@ -94,7 +96,7 @@ export function ideaJobInput(
     estimate: 0,
     idempotencyKey: c.idempotencyKey,
     prompt: JSON.stringify({
-      task: 'Generate idea cards, not finished posts. Return ONLY JSON {"ideas":[{"title":"...","brief":"specific angle, proof needed, why useful","audience":"...","format":"...","sources":[]}]}. Do not invent source access. This request uses provided reference context, not current web research.',
+      task: 'Generate idea cards, not finished posts. Return ONLY JSON with no additional fields. Limits: title 3–200 characters, brief 5–4000 characters, audience at most 500 characters, format at most 1000 characters, sources at most 20 nonempty citations of at most 2000 characters each. Sources can be provided internal document names with section references or relevant web URLs; a citation does not imply external access. Schema: {"ideas":[{"title":"...","brief":"specific angle, proof needed, why useful","audience":"...","format":"...","sources":[]}]}. Do not invent source access. This request uses provided reference context, not current web research.',
       quantity: c.quantity,
       topic: c.topic,
       audience: c.audience,
