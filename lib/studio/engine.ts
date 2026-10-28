@@ -337,7 +337,10 @@ export function applyCommand(
       const refs: string[] = [];
       for (const ref of preset.references) {
         const existing = s.references.find(
-          (r) => r.title === ref.title && r.content === ref.content,
+          (r) =>
+            r.title === ref.title &&
+            r.content === ref.content &&
+            (r.channel === c.channel || r.channel === "Shared"),
         );
         if (existing) {
           refs.push(existing.id);
@@ -472,6 +475,7 @@ export function applyCommand(
           "This draft changed. Reload before saving so no edits are lost.",
         );
       const oldFacts = factsSignature(d),
+        oldFactsRevision = d.factsRevision ?? d.textRevision ?? 1,
         oldTitle = d.title;
       const mediaChanged = JSON.stringify(d.media) !== JSON.stringify(c.media),
         textChanged =
@@ -488,8 +492,7 @@ export function applyCommand(
         mediaRevision: (d.mediaRevision || 1) + (mediaChanged ? 1 : 0),
       });
       d.factsRevision =
-        (d.factsRevision ?? d.textRevision ?? 1) +
-        (oldFacts !== factsSignature(d) ? 1 : 0);
+        oldFactsRevision + (oldFacts !== factsSignature(d) ? 1 : 0);
       if (oldTitle !== d.title && d.stages?.length)
         d.stages.push({
           key: "intake",

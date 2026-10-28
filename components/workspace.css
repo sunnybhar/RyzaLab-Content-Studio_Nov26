@@ -4011,3 +4011,15 @@
     width: 22px;
   }
 }
+
+.studio-v2 .s-stage-tracker { margin: 20px 0; padding: 18px; background: var(--s-panel, #192a32); border: 1px solid var(--s-border, #36515d); border-radius: 12px; }
+.studio-v2 .s-stage-tracker summary { cursor: pointer; font-weight: 700; font-size: 16px; }
+.studio-v2 .s-stage-tracker ol { list-style: none; padding: 0; }
+.studio-v2 .s-stage { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--s-border, #36515d); }
+.studio-v2 .s-stage > div { flex: 1; min-width: 0; }
+.studio-v2 .s-stage p { margin: 5px 0; overflow-wrap: anywhere; }
+.studio-v2 .s-stage-number { min-width: 24px; color: var(--s-accent, #42d6c0); }
+.studio-v2 .s-stage-status { text-transform: capitalize; font-weight: 600; }
+.studio-v2 .s-stage-intro, .studio-v2 .s-stage-reason { color: var(--s-muted, #bacbd1); font-size: 14px; }
+.studio-v2 .s-stage-form { display: grid; gap: 12px; padding-top: 18px; }
+@media (max-width: 760px) { .studio-v2 .s-stage { flex-wrap: wrap; } .studio-v2 .s-stage > div { flex-basis: calc(100% - 40px); } }

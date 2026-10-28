@@ -1,3 +1,4 @@
+import { completeChecks } from "./stage-fixture";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { applyCommand, type ExecutionContext } from "../lib/studio/engine";
@@ -117,6 +118,7 @@ function jobCommand(
   };
 }
 function approved(state = fixture()): StudioState {
+  state = completeChecks(state, founder, state.contents[0].id, context);
   return run(state, {
     type: "package.approve",
     contentId: state.contents[0].id,
@@ -323,6 +325,7 @@ test("founder can approve alone and later text edits retain the exact approved p
   assert.equal(state.contents[0].revision, 2);
   assert.equal(state.contents[0].textRevision, 2);
   assert.equal(state.contents[0].mediaRevision, 1);
+  state = completeChecks(state, founder, state.contents[0].id, context);
   state = run(state, {
     type: "package.approve",
     contentId: state.contents[0].id,

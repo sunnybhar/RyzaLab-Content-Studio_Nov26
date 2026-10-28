@@ -1,3 +1,4 @@
+import { completeChecks } from "./stage-fixture";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { initialState, DEMO_ACTOR } from "../lib/studio/seed";
@@ -9,6 +10,7 @@ function fixture() {
   return state;
 }
 function approve(s: ReturnType<typeof fixture>, extra = {}) {
+  s = completeChecks(s, DEMO_ACTOR, s.contents[0].id, { demo: true });
   return applyCommand(
     s,
     DEMO_ACTOR,

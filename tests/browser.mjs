@@ -249,6 +249,14 @@ async function main() {
     await navigate("Reviews");
     const review = page.locator(".s-review-card").filter({ hasText: title });
     await review.getByText(/Active workflow v1/).waitFor();
+    for (const stage of ['Intake', 'Evidence', 'Creation', 'Independent review', 'Visual review', 'Release check']) {
+      await review.getByRole('button', {name:`Record ${stage} check`, exact:true}).click();
+      const form = review.locator('.s-stage-form');
+      await form.getByLabel('Reason / finding').fill('Human inspected this exact version and selected media.');
+      await form.getByLabel('Evidence / reviewer reference').fill('Human review: provided sources and current content inspected; no automated reviewer is claimed.');
+      await form.getByRole('button', {name:'Save check',exact:true}).click();
+      await form.waitFor({state:'hidden'});
+    }
     await review
       .getByRole("button", { name: "Approve revision", exact: true })
       .click();
