@@ -181,7 +181,56 @@ export function applyCommand(
     Object.assign(j, { rolesSnapshot: ownerRoles });
     j.state = "queued";
   };
+  function taskAccess(t: {
+    kind: string;
+    contentId?: string;
+    workflowId?: string;
+    channel: string;
+  }) {
+    if (t.kind === "workflow") {
+      const workflow = s.workflows.find(
+        (w) => w.id === t.workflowId && w.channel === t.channel,
+      );
+      if (!workflow) bad("Select an existing workflow for this channel.");
+      need("workflow.edit", { channel: workflow.channel });
+    } else {
+      if (!t.contentId) bad("Select the draft to plan.");
+      const draft = content(t.contentId!);
+      if (draft.deletedAt || draft.channel !== t.channel)
+        bad("Select an available draft in the matching channel.");
+    }
+  }
   switch (c.type) {
+    case "task.create": {
+      taskAccess(c);
+      if (
+        (c.kind === "workflow" && c.contentId) ||
+        (c.kind !== "workflow" && c.workflowId)
+      )
+        bad("Choose one task target.");
+      if (Date.parse(c.at) <= Date.parse(now))
+        bad("Choose a future task time.");
+      s.planningTasks ??= [];
+      s.planningTasks.unshift({
+        ...c,
+        id: id(),
+        owner: actor.email,
+        state: "planned",
+        createdBy: actor.email,
+        createdAt: now,
+      });
+      break;
+    }
+    case "task.update": {
+      const task = s.planningTasks?.find((t) => t.id === c.id);
+      if (!task) bad("Planning task not found.");
+      taskAccess(task!);
+      if (c.at && Date.parse(c.at) <= Date.parse(now))
+        bad("Choose a future task time.");
+      if (c.at) task!.at = c.at;
+      if (c.state) task!.state = c.state;
+      break;
+    }
     case "stage.decide": {
       const d = s.contents.find((d) => d.id === c.contentId);
       if (!d) bad("Content not found.");

@@ -326,7 +326,22 @@ export interface FounderException {
   at: string;
   ruleVersion: string;
 }
+export interface PlanningTask {
+  id: string;
+  title: string;
+  kind: "draft" | "editing" | "workflow";
+  contentId?: string;
+  workflowId?: string;
+  channel: Channel;
+  at: string;
+  notes: string;
+  owner: string;
+  state: "planned" | "done" | "cancelled";
+  createdBy: string;
+  createdAt: string;
+}
 export interface StudioState {
+  planningTasks?: PlanningTask[];
   version: number;
   exceptions?: FounderException[];
   members: Member[];

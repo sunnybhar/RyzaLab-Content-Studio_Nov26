@@ -11,3 +11,7 @@ Focused Astra integrity review identified inaccessible idea-context titles and s
 This is a review release, not completed production integration. Root remains an isolated labelled /preview; /studio needs credentials and migration. No production database changes, external provider requests, email sends or OAuth actions were performed. Research adapters, live credentialed integration tests and hosted full-video orchestration remain pending as described in PREVIEW-RELEASE.md. Vercel status cannot be verified from Git push alone.
 
 Next: user reviews visual/workflow changes; then configure and qualify live integrations in a separate preview environment. Preserve five-minute checkpoints during active work.
+
+## Follow-up requests in progress
+
+User requested working profile controls, tab branding, discoverable themes/layouts, draft/editing/workflow calendar tasks and analytics. Implemented first pass, TypeScript passes; browser and domain verification pending. User also requested one training document per section; writing modules after verifying feature labels. Do not release this follow-up until checked.

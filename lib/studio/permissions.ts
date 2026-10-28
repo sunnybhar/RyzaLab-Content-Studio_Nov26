@@ -115,6 +115,11 @@ export function filteredState(state: StudioState, actor: Actor): StudioState {
     ),
     ids = new Set(visible.map((c) => c.id));
   s.contents = visible;
+  s.planningTasks = s.planningTasks?.filter((t) =>
+    t.kind === "workflow"
+      ? can(state, actor, "read", { channel: t.channel })
+      : Boolean(t.contentId && ids.has(t.contentId)),
+  );
   s.exceptions = s.exceptions?.filter((e) => ids.has(e.contentId));
   s.packages = s.packages.filter((p) => ids.has(p.contentId));
   s.schedules = s.schedules.filter((p) => ids.has(p.contentId));

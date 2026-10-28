@@ -3,6 +3,9 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowDownToLine,
+  BarChart3,
+  UserRound,
+  Palette,
   ArrowLeft,
   ArrowRight,
   Bell,
@@ -71,6 +74,7 @@ import {
 } from "@/lib/studio/exports";
 import { can, type Scope } from "@/lib/studio/permissions";
 import { stageSummary } from "@/lib/studio/stages";
+import { StudioAnalytics } from "./studio-analytics";
 import { StageTracker } from "./stage-tracker";
 import { PasswordLogin } from "./password-login";
 import { configured, supabase } from "@/lib/supabase";
@@ -86,7 +90,9 @@ type Page =
   | "Workflow settings"
   | "People"
   | "AI & budgets"
-  | "Notifications";
+  | "Notifications"
+  | "Account & appearance"
+  | "Analytics";
 type Field = {
   name: string;
   label: string;
@@ -115,6 +121,7 @@ const nav = [
   { name: "Create", icon: Sparkles },
   { name: "Reviews", icon: ShieldCheck },
   { name: "Library", icon: FolderOpen },
+  { name: "Analytics", icon: BarChart3 },
 ] as const;
 const channelMarks: Record<Channel, string> = {
   LinkedIn: "in",
@@ -421,6 +428,7 @@ export default function Workspace() {
   );
   const [workflowChannel, setWorkflowChannel] = useState<Channel>("LinkedIn");
   const [layout, setLayout] = useState<"command" | "board">("command");
+  const [theme, setTheme] = useState<"midnight" | "daylight">("midnight");
   const [sidebarPinned, setSidebarPinned] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [preferenceActor, setPreferenceActor] = useState("");
@@ -432,14 +440,19 @@ export default function Workspace() {
       setPreferenceActor("");
       return;
     }
-    let preferences: { layout?: string; pinned?: boolean; expanded?: boolean } =
-      {};
+    let preferences: {
+      layout?: string;
+      pinned?: boolean;
+      expanded?: boolean;
+      theme?: string;
+    } = {};
     try {
       preferences = JSON.parse(localStorage.getItem(preferenceKey) || "{}");
     } catch {
       /* Device storage may be unavailable. */
     }
     setLayout(preferences.layout === "board" ? "board" : "command");
+    setTheme(preferences.theme === "daylight" ? "daylight" : "midnight");
     setSidebarPinned(preferences.pinned !== false);
     setSidebarExpanded(preferences.expanded !== false);
     setMenuOpen(false);
@@ -452,6 +465,7 @@ export default function Workspace() {
         preferenceKey,
         JSON.stringify({
           layout,
+          theme,
           pinned: sidebarPinned,
           expanded: sidebarExpanded,
         }),
@@ -459,7 +473,14 @@ export default function Workspace() {
     } catch {
       /* Keep preferences for this session. */
     }
-  }, [preferenceKey, preferenceActor, layout, sidebarPinned, sidebarExpanded]);
+  }, [
+    preferenceKey,
+    preferenceActor,
+    layout,
+    theme,
+    sidebarPinned,
+    sidebarExpanded,
+  ]);
   useEffect(() => {
     if (!dialog && !queueTarget && !menuOpen) return;
     const previousOverflow = document.body.style.overflow;
@@ -700,6 +721,140 @@ export default function Workspace() {
       },
     });
   };
+  function openDraft(id: string) {
+    move("Create");
+    setSelected(id);
+  }
+  function taskForm(kind: "draft" | "editing" | "workflow", day?: string) {
+    const targets =
+      kind === "workflow"
+        ? state!.workflows.filter((w) =>
+            allowed("workflow.edit", { channel: w.channel }),
+          )
+        : state!.contents.filter(
+            (c) =>
+              !c.deletedAt &&
+              allowed("content.edit", {
+                channel: c.channel,
+                contentId: c.id,
+                account: c.account,
+                assignedTo: c.assignedTo,
+              }),
+          );
+    if (!targets.length) {
+      setLocalError(
+        kind === "workflow"
+          ? "Create a workflow in Workflow settings before planning its work."
+          : "Create a draft in Create before planning drafting or editing work.",
+      );
+      return;
+    }
+    setDialog({
+      title:
+        kind === "workflow"
+          ? "Plan workflow work"
+          : kind === "draft"
+            ? "Plan drafting"
+            : "Plan editing",
+      description:
+        "A planning task is a reminder for a person. It does not approve, publish or run paid generation.",
+      submit: "Save planning task",
+      fields: [
+        {
+          ...field(
+            "title",
+            "Task title",
+            kind === "workflow"
+              ? "Review channel workflow"
+              : kind === "draft"
+                ? "Write draft"
+                : "Edit draft",
+          ),
+          required: true,
+        },
+        {
+          name: "target",
+          label: kind === "workflow" ? "Workflow" : "Draft",
+          options: targets.map((t) => t.id),
+          optionLabels: Object.fromEntries(
+            targets.map((t) => [t.id, `${t.title} · ${t.channel}`]),
+          ),
+        },
+        {
+          name: "at",
+          label: `Task time (${state!.settings.timezone})`,
+          type: "datetime-local",
+          value: day ? day + "T09:00" : undefined,
+          required: true,
+        },
+        field("notes", "Task notes", "", "textarea"),
+      ],
+      onSubmit: async (data) => {
+        const target = targets.find((t) => t.id === val(data, "target"))!;
+        if (
+          await execute(
+            {
+              type: "task.create",
+              title: val(data, "title"),
+              kind,
+              channel: target.channel,
+              ...(kind === "workflow"
+                ? { workflowId: target.id }
+                : { contentId: target.id }),
+              at: workspaceTime(val(data, "at"), state!.settings.timezone),
+              notes: val(data, "notes"),
+            },
+            "Planning task saved",
+          )
+        )
+          setDialog(null);
+      },
+    });
+  }
+  function calendarChoice(day?: string) {
+    setDialog({
+      title: "Add to calendar",
+      description:
+        "Choose a publication or a human work task. Publication requires an approved package.",
+      submit: "Continue",
+      fields: [
+        {
+          name: "kind",
+          label: "What do you want to schedule?",
+          options: [
+            "Drafting",
+            "Editing",
+            "Workflow work",
+            "Approved publication",
+          ],
+        },
+      ],
+      onSubmit: async (data) => {
+        const kind = val(data, "kind");
+        if (kind === "Approved publication") {
+          setDialog(null);
+          scheduleForm();
+        } else
+          taskForm(
+            kind === "Workflow work"
+              ? "workflow"
+              : kind === "Drafting"
+                ? "draft"
+                : "editing",
+            day,
+          );
+      },
+    });
+  }
+  function openPlanningTask(
+    task: NonNullable<StudioState["planningTasks"]>[number],
+  ) {
+    if (task.contentId) openDraft(task.contentId);
+    else {
+      setWorkflowChannel(task.channel);
+      move("Workflow settings");
+    }
+  }
   async function validateAI(id: string) {
     if (mode === "demo") {
       setLocalError(
@@ -918,7 +1073,11 @@ export default function Workspace() {
   const pageDescription: Record<Page, string> = {
     Home: "A clear view of your content. A little more room to create.",
     Ideas: "The starting point for your next great story.",
-    Calendar: "Give every story its moment.",
+    Calendar:
+      "Plan publications, drafting, editing and workflow work in one calendar.",
+    Analytics:
+      "Track content, human-confirmed publications and Studio activity.",
+    "Account & appearance": "Your profile, layout and display preferences.",
     Create: "Turn a good idea into something people remember.",
     Reviews: "A thoughtful second look before the world sees it.",
     Library: "Everything you have created, all in one place.",
@@ -938,7 +1097,7 @@ export default function Workspace() {
         : page;
   return (
     <div
-      className={`studio-v2 ${sidebarPinned ? "s-sidebar-pinned" : "s-sidebar-unpinned"} ${sidebarExpanded ? "s-sidebar-expanded" : "s-sidebar-collapsed"}`}
+      className={`studio-v2 s-theme-${theme} ${sidebarPinned ? "s-sidebar-pinned" : "s-sidebar-unpinned"} ${sidebarExpanded ? "s-sidebar-expanded" : "s-sidebar-collapsed"}`}
     >
       {menuOpen && (
         <button
@@ -1066,9 +1225,9 @@ export default function Workspace() {
           </div>
           <button
             className="s-user"
-            onClick={() => void signOut()}
-            title="Sign out"
-            aria-label="Sign out"
+            onClick={() => move("Account & appearance")}
+            title="Account & appearance"
+            aria-label="Open account and appearance"
           >
             <span>{actor.email.slice(0, 2).toUpperCase()}</span>
             <span>
@@ -1122,6 +1281,14 @@ export default function Workspace() {
             </button>
           </div>
           <div className="s-top-actions">
+            <button
+              className="s-btn s-small-btn"
+              aria-label="Appearance and layout"
+              onClick={() => move("Account & appearance")}
+            >
+              <Palette size={16} />
+              <span>Appearance</span>
+            </button>
             {mode === "demo" && (
               <Badge tone="amber">Demo mode · saved on this device</Badge>
             )}
@@ -1136,9 +1303,14 @@ export default function Workspace() {
               <Bell size={19} />
               {unread.length > 0 && <i />}
             </button>
-            <span className="s-avatar">
+            <button
+              className="s-avatar"
+              aria-label="Open profile"
+              title="Account & appearance"
+              onClick={() => move("Account & appearance")}
+            >
               {actor.email.slice(0, 2).toUpperCase()}
-            </span>
+            </button>
           </div>
         </header>
         <main className="s-main-content">
@@ -1184,9 +1356,9 @@ export default function Workspace() {
                 <button
                   disabled={readOnly}
                   className="s-btn s-primary"
-                  onClick={() => scheduleForm()}
+                  onClick={() => calendarChoice()}
                 >
-                  <Plus size={16} /> Plan a publication
+                  <Plus size={16} /> Add to calendar
                 </button>
               ) : page === "Ideas" ? (
                 <>
@@ -1876,6 +2048,36 @@ export default function Workspace() {
                 </span>
                 <span className="s-timezone">{state.settings.timezone}</span>
               </div>
+              <div className="s-calendar-quick-actions">
+                <button
+                  className="s-btn"
+                  disabled={readOnly}
+                  onClick={() => taskForm("draft")}
+                >
+                  Plan drafting
+                </button>
+                <button
+                  className="s-btn"
+                  disabled={readOnly}
+                  onClick={() => taskForm("editing")}
+                >
+                  Plan editing
+                </button>
+                <button
+                  className="s-btn"
+                  disabled={readOnly}
+                  onClick={() => taskForm("workflow")}
+                >
+                  Plan workflow
+                </button>
+                <button
+                  className="s-btn"
+                  disabled={readOnly}
+                  onClick={() => scheduleForm()}
+                >
+                  Plan publication
+                </button>
+              </div>
               {calendarView === "Month" ? (
                 <section className="s-calendar">
                   <div className="s-weekdays">
@@ -1899,9 +2101,39 @@ export default function Workspace() {
                           className={`s-calendar-day ${d.getMonth() !== month.getMonth() ? "s-other-month" : ""}`}
                           key={i}
                         >
-                          <span className={today ? "s-today" : ""}>
-                            {d.getDate()}
-                          </span>
+                          <button
+                            className={`s-calendar-date ${today ? "s-today" : ""}`}
+                            aria-label={`Plan work on ${dateKey(d.toISOString(), "UTC")}`}
+                            disabled={readOnly}
+                            onClick={() =>
+                              calendarChoice(
+                                `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
+                              )
+                            }
+                          >
+                            {d.getDate()} <Plus size={12} />
+                          </button>
+                          {(state.planningTasks || [])
+                            .filter(
+                              (t) =>
+                                t.state !== "cancelled" &&
+                                dateKey(t.at, state.settings.timezone) ===
+                                  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` &&
+                                (channel === "All channels" ||
+                                  t.channel === channel),
+                            )
+                            .map((t) => (
+                              <button
+                                className="s-calendar-event s-planning-event"
+                                key={t.id}
+                                onClick={() => openPlanningTask(t)}
+                              >
+                                <span>
+                                  {t.kind} · {t.state}
+                                </span>
+                                <strong>{t.title}</strong>
+                              </button>
+                            ))}
                           {state.schedules
                             .filter(
                               (s) =>
@@ -1918,8 +2150,7 @@ export default function Workspace() {
                                   className={`s-calendar-event s-event-${s.state}`}
                                   key={s.id}
                                   onClick={() => {
-                                    setCalendarView("Agenda");
-                                    setSearch(c.title);
+                                    openDraft(c.id);
                                   }}
                                 >
                                   <span>
@@ -1980,7 +2211,12 @@ export default function Workspace() {
                             <strong>{new Date(s.at).getDate()}</strong>
                           </span>
                           <div className="s-schedule-main">
-                            <strong>{c.title}</strong>
+                            <button
+                              className="s-link-button"
+                              onClick={() => openDraft(c.id)}
+                            >
+                              {c.title}
+                            </button>
                             <p>
                               {c.channel} ·{" "}
                               {new Date(s.at).toLocaleString("en-US", {
@@ -2144,6 +2380,208 @@ export default function Workspace() {
                 </section>
               )}
             </>
+          )}
+          {page === "Calendar" && (
+            <section className="s-panel s-planning-list">
+              <h2>Draft, editing and workflow tasks</h2>
+              {!(state.planningTasks || []).filter(
+                (t) => t.state !== "cancelled",
+              ).length && (
+                <p>
+                  No work tasks yet. Use Add to calendar or select a date to
+                  plan work.
+                </p>
+              )}
+              {(state.planningTasks || [])
+                .filter(
+                  (t) =>
+                    t.state !== "cancelled" &&
+                    (channel === "All channels" || t.channel === channel),
+                )
+                .sort((a, b) => a.at.localeCompare(b.at))
+                .map((t) => (
+                  <div className="s-list-row" key={t.id}>
+                    <div>
+                      <button
+                        className="s-link-button"
+                        onClick={() => openPlanningTask(t)}
+                      >
+                        {t.title}
+                      </button>
+                      <p>
+                        {t.kind} · {t.channel} ·{" "}
+                        {new Date(t.at).toLocaleString("en-US", {
+                          timeZone: state.settings.timezone,
+                        })}{" "}
+                        · {t.state}
+                      </p>
+                      {t.notes && <p>{t.notes}</p>}
+                    </div>
+                    <div className="s-actions">
+                      <button
+                        className="s-btn"
+                        onClick={() => openPlanningTask(t)}
+                      >
+                        Open {t.kind === "workflow" ? "workflow" : "draft"}
+                      </button>
+                      {t.state === "planned" && !readOnly && (
+                        <>
+                          <button
+                            className="s-btn"
+                            onClick={() =>
+                              openForm(
+                                "Move planning task",
+                                [
+                                  {
+                                    name: "at",
+                                    label: "New task time",
+                                    type: "datetime-local",
+                                    required: true,
+                                  },
+                                ],
+                                (d) => ({
+                                  type: "task.update",
+                                  id: t.id,
+                                  at: workspaceTime(
+                                    val(d, "at"),
+                                    state.settings.timezone,
+                                  ),
+                                }),
+                              )
+                            }
+                          >
+                            Move task
+                          </button>
+                          <button
+                            className="s-btn"
+                            onClick={() =>
+                              void execute({
+                                type: "task.update",
+                                id: t.id,
+                                state: "done",
+                              })
+                            }
+                          >
+                            Mark done
+                          </button>
+                          <button
+                            className="s-btn"
+                            onClick={() =>
+                              void execute({
+                                type: "task.update",
+                                id: t.id,
+                                state: "cancelled",
+                              })
+                            }
+                          >
+                            Cancel task
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+            </section>
+          )}
+          {page === "Analytics" && (
+            <StudioAnalytics state={state} channel={channel} />
+          )}
+          {page === "Account & appearance" && (
+            <section className="s-panel s-account-panel">
+              <h2>
+                <UserRound size={22} /> Your account
+              </h2>
+              <dl>
+                <dt>Email</dt>
+                <dd>{actor.email}</dd>
+                <dt>Assigned profiles</dt>
+                <dd>{roles.join(", ") || "Member"}</dd>
+                <dt>Workspace mode</dt>
+                <dd>
+                  {mode === "demo"
+                    ? "Preview — local to this browser"
+                    : "Live workspace"}
+                </dd>
+              </dl>
+              <h2>Appearance and layout</h2>
+              <p>
+                Choose your home layout and color theme. Preferences are saved
+                for this account on this device.
+              </p>
+              <fieldset>
+                <legend>Home layout</legend>
+                <div className="s-actions">
+                  <button
+                    className="s-btn"
+                    aria-pressed={layout === "command"}
+                    onClick={() => setLayout("command")}
+                  >
+                    Command Center
+                  </button>
+                  <button
+                    className="s-btn"
+                    aria-pressed={layout === "board"}
+                    onClick={() => setLayout("board")}
+                  >
+                    Production Board
+                  </button>
+                  <button
+                    className="s-btn s-primary"
+                    onClick={() => move("Home")}
+                  >
+                    Open selected layout
+                  </button>
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend>Color theme</legend>
+                <div className="s-actions">
+                  <button
+                    className="s-btn"
+                    aria-pressed={theme === "midnight"}
+                    onClick={() => setTheme("midnight")}
+                  >
+                    Midnight Teal
+                  </button>
+                  <button
+                    className="s-btn"
+                    aria-pressed={theme === "daylight"}
+                    onClick={() => setTheme("daylight")}
+                  >
+                    Daylight Teal
+                  </button>
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend>Navigation</legend>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={sidebarPinned}
+                    onChange={(e) => setSidebarPinned(e.target.checked)}
+                  />{" "}
+                  Pin sidebar
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={sidebarExpanded}
+                    onChange={(e) => setSidebarExpanded(e.target.checked)}
+                  />{" "}
+                  Expand sidebar
+                </label>
+              </fieldset>
+              {mode === "demo" ? (
+                <p>
+                  You are using the preview identity. No live account is signed
+                  in. <a href="/studio">Open live sign-in</a>
+                </p>
+              ) : (
+                <button className="s-btn" onClick={() => void signOut()}>
+                  <LogOut size={16} /> Sign out
+                </button>
+              )}
+            </section>
           )}
           {page === "Create" &&
             (activeContent ? (

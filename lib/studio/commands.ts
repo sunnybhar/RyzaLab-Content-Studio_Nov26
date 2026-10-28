@@ -79,6 +79,20 @@ const command = <T extends string, S extends z.ZodRawShape>(
   shape: S,
 ) => z.object({ type: z.literal(type), ...shape }).strict();
 export const commandSchema = z.discriminatedUnion("type", [
+  command("task.create", {
+    title: z.string().trim().min(3).max(200),
+    kind: z.enum(["draft", "editing", "workflow"]),
+    contentId: id.optional(),
+    workflowId: id.optional(),
+    channel,
+    at: z.iso.datetime(),
+    notes: z.string().max(4000),
+  }),
+  command("task.update", {
+    id,
+    at: z.iso.datetime().optional(),
+    state: z.enum(["planned", "done", "cancelled"]).optional(),
+  }),
   command("idea.generate", {
     channel,
     topic: z.string().min(5).max(4000),
