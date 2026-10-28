@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { supabase, configured } from "../supabase";
 import type {
   StudioState,
@@ -17,7 +18,9 @@ export function useStudio() {
     [actor, setActor] = useState<Actor | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
-  const mode: "live" | "demo" = configured ? "live" : "demo",
+  const pathname = usePathname();
+  const mode: "live" | "demo" =
+      pathname === "/preview" || !configured ? "demo" : "live",
     latest = useRef<StudioState | null>(null);
   const update = (s: StudioState) => {
     latest.current = s;
@@ -26,7 +29,7 @@ export function useStudio() {
   const refresh = useCallback(async () => {
     try {
       setError("");
-      if (!configured) {
+      if (mode === "demo") {
         let saved: StudioState | null = null;
         try {
           saved = JSON.parse(
@@ -57,10 +60,10 @@ export function useStudio() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [mode]);
   useEffect(() => {
     refresh();
-    if (!supabase) return;
+    if (!supabase || mode === "demo") return;
     const { data } = supabase.auth.onAuthStateChange(() => {
       setTimeout(() => refresh(), 0);
     });
@@ -132,7 +135,7 @@ export function useStudio() {
     }
   }
   async function signOut() {
-    if (supabase) await supabase.auth.signOut();
+    if (supabase && mode === "live") await supabase.auth.signOut();
     else {
       localStorage.removeItem("ryzalab-studio-v2");
       await refresh();

@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
       ),
     });
     const response = NextResponse.redirect(
-      config.origin + "/?google=connected",
+      config.origin + "/studio?google=connected",
     );
     response.cookies.delete("studio-google-state");
     return response;

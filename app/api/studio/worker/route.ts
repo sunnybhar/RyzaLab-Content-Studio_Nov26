@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { database, loadState, persist, decrypt } from "@/lib/studio/store";
 import { can, StudioError } from "@/lib/studio/permissions";
+import { budgetMonth } from "@/lib/studio/time";
 import { readRates } from "@/lib/studio/pricing";
 import { runProvider, ProviderFailure } from "@/lib/studio/providers";
 import { failure } from "@/lib/studio/http";
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
       return blockJob(
         "Job authority changed. Cancel and reauthorize this request.",
       );
-    if (job.period !== now.slice(0, 7))
+    if (job.period !== budgetMonth(now, state.settings.timezone))
       return blockJob(
         "This reservation belongs to an earlier month. Cancel and reauthorize it under the current month.",
       );
@@ -167,18 +168,16 @@ export async function POST(req: NextRequest) {
           upsert: false,
         });
       if (!uploadError) {
-        const { error: assetError } = await db
-          .from("studio_assets")
-          .insert({
-            id: assetId,
-            content_id: job.contentId,
-            object_path: object,
-            uploaded_by:
-              (job as typeof job & { createdById?: string }).createdById ||
-              actor.id,
-            mime: outcome.mime,
-            name: `generated-${job.id}`,
-          });
+        const { error: assetError } = await db.from("studio_assets").insert({
+          id: assetId,
+          content_id: job.contentId,
+          object_path: object,
+          uploaded_by:
+            (job as typeof job & { createdById?: string }).createdById ||
+            actor.id,
+          mime: outcome.mime,
+          name: `generated-${job.id}`,
+        });
         if (!assetError) storedMedia = `/api/studio/assets?id=${assetId}`;
       }
       if (!storedMedia)

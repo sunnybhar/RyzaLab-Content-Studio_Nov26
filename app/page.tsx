@@ -1,2 +1,5 @@
-import StudioEntry from '@/components/studio-entry';
-export default function Page(){return <StudioEntry/>}
+import { redirect } from "next/navigation";
+// Review-first rollout: the public site uses isolated demo state until live migration is configured.
+export default function Page() {
+  redirect("/preview");
+}

@@ -1,3 +1,4 @@
+import { nextOccurrence } from "./time";
 import { applyCommand } from "./engine";
 import { quote } from "./pricing";
 import type { StudioState } from "./types";
@@ -115,9 +116,12 @@ export function maintenance(
       );
       const r = state.recurrences.find((r) => r.id === schedule.id)!;
       r.lastOccurrence = occurrence;
-      r.nextAt = new Date(
-        Date.parse(occurrence) + (r.cadence === "daily" ? 1 : 7) * 86400000,
-      ).toISOString();
+      r.nextAt = nextOccurrence(
+        occurrence,
+        state.settings.timezone,
+        r.cadence === "daily" ? 1 : 7,
+        now,
+      );
       delete r.researchChoice;
       notify(
         owner.email,

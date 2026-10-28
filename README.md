@@ -1,6 +1,6 @@
 # RyzaLab Content Studio — rebuild branch
 
-Founder-first editorial workspace for ideas, nine content channels, versioned agent workflows, human review, immutable approved packages, Google Docs/DOCX, editable media, calendar tasks, scoped profiles and manual publication. No Notion or automated social posting. Branch `studio-rebuild` is an implementation/preview checkpoint, **not production release approval**.
+Founder-first editorial workspace for ideas, nine content channels, versioned agent workflows, human review, immutable approved packages, Google Docs/DOCX, editable media, calendar tasks, scoped profiles and manual publication. No Notion or automated social posting. The public root opens the labelled `/preview` review experience. `/studio` is the configured live entry. This is an implementation/preview checkpoint, **not a claim that all production integrations are ready**.
 
 ## Local use in VS Code
 
@@ -27,7 +27,7 @@ The dev/start scripts use port3005. Without public Supabase settings the app ope
 
 Admin user management is distinct from founder editorial authority. The initial existing admin can explicitly assign Founder (including to themselves) through an audited action. Profiles: Founder, Administrator, Manager, Editor, Creator, Viewer. Multiple profiles allowed. Per-function/channel/account/content grants are checked together within one grant. Explicit grants replace profile defaults for non-admin/non-founder users. Assigned content is required for ordinary content access. Founder-only protected rules are separate from writer-editable workflow configuration.
 
-Unified Workflow Settings contains instructions, audience, guardrails, selected brand/source/example references, output format, checks and per-function AI bindings. Save creates a draft version; submit then activate. Activation and new approvals never mutate earlier approved packages. Text edits leave media revisions alone. Human approval captures exact text/media/workflow/rule/reference snapshots; stale review requests fail rather than silently approving unseen versions. Price/“free” wording currently fails closed pending a separately implemented scoped founder-exception command; evidence-priced article handling is not yet fully contextual.
+Unified Workflow Settings contains instructions, audience, guardrails, selected brand/source/example references, output format, checks and per-function AI bindings. Save creates a draft version; submit then activate. Activation and new approvals never mutate earlier approved packages. Text edits leave media revisions alone. Human approval captures exact text/media/workflow/rule/reference snapshots; stale review requests fail rather than silently approving unseen versions. Price/“free” wording requires an exact-line, exact-revision founder exception recorded in review. That exception cannot waive misinformation or misrepresentation blockers; evidence-priced article handling is still conservative rather than fully contextual.
 
 Publication is manual. Calendar tasks select approved packages explicitly. A person posts externally and supplies a matching HTTPS URL; state is **human confirmed**, never platform verified. No social account credentials are requested.
 
@@ -75,7 +75,7 @@ Inbox events work. Optional Resend adapter requires EMAIL_API_KEY and a verified
 
 Timezone defaults New York. Unmatched review/task routing uses founder, with initial admin fallback until founder is configured. Due unready tasks block and require explicit rescheduling. Recurring occurrences currently pause with a clear authorization event instead of silently spending; automated qualified recurring generation/research confirmation remains incomplete. Trash retains working content90days and protects package/task dependencies. Approved/released snapshots remain retained. Canonical Trash expiry does not erase legacy import tables or external backups; their deletion policy needs coordinated migration ownership.
 
-See `docs/HOSTING-COMPARISON.md` before selecting web/worker hosting. No host migration, production database change, main-branch merge or production deployment has been performed.
+See `docs/HOSTING-COMPARISON.md` before selecting web/worker hosting. No host migration or production database change has been performed. The user has authorized replacing the existing website with the review-first preview; see `docs/PREVIEW-RELEASE.md` for deployment boundaries.
 
 ## Validation
 

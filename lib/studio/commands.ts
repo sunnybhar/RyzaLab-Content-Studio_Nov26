@@ -145,7 +145,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     checks: text,
     connectionId: z.string().max(150),
     functionConnections: z
-      .record(z.enum(FUNCTIONS), z.string().max(150))
+      .partialRecord(z.enum(FUNCTIONS), z.string().max(150))
       .optional(),
   }),
   command("workflow.submit", { id }),
@@ -175,9 +175,11 @@ export const commandSchema = z.discriminatedUnion("type", [
     requestCap: money,
     confirmationThreshold: money,
     currency: z.literal("USD"),
-    functionCaps: z.record(z.enum(FUNCTIONS), money).optional(),
+    functionCaps: z.partialRecord(z.enum(FUNCTIONS), money).optional(),
     userCaps: z.record(email, money).optional(),
-    channelCaps: z.record(channel, money).optional(),
+    roleCaps: z.partialRecord(z.enum(ROLES), money).optional(),
+    projectCaps: z.record(short, money).optional(),
+    channelCaps: z.partialRecord(channel, money).optional(),
     accountCaps: z.record(short, money).optional(),
     emailEnabled: z.boolean().optional(),
     docsMode: z.enum(["manual", "automatic"]).optional(),

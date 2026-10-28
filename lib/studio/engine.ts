@@ -2,6 +2,7 @@ import type { Actor, Content, Job, StudioState } from "./types";
 import { commandSchema } from "./commands";
 import { requirePermission, StudioError, memberFor, can } from "./permissions";
 import { EMPTY_MEDIA } from "./seed";
+import { budgetMonth } from "./time";
 import { review } from "../brand";
 export type ExecutionContext = {
   now?: string;
@@ -10,6 +11,7 @@ export type ExecutionContext = {
   hash?: (value: string) => string;
   quotedCost?: number;
   pricingSnapshot?: unknown;
+  assetManifest?: unknown[];
 };
 export function fingerprint(value: unknown) {
   const s = JSON.stringify(value);
@@ -101,7 +103,7 @@ export function applyCommand(
     return j;
   };
   const reserve = (j: Job) => {
-    const period = now.slice(0, 7),
+    const period = budgetMonth(now, s.settings.timezone),
       monthly = s.jobs.filter((x) => x.period === period && x.id !== j.id),
       amount = j.estimate;
     const used = (xs: Job[]) =>
@@ -130,6 +132,27 @@ export function applyCommand(
         "account",
       ],
     ];
+    const ownerRoles =
+      s.members.find((m) => m.email === j.createdBy)?.roles || [];
+    for (const role of ownerRoles) {
+      const records = monthly.filter((x) =>
+        (
+          (x as Job & { rolesSnapshot?: string[] }).rolesSnapshot ||
+          s.members.find((m) => m.email === x.createdBy)?.roles ||
+          []
+        ).includes(role),
+      );
+      gates.push([s.settings.roleCaps?.[role], records, `role ${role}`]);
+    }
+    const project = (j as Job & { project?: string }).project;
+    if (project)
+      gates.push([
+        s.settings.projectCaps?.[project],
+        monthly.filter(
+          (x) => (x as Job & { project?: string }).project === project,
+        ),
+        "project",
+      ]);
     for (const [cap, records, label] of gates) {
       if (cap === undefined) continue;
       if (cap === 0 || used(records) + amount > cap)
@@ -144,6 +167,7 @@ export function applyCommand(
       );
     j.reserved = amount;
     j.period = period;
+    Object.assign(j, { rolesSnapshot: ownerRoles });
     j.state = "queued";
   };
   switch (c.type) {
@@ -413,6 +437,7 @@ export function applyCommand(
         workflowId: workflow.id,
         ruleVersion: s.settings.protectedVersion,
         ...{
+          assetManifest: ctx.assetManifest || [],
           exceptionSnapshots: (s.exceptions || []).filter(
             (e) => e.contentId === d.id && e.revision === d.revision,
           ),
@@ -858,11 +883,12 @@ export function applyCommand(
         workflowId: workflow.id,
         workflowSnapshot: structuredClone(workflow),
         rulesSnapshot: s.settings.protectedRules,
-        period: now.slice(0, 7),
+        period: budgetMonth(now, s.settings.timezone),
         payloadHash,
         mediaRevision: d?.mediaRevision || 1,
         ...{
           createdById: actor.id,
+          project: d?.collection || "Unassigned",
           pricingSnapshot: ctx.pricingSnapshot,
           referenceSnapshots: s.references
             .filter((r) => workflow.references.includes(r.id))
@@ -904,6 +930,13 @@ export function applyCommand(
     }
     case "docs.link": {
       const d = content(c.contentId);
+      if (
+        s.contents.some(
+          (other) =>
+            other.id !== d.id && other.docId === c.docId && !other.deletedAt,
+        )
+      )
+        bad("Use a separate Google Doc for each platform draft.");
       d.docId = c.docId;
       d.docsBase = d.text;
       break;

@@ -275,6 +275,8 @@ export interface Settings {
   currency: string;
   functionCaps: Partial<Record<FunctionKind, number>>;
   userCaps: Record<string, number>;
+  roleCaps?: Partial<Record<Role, number>>;
+  projectCaps?: Record<string, number>;
   channelCaps?: Partial<Record<Channel, number>>;
   accountCaps?: Record<string, number>;
   protectedRules: string;
