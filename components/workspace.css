@@ -4078,3 +4078,5 @@
 .studio-v2 .s-connection-row { flex-wrap:wrap; }
 .studio-v2 .s-connection-row > div:first-of-type { min-width:0; flex:1 1 220px; }
 .studio-v2 .s-connection-row p { overflow-wrap:anywhere; }
+.studio-v2 .s-docs-conflict { padding:18px; border:1px solid var(--s-warning); border-radius:8px; margin:18px 0; text-align:left; }
+.studio-v2 .s-docs-conflict pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:300px; overflow:auto; padding:12px; background:var(--s-paper); }

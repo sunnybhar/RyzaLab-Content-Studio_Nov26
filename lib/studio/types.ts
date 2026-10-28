@@ -176,6 +176,11 @@ export interface Content {
   docId?: string;
   docsBase?: string;
   docsFetchedAt?: string;
+  docsOwnerId?: string;
+  docsOwnerEmail?: string;
+  docsLastCheckedAt?: string;
+  docsSyncError?: string;
+  docsIncoming?: { text: string; fetchedAt: string; reason: string };
   createdBy: string;
   updatedAt: string;
   deletedAt?: string;

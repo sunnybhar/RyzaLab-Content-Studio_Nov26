@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { database, persist } from "@/lib/studio/store";
 import { StudioError } from "@/lib/studio/permissions";
+import { syncOneGoogleDoc } from "@/lib/studio/docs-sync-worker";
 import { maintenance } from "@/lib/studio/maintenance";
 import type { StudioState } from "@/lib/studio/types";
 import { failure } from "@/lib/studio/http";
+export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const configured = process.env.STUDIO_WORKER_TOKEN,
@@ -27,7 +29,9 @@ export async function POST(req: NextRequest) {
     const previous = data.state as StudioState,
       next = maintenance(previous);
     await persist(db, previous, next);
+    const docs = await syncOneGoogleDoc(db, next);
     return NextResponse.json({
+      docs,
       changed: next.version !== previous.version,
       email:
         "Delivery requires a selected/configured transactional email adapter.",

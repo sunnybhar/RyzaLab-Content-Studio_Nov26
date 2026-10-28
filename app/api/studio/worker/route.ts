@@ -4,7 +4,7 @@ import { database, loadState, persist, decrypt } from "@/lib/studio/store";
 import { can, StudioError } from "@/lib/studio/permissions";
 import { budgetMonth } from "@/lib/studio/time";
 import { parseGeneratedIdeas } from "@/lib/studio/idea-generation";
-import { readRates } from "@/lib/studio/pricing";
+import { readRates, pricingSnapshotIsCurrent } from "@/lib/studio/pricing";
 import { runProvider, ProviderFailure } from "@/lib/studio/providers";
 import { failure } from "@/lib/studio/http";
 export const maxDuration = 180;
@@ -106,16 +106,7 @@ export async function POST(req: NextRequest) {
         };
       }
     ).pricingSnapshot;
-    if (
-      !snapshot ||
-      !readRates().some(
-        (r) =>
-          r.provider === snapshot.provider &&
-          r.model === snapshot.model &&
-          r.function === snapshot.function &&
-          r.verifiedAt === snapshot.verifiedAt,
-      )
-    )
+    if (!pricingSnapshotIsCurrent(snapshot, readRates()))
       return blockJob(
         "The qualified pricing snapshot is missing or changed. Reauthorize this request.",
       );

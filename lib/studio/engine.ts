@@ -699,6 +699,11 @@ export function applyCommand(
         docId: undefined,
         docsBase: undefined,
         docsFetchedAt: undefined,
+        docsOwnerId: undefined,
+        docsOwnerEmail: undefined,
+        docsLastCheckedAt: undefined,
+        docsSyncError: undefined,
+        docsIncoming: undefined,
         stages: [],
       });
       break;
@@ -1156,6 +1161,8 @@ export function applyCommand(
       } catch {
         bad("Choose a valid IANA timezone.");
       }
+      if (c.docsMode && c.docsMode !== s.settings.docsMode)
+        need("policy.manage");
       const { type: _, ...data } = c;
       Object.assign(s.settings, data);
       break;
@@ -1366,6 +1373,12 @@ export function applyCommand(
       )
         bad("Use a separate Google Doc for each platform draft.");
       d.docId = c.docId;
+      d.docsOwnerId = actor.id;
+      d.docsOwnerEmail = actor.email;
+      d.docsFetchedAt = undefined;
+      d.docsLastCheckedAt = undefined;
+      d.docsIncoming = undefined;
+      d.docsSyncError = undefined;
       d.docsBase = d.text;
       break;
     }
@@ -1376,6 +1389,25 @@ export function applyCommand(
           409,
           "The draft changed while fetching. Refresh before importing.",
         );
+      if (
+        c.expectedIncomingFetchedAt &&
+        d.docsIncoming?.fetchedAt !== c.expectedIncomingFetchedAt
+      )
+        throw new StudioError(
+          409,
+          "Incoming Google Docs version changed. Compare again before importing.",
+        );
+      if (d.docsIncoming && d.docsIncoming.text !== c.text)
+        d.history.push({
+          id: id(),
+          text: d.docsIncoming.text,
+          title: d.title,
+          metadata: d.metadata,
+          media: structuredClone(d.media),
+          createdBy: actor.email,
+          createdAt: d.docsIncoming.fetchedAt,
+          reason: "Google incoming branch preserved before manual import",
+        });
       remember(
         d,
         "Google Docs / DOCX import; displaced Studio version retained",
@@ -1385,6 +1417,9 @@ export function applyCommand(
       d.textRevision = (d.textRevision || 1) + 1;
       d.docsBase = c.text;
       d.docsFetchedAt = now;
+      d.docsLastCheckedAt = now;
+      d.docsIncoming = undefined;
+      d.docsSyncError = undefined;
       break;
     }
   }

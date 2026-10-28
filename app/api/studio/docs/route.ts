@@ -5,7 +5,7 @@ import {
   requirePermission,
   filteredState,
 } from "@/lib/studio/permissions";
-import { googleAccess } from "@/lib/studio/google";
+import { readGoogleDocument } from "@/lib/studio/google";
 import { applyCommand } from "@/lib/studio/engine";
 import { failure } from "@/lib/studio/http";
 export async function POST(req: NextRequest) {
@@ -23,42 +23,16 @@ export async function POST(req: NextRequest) {
     });
     if (!d.docId)
       throw new StudioError(400, "Link a Google document ID first.");
-    const token = await googleAccess(db, actor.id),
-      response = await fetch(
-        `https://docs.googleapis.com/v1/documents/${encodeURIComponent(d.docId)}?includeTabsContent=true`,
-        {
-          headers: { authorization: `Bearer ${token}` },
-          signal: AbortSignal.timeout(20000),
-          redirect: "error",
-        },
-      );
-    if (!response.ok)
+    if (
+      (body.expectedDocId && body.expectedDocId !== d.docId) ||
+      (body.expectedRevision !== undefined &&
+        body.expectedRevision !== d.revision)
+    )
       throw new StudioError(
-        response.status === 403 ? 403 : 502,
-        "Could not read this Google Doc. Check sharing, permissions, and the document ID.",
+        409,
+        "Linked document or draft changed. Reload before fetching.",
       );
-    const document = await response.json();
-    const parts: string[] = [];
-    function collect(value: unknown) {
-      if (!value || typeof value !== "object") return;
-      const node = value as Record<string, unknown>;
-      if (node.textRun && typeof node.textRun === "object") {
-        const text = (node.textRun as { content?: string }).content;
-        if (text) parts.push(text);
-        return;
-      }
-      for (const v of Object.values(node)) {
-        if (Array.isArray(v)) v.forEach(collect);
-        else if (v && typeof v === "object") collect(v);
-      }
-    }
-    collect(document.tabs?.length ? document.tabs : document.body);
-    const text = parts.join("");
-    if (text.length > 60000)
-      throw new StudioError(
-        413,
-        "Google document exceeds the current draft text limit.",
-      );
+    const text = await readGoogleDocument(db, actor.id, d.docId);
     const next = applyCommand(
       state,
       actor,
@@ -70,6 +44,9 @@ export async function POST(req: NextRequest) {
       },
       { hash },
     );
+    const imported = next.contents.find((c) => c.id === d.id)!;
+    imported.docsOwnerId = actor.id;
+    imported.docsOwnerEmail = actor.email;
     await persist(db, state, next);
     return NextResponse.json({
       state: filteredState(next, actor),

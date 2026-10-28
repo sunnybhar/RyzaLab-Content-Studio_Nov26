@@ -4002,8 +4002,11 @@ export default function Workspace() {
                           {
                             name: "docsMode",
                             label: "Google Docs sync",
-                            options: ["manual"],
-                            value: "manual",
+                            options: founder
+                              ? ["manual", "automatic"]
+                              : [state.settings.docsMode],
+                            value: state.settings.docsMode,
+                            hint: "Founder-controlled. Automatic mode checks linked, manually fetched documents periodically; conflicting or approved versions require human import.",
                           },
                         ],
                         (d) => ({
@@ -4028,7 +4031,7 @@ export default function Workspace() {
                             val(d, "accountCaps") || "{}",
                           ),
                           emailEnabled: val(d, "emailEnabled") === "Enabled",
-                          docsMode: "manual",
+                          docsMode: val(d, "docsMode"),
                         }),
                       )
                     }
@@ -4775,7 +4778,11 @@ function Editor({
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ contentId: c.id }),
+        body: JSON.stringify({
+          contentId: c.id,
+          expectedDocId: c.docId,
+          expectedRevision: c.revision,
+        }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Google Docs fetch failed.");
@@ -5537,6 +5544,47 @@ function Editor({
                   Export Markdown
                 </button>
               </div>
+              {c.docsSyncError && (
+                <p role="alert" className="s-red-text">
+                  {c.docsSyncError}
+                </p>
+              )}
+              {c.docsIncoming && (
+                <section
+                  className="s-docs-conflict"
+                  aria-label="Google Docs conflict"
+                >
+                  <h3>Google Docs changes need review</h3>
+                  <p>{c.docsIncoming.reason}</p>
+                  <details>
+                    <summary>Compare Studio and incoming text</summary>
+                    <h4>Current Studio text</h4>
+                    <pre>{c.text}</pre>
+                    <h4>Incoming Google Docs text</h4>
+                    <pre>{c.docsIncoming.text}</pre>
+                  </details>
+                  <button
+                    className="s-btn"
+                    disabled={readOnly || dirty}
+                    onClick={() =>
+                      form(
+                        "Import saved Google Docs version",
+                        [],
+                        () => ({
+                          type: "docs.import",
+                          contentId: c.id,
+                          text: c.docsIncoming!.text,
+                          expectedRevision: c.revision,
+                        }),
+                        "The displaced Studio text stays in history, unchanged media is retained and approved snapshots remain immutable. Required text checks reopen.",
+                        "Import incoming text",
+                      )
+                    }
+                  >
+                    Import incoming text
+                  </button>
+                </section>
+              )}
               <div className="s-docs-import">
                 <h3>Import reviewed document text</h3>
                 <p>

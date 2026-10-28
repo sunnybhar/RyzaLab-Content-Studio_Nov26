@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { researchConfigSchema } from "./research";
 import type { Connection, Job, StudioState } from "./types";
 import { StudioError } from "./permissions";
 const rate = z
@@ -12,6 +13,8 @@ const rate = z
     maxInputBytes: z.number().int().positive().max(500000),
     maxOutputTokens: z.number().int().min(1).max(6000),
     fixedCents: z.number().int().positive().optional(),
+    webSearchTool: z.literal("web_search_20250305").optional(),
+    maxSearchUses: z.literal(1).optional(),
     source: z.url(),
     verifiedAt: z.string().min(10),
     qualified: z.literal(true),
@@ -70,6 +73,14 @@ export function quote(
       503,
       "No qualified provider/model pricing is registered for this function. Evaluate a sample and configure the server rate card before paid generation.",
     );
+  if (
+    input.kind === "research" &&
+    !researchConfigSchema.safeParse(card).success
+  )
+    throw new StudioError(
+      503,
+      "Research needs a separately qualified Claude rate card with one bounded search and a fixed reservation covering all token/tool charges. No provider request was sent.",
+    );
   const referenceSnapshots = state.references.filter((r) =>
     workflow.references.includes(r.id),
   );
@@ -106,4 +117,18 @@ export function quote(
     cost,
     pricingSnapshot: { ...card, inputBytes: bytes, quoteVersion: "v1" },
   };
+}
+
+export function pricingSnapshotIsCurrent(snapshot: unknown, rates: Rate[]) {
+  if (!snapshot || typeof snapshot !== "object") return false;
+  const {
+    inputBytes: _inputBytes,
+    quoteVersion: _quoteVersion,
+    ...frozen
+  } = snapshot as Record<string, unknown>;
+  const parsed = rate.safeParse(frozen);
+  if (!parsed.success) return false;
+  return rates.some(
+    (current) => JSON.stringify(current) === JSON.stringify(parsed.data),
+  );
 }

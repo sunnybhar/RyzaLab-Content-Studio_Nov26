@@ -89,17 +89,70 @@ export async function googleAccess(
       "Google access was revoked or could not refresh. Reconnect the account.",
     );
   const next = await response.json();
-  await db
+  const { error: saveError } = await db
     .from("studio_secrets")
     .update({
       ciphertext: encrypt(
         JSON.stringify({
           ...token,
           access_token: next.access_token,
+          refresh_token: next.refresh_token || token.refresh_token,
           expires: Date.now() + next.expires_in * 1000,
         }),
       ),
     })
     .eq("id", `google:${userId}`);
+  if (saveError)
+    throw new StudioError(
+      503,
+      "Google token refresh could not be retained. Retry without importing changes.",
+    );
   return next.access_token as string;
+}
+
+export function googleDocumentText(document: unknown) {
+  const parts: string[] = [];
+  const doc = document as { tabs?: unknown[]; body?: unknown };
+  function collect(value: unknown) {
+    if (!value || typeof value !== "object") return;
+    const node = value as Record<string, unknown>;
+    if (node.textRun && typeof node.textRun === "object") {
+      const text = (node.textRun as { content?: string }).content;
+      if (text) parts.push(text);
+      return;
+    }
+    for (const v of Object.values(node)) {
+      if (Array.isArray(v)) v.forEach(collect);
+      else if (v && typeof v === "object") collect(v);
+    }
+  }
+  collect(doc.tabs?.length ? doc.tabs : doc.body);
+  const text = parts.join("");
+  if (text.length > 60000)
+    throw new StudioError(
+      413,
+      "Google document exceeds the current draft text limit.",
+    );
+  return text;
+}
+export async function readGoogleDocument(
+  db: ReturnType<typeof database>,
+  userId: string,
+  docId: string,
+) {
+  const token = await googleAccess(db, userId);
+  const response = await fetch(
+    `https://docs.googleapis.com/v1/documents/${encodeURIComponent(docId)}?includeTabsContent=true`,
+    {
+      headers: { authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(20000),
+      redirect: "error",
+    },
+  );
+  if (!response.ok)
+    throw new StudioError(
+      response.status === 403 ? 403 : 502,
+      "Could not read the Google Doc. Check sharing and reconnect the owner's account.",
+    );
+  return googleDocumentText(await response.json());
 }

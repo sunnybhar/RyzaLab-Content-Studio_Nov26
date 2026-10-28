@@ -286,6 +286,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     contentId: id,
     text,
     expectedRevision: z.number().int().positive(),
+    expectedIncomingFetchedAt: z.string().optional(),
   }),
 ]);
 export type ValidCommand = z.infer<typeof commandSchema>;
