@@ -388,6 +388,7 @@ for area,name,criteria,dep in [
  ('Video','Select quality/cost/voice targets','Compare sample outputs and costs before committing provider/resolution expectations.','Authorized sample evaluations'),
  ('Branding','Supply official RyzaLab logo asset','Replace provisional Studio monogram with approved logo/icon file.','Official vector or raster asset from brand owner'),
  ('Analytics','Define optional social performance ingestion','Decide manual metrics import or separate authorized read-only analytics integration; no account access assumed.','User scope decision; publishing remains manual')]:item(area,name,N,'P2',criteria,dep)
+item('AI connections','Disconnect and delete AI connections',P,'P0','Permitted admins can clear saved credentials and disconnect a connection; unused connections can be deleted; active jobs, workflow dependencies and immutable history are protected.','Explicit user instruction: backlog only; do not implement now.')
 for row in items:backlog.append(row)
 bstatus=DataValidation(type='list',formula1='"Done,Built—needs live validation,In progress,Pending build,Decision needed,Deferred"');backlog.add_data_validation(bstatus);bstatus.add(f'D2:D{backlog.max_row}')
 summary=wb.create_sheet('QA Summary',1);summary.append(['Metric','Count']);summary.append(['Total test cases',f'=COUNTA(\'QA Cases\'!A2:A{qa.max_row})'])
