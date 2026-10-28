@@ -12,10 +12,10 @@ This is a review release, not completed production integration. Root remains an 
 
 Next: user reviews visual/workflow changes; then configure and qualify live integrations in a separate preview environment. Preserve five-minute checkpoints during active work.
 
-## Follow-up requests in progress
+## Follow-up completed — 2026-10-28
 
-User requested working profile controls, tab branding, discoverable themes/layouts, draft/editing/workflow calendar tasks and analytics. Implemented first pass, TypeScript passes; browser and domain verification pending. User also requested one training document per section; writing modules after verifying feature labels. Do not release this follow-up until checked.
+Account controls, provisional tab icon/title, discoverable themes/layouts, draft/editing/workflow planning and Analytics implemented. Training & QA hosts 13 standalone Word modules, 127 manual QA cases and a 44-item backlog. Downloads and section links are working. Generator: scripts/generate-training-materials.py requires python-docx/openpyxl and copies only authored generic training materials into public/training.
 
-Training deliverables drafted: 13 standalone Word/Markdown modules, 123 manual QA cases and 44 delivery backlog entries. Workbook has status dropdowns, summary formulas, defects, test data and training index. Python generator in scripts/generate-training-materials.py (requires python-docx and openpyxl). Follow-up domain checks: 88 tests pass. Browser verification of appearance/calendar/analytics underway; main unchanged.
+Validation: 88 tests, TypeScript, production build and expanded browser flow pass. Profile/theme persistence, calendar target opening, Analytics and Word/Excel downloads exercised. Documents parsed and ZIP checked; manual QA statuses all intentionally Not run. Backlog marks local completion separately from live acceptance. Official logo asset still needed; favicon is a provisional Studio monogram. Live providers, Google, email and database configuration remain pending as previously documented.
 
-Follow-up browser checks pass for profile controls, Daylight/Midnight persistence, planning creation/open/completion and Analytics; desktop screenshots inspected. Added Training & QA download hub and four manual download checks (127 workbook cases total). Final hub browser check and regenerated backlog statuses pending before release.
+Next: user runs module 00 then section-by-section manual acceptance. Collect defect IDs/results in the workbook. Continue live integration work only within authorized configuration/provider scope; do not represent preview samples as live AI. Preserve five-minute checkpoints during active work.

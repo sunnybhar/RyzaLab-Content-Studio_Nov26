@@ -94,3 +94,9 @@ Development models: GPT-6.1 Sol implements/fixes and refines screens; GPT-6 Astr
 The Midnight Teal interface offers Command Center and Production Board views, with actor-specific sidebar/layout preferences. In Ideas, **Generate with agent** creates pending idea cards. Preview uses clearly labelled local samples. Live generation requires an Ideas connection, validated pricing, budget allowance and a worker; current-web research is still unavailable.
 
 Use **Workflow settings** to import channel instructions as a draft, edit instructions/brand references/guardrails, and submit and activate the reviewed version. Import does not override protected founder policy. Every content item shows nine stages. Record the first six human checks before approving a package, then record its exact package handoff before confirming manual publication. Text changes preserve unchanged visual checks; format or media changes reopen them. Publication is always performed by a person outside Studio.
+
+### Training and acceptance testing
+
+Open **Training & QA** in the sidebar for 13 standalone Word training modules, the 127-case manual QA workbook and the 44-item delivery backlog. Source guides and downloads are in [docs/training](docs/training/README.md). To regenerate with Python, install `python-docx` and `openpyxl`, then run `python scripts/generate-training-materials.py`. These are documentation-generation dependencies, not application runtime dependencies.
+
+Both avatars open Account & appearance. Calendar supports human drafting/editing/workflow tasks separately from approved publication. Analytics reports real Studio records; social reach/engagement remains unconnected.

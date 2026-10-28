@@ -21,7 +21,7 @@ Available in preview. Live operation requires the configured /studio workspace.
 7. Record Publication handoff for the exact approved package. Open Calendar and plan its manual publication. For drafting, editing or workflow reminders, use the separate planning actions.
 8. A person publishes outside Studio. Return to Calendar → Agenda and Confirm published with the live URL and correct approved revision.
 9. Open Analytics to inspect current inventory and recorded activity. Keep social reach and engagement separate: these are not connected.
-10. Use the QA workbook during acceptance testing. Record failures and actual results; do not mark a feature passed because its button is visible.
+10. Open Training & QA to download the modules, QA workbook and backlog. Use the QA workbook during acceptance testing. Record failures and actual results; do not mark a feature passed because its button is visible.
 
 ## Expected result
 You can explain each stage and complete one sample post without claiming a real provider call or real publication occurred.

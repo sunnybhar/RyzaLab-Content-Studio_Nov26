@@ -25,7 +25,7 @@ module('00-Start-Here','Start Here — Complete User Journey','All users','Under
 'Record Publication handoff for the exact approved package. Open Calendar and plan its manual publication. For drafting, editing or workflow reminders, use the separate planning actions.',
 'A person publishes outside Studio. Return to Calendar → Agenda and Confirm published with the live URL and correct approved revision.',
 'Open Analytics to inspect current inventory and recorded activity. Keep social reach and engagement separate: these are not connected.',
-'Use the QA workbook during acceptance testing. Record failures and actual results; do not mark a feature passed because its button is visible.'
+'Open Training & QA to download the modules, QA workbook and backlog. Use the QA workbook during acceptance testing. Record failures and actual results; do not mark a feature passed because its button is visible.'
 ],'You can explain each stage and complete one sample post without claiming a real provider call or real publication occurred.','Create a sample LinkedIn text post about documenting a routine. Complete its checks using honest human evidence. Stop before Confirm published unless you actually published a test item.','If a control is disabled, check your profile, assignment, channel and active workflow. Do not paste API keys into training files or QA evidence.')
 module('01-Home-and-Navigation','Home and Navigation','All users','Find work quickly using the dashboard, channel filter, layouts and sidebar.','Have access to preview or a live workspace.',[
 'Open Home. Read the current mode before entering important work.',
@@ -181,7 +181,7 @@ for row in [
  ['Backlog status','Done = implemented and locally checked; Built—needs live validation = credentialed acceptance pending; In progress = follow-up under verification; Pending build = missing implementation; Decision needed = selection/approval outstanding.'],
  ['Safety','Never store passwords/API keys in this workbook or screenshots. Confirm published only for a real test publication.'],
  ['Data scope','Analytics reflects permitted records; human publication confirmation is not independent social-platform verification.'],
- ['Current baseline','997a3ff tested review release. Follow-up changes documented in backlog; inspect the release notes for their final commit.'],
+ ['Current baseline','Tested review release plus account/calendar/analytics/training follow-up. See GitHub main and release notes for the deployed commit. Done describes local verification, not credentialed live acceptance.'],
  ['Training','13 separate Word/Markdown modules in the training ZIP. Module names are indexed on Training Index.'],
  ['Recommended order','Smoke → Navigation → Content/ideas → Workflow/review → Calendar → Analytics → Export → Permissions/live integrations.'],
  ['Defects','Record one issue per row with reproduction, expected/actual result and screenshot link. Retest after a fix.'],
@@ -359,7 +359,7 @@ for area,name,criteria in [
  ('Calendar','Publication event opens content','Month event opens correct item; Agenda manages exact publication task.'),
  ('Analytics','Real Studio activity and inventory','Permission-filtered counts, period activity, channel totals, check bottlenecks and cost distinction.'),
  ('Training','One training document per section','13 standalone Word/Markdown modules with steps, exercise and limitations.'),
- ('QA','QA workbook and delivery backlog','Manual statuses, defects and clear pending/done distinctions; downloadable files valid.')]:item(area,name,I,'P1',criteria,'Final browser/document verification in this follow-up')
+ ('QA','QA workbook and delivery backlog','Manual statuses, defects and clear pending/done distinctions; downloadable files valid.')]:item(area,name,D,'P1',criteria,notes='Follow-up locally verified: 88 automated tests, production build and browser flow. Live integrations remain separately tracked.')
 for area,name,criteria,dep in [
  ('Data','Live Supabase migration and data validation','Migrate test workspace, preserve existing data, verify reads/CAS/private storage.','Authorized test Supabase project and server configuration'),
  ('Auth','Password and Google live acceptance','Invited users can sign in; uninvited/revoked accounts denied.','OAuth configuration and provisioned test accounts'),
@@ -381,7 +381,7 @@ for area,name,criteria,dep in [
  ('Scale','Production-scale history/archive design','Durable scalable history outside current workspace size cap without breaking release snapshots.','Data architecture and retention design'),
  ('Operations','Backup/restore and disaster recovery acceptance','Restore test recovers content, assets and immutable snapshots.','Live hosting/storage configuration'),
  ('Operations','Monitoring and incident alerts','Worker failures, unknown charges, storage and auth failures observable with redacted logs.','Managed runtime and monitoring selection'),
- ('Review','Final independent prelaunch signoff','Re-review live permissions, stage integrity and reliability; resolve blockers.','Stable implementation; previous review ended at model capacity')]:item(area,name,P,'P1',criteria,dep)
+ ('Review','Final independent prelaunch signoff','Re-review live permissions, stage integrity and reliability; resolve blockers.','Stable implementation; previous review ended at model capacity')]:item(area,name,L if area=='Images' else P,'P1',criteria,dep)
 for area,name,criteria,dep in [
  ('Hosting','Select production worker/hosting approach','Compare cost/reliability; choose managed worker alongside web/database.','Hosting comparison in repository'),
  ('Budget','Set actual monthly cap and confirmation threshold','Choose currency/amounts after representative text/image/video sample costs.','Sample evaluation and provider rate cards'),
@@ -442,3 +442,9 @@ with zipfile.ZipFile(OUT.parent/'RyzaLab-Training-and-QA.zip','w',zipfile.ZIP_DE
   if p.name!='modules.json':z.write(p,'Training/'+p.name)
  z.write(path,path.name);z.write(OUT.parent/'RyzaLab-Backlog.xlsx','RyzaLab-Backlog.xlsx')
 print('QA cases:',len(cases),'Backlog items:',len(items),'Workbook:',path)
+
+# Only these authored training materials are copied publicly; no source brand library is included.
+import shutil
+public=ROOT/'public/training'; public.mkdir(parents=True,exist_ok=True)
+for p in list(OUT.glob('*.docx'))+list(OUT.parent.glob('*.xlsx'))+list(OUT.parent.glob('*.zip')):
+ shutil.copyfile(p,public/p.name)

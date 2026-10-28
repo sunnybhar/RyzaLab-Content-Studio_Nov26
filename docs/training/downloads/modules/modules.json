@@ -15,7 +15,7 @@
       "Record Publication handoff for the exact approved package. Open Calendar and plan its manual publication. For drafting, editing or workflow reminders, use the separate planning actions.",
       "A person publishes outside Studio. Return to Calendar \u2192 Agenda and Confirm published with the live URL and correct approved revision.",
       "Open Analytics to inspect current inventory and recorded activity. Keep social reach and engagement separate: these are not connected.",
-      "Use the QA workbook during acceptance testing. Record failures and actual results; do not mark a feature passed because its button is visible."
+      "Open Training & QA to download the modules, QA workbook and backlog. Use the QA workbook during acceptance testing. Record failures and actual results; do not mark a feature passed because its button is visible."
     ],
     "expected": "You can explain each stage and complete one sample post without claiming a real provider call or real publication occurred.",
     "exercise": "Create a sample LinkedIn text post about documenting a routine. Complete its checks using honest human evidence. Stop before Confirm published unless you actually published a test item.",
