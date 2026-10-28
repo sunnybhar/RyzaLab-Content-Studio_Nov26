@@ -126,6 +126,20 @@ function approved(state = fixture()): StudioState {
   });
 }
 function scheduled(state = approved()): StudioState {
+  state = run(state, {
+    type: "stage.decide",
+    contentId: state.contents[0].id,
+    stage: "handoff",
+    status: "pass",
+    reason: "Human prepared the approved package.",
+    evidence: "Exact package exported and inspected.",
+    expectedRevision: state.contents[0].revision,
+    expectedWorkflowId: state.workflows.find(
+      (w) => w.channel === state.contents[0].channel && w.status === "active",
+    )?.id,
+    expectedRuleVersion: state.settings.protectedVersion,
+    packageId: state.packages[0].id,
+  });
   return run(state, {
     type: "schedule.create",
     contentId: state.contents[0].id,

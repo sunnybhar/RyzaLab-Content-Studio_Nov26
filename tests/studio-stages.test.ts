@@ -237,6 +237,7 @@ test("idea generation context excludes drafts outside the requesting creator rea
   s.connections.push({
     id: "ideas-provider",
     title: "Ideas model",
+    updatedAt: new Date().toISOString(),
     function: "ideas",
     provider: "openai",
     model: "configured-model",
@@ -262,4 +263,48 @@ test("idea generation context excludes drafts outside the requesting creator rea
     founderJob.prompt.includes("Confidential unassigned founder draft"),
     true,
   );
+});
+
+test("publication confirmation cannot skip handoff, and blank N/A reasons are rejected", () => {
+  let s = fixture();
+  s.contents[0].format = "Text post";
+  s.contents[0].media.slides = [];
+  assert.throws(
+    () =>
+      applyCommand(
+        s,
+        DEMO_ACTOR,
+        decision(s, { stage: "visual_review", status: "na", reason: "     " }),
+        ctx,
+      ),
+    /Invalid|small|characters|minimum/i,
+  );
+  s = completeChecks(s, DEMO_ACTOR, s.contents[0].id, ctx);
+  s = applyCommand(s, DEMO_ACTOR, approval(s), ctx);
+  s = applyCommand(
+    s,
+    DEMO_ACTOR,
+    {
+      type: "schedule.create",
+      contentId: s.contents[0].id,
+      packageId: s.packages[0].id,
+      at: "2026-11-15T12:00:00Z",
+    },
+    ctx,
+  );
+  const command = {
+    type: "schedule.confirm",
+    id: s.schedules[0].id,
+    expectedPackageId: s.packages[0].id,
+    url: "https://linkedin.com/posts/human-confirmed",
+  };
+  assert.throws(() => applyCommand(s, DEMO_ACTOR, command, ctx), /handoff/);
+  s = applyCommand(
+    s,
+    DEMO_ACTOR,
+    decision(s, { stage: "handoff", packageId: s.packages[0].id }),
+    ctx,
+  );
+  s = applyCommand(s, DEMO_ACTOR, command, ctx);
+  assert.equal(s.schedules[0].state, "published");
 });

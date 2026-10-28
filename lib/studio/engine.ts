@@ -810,6 +810,25 @@ export function applyCommand(
           409,
           "The selected publication package changed. Compare the package you published before confirming.",
         );
+      const selectedPackage = s.packages.find((p) => p.id === item.packageId)!;
+      const handoff = [...(d.stages || [])]
+        .reverse()
+        .find(
+          (r) =>
+            r.key === "handoff" &&
+            (r.packageId === selectedPackage.id ||
+              (!r.packageId &&
+                r.textRevision === selectedPackage.textRevision &&
+                r.mediaRevision === selectedPackage.mediaRevision)),
+        );
+      if (
+        !handoff ||
+        handoff.status !== "pass" ||
+        handoff.packageId !== selectedPackage.id
+      )
+        bad(
+          "Record a passed publication handoff for the exact selected approved package before confirming publication.",
+        );
       const u = new URL(c.url);
       if (u.protocol !== "https:" || u.username || u.password)
         bad("Use an HTTPS publication URL without credentials.");

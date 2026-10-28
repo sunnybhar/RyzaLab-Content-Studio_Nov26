@@ -100,7 +100,7 @@ export const commandSchema = z.discriminatedUnion("type", [
       "handoff",
     ]),
     status: z.enum(["pass", "revise", "hold", "na"]),
-    reason: z.string().min(5).max(2000),
+    reason: z.string().trim().min(5).max(2000),
     evidence: z.string().max(12000),
     expectedRevision: z.number().int().positive(),
     expectedWorkflowId: id,

@@ -331,6 +331,25 @@ async function main() {
       .getByRole("button", { name: "Approve revision", exact: true })
       .click();
     await page.locator(".s-list-row").filter({ hasText: title }).waitFor();
+    await openContent(title);
+    await page
+      .getByRole("button", {
+        name: "Record Publication handoff check",
+        exact: true,
+      })
+      .click();
+    const handoffForm = page.locator(".s-stage-form");
+    await handoffForm
+      .getByLabel("Reason / finding")
+      .fill("Human prepared this exact approved package for publication.");
+    await handoffForm
+      .getByLabel("Evidence / reviewer reference")
+      .fill("Exact approved package inspected.");
+    await handoffForm
+      .getByRole("button", { name: "Save check", exact: true })
+      .click();
+    await handoffForm.waitFor({ state: "hidden" });
+    await navigate("Reviews");
     const approvedState = await state();
     const approved = approvedState.packages.find(
       (pkg) => pkg.contentId === saved.id,

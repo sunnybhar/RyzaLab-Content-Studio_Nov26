@@ -19,3 +19,11 @@ The server rate card and paid execution gates remain closed. Hosting options are
 ## Deployment
 
 Push tested commit to studio-rebuild for backup, then fast-forward main only because the user explicitly authorized replacing the current site. Vercel may automatically deploy from GitHub; verify its deployment result separately. GitHub API access is forbidden in this execution environment, so deployment status/URL cannot be asserted from a successful Git push alone. Do not apply database migration merely to publish this review site.
+
+## Midnight Teal revision — 2026-10-28
+
+The review site now has actor-specific persistent Command Center/Production Board choices and collapsible/pinnable navigation. Ideas offers Generate with agent: preview produces explicitly labelled local sample cards, while live mode queues a priced, permission-checked Ideas function job with supplied reference context. Web research remains unavailable until a qualified adapter is implemented. Provider responses must validate as complete structured idea sets and enter pending human review.
+
+All content follows Intake → Evidence → Creation → Independent review → Visual review → Release check → Human approval → Publication handoff → Publication record. The first six checks are required before package approval. Visual N/A requires a genuinely text-only format and a nonblank reason. Human records identify their author and never imply an independent agent ran. Copy edits retain unchanged visual review, format/media edits reopen it, and factual wording changes reopen evidence. Approved packages retain immutable stage snapshots. Publication confirmation requires a passed handoff for the exact selected approved package and a human-supplied destination URL.
+
+Workflow Settings can import uploaded channel playbooks as draft versions for review. Import never activates a workflow or changes protected founder policy. Private channel source packages are loaded on the authenticated server; the public preview imports sanitized sample instructions only. Live idea context includes only drafts the requesting member can read.
