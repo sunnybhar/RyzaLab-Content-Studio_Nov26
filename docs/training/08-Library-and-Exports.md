@@ -19,7 +19,7 @@ Available in preview. Live operation requires the configured /studio workspace.
 5. For written content, export DOCX or PDF as offered. For slides, export PNG/PDF. Use source JSON for supported editable structure and subtitles for caption timing.
 6. Export an approved package from Reviews when preparing a release. Do not substitute a later edited draft for the approved version.
 7. Use Trash for deleted working content. Recovery is subject to the 90-day policy and dependency protections. Approved release snapshots are retained separately.
-8. For MP4, distinguish the implemented local composition tool from pending fully hosted AI scene-generation/render orchestration. A script export is not an MP4.
+8. Use Export campaign / inventory for a permission-scoped ZIP with exact approved package/assets, dependency manifest and formula-safe CSV. Optional working copies are explicitly unapproved. For MP4, distinguish the implemented local composition tool from pending fully hosted AI scene-generation/render orchestration. A script export is not an MP4.
 
 ## Expected result
 Exports contain the selected version; restored drafts re-enter review and protected snapshots remain retained.

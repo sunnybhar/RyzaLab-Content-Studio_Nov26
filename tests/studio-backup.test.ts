@@ -11,6 +11,7 @@ const drillPath = new URL(
 const password = "Local test passphrase only 2026";
 function snapshot() {
   const state = initialState(DEMO_ACTOR, true);
+  state.version = 7;
   state.contents[0].title = "Private app backup fixture";
   state.audit.push({
     id: "event1",

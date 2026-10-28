@@ -15,3 +15,4 @@ One standalone module per section. Start with module 00. Companion QA/backlog wo
 - [AI and Budgets — Providers, Models and Cost Controls](10-AI-and-Budgets.md)
 - [Analytics — Content, Publication and Activity](11-Analytics.md)
 - [Notifications — Inbox and Reminders](12-Notifications.md)
+- [Operations — Health, Incidents and Recovery](13-Operations.md)

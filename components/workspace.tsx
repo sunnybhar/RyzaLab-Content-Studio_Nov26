@@ -2591,7 +2591,7 @@ export default function Workspace() {
                 </a>
               </div>
               <p>
-                The QA workbook has 137 cases, a defect log and blank manual
+                The QA workbook has 153 cases, a defect log and blank manual
                 results. Live integration cases require a configured test
                 workspace.
               </p>
@@ -2611,6 +2611,7 @@ export default function Workspace() {
                   ["10-AI-and-Budgets", "AI and budgets"],
                   ["11-Analytics", "Analytics"],
                   ["12-Notifications", "Notifications"],
+                  ["13-Operations", "Operations and incidents"],
                 ].map(([file, label]) => (
                   <li key={file}>
                     <a href={`/training/${file}.docx`} download>
@@ -4462,8 +4463,7 @@ function QueueRequest({
   );
   const binding =
     workflow?.functionConnections?.[kind] ||
-    (kind === "text" ? workflow?.connectionId : "") ||
-    state.connections.find((c) => c.function === kind)?.id;
+    (kind === "text" ? workflow?.connectionId : "");
   const connection = state.connections.find((c) => c.id === binding);
   return (
     <div className="s-modal-backdrop">
@@ -5069,7 +5069,9 @@ function Editor({
                           layer={layer}
                           selected={
                             layer.id ===
-                            (selectedLayerId || (slide.layers || [])[0]?.id)
+                            ((slide.layers || []).find(
+                              (l) => l.id === selectedLayerId,
+                            )?.id || (slide.layers || [])[0]?.id)
                           }
                           onSelect={() => setSelectedLayerId(layer.id)}
                           onMove={(moved) =>

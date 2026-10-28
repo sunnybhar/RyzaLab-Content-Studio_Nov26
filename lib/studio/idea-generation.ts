@@ -80,9 +80,7 @@ export function ideaJobInput(
   const workflow = visible.workflows.find(
     (w) => w.channel === c.channel && w.status === "active",
   );
-  const connectionId =
-    workflow?.functionConnections?.ideas ||
-    state.connections.find((conn) => conn.function === "ideas")?.id;
+  const connectionId = workflow?.functionConnections?.ideas;
   if (!connectionId)
     throw new StudioError(
       400,

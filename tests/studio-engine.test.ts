@@ -87,6 +87,9 @@ function fixture(): StudioState {
     updatedAt: NOW,
     maxRequestCost: 100,
   } as StudioState["connections"][number]);
+  state.workflows.find(
+    (w) => w.channel === "LinkedIn" && w.status === "active",
+  )!.functionConnections = { text: "text-connection" };
   return state;
 }
 function saveCommand(content: Content, changes: Partial<Content> = {}) {

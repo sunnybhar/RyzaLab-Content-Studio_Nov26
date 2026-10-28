@@ -306,7 +306,7 @@ async function main() {
         exact: true,
       })
       .waitFor();
-    assert.equal(await page.locator(".s-training-links a").count(), 13);
+    assert.equal(await page.locator(".s-training-links a").count(), 14);
     const qaFile = await saveDownload(
       () =>
         page
@@ -365,11 +365,30 @@ async function main() {
     await page
       .getByLabel("Slide body", { exact: true })
       .fill("A thoughtful process, one story at a time.");
+    await page
+      .getByRole("button", { name: "Add text layer", exact: true })
+      .click();
+    await page
+      .getByLabel("Layer text", { exact: true })
+      .fill("A readable overlay for human review.");
+    await page
+      .getByRole("button", { name: "Select text layer", exact: true })
+      .press("ArrowRight");
+    await page
+      .getByRole("button", { name: "Add shape layer", exact: true })
+      .click();
+    await page.getByLabel("Layer opacity", { exact: true }).fill("0.5");
+    await page
+      .getByRole("button", { name: "Send backward", exact: true })
+      .click();
     await saveDraft();
     const saved = (await state()).contents.find(
       (content) => content.title === title,
     );
     assert.ok(saved.ideaId, "The draft must retain its approved idea link");
+    assert.equal(saved.media.slides[0].layers.length, 2);
+    assert.equal(saved.media.slides[0].layers[0].kind, "shape");
+    assert.equal(saved.media.slides[0].layers[1].x, 11);
     assert.equal(saved.media.slides.length, 1);
 
     // Export actual editable source and real documents; no simulated downloads.

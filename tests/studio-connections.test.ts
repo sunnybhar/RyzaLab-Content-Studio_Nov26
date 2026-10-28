@@ -170,3 +170,27 @@ test("disconnected or unvalidated credentials cannot quote, enqueue, or reserve 
     /connected provider/,
   );
 });
+
+test("deleting an unused first connection cannot silently substitute another model into a live workflow", () => {
+  const s = fixture();
+  s.connections.push({ ...s.connections[0], id: "another-model" });
+  const removed = applyCommand(s, DEMO_ACTOR, cmd("connection.delete"), ctx);
+  assert.throws(
+    () =>
+      applyCommand(
+        removed,
+        DEMO_ACTOR,
+        {
+          type: "job.enqueue",
+          kind: "ideas",
+          channel: "LinkedIn",
+          connectionId: "another-model",
+          prompt: "Do not pick a model automatically",
+          estimate: 10,
+          idempotencyKey: "no-silent-switch",
+        },
+        ctx,
+      ),
+    /active workflow binding/,
+  );
+});

@@ -253,6 +253,9 @@ test("idea generation context excludes drafts outside the requesting creator rea
     sourceText: "Provided notes",
     idempotencyKey: "scoped-ideas",
   };
+  s.workflows.find(
+    (w) => w.channel === "LinkedIn" && w.status === "active",
+  )!.functionConnections = { ideas: "ideas-provider" };
   const job = ideaJobInput(s, actor, command);
   assert.equal(
     job.prompt.includes("Confidential unassigned founder draft"),

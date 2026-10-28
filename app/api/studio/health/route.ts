@@ -33,10 +33,11 @@ export async function GET(req: NextRequest) {
             process.env.EMAIL_API_KEY && process.env.EMAIL_FROM,
           ),
           deliveryOutbox: deliveries.error ? "unavailable" : "reachable",
-          failedDeliveries:
-            deliveries.data?.filter(
-              (d) => d.status === "failed" || d.status === "unknown",
-            ).length || 0,
+          failedDeliveries: deliveries.error
+            ? "not available"
+            : deliveries.data?.filter(
+                (d) => d.status === "failed" || d.status === "unknown",
+              ).length || 0,
         },
       },
       { headers: { "Cache-Control": "no-store" } },

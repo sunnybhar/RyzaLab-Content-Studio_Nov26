@@ -49,7 +49,7 @@ module('03-Ideas','Ideas — Manual and Agent-Assisted','Creator, editor, manage
 'For your own idea, click Add manually, enter its title, angle and channel, then save. The idea begins pending.',
 'For agent-assisted candidates, click Generate with agent. Enter Topic / Brief, Audience, Quantity, Channel and source notes or URLs.',
 'In preview, submit Preview sample ideas. These are local examples, explicitly labelled, and do not use a paid API.',
-'In live mode, review the configured model and budget settings first. Submit only when you authorize the request. Paid jobs can wait for cost confirmation. Current-web research remains unavailable until its adapter is built; supplied sources are not automatically browsed.',
+'In live mode, review the configured model and budget settings first. Submit only when you authorize the request. Paid jobs can wait for cost confirmation. Inline research during idea generation remains unavailable. A separate Claude Research adapter is implemented but requires account/model qualification and a fixed search-inclusive rate card; supplied references are not automatically browsed.',
 'Idea generation status now shows waiting confirmation, queue and running states. If a completed response was not imported, use Import saved ideas — no AI call to recover it once without a new provider charge. Read each returned card. Check specificity, supporting evidence needed, channel fit and repetition. Agent results remain pending and do not approve themselves.',
 'Explicitly approve, reject or revise the idea. Use Create draft on an approved idea to start a separate content item.',
 'For recurring idea work, use the recurrence controls where available. A recurring reminder is not standing permission to bypass budget confirmation or run a paid job.'
@@ -58,9 +58,9 @@ module('04-Create','Create — Writing, Slides and Scenes','Creator or editor as
 'Open Create and click a content title, or Create content and enter its working title, channel, format and optional publication account.',
 'Edit Content text, title and metadata. Replace placeholders with verified facts; do not invent personal experience or unsupported promises.',
 'Save draft before switching work. Concurrent edits can be rejected rather than silently overwriting another editor; reload and compare versions.',
-'For carousels, use the slide editor to edit copy and supported layout fields. For video, use scenes, scripts, narration, captions and aspect ratio controls. Script-only scenes are not finished rendered video.',
+'For carousels, use the slide editor for copy and layout. Add text/shape layers, drag or nudge with arrow keys, edit size/color/opacity, reorder, duplicate or remove; save the draft. Layers appear above base copy and their wording is included in factual checks even when transparent. For video, use scenes, scripts, narration, captions and aspect ratio controls. Script-only scenes are not finished rendered video.',
 'Use available generation controls only with a live qualified provider; preview must not be treated as genuine model output. Review every generated result.',
-'Use DOCX import/export as needed. A linked Google Doc requires live OAuth configuration; preview fetching intentionally reports unavailable rather than pretending to sync.',
+'Use DOCX import/export as needed. A linked Google Doc requires live OAuth configuration; preview fetching intentionally reports unavailable. Optional automatic mode requires founder authority and an initial manual fetch. Conflicts and approved versions hold incoming text for comparison/manual import; displaced branches stay in history.',
 'Use editable source export to retain supported slide/scene data. PNG/PDF are flattened exports; they are not a full design-editor source format.',
 'Complete the visible stage checks and Submit for review. Do not claim Independent review was an agent review unless a real review result supports it.',
 'When changing approved text, keep the old approval snapshot. Recheck affected stages; unchanged media need not be generated again.'
@@ -106,7 +106,7 @@ module('08-Library-and-Exports','Library — References, Templates, History and 
 'For written content, export DOCX or PDF as offered. For slides, export PNG/PDF. Use source JSON for supported editable structure and subtitles for caption timing.',
 'Export an approved package from Reviews when preparing a release. Do not substitute a later edited draft for the approved version.',
 'Use Trash for deleted working content. Recovery is subject to the 90-day policy and dependency protections. Approved release snapshots are retained separately.',
-'For MP4, distinguish the implemented local composition tool from pending fully hosted AI scene-generation/render orchestration. A script export is not an MP4.'
+'Use Export campaign / inventory for a permission-scoped ZIP with exact approved package/assets, dependency manifest and formula-safe CSV. Optional working copies are explicitly unapproved. For MP4, distinguish the implemented local composition tool from pending fully hosted AI scene-generation/render orchestration. A script export is not an MP4.'
 ],'Exports contain the selected version; restored drafts re-enter review and protected snapshots remain retained.','Export a draft as DOCX and a slide as PNG, then restore an earlier text version and inspect its new draft status.','Missing media export: ensure assets exist and are supported/accessible. Flattened PDF/PNG are not editable design layers. Active planning/publication dependencies can prevent Trash actions.')
 module('09-People-and-Permissions','People and Access — Profiles and Scoped Grants','Administrator with membership permission; founder for founder policy','Assign membership by email while supporting a solo founder or a larger team.','Live authentication and database must be configured for actual teammate access.',[
 'Open People & access. Review existing members, profiles and any scoped grants.',
@@ -148,6 +148,17 @@ module('12-Notifications','Notifications — Inbox and Reminders','Each member f
 'Test email only after the transactional email service and dispatch schedule are configured. Password login is independent of notification email.',
 'If no reminder appears, check the task time, timezone, maintenance schedule and your membership before assuming an event failed.'
 ],'Inbox notices identify events honestly and never substitute for approval or publication.','Read the sample welcome notice, then test a due task reminder in an authorized maintenance test.','Preview actions do not send email. Repeated maintenance should not duplicate the same due reminder. A stale reminder can remain in history after the underlying task changes.')
+
+module('13-Operations','Operations — Health, Incidents and Recovery','Founder or administrator with settings permission','Inspect recorded failures and dependencies without mistaking a reachable app for a live worker.','Open a live administrator workspace for real health checks; preview uses local fixtures.',[
+'Open Operations using its sidebar button. In preview no external health request is made.',
+'Click Refresh health checks. Inspect database, private asset bucket, encryption configuration, provider execution gate, Google/email configuration and delivery outbox status. These checks report booleans/statuses, never secret values.',
+'Read workspace bytes and the current 24 MB command-store limit. Production-scale archival cutover is still under architecture review; do not delete release evidence to make room.',
+'Review uncertain, expired, failed, blocked or long-queued jobs. A running job whose lease expired requires reconciliation; do not submit another potentially charged request.',
+'Use Open jobs and reconciliation to inspect raw results and record actual outcome/cost using authorized controls. Budget reservations are not actual invoice charges.',
+'Review Google Docs conflicts/errors in the linked draft. Automatic mode is founder-controlled, requires an initial manual fetch and preserves competing Studio and Docs versions.',
+'Worker heartbeat is not tracked. Inspect Render logs to establish whether the worker is currently processing. Successful database checks alone do not prove worker liveness.',
+'For trusted operator backups, follow docs/BACKUP-AND-RECOVERY.md in the repository. The encrypted application backup and local SQL drill do not replace Supabase Auth/project recovery or a live staging restore test.'
+],'Operators can identify incidents and next actions without exposing keys or replaying uncertain jobs.','In preview, inspect a blocked/unknown fixture job. In a credentialed test workspace, refresh checks and compare them with Render logs.','Only administrators/founders can inspect server health. External email, Google, research pricing/model qualification, platform Auth recovery and final independent review remain separate acceptance items.')
 
 for m in modules:
  lines=[f"# RyzaLab Training — {m['title']}",'',f"Version: 2026-10-28 | Audience: {m['role']}",'','## Objective',m['purpose'],'','## Before you start',m['prereq'],'','## Availability',m['availability'],'','## Step-by-step workflow']
@@ -343,6 +354,23 @@ for feature,steps,result,env in [
  ('Toast timer reset','Save; after 6 seconds save again with same success message.','Toast remains 10 seconds after the second message, then dismisses.','Preview'),
  ('Campaign exact release bundle','Library → Export campaign / inventory; include draft copies; download ZIP.','Manifest and nested exact approved packages/assets retained; drafts explicitly unapproved; no credentials included.','Preview'),
  ('Spreadsheet-safe inventory','Export inventory with a test title starting = or @.','Formula-like values are escaped; channel/collection and export permission scope respected.','Preview')]:add('Backlog follow-up',feature,steps,result,env,priority='P0' if 'credential' in feature.lower() or 'guard' in feature else 'P1')
+for feature,steps,result,env in [
+ ('Add slide layers','Create → Slides; add text and shape layers; edit properties; save.','Both layers persist and render above base copy.','Preview'),
+ ('Move layer safely','Select a layer; drag or use arrow keys; try out-of-bounds coordinates.','Layer stays inside slide bounds; keyboard movement is supported.','Preview'),
+ ('Layer order and duplication','Send shape backward, duplicate text, remove duplicate.','Array/render order and selected properties remain correct.','Preview'),
+ ('Layer source/export','Export source JSON and PNG/PDF with text/ellipse layers.','Editable source preserves properties; flattened export draws clipped text/shapes/opacity.','Preview'),
+ ('Invisible layer factual gate','Add a hidden text layer with an unresolved source marker; try approval.','Factual blockers apply even at zero opacity; text edits reopen evidence.','Preview'),
+ ('Docs founder policy','Nonfounder admin tries changing automatic sync; founder changes it deliberately.','Only founder authority changes mode; budgets can still be edited independently.','Live'),
+ ('Docs automatic clean import','After initial manual fetch, enable automatic mode and change a clean draft Doc.','Due check imports clean draft, retaining displaced text/history and unchanged media.','Live'),
+ ('Docs branch conflict','Change both Studio and Doc between checks.','Studio text remains; incoming branch can be compared and explicitly imported.','Live'),
+ ('Docs protected/stale branch','Change approved Doc or replace incoming branch before confirming manual import.','Approved snapshot stays immutable; stale incoming confirmation rejects.','Live'),
+ ('Research price gate','Request separate Research without a qualified bounded-search rate card.','No provider request; explicit pricing/qualification failure.','Live'),
+ ('Research citations','In an authorized qualified sample run, inspect actual provider search/citation blocks.','Citations/provenance retained; missing/error results marked needs source review; no private brand snapshots sent automatically.','Live'),
+ ('Research reference','Save a completed cited research result as a source reference.','One untrusted evidence reference added; no extra paid request or workflow activation.','Live'),
+ ('Operations privacy','Open Operations as admin; try health URL without authorization.','Admin sees statuses, not secret values; unauthenticated requests denied; no worker liveness invented.','Live'),
+ ('Backup encryption','Trusted operator captures test archive and verifies; try wrong passphrase.','Archive private/encrypted; correct passphrase verifies; wrong password/tampering rejects.','Live'),
+ ('Backup asset consistency','Verify test archive with mismatched evidence or corrupted/missing private asset.','Verification fails rather than accepting incomplete recovery data.','Live'),
+ ('Local SQL restore drill','Run studio-restore-drill.mjs against an authorized test app backup.','Only local in-memory SQL restore; evidence/assets verified; Auth identities explicitly stubs; no production write.','Live')]:add('Execution batch 2',feature,steps,result,env,priority='P0' if feature in ['Invisible layer factual gate','Docs protected/stale branch','Operations privacy','Backup encryption'] else 'P1')
 for row in cases:qa.append(row)
 status=DataValidation(type='list',formula1='"Not run,Pass,Fail,Blocked,Not applicable"');status.errorTitle='Choose a test status';status.error='Select a listed status.';status.showErrorMessage=True;qa.add_data_validation(status);status.add(f'I2:I{qa.max_row}')
 for val,color in [('Pass','D9EAD3'),('Fail','F4CCCC'),('Blocked','FCE5CD'),('Not run','E7EEF3')]:qa.conditional_formatting.add(f'I2:I{qa.max_row}',FormulaRule(formula=[f'I2="{val}"'],fill=PatternFill('solid',fgColor=color)))

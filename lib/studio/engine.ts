@@ -213,6 +213,23 @@ export function applyCommand(
   switch (c.type) {
     case "research.saveReference": {
       const job = jobFor(c.jobId);
+      if (job.contentId) {
+        const parent = s.contents.find((d) => d.id === job.contentId);
+        if (
+          !parent ||
+          parent.deletedAt ||
+          !can(s, actor, "read", {
+            channel: parent.channel,
+            contentId: parent.id,
+            account: parent.account,
+            assignedTo: parent.assignedTo,
+          })
+        )
+          throw new StudioError(
+            403,
+            "Source content access changed. Cannot import this retained result.",
+          );
+      }
       need("reference.edit", { channel: job.channel });
       if (job.createdBy !== actor.email && !can(s, actor, "users.manage"))
         throw new StudioError(
@@ -300,6 +317,23 @@ export function applyCommand(
     }
     case "idea.importSavedResult": {
       const job = jobFor(c.jobId);
+      if (job.contentId) {
+        const parent = s.contents.find((d) => d.id === job.contentId);
+        if (
+          !parent ||
+          parent.deletedAt ||
+          !can(s, actor, "read", {
+            channel: parent.channel,
+            contentId: parent.id,
+            account: parent.account,
+            assignedTo: parent.assignedTo,
+          })
+        )
+          throw new StudioError(
+            403,
+            "Source content access changed. Cannot import this retained result.",
+          );
+      }
       need("idea.edit", { channel: job.channel });
       if (job.createdBy !== actor.email && !can(s, actor, "users.manage"))
         throw new StudioError(
@@ -1291,7 +1325,9 @@ export function applyCommand(
       const boundConnection =
         workflow.functionConnections?.[c.kind] ||
         (c.kind === "text" ? workflow.connectionId : "") ||
-        s.connections.find((x) => x.function === c.kind)?.id;
+        (ctx.demo
+          ? s.connections.find((x) => x.function === c.kind)?.id
+          : undefined);
       if (boundConnection !== c.connectionId)
         bad(
           "This connection is not the active workflow binding for this function. A permitted administrator must activate the desired mapping.",
