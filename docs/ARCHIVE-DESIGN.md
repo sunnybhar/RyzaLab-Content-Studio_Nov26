@@ -1,6 +1,6 @@
 # BL-036 — History archival cutover proposal
 
-Status: design ready for focused architecture review; not deployed or represented as completed scale support. Current command store retains the 24 MB guard. The Operations page exposes actual canonical size so capacity is observable.
+Status: focused architecture review complete at proposal level; not deployed or represented as completed scale support. Current command store retains the 24 MB guard. The Operations page exposes actual canonical size so capacity is observable.
 
 ## Why a table alone is insufficient
 
@@ -29,4 +29,4 @@ Rollback before any archival transaction is additive-only. After cutover, roll b
 
 ## Release blockers
 
-Focused architecture review is pending (the requested Astra reviewer hit its usage limit). Live Supabase staging credentials and migration acceptance are not available to this agent. No destructive canonical trimming, production migration, guessed scale claim or silent retention exception is authorized by this design document. Other backlog items continue independently.
+Astra architecture review is complete at the proposal level. Implementation must first define the canonical package/audit reference contract across all consumers, canonical server digests and unique/idempotent chunk ownership, stable scoped pagination, dependency-safe media rebinding on restore, and backup/export/drill coverage for offloaded evidence. Retention must fail closed for dependencies, and growth in jobs/stages/notices still needs measurement. Live Supabase staging credentials and migration acceptance are not available to this agent. No destructive canonical trimming, production migration, guessed scale claim or silent retention exception is authorized by this design document. Other backlog items continue independently.

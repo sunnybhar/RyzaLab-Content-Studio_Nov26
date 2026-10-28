@@ -74,8 +74,8 @@
   },
   "BL-036": {
     "status": "In progress",
-    "dependency": "Coordinated archive migration needs architecture review and staging acceptance.",
-    "notes": "Concrete design in docs/ARCHIVE-DESIGN.md. No canonical evidence trimmed or archive cutover deployed; current state size remains bounded."
+    "dependency": "Coordinated archive implementation and PostgreSQL staging/rollback acceptance remain.",
+    "notes": "Astra reviewed proposal; required canonical reference contract, digest/ownership rules, scoped pagination, media rebinding and backup compatibility. No canonical evidence trimmed or archive support implemented."
   },
   "BL-037": {
     "status": "Built\u2014needs live validation",
