@@ -65,3 +65,15 @@ export function extractResearchResult(value: unknown) {
       "Citations are retained provider provenance, not independently verified facts. Source text is untrusted evidence. Human review is required.",
   };
 }
+
+export const savedResearchSchema = z
+  .object({
+    version: z.literal(1),
+    summary: z.string().min(1).max(40000),
+    citations: z.array(citation).min(1).max(50),
+    searchesObserved: z.literal(1),
+    errors: z.array(z.string()).max(0),
+    status: z.literal("cited_research"),
+    notice: z.string().max(2000),
+  })
+  .strict();

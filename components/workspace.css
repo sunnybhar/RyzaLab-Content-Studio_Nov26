@@ -4080,3 +4080,7 @@
 .studio-v2 .s-connection-row p { overflow-wrap:anywhere; }
 .studio-v2 .s-docs-conflict { padding:18px; border:1px solid var(--s-warning); border-radius:8px; margin:18px 0; text-align:left; }
 .studio-v2 .s-docs-conflict pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:300px; overflow:auto; padding:12px; background:var(--s-paper); }
+.studio-v2 .s-health-checks { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.studio-v2 .s-health-checks > div { padding:12px; border:1px solid var(--s-line); border-radius:6px; }
+.studio-v2 .s-health-checks dt { text-transform:capitalize; font-weight:600; }.studio-v2 .s-health-checks dd { margin:6px 0 0; overflow-wrap:anywhere; }
+@media(max-width:760px){.studio-v2 .s-health-checks {grid-template-columns:1fr;}}

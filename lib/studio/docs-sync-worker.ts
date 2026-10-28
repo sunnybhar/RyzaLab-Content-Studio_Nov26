@@ -59,7 +59,7 @@ export async function syncOneGoogleDoc(
         user: actor.email,
         title: "Google Docs sync needs attention",
         body: d.title,
-        eventId: `docs-sync:${d.id}:${d.revision}`,
+        eventId: `docs-sync:${d.id}:${d.revision}:${now}`,
         createdAt: now,
         read: false,
         emailState: "not_configured",

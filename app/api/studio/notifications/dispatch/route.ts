@@ -16,11 +16,6 @@ export async function POST(req: NextRequest) {
       !timingSafeEqual(Buffer.from(configured), Buffer.from(provided))
     )
       throw new StudioError(401, "Worker authorization required.");
-    if (!process.env.EMAIL_API_KEY || !process.env.EMAIL_FROM)
-      throw new StudioError(
-        503,
-        "Configure the transactional email adapter and verified sender. Password login does not require it.",
-      );
     const db = database(),
       { data } = await db
         .from("studio_workspace")
@@ -30,6 +25,12 @@ export async function POST(req: NextRequest) {
     const state = data?.state as StudioState | undefined;
     if (!state || !state.settings.emailEnabled)
       return NextResponse.json({ message: "Email delivery is disabled." });
+    if (!process.env.EMAIL_API_KEY || !process.env.EMAIL_FROM)
+      throw new StudioError(
+        503,
+        "Configure the transactional email adapter and verified sender. Password login does not require it.",
+      );
+
     const { data: existing, error: deliveryError } = await db
       .from("studio_deliveries")
       .select("id");

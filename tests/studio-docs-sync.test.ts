@@ -174,3 +174,27 @@ test("manual import rejects a replaced conflict branch and retains displaced inc
   );
   assert.equal(imported.contents[0].docsIncoming, undefined);
 });
+
+test("only founder authority can change automatic Docs policy; ordinary administrators retain budget-setting access", () => {
+  const s = fixture();
+  const admin = { id: "admin", email: "admin@example.com" };
+  s.members.push({
+    ...admin,
+    roles: ["administrator"],
+    grants: [],
+    revoked: false,
+  });
+  const {
+    protectedRules: _rules,
+    protectedVersion: _version,
+    ...config
+  } = s.settings;
+  const settings = {
+    ...config,
+    type: "settings.save",
+    docsMode: "automatic",
+  };
+  assert.throws(() => applyCommand(s, admin, settings), /permission/);
+  const unchanged = applyCommand(s, admin, { ...settings, docsMode: "manual" });
+  assert.equal(unchanged.settings.docsMode, "manual");
+});

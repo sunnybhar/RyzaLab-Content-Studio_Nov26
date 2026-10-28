@@ -49,6 +49,7 @@ export interface Actor {
 }
 export interface Reference {
   id: string;
+  sourceJobId?: string;
   title: string;
   content: string;
   channel: Channel | "Shared";

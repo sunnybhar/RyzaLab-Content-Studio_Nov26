@@ -165,3 +165,41 @@ test("search tool errors remain needs-review with no fabricated citations", () =
   assert.equal(result.status, "needs_source_review");
   assert.deepEqual(result.errors, ["search_unavailable"]);
 });
+
+test("saved cited research becomes a reference once without spending or activating workflows", async () => {
+  const { initialState, DEMO_ACTOR } = await import("../lib/studio/seed");
+  const { applyCommand } = await import("../lib/studio/engine");
+  const s = initialState(DEMO_ACTOR, true);
+  const result = JSON.stringify(extractResearchResult(response));
+  s.jobs.push({
+    id: "research-done",
+    kind: "research",
+    channel: "LinkedIn",
+    connectionId: "qualified-research",
+    prompt: "Past request",
+    estimate: 100,
+    reserved: 100,
+    state: "succeeded",
+    attempt: 1,
+    idempotencyKey: "past",
+    createdBy: DEMO_ACTOR.email,
+    createdAt: "2026-10-28T12:00:00Z",
+    result,
+  });
+  const command = {
+    type: "research.saveReference",
+    jobId: "research-done",
+    title: "Research evidence to review",
+  };
+  const next = applyCommand(s, DEMO_ACTOR, command, { demo: true });
+  assert.equal(
+    next.references.filter((r) => r.sourceJobId === "research-done").length,
+    1,
+  );
+  assert.deepEqual(next.workflows, s.workflows);
+  assert.deepEqual(next.jobs, s.jobs);
+  assert.deepEqual(
+    applyCommand(next, DEMO_ACTOR, command, { demo: true }),
+    next,
+  );
+});

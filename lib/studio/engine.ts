@@ -13,6 +13,7 @@ import {
 import { sampleIdeas, parseGeneratedIdeas } from "./idea-generation";
 import { demoPreset, type ChannelPreset } from "./presets";
 import { ideaJobInput } from "./idea-generation";
+import { savedResearchSchema } from "./research";
 import { review } from "../brand";
 export type ExecutionContext = {
   now?: string;
@@ -209,6 +210,41 @@ export function applyCommand(
     }
   }
   switch (c.type) {
+    case "research.saveReference": {
+      const job = jobFor(c.jobId);
+      need("reference.edit", { channel: job.channel });
+      if (job.createdBy !== actor.email && !can(s, actor, "users.manage"))
+        throw new StudioError(
+          403,
+          "This research result belongs to another member.",
+        );
+      if (job.kind !== "research" || job.state !== "succeeded" || !job.result)
+        bad("Choose a completed research result.");
+      let parsed;
+      try {
+        parsed = savedResearchSchema.safeParse(JSON.parse(job.result!));
+      } catch {
+        bad(
+          "Saved research is not valid cited evidence. Review the raw result.",
+        );
+      }
+      if (!parsed!.success)
+        bad(
+          "Research has missing sources or tool errors. It cannot be represented as cited evidence.",
+        );
+      if (s.references.some((r) => r.sourceJobId === job.id))
+        return structuredClone(input);
+      s.references.unshift({
+        id: id(),
+        title: c.title,
+        channel: job.channel,
+        kind: "source",
+        content: job.result!,
+        createdAt: now,
+        sourceJobId: job.id,
+      });
+      break;
+    }
     case "connection.disconnect":
     case "connection.delete":
     case "connection.allowance": {
@@ -472,7 +508,7 @@ export function applyCommand(
       if (c.research)
         throw new StudioError(
           503,
-          "Current web research requires a qualified research adapter. No research or generation was started. Uncheck research to use supplied references only.",
+          "Inline research-to-ideas is not qualified. Run a separately qualified Claude Research job, review and save its cited result as a reference, then attach it to a reviewed workflow. No request was started.",
         );
       const jobInput = ideaJobInput(s, actor, c);
       return applyCommand(input, actor, jobInput, ctx);

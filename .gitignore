@@ -10,3 +10,6 @@ test-results/
 .DS_Store
 * 2.*
 .gitignore 2
+# Private operator backup archives
+*.rzlbackup
+.studio-backups/

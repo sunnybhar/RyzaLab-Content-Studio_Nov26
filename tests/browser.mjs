@@ -861,6 +861,11 @@ async function main() {
         `${endpoint} must reject unauthenticated calls; received ${response.status()}`,
       );
     }
+    const health = await context.request.get(`${baseURL}/api/studio/health`);
+    assert.ok(
+      [401, 403, 503].includes(health.status()),
+      "Health endpoint must reject unauthenticated access",
+    );
     for (const endpoint of ["/api/generate", "/api/images", "/api/review"]) {
       const response = await context.request.post(`${baseURL}${endpoint}`, {
         data: {},
@@ -1023,6 +1028,60 @@ async function main() {
       assert.equal(await progressPage.locator(".s-toast").isVisible(), true);
       await progressPage.clock.fastForward(6000);
       assert.equal(await progressPage.locator(".s-toast").count(), 0);
+      await progressPage
+        .getByRole("button", { name: "Operations", exact: true })
+        .click();
+      await progressPage
+        .getByRole("heading", { name: "Operations and incidents", exact: true })
+        .waitFor();
+      await progressPage.getByText(/Worker heartbeat is not tracked/).waitFor();
+      const target = await progressPage.evaluate((key) => {
+        const s = JSON.parse(localStorage.getItem(key));
+        const c = s.contents[0];
+        c.docId = "ui-document";
+        c.docsIncoming = {
+          text: "Incoming Google Docs UI fixture",
+          fetchedAt: "2026-10-28T18:00:00Z",
+          reason: "Both branches changed; compare before import.",
+        };
+        localStorage.setItem(key, JSON.stringify(s));
+        return { id: c.id, title: c.title, packages: s.packages };
+      }, stateKey);
+      await progressPage.reload();
+      await progressPage
+        .locator(".s-sidebar nav")
+        .getByRole("button", { name: "Create", exact: true })
+        .click();
+      await progressPage
+        .locator(".s-content-title")
+        .filter({ hasText: target.title })
+        .click();
+      await progressPage
+        .getByRole("button", { name: "Google Docs", exact: true })
+        .click();
+      await progressPage
+        .getByRole("heading", {
+          name: "Google Docs changes need review",
+          exact: true,
+        })
+        .waitFor();
+      await progressPage
+        .getByRole("button", { name: "Import incoming text", exact: true })
+        .click();
+      await progressPage
+        .getByRole("dialog")
+        .getByRole("button", { name: "Import incoming text", exact: true })
+        .click();
+      await progressPage.getByRole("dialog").waitFor({ state: "hidden" });
+      const merged = await progressPage.evaluate(
+        (key) => JSON.parse(localStorage.getItem(key)),
+        stateKey,
+      );
+      assert.equal(
+        merged.contents.find((c) => c.id === target.id).text,
+        "Incoming Google Docs UI fixture",
+      );
+      assert.deepEqual(merged.packages, target.packages);
     } finally {
       await progressContext.close();
     }

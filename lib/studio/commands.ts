@@ -132,6 +132,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     packageId: id.optional(),
   }),
   command("workflow.importPreset", { channel }),
+  command("research.saveReference", { jobId: id, title: short }),
   command("idea.importSavedResult", { jobId: id }),
   command("idea.create", { title: short, brief: text, channel }),
   command("idea.review", {

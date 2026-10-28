@@ -28,6 +28,16 @@ export function maintenance(
     });
     changed = true;
   };
+  for (const job of state.jobs.filter((j) =>
+    ["unknown", "failed", "blocked"].includes(j.state),
+  )) {
+    notify(
+      job.createdBy,
+      "Generation job needs attention",
+      `${job.kind} · ${job.channel} · ${job.state}. Inspect job ${job.id} in Studio. Do not blindly retry unknown outcomes.`,
+      `job-alert:${job.id}:${job.attempt}:${job.state}`,
+    );
+  }
   for (const task of (state.planningTasks || []).filter(
     (t) => t.state === "planned" && t.at <= now,
   )) {

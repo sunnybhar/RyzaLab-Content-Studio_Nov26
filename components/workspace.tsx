@@ -75,6 +75,7 @@ import {
 } from "@/lib/studio/exports";
 import { can, type Scope } from "@/lib/studio/permissions";
 import { stageSummary } from "@/lib/studio/stages";
+import { StudioOperations } from "./studio-operations";
 import { StudioAnalytics } from "./studio-analytics";
 import { IdeaGenerationStatus } from "./idea-generation-status";
 import { StageTracker } from "./stage-tracker";
@@ -95,7 +96,8 @@ type Page =
   | "Notifications"
   | "Account & appearance"
   | "Analytics"
-  | "Training & QA";
+  | "Training & QA"
+  | "Operations";
 type Field = {
   name: string;
   label: string;
@@ -1117,6 +1119,8 @@ export default function Workspace() {
       </Empty>
     );
   const pageDescription: Record<Page, string> = {
+    Operations:
+      "Inspect job failures, uncertain charges and application dependencies.",
     "Training & QA":
       "Step-by-step training, manual acceptance tests and the delivery backlog.",
     Home: "A clear view of your content. A little more room to create.",
@@ -1261,6 +1265,14 @@ export default function Workspace() {
             <span>AI & budgets</span>
           </button>
         </nav>
+        {allowed("settings.manage") && (
+          <button
+            className="s-btn s-small-btn"
+            onClick={() => move("Operations")}
+          >
+            <ShieldCheck size={16} /> Operations
+          </button>
+        )}
         <div className="s-sidebar-bottom">
           <div className="s-sidebar-note">
             <span>
@@ -2607,6 +2619,13 @@ export default function Workspace() {
                 ))}
               </ul>
             </section>
+          )}
+          {page === "Operations" && allowed("settings.manage") && (
+            <StudioOperations
+              state={state}
+              live={mode === "live"}
+              openJobs={() => move("AI & budgets")}
+            />
           )}
           {page === "Analytics" && (
             <StudioAnalytics state={state} channel={channel} />
@@ -4115,6 +4134,40 @@ export default function Workspace() {
                         {j.state.replaceAll("_", " ")}
                       </Badge>
                       <span>{money(j.actual ?? j.reserved ?? j.estimate)}</span>
+                      {j.kind === "research" &&
+                        j.state === "succeeded" &&
+                        j.result && (
+                          <button
+                            className="s-btn s-small-btn"
+                            disabled={
+                              !allowed("reference.edit", { channel: j.channel })
+                            }
+                            onClick={() =>
+                              openForm(
+                                "Save cited research reference",
+                                [
+                                  {
+                                    ...field(
+                                      "title",
+                                      "Reference title",
+                                      `${j.channel} research — ${stamp(j.createdAt)}`,
+                                    ),
+                                    required: true,
+                                  },
+                                ],
+                                (d) => ({
+                                  type: "research.saveReference",
+                                  jobId: j.id,
+                                  title: val(d, "title"),
+                                }),
+                                "This retains actual provider citations as untrusted evidence for human review. It does not activate a workflow or verify every claim.",
+                                "Save source reference",
+                              )
+                            }
+                          >
+                            Save research as reference
+                          </button>
+                        )}
                       {j.state === "awaiting_confirmation" && (
                         <button
                           disabled={readOnly}
