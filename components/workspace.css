@@ -4057,3 +4057,6 @@
 .studio-v2 .s-analytics-row { display:flex; justify-content:space-between; gap:15px; }
 .studio-v2 .s-table-head > span { white-space:nowrap; }
 @media(max-width:760px) { .studio-v2 .s-metrics-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .studio-v2 .s-analytics-columns { grid-template-columns:1fr; } .studio-v2 .s-account-panel dl { grid-template-columns:1fr; } .studio-v2 .s-account-panel dt { font-weight:700; } .studio-v2 .s-account-panel dd { margin-bottom:10px; } .studio-v2 .s-top-actions .s-btn > span { display:none; } .studio-v2 .s-planning-list .s-list-row { flex-wrap:wrap; } }
+.studio-v2 .s-training-links { padding-left:22px; }
+.studio-v2 .s-training-links li { padding:9px 0; }
+.studio-v2 .s-training-links a { color:var(--s-accent); text-decoration:underline; text-underline-offset:3px; }

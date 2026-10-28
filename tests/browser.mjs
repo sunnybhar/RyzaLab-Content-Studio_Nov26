@@ -192,7 +192,10 @@ async function main() {
       .first()
       .getAttribute("href");
     assert.ok(iconHref?.includes("studio-icon.svg"));
-    assert.equal((await page.request.get(iconHref)).status(), 200);
+    assert.equal(
+      (await page.request.get(new URL(iconHref, baseURL).href)).status(),
+      200,
+    );
     await page
       .getByRole("button", { name: "Open profile", exact: true })
       .click();
@@ -291,6 +294,33 @@ async function main() {
       fullPage: true,
     });
     await dismissNotice();
+
+    await navigate("Training & QA");
+    await page
+      .getByRole("heading", {
+        name: "Training, testing and backlog",
+        exact: true,
+      })
+      .waitFor();
+    assert.equal(await page.locator(".s-training-links a").count(), 13);
+    const qaFile = await saveDownload(
+      () =>
+        page
+          .getByRole("link", { name: "Download QA workbook", exact: true })
+          .click(),
+      "manual-qa.xlsx",
+    );
+    const wordFile = await saveDownload(
+      () =>
+        page
+          .getByRole("link", { name: "Calendar (Word)", exact: true })
+          .click(),
+      "calendar-training.docx",
+    );
+    assert.ok(fs.readFileSync(qaFile).subarray(0, 2).equals(Buffer.from("PK")));
+    assert.ok(
+      fs.readFileSync(wordFile).subarray(0, 2).equals(Buffer.from("PK")),
+    );
 
     // An idea becomes a draft only after an explicit human approval.
     const title = "Browser verification — a thoughtful story";
@@ -771,7 +801,7 @@ async function main() {
       "The browser should have no uncaught runtime errors",
     );
     console.log(
-      "PASS: v2 idea persistence, human review, immutable packages/workflows, manual scheduling/confirmation, blocked placeholders, JSON/DOCX/PDF exports, honest demo connectors, mobile navigation, and unauthenticated/legacy API protection.",
+      "PASS: account/theme persistence, tab branding, calendar planning and target opening, analytics, training downloads, idea persistence, exact approval/handoff, manual publication, exports, mobile navigation, and API protection.",
     );
   } finally {
     await context.close();

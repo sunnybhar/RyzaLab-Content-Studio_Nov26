@@ -327,6 +327,11 @@ for f,st,ex,env in [
  ('Notifications inbox','Open bell, read welcome/event notice.','Inbox opens with correct unread state.','Preview'),
  ('Due planning notice','Run authorized maintenance after task due time twice.','One due reminder; no generation/publication starts.','Live'),
  ('Notification email','Configure approved email service; dispatch to test member.','Delivery result honest and no duplicate same-event sends.','Live')]:add('AI and external integrations',f,st,ex,env,priority='P0' if f in ['Key privacy','Budget hard cap','Idempotency','Unknown outcome'] else 'P1')
+for f,st,ex in [
+ ('Training hub','Open Training & QA from the sidebar.','Download pack, QA workbook, backlog and section modules are listed.'),
+ ('Word module download','Download Calendar (Word); open in Word or Google Docs.','One readable standalone module contains steps, exercise and known limitations.'),
+ ('QA workbook download','Download QA workbook; open in Excel.','QA Cases, QA Summary, Backlog, Defects, Test Data and Training Index exist; manual statuses begin Not run.'),
+ ('Backlog download','Download backlog; filter Status.','Done, Built—needs live validation, Pending build and Decision needed are clearly distinguished.')]:add('Training and QA',f,st,ex)
 for row in cases:qa.append(row)
 status=DataValidation(type='list',formula1='"Not run,Pass,Fail,Blocked,Not applicable"');status.errorTitle='Choose a test status';status.error='Select a listed status.';status.showErrorMessage=True;qa.add_data_validation(status);status.add(f'I2:I{qa.max_row}')
 for val,color in [('Pass','D9EAD3'),('Fail','F4CCCC'),('Blocked','FCE5CD'),('Not run','E7EEF3')]:qa.conditional_formatting.add(f'I2:I{qa.max_row}',FormulaRule(formula=[f'I2="{val}"'],fill=PatternFill('solid',fgColor=color)))

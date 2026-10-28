@@ -92,7 +92,8 @@ type Page =
   | "AI & budgets"
   | "Notifications"
   | "Account & appearance"
-  | "Analytics";
+  | "Analytics"
+  | "Training & QA";
 type Field = {
   name: string;
   label: string;
@@ -122,6 +123,7 @@ const nav = [
   { name: "Reviews", icon: ShieldCheck },
   { name: "Library", icon: FolderOpen },
   { name: "Analytics", icon: BarChart3 },
+  { name: "Training & QA", icon: BookOpen },
 ] as const;
 const channelMarks: Record<Channel, string> = {
   LinkedIn: "in",
@@ -1071,6 +1073,8 @@ export default function Workspace() {
       </Empty>
     );
   const pageDescription: Record<Page, string> = {
+    "Training & QA":
+      "Step-by-step training, manual acceptance tests and the delivery backlog.",
     Home: "A clear view of your content. A little more room to create.",
     Ideas: "The starting point for your next great story.",
     Calendar:
@@ -2481,6 +2485,68 @@ export default function Workspace() {
                     </div>
                   </div>
                 ))}
+            </section>
+          )}
+          {page === "Training & QA" && (
+            <section className="s-panel s-account-panel">
+              <h2>Training, testing and backlog</h2>
+              <p>
+                Start with module 00, then use the document for the section you
+                are testing. Each module has steps, a practice exercise and
+                known limitations.
+              </p>
+              <div className="s-actions">
+                <a
+                  className="s-btn s-primary"
+                  href="/training/RyzaLab-Training-and-QA.zip"
+                  download
+                >
+                  Download all training and QA
+                </a>
+                <a
+                  className="s-btn"
+                  href="/training/RyzaLab-QA-and-Backlog.xlsx"
+                  download
+                >
+                  Download QA workbook
+                </a>
+                <a
+                  className="s-btn"
+                  href="/training/RyzaLab-Backlog.xlsx"
+                  download
+                >
+                  Download backlog
+                </a>
+              </div>
+              <p>
+                The QA workbook has 127 cases, a defect log and blank manual
+                results. Live integration cases require a configured test
+                workspace.
+              </p>
+              <h2>Section training documents</h2>
+              <ul className="s-training-links">
+                {[
+                  ["00-Start-Here", "Start here — complete user journey"],
+                  ["01-Home-and-Navigation", "Home and navigation"],
+                  ["02-Account-and-Appearance", "Account and appearance"],
+                  ["03-Ideas", "Ideas"],
+                  ["04-Create", "Create — writing, slides and scenes"],
+                  ["05-Reviews-and-Approvals", "Reviews and approvals"],
+                  ["06-Calendar", "Calendar"],
+                  ["07-Workflow-Settings", "Workflow settings"],
+                  ["08-Library-and-Exports", "Library and exports"],
+                  ["09-People-and-Permissions", "People and permissions"],
+                  ["10-AI-and-Budgets", "AI and budgets"],
+                  ["11-Analytics", "Analytics"],
+                  ["12-Notifications", "Notifications"],
+                ].map(([file, label]) => (
+                  <li key={file}>
+                    <a href={`/training/${file}.docx`} download>
+                      {label} (Word)
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
           {page === "Analytics" && (
