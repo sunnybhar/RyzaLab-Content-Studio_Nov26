@@ -75,6 +75,7 @@ import {
 import { can, type Scope } from "@/lib/studio/permissions";
 import { stageSummary } from "@/lib/studio/stages";
 import { StudioAnalytics } from "./studio-analytics";
+import { IdeaGenerationStatus } from "./idea-generation-status";
 import { StageTracker } from "./stage-tracker";
 import { PasswordLogin } from "./password-login";
 import { configured, supabase } from "@/lib/supabase";
@@ -1753,6 +1754,14 @@ export default function Workspace() {
           )}
           {page === "Ideas" && (
             <>
+              <IdeaGenerationStatus
+                state={state}
+                actor={actor}
+                channel={channel}
+                live={mode === "live"}
+                refresh={() => refresh(true)}
+                send={send}
+              />
               <div className="s-toolbar">
                 <div className="s-view-tabs">
                   {[

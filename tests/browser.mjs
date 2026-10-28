@@ -795,6 +795,123 @@ async function main() {
         `${endpoint} must keep the legacy generation path disabled`,
       );
     }
+    // Isolated synthetic UI states only: these do not call or simulate a paid provider.
+    const progressContext = await browser.newContext({
+      viewport: { width: 1280, height: 1000 },
+    });
+    try {
+      const progressPage = await progressContext.newPage();
+      progressPage.on("pageerror", (e) => errors.push(e.message));
+      const fixture = await state();
+      const actorEmail = fixture.members.find((m) =>
+        m.roles.includes("founder"),
+      ).email;
+      fixture.settings.monthlyCap = 50000;
+      fixture.settings.requestCap = 5000;
+      fixture.settings.functionCaps = {};
+      fixture.settings.userCaps = {};
+      fixture.settings.roleCaps = {};
+      fixture.settings.channelCaps = {};
+      fixture.settings.accountCaps = {};
+      fixture.settings.projectCaps = {};
+      fixture.jobs = [
+        {
+          id: "ui-progress-only",
+          kind: "ideas",
+          channel: "LinkedIn",
+          prompt: "UI fixture only; no provider call",
+          connectionId: "fixture-connection",
+          estimate: 5,
+          reserved: 0,
+          state: "awaiting_confirmation",
+          attempt: 0,
+          idempotencyKey: "fixture-only",
+          createdBy: actorEmail,
+          createdAt: new Date().toISOString(),
+        },
+      ];
+      await progressPage.goto(baseURL);
+      await progressPage.evaluate(
+        ({ key, fixture }) =>
+          localStorage.setItem(key, JSON.stringify(fixture)),
+        { key: stateKey, fixture },
+      );
+      await progressPage.reload();
+      const openIdeas = async () =>
+        progressPage
+          .locator(".s-sidebar nav")
+          .getByRole("button", { name: "Ideas", exact: true })
+          .click();
+      await openIdeas();
+      await progressPage
+        .getByText("LinkedIn · Waiting for your cost confirmation", {
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(await progressPage.getByRole("progressbar").count(), 0);
+      await progressPage
+        .getByRole("button", {
+          name: "Confirm idea generation $0.05",
+          exact: true,
+        })
+        .click();
+      await progressPage
+        .getByText("LinkedIn · Queued — waiting for worker", { exact: true })
+        .waitFor();
+      await progressPage.getByRole("progressbar").waitFor();
+      async function transition(jobState, ideas = []) {
+        await progressPage.evaluate(
+          ({ key, jobState, ideas }) => {
+            const s = JSON.parse(localStorage.getItem(key));
+            s.jobs[0].state = jobState;
+            s.ideas.push(...ideas);
+            localStorage.setItem(key, JSON.stringify(s));
+          },
+          { key: stateKey, jobState, ideas },
+        );
+        await progressPage.reload();
+        await openIdeas();
+      }
+      await transition("running");
+      await progressPage
+        .getByText("LinkedIn · Agent is generating ideas", { exact: true })
+        .waitFor();
+      await transition("succeeded", [
+        {
+          id: "ui-card-fixture",
+          title: "UI fixture — imported idea",
+          brief: "Synthetic UI fixture only, not actual agent output.",
+          channel: "LinkedIn",
+          state: "pending",
+          sources: [],
+          origin: "agent",
+          generationRunId: "ui-progress-only",
+          createdBy: actorEmail,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      await progressPage
+        .getByText("LinkedIn · 1 ideas ready for review", { exact: true })
+        .waitFor();
+      await progressPage
+        .getByRole("heading", {
+          name: "UI fixture — imported idea",
+          exact: true,
+        })
+        .waitFor();
+      await transition("blocked");
+      await progressPage
+        .getByText("LinkedIn · Generation blocked", { exact: true })
+        .waitFor();
+      assert.equal(
+        await progressPage
+          .getByRole("button", { name: /Confirm idea generation/ })
+          .count(),
+        0,
+      );
+    } finally {
+      await progressContext.close();
+    }
     assert.deepEqual(
       errors,
       [],

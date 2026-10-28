@@ -26,41 +26,51 @@ export function useStudio() {
     latest.current = s;
     setState(s);
   };
-  const refresh = useCallback(async () => {
-    try {
-      setError("");
-      if (mode === "demo") {
-        let saved: StudioState | null = null;
-        try {
-          saved = JSON.parse(
-            localStorage.getItem("ryzalab-studio-v2") || "null",
-          );
-        } catch {}
-        const s = saved || initialState(DEMO_ACTOR, true);
-        update(s);
-        setActor(DEMO_ACTOR);
-        return;
+  const refresh = useCallback(
+    async (background = false) => {
+      try {
+        if (!background) setError("");
+        if (mode === "demo") {
+          let saved: StudioState | null = null;
+          try {
+            saved = JSON.parse(
+              localStorage.getItem("ryzalab-studio-v2") || "null",
+            );
+          } catch {}
+          const s = saved || initialState(DEMO_ACTOR, true);
+          update(s);
+          setActor(DEMO_ACTOR);
+          return;
+        }
+        const { data } = await supabase!.auth.getSession();
+        if (!data.session) {
+          setActor(null);
+          update(null as unknown as StudioState);
+          return;
+        }
+        const r = await fetch("/api/studio", {
+            headers: { authorization: `Bearer ${data.session.access_token}` },
+            cache: "no-store",
+          }),
+          result = await r.json();
+        if (!r.ok) throw new Error(result.error || "Workspace could not load.");
+        if (
+          background &&
+          latest.current &&
+          result.state.version < latest.current.version
+        )
+          return;
+        update(result.state);
+        setActor(result.actor);
+      } catch (e) {
+        if (background) throw e;
+        setError((e as Error).message);
+      } finally {
+        setLoading(false);
       }
-      const { data } = await supabase!.auth.getSession();
-      if (!data.session) {
-        setActor(null);
-        update(null as unknown as StudioState);
-        return;
-      }
-      const r = await fetch("/api/studio", {
-          headers: { authorization: `Bearer ${data.session.access_token}` },
-          cache: "no-store",
-        }),
-        result = await r.json();
-      if (!r.ok) throw new Error(result.error || "Workspace could not load.");
-      update(result.state);
-      setActor(result.actor);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, [mode]);
+    },
+    [mode],
+  );
   useEffect(() => {
     refresh();
     if (!supabase || mode === "demo") return;
