@@ -677,6 +677,14 @@ export default function Workspace() {
   );
   const allowed = (action: string, scope: Scope = {}) =>
     can(state, actor, action, scope);
+  const readyToPlan = activePackages.filter((p) => {
+    const content = state.contents.find((c) => c.id === p.contentId && !c.deletedAt);
+    return Boolean(content && content.account === p.account && matches(p) &&
+      allowed("schedule.manage", { channel: content.channel, account: content.account, contentId: content.id, assignedTo: content.assignedTo }) &&
+      !state.schedules.some((s) => s.packageId === p.id) &&
+      !activePackages.some((other) => other.contentId === p.contentId && other.approvedAt > p.approvedAt));
+  });
+  const previewSchedule = state.schedules.find((s) => s.id === calendarPreview);
   const newContent = (
     ideaId?: string,
     ideaTitle?: string,
@@ -1978,6 +1986,7 @@ export default function Workspace() {
               ) : (
                 <IdeasBrowser
                   ideas={state.ideas.filter((idea) => matches(idea) && (ideaTab === "All ideas" || idea.state.toLowerCase() === ideaTab.toLowerCase()))}
+                  allIdeas={state.ideas}
                   contents={state.contents}
                   schedules={state.schedules}
                   actorEmail={actor.email}
@@ -2063,6 +2072,18 @@ export default function Workspace() {
                 </span>
                 <span className="s-timezone">{state.settings.timezone}</span>
               </div>
+              {readyToPlan.length > 0 && (
+                <section className="s-panel s-calendar-ready" aria-label="Ready to plan">
+                  <h2>Ready to plan</h2>
+                  <p>Choose when and where to publish each approved package.</p>
+                  {readyToPlan.map((p) => (
+                    <div className="s-calendar-ready-item" key={p.id}>
+                      <div><strong>{p.title}</strong><p>{p.channel} · {p.account || "Account not specified"} · Approved revision {p.revision}</p></div>
+                      <button className="s-btn" onClick={() => scheduleForm(p.contentId, p.id)}>Choose date and time</button>
+                    </div>
+                  ))}
+                </section>
+              )}
               <div className="s-calendar-quick-actions">
                 <button
                   className="s-btn"
@@ -2159,13 +2180,14 @@ export default function Workspace() {
                               const c = state.contents.find(
                                 (c) => c.id === s.contentId,
                               );
-                              if (!c || !matches(c)) return null;
+                              const p = state.packages.find((p) => p.id === s.packageId);
+                              if (!c || !matches(p || c)) return null;
                               return (
                                 <button
                                   className={`s-calendar-event s-event-${s.state}`}
                                   key={s.id}
                                   onClick={() => {
-                                    openDraft(c.id);
+                                    setCalendarPreview(s.id);
                                   }}
                                 >
                                   <span>
@@ -2177,9 +2199,9 @@ export default function Workspace() {
                                         timeZone: state.settings.timezone,
                                       },
                                     )}{" "}
-                                    · {c.channel}
+                                    · {p?.channel || c.channel}
                                   </span>
-                                  <strong>{c.title}</strong>
+                                  <strong>{p?.title || c.title}</strong>
                                   <small>
                                     {s.state === "published"
                                       ? "Published · human confirmed"
@@ -2202,7 +2224,8 @@ export default function Workspace() {
                       const c = state.contents.find(
                         (c) => c.id === s.contentId,
                       );
-                      return c && matches(c);
+                      const p = state.packages.find((p) => p.id === s.packageId);
+                      return c && matches(p || c);
                     })
                     .sort((a, b) => a.at.localeCompare(b.at))
                     .map((s) => {
@@ -2228,12 +2251,12 @@ export default function Workspace() {
                           <div className="s-schedule-main">
                             <button
                               className="s-link-button"
-                              onClick={() => openDraft(c.id)}
+                              onClick={() => setCalendarPreview(s.id)}
                             >
-                              {c.title}
+                              {p?.title || c.title}
                             </button>
                             <p>
-                              {c.channel} ·{" "}
+                              {p?.channel || c.channel} ·{" "}
                               {new Date(s.at).toLocaleString("en-US", {
                                 timeZone: state.settings.timezone,
                               })}{" "}
@@ -2394,6 +2417,15 @@ export default function Workspace() {
                   )}
                 </section>
               )}
+              {previewSchedule && <CalendarPackagePreview
+                key={previewSchedule.id}
+                schedule={previewSchedule}
+                approved={state.packages.find((p) => p.id === previewSchedule.packageId)}
+                timezone={state.settings.timezone}
+                AssetMedia={AssetMedia}
+                onClose={() => setCalendarPreview(null)}
+                onEdit={(id) => { setCalendarPreview(null); openDraft(id); }}
+              />}
             </>
           )}
           {page === "Calendar" && (
@@ -2742,6 +2774,7 @@ export default function Workspace() {
                       <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send}
                         renderAsset={(source, kind) => <AssetMedia source={source} kind={kind} />}
                         openDraft={() => openContent(c)}
+                        requestChanges={() => reject("package.reject", c.id)}
                         recordPriceException={() => openForm(
                           "Scoped founder price exception",
                           [{ name: "wording", label: "Exact content line", required: true, type: "textarea" },
@@ -4605,6 +4638,13 @@ function Stat({
   );
 }
 
+function comparableMedia(media: MediaProject) {
+  return JSON.stringify(media, (_key, value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+    return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)));
+  });
+}
+
 function Editor({
   content: c,
   actor,
@@ -4653,7 +4693,7 @@ function Editor({
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [docsText, setDocsText] = useState("");
-  const baseline = useRef({ id: c.id, revision: c.revision, title: c.title, text: c.text, metadata: c.metadata, collection: c.collection || "", media: JSON.stringify(c.media) });
+  const baseline = useRef({ id: c.id, revision: c.revision, title: c.title, text: c.text, metadata: c.metadata, collection: c.collection || "", media: comparableMedia(c.media) });
   const [externalChange, setExternalChange] = useState(false);
   function loadSavedDraft() {
     setTitle(c.title);
@@ -4663,13 +4703,13 @@ function Editor({
     setMedia(c.media || initialMedia());
     setSlideIndex((i) => Math.max(0, Math.min(i, c.media.slides.length - 1)));
     setSceneIndex((i) => Math.max(0, Math.min(i, c.media.scenes.length - 1)));
-    baseline.current = { id: c.id, revision: c.revision, title: c.title, text: c.text, metadata: c.metadata, collection: c.collection || "", media: JSON.stringify(c.media) };
+    baseline.current = { id: c.id, revision: c.revision, title: c.title, text: c.text, metadata: c.metadata, collection: c.collection || "", media: comparableMedia(c.media) };
     setExternalChange(false);
   }
   useEffect(() => {
     const previous = baseline.current;
-    const unsaved = title !== previous.title || text !== previous.text || metadata !== previous.metadata || collection !== previous.collection || JSON.stringify(media) !== previous.media;
-    const matchesSaved = title === c.title && text === c.text && metadata === c.metadata && collection === (c.collection || "") && JSON.stringify(media) === JSON.stringify(c.media);
+    const unsaved = title !== previous.title || text !== previous.text || metadata !== previous.metadata || collection !== previous.collection || comparableMedia(media) !== previous.media;
+    const matchesSaved = title === c.title && text === c.text && metadata === c.metadata && collection === (c.collection || "") && comparableMedia(media) === comparableMedia(c.media);
     if (previous.id === c.id && previous.revision !== c.revision && unsaved && !matchesSaved) {
       setExternalChange(true);
       return;
@@ -4681,7 +4721,7 @@ function Editor({
     text !== c.text ||
     metadata !== c.metadata ||
     collection !== (c.collection || "") ||
-    JSON.stringify(media) !== JSON.stringify(c.media);
+    comparableMedia(media) !== comparableMedia(c.media);
   const slide = media.slides[slideIndex];
   const scene = media.scenes[sceneIndex];
   const save = () =>

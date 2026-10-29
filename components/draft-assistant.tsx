@@ -2,10 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Actor, Command, Content, StudioState } from "@/lib/studio/types";
-import {
-  preparationFor,
-  preparationSpend,
-} from "@/lib/studio/preparation-budget";
+import { preparationFor } from "@/lib/studio/preparation-budget";
 
 const cost = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const activeStates = new Set([
@@ -160,6 +157,36 @@ export function DraftAssistant({
                 ? "This request needs confirmation in AI & budgets."
                 : "The result is unknown and needs attention in AI & budgets before another request."}
         </p>
+      )}
+      {active && ["queued", "awaiting_confirmation"].includes(active.state) && (
+        <div className="s-actions">
+          {active.state === "awaiting_confirmation" && (
+            <button
+              className="s-btn"
+              disabled={readOnly || busy}
+              onClick={() =>
+                void run(
+                  { type: "job.confirm", id: active.id },
+                  "Writing request confirmed",
+                )
+              }
+            >
+              Confirm request
+            </button>
+          )}
+          <button
+            className="s-btn"
+            disabled={readOnly || busy}
+            onClick={() =>
+              void run(
+                { type: "job.cancel", id: active.id },
+                "Writing request cancelled",
+              )
+            }
+          >
+            Cancel waiting request
+          </button>
+        </div>
       )}
       {jobs.slice(0, 10).map((job) => (
         <details key={job.id} className="s-version">

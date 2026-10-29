@@ -1165,6 +1165,13 @@ export function applyCommand(
         )
       )
         bad("Select an approved package for this content and account.");
+      // Repeated planner submissions for the same package and instant should
+      // not create duplicate publication tasks. A different time remains a
+      // separate intentional scheduling choice.
+      if (s.schedules.some((item) =>
+        item.contentId === d.id && item.packageId === c.packageId &&
+        Date.parse(item.at) === Date.parse(c.at) && item.groupId === c.groupId
+      )) break;
       s.schedules.push({
         id: id(),
         contentId: d.id,

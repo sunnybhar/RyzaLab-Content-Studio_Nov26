@@ -1,0 +1,9 @@
+.studio-v2 .s-calendar-snapshot-copy { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; padding: 16px; border: 1px solid var(--s-line); border-radius: 8px; }
+.studio-v2 .s-calendar-slides { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 18px; }
+.studio-v2 .s-calendar-media { margin: 16px 0; }
+.studio-v2 .s-calendar-media img, .studio-v2 .s-calendar-media video { max-width: min(100%, 550px); height: auto; }
+.studio-v2 .s-calendar-media audio { max-width: 100%; }
+.studio-v2 .s-calendar-preview-actions { margin-top: 24px; }
+.studio-v2 .s-calendar-ready { margin: 16px 0; }
+.studio-v2 .s-calendar-ready-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--s-line); }
+@media (max-width: 600px) { .studio-v2 .s-calendar-ready-item { align-items: flex-start; flex-direction: column; } }

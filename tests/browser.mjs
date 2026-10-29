@@ -701,12 +701,13 @@ async function main() {
     );
 
     // A selected package is scheduled, then a person confirms that exact package.
-    await navigate("Reviews");
+    await navigate("Calendar");
     await page
-      .locator(".s-list-row")
+      .locator(".s-calendar-ready-item")
       .filter({ hasText: title })
-      .getByRole("button", { name: "Plan publication", exact: true })
+      .getByRole("button", { name: "Choose date and time", exact: true })
       .click();
+    assert.equal(await dialog().getByLabel("Approved package").inputValue(), approved.id);
     const publicationTime = new Date(Date.now() + 2 * 86400000);
     const localDate = `${publicationTime.getFullYear()}-${String(publicationTime.getMonth() + 1).padStart(2, "0")}-${String(publicationTime.getDate()).padStart(2, "0")}T12:30`;
     await dialog()
@@ -721,6 +722,14 @@ async function main() {
     const scheduledRow = page
       .locator(".s-schedule-row")
       .filter({ hasText: title });
+    const beforeCalendarPreview = await state();
+    await scheduledRow.getByRole("button", { name: title, exact: true }).click();
+    const calendarPreview = page.getByRole("dialog");
+    await calendarPreview.getByRole("heading", { name: "Approved publication" }).waitFor();
+    assert.equal(await calendarPreview.locator(".s-calendar-snapshot-copy").first().innerText(), approved.text);
+    assert.equal(await calendarPreview.locator("textarea").count(), 0);
+    await calendarPreview.getByRole("button", { name: "Close", exact: true }).click();
+    assert.deepEqual(await state(), beforeCalendarPreview, "Opening a scheduled snapshot is read only");
     await scheduledRow
       .getByRole("button", { name: "Confirm published", exact: true })
       .click();

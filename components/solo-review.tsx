@@ -9,7 +9,7 @@ import { SlideLayerPreview } from "./slide-layers";
 import "./solo-review.css";
 
 /** Two explicit human decisions, each pinned to the version displayed. */
-export function SoloReview({ content, state, actor, send, renderAsset, openDraft, recordPriceException }: {
+export function SoloReview({ content, state, actor, send, renderAsset, openDraft, recordPriceException, requestChanges }: {
   content: Content;
   state: StudioState;
   actor: Actor;
@@ -17,6 +17,7 @@ export function SoloReview({ content, state, actor, send, renderAsset, openDraft
   renderAsset: (source: string, kind?: "image" | "video" | "audio") => ReactNode;
   openDraft: () => void;
   recordPriceException: () => void;
+  requestChanges: () => void;
 }) {
   const [evidence, setEvidence] = useState("");
   const [reviewedPackage, setReviewedPackage] = useState(false);
@@ -49,6 +50,11 @@ export function SoloReview({ content, state, actor, send, renderAsset, openDraft
     {!accepted ? <section>
       <h3>1. Review the copy</h3>
       <p>Read the text above and check factual claims against the available references. Approving copy does not publish it.</p>
+      {content.metadata && <><h4>Publication metadata / caption</h4><p className="s-solo-prewrap">{content.metadata}</p></>}
+      {content.media.slides.map((slide, i) => <div key={slide.id}><h4>Slide {i + 1} wording</h4><p className="s-solo-prewrap">{[slide.title, slide.body, ...(slide.layers || []).filter((layer) => layer.kind === "text").map((layer) => layer.kind === "text" ? layer.text : "")].filter(Boolean).join("\n") || "No text on this slide."}</p></div>)}
+      {content.media.scenes.map((scene, i) => <div key={scene.id}><h4>Scene {i + 1} wording</h4><p className="s-solo-prewrap">{[scene.title, scene.script].filter(Boolean).join("\n")}</p></div>)}
+      {content.media.narration && <><h4>Narration</h4><p className="s-solo-prewrap">{content.media.narration}</p></>}
+      {content.media.captions && <><h4>Captions</h4><p className="s-solo-prewrap">{content.media.captions}</p></>}
       {copyIssues.length > 0 && <div className="s-alert s-error" role="alert"><strong>Resolve before copy approval</strong><ul>{copyIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul></div>}
       <details className="s-review-policy"><summary>Sources available for your review ({references.length})</summary>
         {references.length ? references.map((ref) => <article key={ref.id}><h4>{ref.title}</h4><p className="s-solo-prewrap">{ref.content}</p></article>) : <p>No references are attached to the active workflow. Review any factual claims before approving.</p>}
@@ -99,6 +105,7 @@ export function SoloReview({ content, state, actor, send, renderAsset, openDraft
       {requiresNote && !founder && <p>A founder must authorize this Note.</p>}
     </section>}
     {error && <div className="s-alert s-error" role="alert">{error}</div>}
+    {allowed && <button className="s-btn" disabled={busy} onClick={requestChanges}>Request changes</button>}
     <button className="s-text-button" onClick={openDraft}>Open complete draft →</button>
   </div>;
 }
