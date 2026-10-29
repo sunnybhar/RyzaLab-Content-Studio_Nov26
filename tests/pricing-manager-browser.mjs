@@ -1,0 +1,43 @@
+import { build } from 'esbuild';
+import { chromium } from 'playwright';
+import assert from 'node:assert/strict';
+const result = await build({stdin:{contents:`import React from 'react'; import {createRoot} from 'react-dom/client'; import {PricingManager} from './components/pricing-manager';
+let rates=[], version=0; window.calls=[];
+async function request(body) { if (!body) return {rates,version}; window.calls.push(body); if(body.expectedVersion!==version) throw Error('Pricing changed'); version++; if(body.action==='save') rates=[{...body.card,qualifiedBy:'test-founder@example.com',qualificationEvidence:body.evidence}]; else rates=[]; return {}; }
+createRoot(document.getElementById('app')).render(<PricingManager request={request} demo={false} disabled={false} changed={async()=>{}}/>);`,resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'iife',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
+const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || '/usr/bin/chromium',args:['--no-sandbox']});
+try {
+ const page=await browser.newPage();
+ await page.route('http://pricing-test.invalid/**',route=>route.fulfill({contentType:'text/html',body:'<div id="app"></div><script>'+result.outputFiles[0].text.replaceAll('</script','<\\/script')+'</script>'}));
+ await page.goto('http://pricing-test.invalid/');
+ await page.getByRole('button',{name:'Load pricing',exact:true}).click();
+ await page.getByRole('button',{name:'Add pricing',exact:true}).click();
+ let dialog=page.getByRole('dialog');
+ await dialog.getByLabel('Exact model identifier').fill('local-test-model');
+ await dialog.getByLabel('Input price (USD per million tokens)').fill('2');
+ await dialog.getByLabel('Output price (USD per million tokens)').fill('10');
+ await dialog.getByLabel('Pricing source (HTTPS URL)').fill('https://example.com/pricing');
+ await dialog.getByLabel('Date verified').fill('2026-10-28');
+ await dialog.getByLabel('Evidence of price and adapter qualification').fill('Checked the documented rates and evaluated input output limits.');
+ await dialog.getByRole('checkbox').check();
+ await dialog.getByRole('button',{name:'Save verified pricing'}).click();
+ await dialog.waitFor({state:'hidden'});
+ assert.equal(await page.locator('.s-list-row').count(),1);
+ await page.getByRole('button',{name:'Edit pricing',exact:true}).click();
+ dialog=page.getByRole('dialog');
+ assert.equal(await dialog.getByLabel('Exact model identifier').getAttribute('readonly'),'');
+ await dialog.getByLabel('Output price (USD per million tokens)').fill('12');
+ await dialog.getByRole('checkbox').check();
+ await dialog.getByRole('button',{name:'Save verified pricing'}).click();
+ await dialog.waitFor({state:'hidden'});
+ assert.equal(await page.locator('.s-list-row').count(),1);
+ const calls=await page.evaluate(()=>window.calls);
+ assert.equal(calls[0].card.inputCentsPerMillion,200);
+ assert.equal(calls[1].card.outputCentsPerMillion,1200);
+ assert.equal(calls[1].expectedVersion,1);
+ page.on('dialog',d=>d.accept());
+ await page.getByRole('button',{name:'Remove pricing',exact:true}).click();
+ await page.getByText(/No verified prices registered/).waitFor();
+ assert.equal(await page.locator('.s-list-row').count(),0);
+ console.log('PASS: local pricing editor add, edit, dollar conversion, version and remove; no live requests');
+} finally { await browser.close(); }

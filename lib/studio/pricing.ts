@@ -6,8 +6,16 @@ import { StudioError } from "./permissions";
 export const rateSchema = z
   .object({
     provider: z.enum(["anthropic", "openai", "google"]),
-    model: z.string(),
-    function: z.string(),
+    model: z.string().regex(/^[A-Za-z0-9_.:/-]{1,150}$/),
+    function: z.enum([
+      "text",
+      "ideas",
+      "review",
+      "research",
+      "image",
+      "audio",
+      "video",
+    ]),
     currency: z.literal("USD"),
     inputCentsPerMillion: z.number().nonnegative(),
     outputCentsPerMillion: z.number().nonnegative(),

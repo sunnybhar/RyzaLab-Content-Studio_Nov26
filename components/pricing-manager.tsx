@@ -197,9 +197,9 @@ export function PricingManager({
                 expectedVersion: version,
                 evidence: text("evidence"),
                 card: {
-                  provider: text("provider"),
-                  model: text("model"),
-                  function: text("function"),
+                  provider: editing?.provider || text("provider"),
+                  model: editing?.model || text("model"),
+                  function: editing?.function || text("function"),
                   currency: "USD",
                   inputCentsPerMillion: n("input") * 100,
                   outputCentsPerMillion: n("output") * 100,
@@ -240,6 +240,7 @@ export function PricingManager({
               Provider
               <select
                 name="provider"
+                disabled={!!editing}
                 defaultValue={editing?.provider || "anthropic"}
                 required
               >
@@ -258,6 +259,7 @@ export function PricingManager({
               Exact model identifier
               <input
                 name="model"
+                readOnly={!!editing}
                 required
                 maxLength={150}
                 defaultValue={editing?.model}
@@ -267,6 +269,7 @@ export function PricingManager({
               Function
               <select
                 name="function"
+                disabled={!!editing}
                 defaultValue={editing?.function || "text"}
               >
                 {["text", "ideas", "review"].map((value) => (
