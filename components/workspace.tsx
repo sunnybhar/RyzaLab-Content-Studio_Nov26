@@ -1,4 +1,5 @@
 "use client";
+import { PricingManager } from "./pricing-manager";
 import { ConnectionEditor } from "./connection-editor";
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
@@ -946,6 +947,15 @@ export default function Workspace() {
       setWorkflowChannel(task.channel);
       move("Workflow settings");
     }
+  }
+  async function pricingRequest(body?: unknown) {
+    const session = await supabase?.auth.getSession();
+    const token = session?.data.session?.access_token;
+    if (!token) throw new Error("Sign in to manage verified pricing.");
+    const response = await fetch("/api/studio/pricing", { method: body ? "POST" : "GET", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, ...(body ? {body: JSON.stringify(body)} : {}), signal: AbortSignal.timeout(30000) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Could not update pricing.");
+    return result;
   }
   async function discoverAccountModels(input: Record<string, unknown>) {
     const session = await supabase?.auth.getSession();
@@ -3688,6 +3698,7 @@ export default function Workspace() {
           )}
           {page === "AI & budgets" && (
             <>
+              <PricingManager request={pricingRequest} demo={mode === "demo"} disabled={!allowed("settings.manage")} changed={refresh}/>
               <div className="s-stats s-budget-stats">
                 <Stat
                   label="Monthly budget"

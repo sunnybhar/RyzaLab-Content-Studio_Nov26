@@ -3,7 +3,7 @@ import { z } from "zod";
 import { researchConfigSchema } from "./research";
 import type { Connection, Job, StudioState } from "./types";
 import { StudioError } from "./permissions";
-const rate = z
+export const rateSchema = z
   .object({
     provider: z.enum(["anthropic", "openai", "google"]),
     model: z.string(),
@@ -19,16 +19,41 @@ const rate = z
     source: z.url(),
     verifiedAt: z.string().min(10),
     qualified: z.literal(true),
+    registryVersion: z.string().optional(),
+    qualifiedBy: z.string().optional(),
+    qualificationEvidence: z.string().max(12000).optional(),
   })
   .strict();
-export type Rate = z.infer<typeof rate>;
+export type Rate = z.infer<typeof rateSchema>;
 export function readRates(raw = process.env.STUDIO_RATE_CARD): Rate[] {
   if (!raw) return [];
-  const parsed = z.array(rate).safeParse(JSON.parse(raw));
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    throw new StudioError(
+      503,
+      "The server pricing registry is invalid. Paid execution is blocked.",
+    );
+  }
+  const parsed = z.array(rateSchema).safeParse(value);
   if (!parsed.success)
     throw new StudioError(
       503,
       "The server pricing registry is invalid. Paid execution is blocked.",
+    );
+  return parsed.data;
+}
+export function effectiveRates(state: StudioState): Rate[] {
+  if (state.settings.qualifiedRates === undefined) return readRates();
+  const parsed = z
+    .array(rateSchema)
+    .max(100)
+    .safeParse(state.settings.qualifiedRates);
+  if (!parsed.success)
+    throw new StudioError(
+      503,
+      "The workspace pricing registry is invalid. Paid execution is blocked.",
     );
   return parsed.data;
 }
@@ -48,7 +73,7 @@ export function quote(
     connectionId: string;
     prompt: string;
   },
-  rates = readRates(),
+  rates = effectiveRates(state),
 ) {
   const connection = state.connections.find((c) => c.id === input.connectionId),
     workflow = state.workflows.find(
@@ -134,7 +159,7 @@ export function pricingSnapshotIsCurrent(snapshot: unknown, rates: Rate[]) {
     quoteVersion: _quoteVersion,
     ...frozen
   } = snapshot as Record<string, unknown>;
-  const parsed = rate.safeParse(frozen);
+  const parsed = rateSchema.safeParse(frozen);
   if (!parsed.success) return false;
   return rates.some(
     (current) => JSON.stringify(current) === JSON.stringify(parsed.data),

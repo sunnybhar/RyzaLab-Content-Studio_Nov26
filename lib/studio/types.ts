@@ -415,6 +415,7 @@ export interface Settings {
   reviewPolicy?: SoloReviewPolicy;
   defaultConnections?: Partial<Record<FunctionKind, string>>;
   qualifiedRates?: import("./pricing").Rate[];
+  pricingRegistryVersion?: number;
 }
 export interface FounderException {
   id: string;

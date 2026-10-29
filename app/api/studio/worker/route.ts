@@ -5,7 +5,7 @@ import { StudioError } from "@/lib/studio/permissions";
 import { canDispatchJob } from "@/lib/studio/dispatch-permissions";
 import { budgetMonth } from "@/lib/studio/time";
 import { parseGeneratedIdeas } from "@/lib/studio/idea-generation";
-import { readRates, pricingSnapshotIsCurrent } from "@/lib/studio/pricing";
+import { effectiveRates, pricingSnapshotIsCurrent } from "@/lib/studio/pricing";
 import { runProvider, ProviderFailure } from "@/lib/studio/providers";
 import { settleWrittenOutput } from "@/lib/studio/draft-candidates";
 import {
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
         };
       }
     ).pricingSnapshot;
-    if (!pricingSnapshotIsCurrent(snapshot, readRates()))
+    if (!pricingSnapshotIsCurrent(snapshot, effectiveRates(state)))
       return blockJob(
         "The qualified pricing snapshot is missing or changed. Reauthorize this request.",
       );
