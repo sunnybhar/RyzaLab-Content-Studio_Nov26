@@ -1761,7 +1761,7 @@ export default function Workspace() {
                   </div>
                 </section>
                 <div className="s-dashboard-side">
-                  <section className="s-panel"><div className="s-section-heading"><div><h2>Set up by function</h2><p>Choose a provider and its account model for each type of work.</p></div></div><div className="s-actions">{FUNCTIONS.map((kind) => <ConnectionEditor key={kind} initialFunction={kind} demo={mode === "demo"} disabled={!allowed("connections.manage", {function: kind})} save={send} discover={discoverAccountModels} />)}</div></section>
+
               <section className="s-panel">
                     <div className="s-section-heading">
                       <h2>Up next</h2>
@@ -3716,6 +3716,7 @@ export default function Workspace() {
                     : "Connections are unverified until a real provider check completes. Paid work is queued and respects spending limits."}
                 </span>
               </div>
+                  <section className="s-panel"><div className="s-section-heading"><div><h2>Set up by function</h2><p>Choose a provider and its account model for each type of work.</p></div></div><div className="s-actions">{FUNCTIONS.map((kind) => <ConnectionEditor key={kind} initialFunction={kind} demo={mode === "demo"} disabled={!allowed("connections.manage", {function: kind})} save={send} discover={discoverAccountModels} />)}</div></section>
               <section className="s-panel">
                 <div className="s-section-heading">
                   <div>
