@@ -501,6 +501,33 @@ async function main() {
         .fill(
           "Human review: provided sources and current content inspected; no automated reviewer is claimed.",
         );
+      if (stage === "Intake") {
+        await page.evaluate(() =>
+          document
+            .querySelector(".studio-v2")
+            .classList.add("s-theme-daylight"),
+        );
+        const save = form.getByRole("button", {
+          name: "Save check",
+          exact: true,
+        });
+        await save.hover();
+        const colors = await save.evaluate((el) => ({
+          color: getComputedStyle(el).color,
+          background: getComputedStyle(el).backgroundColor,
+        }));
+        assert.notEqual(
+          colors.color,
+          colors.background,
+          "Daylight save-button label stays visible on hover",
+        );
+        await page.screenshot({ path: "/tmp/studio-review-daylight.png" });
+        await page.evaluate(() =>
+          document
+            .querySelector(".studio-v2")
+            .classList.remove("s-theme-daylight"),
+        );
+      }
       await form
         .getByRole("button", { name: "Save check", exact: true })
         .click();
