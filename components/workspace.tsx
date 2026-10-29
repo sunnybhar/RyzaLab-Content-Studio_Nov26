@@ -47,6 +47,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { WorkflowVersions } from "./workflow-versions";
 import { useStudio } from "@/lib/studio/client";
 import {
   CHANNELS,
@@ -3418,105 +3419,66 @@ export default function Workspace() {
                       <Plus size={15} /> New version
                     </button>
                   </div>
-                  {state.workflows
-                    .filter((w) => w.channel === workflowChannel)
-                    .sort((a, b) => b.version - a.version)
-                    .map((w) => (
-                      <div className="s-workflow-version" key={w.id}>
-                        <div className="s-inline s-between">
-                          <div className="s-inline">
-                            <h3>{w.title}</h3>
-                            <Badge>v{w.version}</Badge>
-                            <Badge
-                              tone={
-                                w.status === "active"
-                                  ? "green"
-                                  : w.status === "review"
-                                    ? "amber"
-                                    : "neutral"
-                              }
-                            >
-                              {w.status}
-                            </Badge>
-                          </div>
-                          <div className="s-actions">
-                            {w.status === "draft" && (
-                              <button
-                                disabled={readOnly}
-                                className="s-btn s-small-btn"
-                                onClick={() =>
-                                  void execute({
-                                    type: "workflow.submit",
-                                    id: w.id,
-                                  })
-                                }
-                              >
-                                Submit for review
-                              </button>
-                            )}
-                            {w.status === "review" && (
-                              <button
-                                disabled={
-                                  !allowed("workflow.activate", {
-                                    channel: w.channel,
-                                  })
-                                }
-                                className="s-btn s-primary s-small-btn"
-                                onClick={() =>
-                                  void execute({
-                                    type: "workflow.activate",
-                                    id: w.id,
-                                  })
-                                }
-                              >
-                                Approve & activate
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        <div className="s-workflow-details">
-                          {[
-                            ["Audience", w.audience],
-                            ["Instructions", w.instructions],
-                            ["Guardrails", w.guardrails],
-                            ["Output format", w.outputFormat],
-                            ["Review checks", w.checks],
-                            ["Examples", w.examples],
-                          ].map(([label, value]) => (
-                            <div key={label}>
-                              <h4>{label}</h4>
-                              <p>{value || "Not configured"}</p>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="s-binding-list">
-                          {FUNCTIONS.map((kind) => {
-                            const connection = state.connections.find(
-                              (c) =>
-                                c.id ===
-                                (w.functionConnections?.[kind] ||
-                                  (kind === "text" ? w.connectionId : "") ||
-                                  state.connections.find(
-                                    (c) => c.function === kind,
-                                  )?.id),
-                            );
-                            return (
-                              <span key={kind}>
-                                <strong>{kind}</strong>
-                                {connection
-                                  ? `${connection.title} · ${connection.model}`
-                                  : "Not configured"}
-                              </span>
-                            );
-                          })}
-                        </div>
-                        <div className="s-muted">
-                          {w.references.length} references ·{" "}
-                          {Object.keys(w.functionConnections || {}).length}{" "}
-                          function bindings · Created {stamp(w.createdAt)}
-                        </div>
-                      </div>
-                    ))}
+                  <WorkflowVersions
+                    state={state}
+                    actor={actor}
+                    channel={workflowChannel}
+                    readOnly={readOnly}
+                    execute={execute}
+                    editConnections={(id) => {
+                      const w = state.workflows.find((w) => w.id === id);
+                      if (!w) return;
+                      openForm(
+                        "Edit workflow connections",
+                        FUNCTIONS.map((kind) => ({
+                          name: `connection_${kind}`,
+                          label: `${kind.charAt(0).toUpperCase() + kind.slice(1)} connection`,
+                          value:
+                            w.functionConnections?.[kind] ||
+                            (kind === "text" ? w.connectionId : "") ||
+                            "",
+                          options: [
+                            "",
+                            ...state.connections
+                              .filter(
+                                (c) =>
+                                  c.function === kind &&
+                                  c.status !== "disconnected",
+                              )
+                              .map((c) => c.id),
+                          ],
+                          optionLabels: Object.fromEntries([
+                            ["", "No connection (remove binding)"],
+                            ...state.connections
+                              .filter((c) => c.function === kind)
+                              .map((c) => [c.id, `${c.title} · ${c.model}`]),
+                          ]),
+                          hint: "Choose No connection to remove this workflow binding. Saved API credentials are managed in AI & budgets.",
+                        })),
+                        (d) => ({
+                          type: "workflow.save",
+                          channel: w.channel,
+                          title: w.title,
+                          audience: w.audience,
+                          instructions: w.instructions,
+                          guardrails: w.guardrails,
+                          references: w.references,
+                          examples: w.examples,
+                          outputFormat: w.outputFormat,
+                          checks: w.checks,
+                          connectionId: val(d, "connection_text"),
+                          functionConnections: Object.fromEntries(
+                            FUNCTIONS.map((kind) => [
+                              kind,
+                              val(d, `connection_${kind}`),
+                            ]).filter(([, id]) => id),
+                          ),
+                        }),
+                        `Editing Workflow v${w.version}. Saving creates a new draft; review and activate it to apply changes. Existing approvals and API credentials are preserved.`,
+                        "Save draft version",
+                      );
+                    }}
+                  />
                   {!state.workflows.some(
                     (w) => w.channel === workflowChannel,
                   ) && (

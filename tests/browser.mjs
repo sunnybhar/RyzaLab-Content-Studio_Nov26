@@ -527,6 +527,31 @@ async function main() {
 
     // Versioning a workflow never rewrites the already approved package.
     await navigate("Workflow settings");
+    assert.equal(
+      await page.locator("details.s-workflow-version[open]").count(),
+      0,
+    );
+    const originalWorkflowTile = page
+      .locator("details.s-workflow-version")
+      .first();
+    await originalWorkflowTile.locator("summary").click();
+    await originalWorkflowTile
+      .getByRole("button", { name: "Read instructions", exact: true })
+      .click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Close instruction reader" })
+      .waitFor();
+    await page.keyboard.press("Escape");
+    assert.equal(await page.getByRole("dialog").count(), 0);
+    assert.equal(
+      await originalWorkflowTile
+        .getByRole("button", { name: "Read instructions", exact: true })
+        .evaluate((el) => el === document.activeElement),
+      true,
+    );
+    await originalWorkflowTile.locator("summary").click();
+
     await page
       .getByRole("button", { name: "New version", exact: true })
       .click();
@@ -559,6 +584,32 @@ async function main() {
     const workflowCard = page
       .locator(".s-workflow-version")
       .filter({ hasText: "LinkedIn workflow — browser revision" });
+    assert.equal(await workflowCard.getAttribute("open"), null);
+    assert.ok(await workflowCard.locator("time").getAttribute("datetime"));
+    assert.match(
+      await workflowCard.locator("summary").innerText(),
+      /Text: Not configured/i,
+    );
+    await workflowCard.locator("summary").click();
+    const beforeReading = await state();
+    await workflowCard
+      .getByRole("button", { name: "Read instructions", exact: true })
+      .click();
+    const instructionReader = page.getByRole("dialog");
+    assert.equal(
+      await instructionReader.locator(".s-workflow-reader-copy").innerText(),
+      "Create useful channel-specific perspectives. Preserve source meaning and the limits of available evidence.",
+    );
+    await page.screenshot({ path: "/tmp/studio-workflow-reader.png" });
+    await instructionReader
+      .getByRole("button", { name: "Close instruction reader" })
+      .click();
+    assert.deepEqual(
+      await state(),
+      beforeReading,
+      "Reading a workflow cannot edit or activate it",
+    );
+    await page.screenshot({ path: "/tmp/studio-workflow-tiles.png" });
     await workflowCard
       .getByRole("button", { name: "Submit for review", exact: true })
       .click();
