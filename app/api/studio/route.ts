@@ -98,6 +98,7 @@ export async function POST(req: NextRequest) {
           : undefined;
     const next = applyCommand(state, actor, command, {
       hash,
+      canonicalGeneration: parsed.type === "content.generate",
       quotedCost: priced?.cost,
       pricingSnapshot: priced?.pricingSnapshot,
       assetManifest,

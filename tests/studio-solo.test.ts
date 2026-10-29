@@ -358,3 +358,287 @@ test("selecting an idea opens one linked draft without duplicate content", () =>
   assert.equal(s.contents.length, count);
   assert.equal(s.contents.find((c) => c.ideaId === idea.id)?.id, first.id);
 });
+
+test("raw review jobs cannot manufacture authoritative reports for content not given to them", () => {
+  let s = adopted();
+  const c = s.contents[0];
+  s = applyCommand(
+    s,
+    DEMO_ACTOR,
+    {
+      type: "preparation.authorize",
+      contentId: c.id,
+      maxCents: 50,
+      expectedRevision: c.revision,
+    },
+    ctx,
+  );
+  s.connections.push({
+    id: "review-test",
+    provider: "openai",
+    model: "review-model",
+    function: "review",
+    title: "Reviewer",
+    hasKey: true,
+    status: "validated",
+    updatedAt: now,
+    maxRequestCost: 14,
+  } as never);
+  s.workflows.find(
+    (w) => w.channel === c.channel && w.status === "active",
+  )!.functionConnections = { review: "review-test" };
+  s = applyCommand(
+    s,
+    DEMO_ACTOR,
+    {
+      type: "job.enqueue",
+      kind: "review",
+      channel: c.channel,
+      contentId: c.id,
+      connectionId: "review-test",
+      prompt: "Review unrelated harmless content",
+      estimate: 14,
+      confirmed: true,
+      idempotencyKey: "raw-review",
+    },
+    ctx,
+  );
+  const raw = s.jobs[0];
+  assert.equal(raw.outputContract, undefined);
+  settleWrittenOutput(
+    s,
+    raw,
+    {
+      completion: "complete",
+      text: JSON.stringify({
+        summary: "No issues found in unrelated content",
+        issues: [],
+      }),
+    },
+    now,
+  );
+  assert.equal(s.contents[0].agentReview, undefined);
+});
+test("all content charges count against the package cap, including untagged legacy jobs", () => {
+  let s = adopted();
+  const c = s.contents[0];
+  s = applyCommand(
+    s,
+    DEMO_ACTOR,
+    {
+      type: "preparation.authorize",
+      contentId: c.id,
+      maxCents: 50,
+      expectedRevision: c.revision,
+    },
+    ctx,
+  );
+  s.jobs.push({
+    ...job(s),
+    id: "legacy-charge",
+    reserved: 50,
+    preparationId: undefined,
+  });
+  assert.equal(preparationSpend(s, s.contents[0].preparationId!), 50);
+  s.connections.push({
+    id: "text-test",
+    provider: "anthropic",
+    model: "test",
+    function: "text",
+    title: "Text",
+    hasKey: true,
+    status: "validated",
+    updatedAt: now,
+    maxRequestCost: 14,
+  } as never);
+  s.workflows.find(
+    (w) => w.channel === c.channel && w.status === "active",
+  )!.connectionId = "text-test";
+  assert.throws(
+    () =>
+      applyCommand(
+        s,
+        DEMO_ACTOR,
+        {
+          type: "job.enqueue",
+          kind: "text",
+          channel: c.channel,
+          contentId: c.id,
+          connectionId: "text-test",
+          prompt: "Another permitted request",
+          estimate: 14,
+          confirmed: true,
+          idempotencyKey: "over-cap",
+        },
+        ctx,
+      ),
+    /total package budget/,
+  );
+  const other = { id: "other", email: "other@example.com" };
+  s.members.push({
+    ...other,
+    roles: ["administrator"],
+    grants: [],
+    revoked: false,
+  });
+  assert.throws(
+    () =>
+      applyCommand(
+        s,
+        other,
+        {
+          type: "job.enqueue",
+          kind: "text",
+          channel: c.channel,
+          contentId: c.id,
+          connectionId: "text-test",
+          prompt: "Other creator request",
+          estimate: 14,
+          confirmed: true,
+          idempotencyKey: "other-cap",
+        },
+        ctx,
+      ),
+    /package budget authorization/,
+  );
+});
+test("moving a draft requires destination account permission as well as source permission", () => {
+  const s = adopted(),
+    c = s.contents[0],
+    editor = { id: "scoped", email: "scoped@example.com" };
+  c.assignedTo = editor.email;
+  c.account = "Allowed";
+  s.members.push({
+    ...editor,
+    roles: ["editor"],
+    revoked: false,
+    grants: [
+      { action: "content.edit", channel: c.channel, account: "Allowed" },
+    ],
+  });
+  assert.throws(
+    () =>
+      applyCommand(
+        s,
+        editor,
+        {
+          type: "content.save",
+          id: c.id,
+          expectedRevision: c.revision,
+          title: c.title,
+          text: c.text,
+          metadata: c.metadata,
+          media: c.media,
+          account: "Forbidden",
+        },
+        ctx,
+      ),
+    /permission/,
+  );
+  assert.equal(c.account, "Allowed");
+});
+test("editing and reverting wording never resurrects an earlier copy acceptance", () => {
+  let s = adopted();
+  s = applyCommand(s, DEMO_ACTOR, copyCommand(s), ctx);
+  const original = s.contents[0].text;
+  for (const text of ["Changed wording for this draft.", original]) {
+    const c = s.contents[0];
+    s = applyCommand(
+      s,
+      DEMO_ACTOR,
+      {
+        type: "content.save",
+        id: c.id,
+        expectedRevision: c.revision,
+        title: c.title,
+        text,
+        metadata: c.metadata,
+        media: c.media,
+      },
+      ctx,
+    );
+  }
+  assert.equal(currentCopyAcceptance(s.contents[0], s), undefined);
+});
+test("writing result preserves existing slide layout, images, layer data and extra slides", () => {
+  const s = adopted(),
+    c = s.contents[0];
+  c.media.slides = [
+    {
+      id: "keep",
+      title: "Original slide",
+      body: "Original body",
+      x: 27,
+      y: 31,
+      fontSize: 42,
+      color: "#123456",
+      background: "#ffffff",
+      image: "/api/studio/assets?id=11111111-1111-4111-8111-111111111111",
+    },
+    {
+      id: "extra",
+      title: "Keep extra",
+      body: "Extra body",
+      x: 9,
+      y: 9,
+      fontSize: 50,
+      color: "#123456",
+      background: "#ffffff",
+    },
+  ];
+  const media = structuredClone(c.media),
+    j = job(s);
+  s.jobs.push(j);
+  settleWrittenOutput(
+    s,
+    j,
+    {
+      completion: "complete",
+      text: JSON.stringify({
+        body: "Complete revised text for the selected piece.",
+        metadata: "",
+        sources: [],
+        questions: [],
+        slides: [{ title: "Proposed replacement", body: "Proposed body" }],
+      }),
+    },
+    now,
+  );
+  assert.equal(j.outputStatus, "applied");
+  assert.deepEqual(c.media, media);
+  assert.equal(j.candidate?.slides?.[0].title, "Proposed replacement");
+});
+test("structured missing-fact questions remain a retained candidate and never auto-apply", () => {
+  const s = adopted(),
+    c = s.contents[0],
+    original = c.text,
+    j = job(s);
+  s.jobs.push(j);
+  settleWrittenOutput(
+    s,
+    j,
+    {
+      completion: "complete",
+      text: JSON.stringify({
+        body: "A proposed complete post needing founder confirmation.",
+        metadata: "",
+        sources: [],
+        questions: ["Which installation is this based on?"],
+      }),
+    },
+    now,
+  );
+  assert.equal(c.text, original);
+  assert.equal(j.outputStatus, "ready");
+  assert.match(j.error!, /unresolved factual questions/);
+  assert.throws(
+    () =>
+      applyCommand(
+        s,
+        DEMO_ACTOR,
+        { type: "job.applyDraft", jobId: j.id, expectedRevision: c.revision },
+        ctx,
+      ),
+    /missing facts/,
+  );
+});

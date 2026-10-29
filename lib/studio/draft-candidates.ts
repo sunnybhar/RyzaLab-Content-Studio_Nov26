@@ -32,7 +32,7 @@ export function applyDraftCandidate(
   content.textRevision = (content.textRevision || 1) + 1;
   content.text = result.body;
   content.metadata = result.metadata;
-  if (result.slides?.length) {
+  if (result.slides?.length && !content.media.slides.length) {
     content.media.slides = result.slides.map((slide, i) => ({
       ...content.media.slides[i],
       ...slide,
@@ -111,6 +111,12 @@ export function settleWrittenOutput(
       return;
     }
     job.outputStatus = "ready";
+    if (job.candidate.questions.length) {
+      job.error =
+        "The candidate has unresolved factual questions. Review them before applying it: " +
+        job.candidate.questions.join(" ").slice(0, 3000);
+      return;
+    }
     if (
       !c ||
       c.deletedAt ||

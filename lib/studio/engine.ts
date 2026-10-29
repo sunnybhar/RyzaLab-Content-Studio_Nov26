@@ -38,6 +38,7 @@ export type ExecutionContext = {
   quotedCost?: number;
   pricingSnapshot?: unknown;
   assetManifest?: unknown[];
+  canonicalGeneration?: boolean;
   preset?: ChannelPreset;
 };
 export function fingerprint(value: unknown) {
@@ -743,6 +744,7 @@ export function applyCommand(
           maxCents: policy.packageCap,
           functions: [
             "text",
+            "research",
             "review",
             "image",
             "audio",
@@ -796,6 +798,14 @@ export function applyCommand(
           409,
           "This draft changed. Reload before saving so no edits are lost.",
         );
+      if (c.account !== undefined && c.account !== d.account)
+        need("content.edit", {
+          channel: d.channel,
+          account: c.account,
+          contentId: d.id,
+          assignedTo: d.assignedTo,
+        });
+      const priorWords = contentWording(d);
       const oldFacts = factsSignature(d),
         oldFactsRevision = d.factsRevision ?? d.textRevision ?? 1,
         oldTitle = d.title;
@@ -806,7 +816,8 @@ export function applyCommand(
           d.text !== c.text ||
           d.title !== c.title ||
           d.metadata !== c.metadata ||
-          (c.account !== undefined && c.account !== d.account);
+          (c.account !== undefined && c.account !== d.account) ||
+          (c.format !== undefined && c.format !== d.format);
       remember(d, "Studio edit");
       Object.assign(d, {
         title: c.title,
@@ -819,6 +830,8 @@ export function applyCommand(
         textRevision: (d.textRevision || 1) + (textChanged ? 1 : 0),
         mediaRevision: (d.mediaRevision || 1) + (mediaChanged ? 1 : 0),
       });
+      if (!textChanged && priorWords !== contentWording(d))
+        d.textRevision = (d.textRevision || 1) + 1;
       d.factsRevision =
         oldFactsRevision + (oldFacts !== factsSignature(d) ? 1 : 0);
       if (oldTitle !== d.title && d.stages?.length)
@@ -862,7 +875,6 @@ export function applyCommand(
         ...structuredClone(old),
         id: id(),
         title: r.title + " — restored",
-        stages: [],
         copyAcceptances: [],
         agentReview: undefined,
         preparationId: undefined,
@@ -1367,6 +1379,7 @@ export function applyCommand(
         if (x.channel === w.channel && x.status === "active")
           x.status = "review";
       w.status = "active";
+      w.activationId = id();
       break;
     }
     case "reference.create":
@@ -1506,6 +1519,7 @@ export function applyCommand(
           maxCents: c.maxCents,
           functions: [
             "text",
+            "research",
             "review",
             "image",
             "audio",
@@ -1564,6 +1578,17 @@ export function applyCommand(
           409,
           "Draft changed. Compare again before applying this candidate.",
         );
+      if (job.candidate.questions.length && !c.questionsResolution)
+        bad(
+          "Record how the candidate's missing facts were resolved before applying it.",
+        );
+      if (job.candidate.questions.length) {
+        job.questionsDisposition = {
+          by: actor.email,
+          at: now,
+          evidence: c.questionsResolution!,
+        };
+      }
       applyDraftCandidate(d, job, actor.email, now, id);
       break;
     }
@@ -1685,7 +1710,16 @@ export function applyCommand(
         bad(
           "This connection is not the active workflow binding for this function. A permitted administrator must activate the desired mapping.",
         );
+      const outputContract =
+        ctx.canonicalGeneration && d
+          ? c.kind === "text"
+            ? "draft_v1"
+            : c.kind === "review"
+              ? "review_v1"
+              : undefined
+          : undefined;
       const payloadHash = fingerprint({
+        outputContract,
         kind: c.kind,
         channel: c.channel,
         contentId: c.contentId,
@@ -1711,7 +1745,17 @@ export function applyCommand(
       const estimate = ctx.demo ? allowance || c.estimate : ctx.quotedCost || 0;
       if (!estimate) bad("A positive request allowance is required.");
       const preparation = preparationFor(s, d, actor.email, now);
-      const preauthorized = preparation?.functions.includes(c.kind);
+      if (
+        d &&
+        soloPolicy(s) &&
+        (!preparation || !preparation.functions.includes(c.kind))
+      )
+        bad(
+          "This content needs a current package budget authorization for this actor and function. A single-job confirmation cannot bypass its total cap.",
+        );
+      const preauthorized = Boolean(
+        ctx.canonicalGeneration && preparation?.functions.includes(c.kind),
+      );
       const j: Job = {
         id: id(),
         kind: c.kind,
@@ -1738,16 +1782,11 @@ export function applyCommand(
         period: budgetMonth(now, s.settings.timezone),
         payloadHash,
         mediaRevision: d?.mediaRevision || 1,
-        preparationId: preauthorized ? preparation?.id : undefined,
+        preparationId: preparation?.id,
         targetRevision: d?.revision,
         targetIdentity: d ? copyIdentity(d, s) : undefined,
         targetAccepted: d ? Boolean(currentCopyAcceptance(d, s)) : false,
-        outputContract:
-          d && c.kind === "text"
-            ? "draft_v1"
-            : d && c.kind === "review"
-              ? "review_v1"
-              : undefined,
+        outputContract,
         connectionSnapshot: {
           provider: connection.provider,
           model: connection.model,

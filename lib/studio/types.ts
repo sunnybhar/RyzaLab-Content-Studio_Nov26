@@ -57,6 +57,7 @@ export interface Reference {
   createdAt: string;
 }
 export interface Workflow {
+  activationId?: string;
   updatedAt?: string;
   updatedBy?: string;
   id: string;
@@ -313,6 +314,7 @@ export interface Job {
   outputContract?: "draft_v1" | "review_v1";
   outputStatus?: "ready" | "incomplete" | "invalid" | "conflict" | "applied";
   candidate?: import("./output-contracts").DraftResult;
+  questionsDisposition?: { by: string; at: string; evidence: string };
   appliedAt?: string;
   appliedRevision?: number;
   preparationId?: string;

@@ -115,6 +115,14 @@ export async function POST(req: NextRequest) {
       return blockJob(
         "The qualified pricing snapshot is missing or changed. Reauthorize this request.",
       );
+    if (
+      state.settings.reviewPolicy?.mode === "two_step" &&
+      job.contentId &&
+      !job.preparationId
+    )
+      return blockJob(
+        "This content operation needs a current total package authorization before dispatch.",
+      );
     if (job.preparationId) {
       const authorization = jobPreparation(state, job, now);
       if (

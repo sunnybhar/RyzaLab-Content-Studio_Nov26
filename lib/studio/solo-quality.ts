@@ -17,6 +17,7 @@ export function copyIdentity(c: Content, s: StudioState) {
   const workflow = currentWorkflow(c, s);
   return JSON.stringify({
     contentId: c.id,
+    textRevision: c.textRevision || 1,
     title: c.title,
     text: c.text,
     metadata: c.metadata,
@@ -25,6 +26,7 @@ export function copyIdentity(c: Content, s: StudioState) {
     format: c.format,
     words: contentWording(c),
     workflow: workflow?.id,
+    activation: workflow?.activationId || workflow?.createdAt,
     rules: s.settings.protectedVersion,
     policy: s.settings.reviewPolicy?.version,
     references: s.references

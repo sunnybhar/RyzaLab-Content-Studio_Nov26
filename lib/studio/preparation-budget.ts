@@ -15,7 +15,7 @@ export function preparationFor(
       p.contentId === c.id &&
       p.channel === c.channel &&
       p.account === c.account &&
-      p.authorizedFor === actorEmail &&
+      (p.authorizedFor === actorEmail || p.authorizedBy === actorEmail) &&
       p.authorizedFor === c.assignedTo &&
       p.policyVersion === policy.version &&
       p.period === budgetMonth(now, s.settings.timezone),
@@ -27,14 +27,9 @@ export function preparationSpend(
   excludeJob?: string,
 ) {
   const preparation = s.preparations?.find((p) => p.id === preparationId);
-  const ids = new Set(
-    s.preparations
-      ?.filter((p) => p.contentId === preparation?.contentId)
-      .map((p) => p.id),
-  );
   return s.jobs
     .filter(
-      (j) => j.preparationId && ids.has(j.preparationId) && j.id !== excludeJob,
+      (j) => j.contentId === preparation?.contentId && j.id !== excludeJob,
     )
     .reduce((sum, j) => sum + (j.actual ?? j.reserved), 0);
 }

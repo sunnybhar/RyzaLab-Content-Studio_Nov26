@@ -120,7 +120,10 @@ export function useStudio() {
                   command as unknown as Parameters<typeof generationInput>[2],
                 )
               : command,
-            { demo: true },
+            {
+              demo: true,
+              canonicalGeneration: command.type === "content.generate",
+            },
           );
         localStorage.setItem("ryzalab-studio-v2", JSON.stringify(next));
         update(next);

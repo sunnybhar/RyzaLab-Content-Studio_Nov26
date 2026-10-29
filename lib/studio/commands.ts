@@ -281,6 +281,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   command("job.applyDraft", {
     jobId: id,
     expectedRevision: z.number().int().positive(),
+    questionsResolution: z.string().trim().min(10).max(12000).optional(),
   }),
   command("connection.default", { id }),
   command("exception.record", {
