@@ -6,6 +6,7 @@ October 29, 2026. DESIGN ONLY. This folder contains standalone wireframes and a 
 
 - Text/research provider choices: Anthropic (Claude), OpenAI and Google (Gemini).
 - Two human content reviews: approve copy, then approve the complete package. Agents prepare and check work between these decisions.
+- Routine AI work runs within a founder-approved total package budget; ask only for exceptions. This is a design choice, not live spending authorization.
 - Manual external publication continues. There is no new social-account access or automated posting authorization.
 - Current media integrations remain pending; showing an image/video/audio setup card does not qualify that service.
 
@@ -130,3 +131,7 @@ Remove the tall Human by design sidebar card. Place compact text in the home-pag
 ## Remove hosting-setting chores from normal use
 
 Model selection and per-function credentials should be configured in Studio, without editing Vercel JSON for each model change. Account model listings do not provide complete pricing. Use a server-maintained, versioned and source-dated qualified rate catalogue, show estimated package cost in Studio and block automatic spending for unqualified models. Advanced rate administration stays permission-controlled; a user-entered estimate or checkbox is not provider-cost qualification. Initial infrastructure secrets remain one-time operator setup.
+
+## Confirmed spending preference
+
+Founder selected routine execution within a total package budget, with exception-only confirmations. Next implementation design must define that package cap and included operations (copy, checks, assets, tools and bounded retries), reserve against monthly/per-request limits, and show remaining allowance. Amounts remain undecided; existing pilot settings are unchanged. Unknown rates/outcomes, missing permissions or required reviewers hold work. An exception cannot bypass a hard studio cap or silently retry an uncertain paid outcome.
