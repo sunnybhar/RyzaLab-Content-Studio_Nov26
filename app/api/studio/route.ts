@@ -1,3 +1,4 @@
+import { orchestrateReviews } from "@/lib/studio/review-orchestration";
 import { NextRequest, NextResponse } from "next/server";
 import {
   authenticate,
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
         : command.type === "idea.generate" && !command.research
           ? quote(state, ideaJobInput(state, actor, command))
           : undefined;
-    const next = applyCommand(state, actor, command, {
+    let next = applyCommand(state, actor, command, {
       hash,
       canonicalGeneration: parsed.type === "content.generate",
       quotedCost: priced?.cost,
@@ -107,6 +108,7 @@ export async function POST(req: NextRequest) {
           ? await loadChannelPreset(command.channel)
           : undefined,
     });
+    if (command.type === "content.acceptCopy") next = orchestrateReviews(next);
     if (Buffer.byteLength(JSON.stringify(next)) > 24000000)
       throw new StudioError(
         413,

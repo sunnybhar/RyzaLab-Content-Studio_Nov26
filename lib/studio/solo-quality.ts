@@ -94,6 +94,8 @@ export function packageReadiness(c: Content, s: StudioState) {
     blockers.push("Prepare the final image.");
   const agent =
     c.agentReview?.identity === identity ? c.agentReview : undefined;
+  if (policy?.autoReview && !agent)
+    blockers.push("The configured automatic textual review must finish and attach a current report before final approval.");
   const needsIndependent =
     c.channel === "Notes" || Boolean(policy?.requireIndependentReview);
   if (needsIndependent && !agent?.independent)

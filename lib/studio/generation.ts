@@ -32,12 +32,42 @@ export function generationInput(
   requirePermission(state, actor, "job.create", scope);
   if (input.kind === "text")
     requirePermission(state, actor, "content.edit", scope);
+  if (
+    state.jobs.some(
+      (job) =>
+        job.contentId === c.id &&
+        (job.state === "unknown" ||
+          (input.kind === "review" &&
+            job.kind === "review" &&
+            ["queued", "running", "awaiting_confirmation"].includes(
+              job.state,
+            ))),
+    )
+  )
+    throw new StudioError(
+      409,
+      "Resolve existing active or uncertain review work before requesting another run.",
+    );
   const connectionId = resolvedConnection(state, c.channel, input.kind);
   if (!connectionId)
     throw new StudioError(
       409,
       `Connect ${input.kind === "text" ? "Writing" : "Review"} in AI setup or choose a channel override. Your draft is already saved.`,
     );
+  if (
+    input.kind === "review" &&
+    (c.channel === "Notes" ||
+      state.settings.reviewPolicy?.requireIndependentReview)
+  ) {
+    const reviewer = state.connections.find(
+      (connection) => connection.id === connectionId,
+    );
+    if (!c.generatedBy || reviewer?.provider === c.generatedBy.provider)
+      throw new StudioError(
+        409,
+        "An independent review needs known copy provenance and a qualified reviewer from a different provider. No review request was sent.",
+      );
+  }
   const idea = state.ideas.find((i) => i.id === c.ideaId);
   const prompt = JSON.stringify({
     task:

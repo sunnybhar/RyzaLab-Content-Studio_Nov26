@@ -8,7 +8,7 @@ let fixture = initialState(DEMO_ACTOR, true);
 fixture = applyCommand(fixture, DEMO_ACTOR, {
   type: "policy.adoptSolo", expectedRuleVersion: fixture.settings.protectedVersion,
   packageCap: 50, monthlyCap: 500, requireIndependentReview: false,
-  autoDraft: true, autoReview: true,
+  autoDraft: true, autoReview: false,
 }, {demo: true});
 const draft = fixture.contents[0];
 draft.state = "review";

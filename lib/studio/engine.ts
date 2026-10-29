@@ -881,6 +881,7 @@ export function applyCommand(
         title: r.title + " — restored",
         copyAcceptances: [],
         agentReview: undefined,
+        automaticReview: undefined,
         generatedBy: undefined,
         preparationId: undefined,
         text: r.text,

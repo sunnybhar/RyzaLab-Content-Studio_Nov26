@@ -1,3 +1,4 @@
+import { copyIdentity, currentCopyAcceptance } from "./solo-quality";
 import type { Actor, Job, StudioState } from "./types";
 import { can } from "./permissions";
 
@@ -12,6 +13,17 @@ export function canDispatchJob(state: StudioState, actor: Actor, job: Job) {
       content.deletedAt ||
       content.channel !== job.channel ||
       content.account !== job.account)
+  )
+    return false;
+
+  if (
+    content &&
+    job.outputContract &&
+    (!job.targetIdentity ||
+      job.targetIdentity !== copyIdentity(content, state) ||
+      (job.outputContract === "draft_v1" &&
+        (content.revision !== job.targetRevision ||
+          currentCopyAcceptance(content, state))))
   )
     return false;
 

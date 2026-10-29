@@ -25,7 +25,7 @@ function adopted() {
       monthlyCap: 500,
       requireIndependentReview: false,
       autoDraft: true,
-      autoReview: true,
+      autoReview: false,
       expectedRuleVersion: s.settings.protectedVersion,
     },
     ctx,

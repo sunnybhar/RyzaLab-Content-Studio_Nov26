@@ -2792,7 +2792,7 @@ export default function Workspace() {
                       · Protected rules {state.settings.protectedVersion}
                     </div>
                     {state.settings.reviewPolicy ? (
-                      <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send}
+                      <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send} refresh={() => refresh(true)} demo={mode === "demo"}
                         renderAsset={(source, kind) => <AssetMedia source={source} kind={kind} />}
                         openDraft={() => openContent(c)}
                         requestChanges={() => reject("package.reject", c.id)}
