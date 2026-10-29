@@ -10,6 +10,7 @@ import type {
   FunctionKind,
   Connection,
 } from "./types";
+import { generationInput } from "./generation";
 import { initialState, DEMO_ACTOR } from "./seed";
 import { applyCommand } from "./engine";
 import { requirePermission } from "./permissions";
@@ -109,10 +110,21 @@ export function useStudio() {
             at: new Date().toISOString(),
           });
         } else
-          next = applyCommand(previous, DEMO_ACTOR, command, { demo: true });
+          next = applyCommand(
+            previous,
+            DEMO_ACTOR,
+            command.type === "content.generate"
+              ? generationInput(
+                  previous,
+                  DEMO_ACTOR,
+                  command as unknown as Parameters<typeof generationInput>[2],
+                )
+              : command,
+            { demo: true },
+          );
         localStorage.setItem("ryzalab-studio-v2", JSON.stringify(next));
         update(next);
-        return;
+        return { state: next, actor: DEMO_ACTOR, mode: "demo" as const };
       }
       const { data } = await supabase!.auth.getSession();
       if (!data.session) throw new Error("Sign in again.");
@@ -139,6 +151,7 @@ export function useStudio() {
       if (!response.ok) throw new Error(result.error || "Operation failed.");
       update(result.state);
       setActor(result.actor);
+      return result;
     } catch (e) {
       setError((e as Error).message);
       throw e;

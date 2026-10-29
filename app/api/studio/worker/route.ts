@@ -6,6 +6,11 @@ import { budgetMonth } from "@/lib/studio/time";
 import { parseGeneratedIdeas } from "@/lib/studio/idea-generation";
 import { readRates, pricingSnapshotIsCurrent } from "@/lib/studio/pricing";
 import { runProvider, ProviderFailure } from "@/lib/studio/providers";
+import { settleWrittenOutput } from "@/lib/studio/draft-candidates";
+import {
+  jobPreparation,
+  preparationSpend,
+} from "@/lib/studio/preparation-budget";
 import { failure } from "@/lib/studio/http";
 export const maxDuration = 180;
 export async function POST(req: NextRequest) {
@@ -110,9 +115,29 @@ export async function POST(req: NextRequest) {
       return blockJob(
         "The qualified pricing snapshot is missing or changed. Reauthorize this request.",
       );
+    if (job.preparationId) {
+      const authorization = jobPreparation(state, job, now);
+      if (
+        !authorization ||
+        preparationSpend(state, job.preparationId, job.id) + job.estimate >
+          authorization.maxCents
+      )
+        return blockJob(
+          "Package authorization changed or its total budget is exhausted. Reauthorize without retrying uncertain work.",
+        );
+    }
     const connection = state.connections.find((c) => c.id === job.connectionId);
     if (!connection || !connection.hasKey || connection.status !== "validated")
       return blockJob("Validate the selected provider/model before execution.");
+    if (
+      job.connectionSnapshot &&
+      (connection.provider !== job.connectionSnapshot.provider ||
+        connection.model !== job.connectionSnapshot.model ||
+        connection.function !== job.connectionSnapshot.function)
+    )
+      return blockJob(
+        "Provider/model changed after reservation. Reauthorize before execution.",
+      );
     const { data: secret } = await db
       .from("studio_secrets")
       .select("ciphertext")
@@ -132,7 +157,13 @@ export async function POST(req: NextRequest) {
     claimed.version++;
     await persist(db, state, claimed);
     let outcome:
-        { text?: string; bytes?: Uint8Array; mime?: string } | undefined,
+        | {
+            text?: string;
+            bytes?: Uint8Array;
+            mime?: string;
+            completion?: "complete" | "incomplete" | "refused";
+          }
+        | undefined,
       problem: ProviderFailure | undefined;
     try {
       outcome = await runProvider(
@@ -212,6 +243,8 @@ export async function POST(req: NextRequest) {
       } else {
         j.state = "succeeded";
         j.result = outcome?.text || "";
+        if (j.outputContract)
+          settleWrittenOutput(next, j, outcome || {}, new Date().toISOString());
         if (j.kind === "ideas" && outcome?.text) {
           try {
             const items = parseGeneratedIdeas(outcome.text);

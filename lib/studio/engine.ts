@@ -680,6 +680,82 @@ export function applyCommand(
       });
       break;
     }
+    case "idea.use": {
+      const idea = s.ideas.find((i) => i.id === c.id);
+      if (!idea) bad("Idea not found.");
+      need("read", { channel: idea.channel });
+      if (idea.state !== "approved") {
+        need("idea.review", { channel: idea.channel });
+        idea.state = "approved";
+      }
+      need("content.create", { channel: idea.channel, account: c.account });
+      const existing = s.contents.find(
+        (d) =>
+          d.ideaId === idea.id && d.createdBy === actor.email && !d.deletedAt,
+      );
+      if (existing) {
+        content(existing.id);
+        break;
+      }
+      const d: Content = {
+        id: id(),
+        channel: idea.channel,
+        account: c.account || "RyzaLab",
+        title: idea.title,
+        format: c.format,
+        text: "",
+        metadata: "",
+        media: structuredClone(EMPTY_MEDIA),
+        ideaId: idea.id,
+        assignedTo: actor.email,
+        revision: 1,
+        textRevision: 1,
+        mediaRevision: 1,
+        factsRevision: 1,
+        history: [],
+        state: "draft",
+        workflowId: s.workflows.find(
+          (w) => w.channel === idea.channel && w.status === "active",
+        )?.id,
+        createdBy: actor.email,
+        updatedAt: now,
+      };
+      s.contents.unshift(d);
+      const policy = soloPolicy(s);
+      if (
+        policy &&
+        can(s, actor, "package.approve", {
+          channel: d.channel,
+          contentId: d.id,
+          account: d.account,
+          assignedTo: d.assignedTo,
+        })
+      ) {
+        const authorization = {
+          id: id(),
+          contentId: d.id,
+          channel: d.channel,
+          account: d.account,
+          authorizedFor: d.assignedTo,
+          authorizedBy: actor.email,
+          at: now,
+          period: budgetMonth(now, s.settings.timezone),
+          maxCents: policy.packageCap,
+          functions: [
+            "text",
+            "review",
+            "image",
+            "audio",
+            "video",
+          ] as import("./types").FunctionKind[],
+          policyVersion: policy.version,
+        };
+        s.preparations ??= [];
+        s.preparations.push(authorization);
+        d.preparationId = authorization.id;
+      }
+      break;
+    }
     case "content.create": {
       need("content.create", { channel: c.channel, account: c.account });
       if (
@@ -727,7 +803,10 @@ export function applyCommand(
           JSON.stringify(d.media) !== JSON.stringify(c.media) ||
           (c.format !== undefined && c.format !== d.format),
         textChanged =
-          d.text !== c.text || d.title !== c.title || d.metadata !== c.metadata;
+          d.text !== c.text ||
+          d.title !== c.title ||
+          d.metadata !== c.metadata ||
+          (c.account !== undefined && c.account !== d.account);
       remember(d, "Studio edit");
       Object.assign(d, {
         title: c.title,
@@ -735,6 +814,7 @@ export function applyCommand(
         metadata: c.metadata,
         media: c.media,
         format: c.format || d.format,
+        account: c.account ?? d.account,
         collection: c.collection ?? d.collection,
         textRevision: (d.textRevision || 1) + (textChanged ? 1 : 0),
         mediaRevision: (d.mediaRevision || 1) + (mediaChanged ? 1 : 0),
@@ -782,6 +862,10 @@ export function applyCommand(
         ...structuredClone(old),
         id: id(),
         title: r.title + " — restored",
+        stages: [],
+        copyAcceptances: [],
+        agentReview: undefined,
+        preparationId: undefined,
         text: r.text,
         metadata: r.metadata,
         media: structuredClone(r.media),

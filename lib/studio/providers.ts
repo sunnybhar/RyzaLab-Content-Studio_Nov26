@@ -60,7 +60,12 @@ export async function runProvider(
   job: Job,
   connection: Connection,
   key: string,
-): Promise<{ text?: string; bytes?: Uint8Array; mime?: string }> {
+): Promise<{
+  text?: string;
+  bytes?: Uint8Array;
+  mime?: string;
+  completion?: "complete" | "incomplete" | "refused";
+}> {
   if (
     !["text", "ideas", "review", "image", "audio", "research"].includes(
       job.kind,
@@ -258,7 +263,26 @@ export async function runProvider(
     json.stop_reason === "max_tokens" ||
     json.status === "incomplete" ||
     json.candidates?.[0]?.finishReason === "MAX_TOKENS";
+  const refusal =
+    json.stop_reason === "refusal" ||
+    json.output?.some((item: { content?: { type: string }[] }) =>
+      item.content?.some((c) => c.type === "refusal"),
+    ) ||
+    ["SAFETY", "PROHIBITED_CONTENT"].includes(
+      json.candidates?.[0]?.finishReason,
+    );
+  const terminal =
+    connection.provider === "anthropic"
+      ? json.stop_reason === "end_turn"
+      : connection.provider === "openai"
+        ? json.status === "completed"
+        : json.candidates?.[0]?.finishReason === "STOP";
   return {
+    completion: refusal
+      ? "refused"
+      : truncated || (job.outputContract && !terminal)
+        ? "incomplete"
+        : "complete",
     text: truncated
       ? `[INCOMPLETE OUTPUT — token limit reached; not ready for approval]\n\n${text}`
       : text,

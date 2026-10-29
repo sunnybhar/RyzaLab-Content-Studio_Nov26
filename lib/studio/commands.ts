@@ -142,6 +142,14 @@ export const commandSchema = z.discriminatedUnion("type", [
     decision: z.enum(["approved", "rejected"]),
     reason: z.string().max(2000).optional(),
   }),
+  command("idea.use", { id, format: short, account: z.string().max(200) }),
+  command("content.generate", {
+    contentId: id,
+    kind: z.enum(["text", "review"]),
+    expectedRevision: z.number().int().positive(),
+    notes: text.optional(),
+    idempotencyKey: short,
+  }),
   command("idea.reuse", { id, mode: z.enum(["copy", "revise"]) }),
   command("content.create", {
     channel,
@@ -158,6 +166,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     metadata: text,
     media: mediaSchema,
     format: short.optional(),
+    account: z.string().max(200).optional(),
     collection: z.string().max(100).optional(),
   }),
   command("content.submit", { id }),

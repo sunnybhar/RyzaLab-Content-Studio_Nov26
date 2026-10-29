@@ -6,6 +6,7 @@ import {
   hash,
   encrypt,
 } from "@/lib/studio/store";
+import { generationInput } from "@/lib/studio/generation";
 import { ideaJobInput } from "@/lib/studio/idea-generation";
 import { loadChannelPreset } from "@/lib/studio/preset-store";
 import { quote } from "@/lib/studio/pricing";
@@ -40,8 +41,13 @@ export async function POST(req: NextRequest) {
         413,
         "Command is too large; upload assets separately.",
       );
-    const state = await loadState(db, actor),
-      command = commandSchema.parse(await req.json());
+    const state = await loadState(db, actor);
+    const parsed = commandSchema.parse(await req.json());
+    const command = commandSchema.parse(
+      parsed.type === "content.generate"
+        ? generationInput(state, actor, parsed)
+        : parsed,
+    );
     if (command.type === "idea.generate") {
       requirePermission(state, actor, "idea.edit", {
         channel: command.channel,

@@ -16,6 +16,7 @@ export function soloPolicy(state: StudioState) {
 export function copyIdentity(c: Content, s: StudioState) {
   const workflow = currentWorkflow(c, s);
   return JSON.stringify({
+    contentId: c.id,
     title: c.title,
     text: c.text,
     metadata: c.metadata,
