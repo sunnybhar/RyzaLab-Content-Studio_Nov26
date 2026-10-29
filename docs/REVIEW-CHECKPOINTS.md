@@ -27,3 +27,7 @@ Astra focused review cleared collapsed version tiles, read-only native instructi
 ## Same-card workflow editing — 2026-10-29
 
 User rejected the unshipped archive approach. It was completely removed. One current workflow card with internal revision history replaces the version-card list; draft saves retain identity/version and show Updated time. Active/review inputs remain immutable pending a new internal revision and activation. Astra required timestamp tokens on every id-bearing save and strict advancement within the same millisecond; fixes verified with four focused tests. Focused review cleared, full130 tests pass. No deletion/archival command or database migration shipped.
+
+## Review popup and approval feedback — 2026-10-29
+
+Astra reviewed approval diagnostic changes: same checks remain before package creation, excerpts are authorized and escaped; recommended clearing busy target fixed. Additional Codex source review found no modal/approval authority bypass and verified default collapse preserves eligibility. Its browser environment did not load, so root completed production browser validation separately: queue width/popup/closure, all six checks/approval/handoff and exact inline blocker rejection pass. Source reviewer recommended focus after card removal; successful approval now focuses next review opener or page heading. No claim that the second review used Astra; exact routing unavailable.

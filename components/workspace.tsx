@@ -565,6 +565,15 @@ export default function Workspace() {
     try {
       await send(command);
       if (message) setNotice(message);
+      if (approvalKey)
+        requestAnimationFrame(() => {
+          if (!document.querySelector(".s-review-grid")) return;
+          const target =
+            document.querySelector<HTMLElement>(
+              ".s-review-grid .s-review-row button",
+            ) || document.querySelector<HTMLElement>(".s-page-heading h1");
+          target?.focus({ preventScroll: true });
+        });
       return true;
     } catch (e) {
       const message =
@@ -1439,7 +1448,7 @@ export default function Workspace() {
                     })
                   : "RYZALAB STUDIO"}
               </div>
-              <h1>{heading}</h1>
+              <h1 tabIndex={-1}>{heading}</h1>
               <p>{pageDescription[page]}</p>
             </div>
             <div className="s-actions">
@@ -2614,7 +2623,7 @@ export default function Workspace() {
                 </a>
               </div>
               <p>
-                The QA workbook has 157 cases, a defect log and blank manual
+                The QA workbook has 160 cases, a defect log and blank manual
                 results. Live integration cases require a configured test
                 workspace.
               </p>

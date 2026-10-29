@@ -97,7 +97,7 @@ Use **Workflow settings** to import channel instructions as a draft, edit instru
 
 ### Training and acceptance testing
 
-Open **Training & QA** in the sidebar for 14 standalone Word training modules, the 157-case manual QA workbook and the 50-item delivery backlog. Source guides and downloads are in [docs/training](docs/training/README.md). To regenerate with Python, install `python-docx` and `openpyxl`, then run `python scripts/generate-training-materials.py`. These are documentation-generation dependencies, not application runtime dependencies.
+Open **Training & QA** in the sidebar for 14 standalone Word training modules, the 160-case manual QA workbook and the 53-item delivery backlog. Source guides and downloads are in [docs/training](docs/training/README.md). To regenerate with Python, install `python-docx` and `openpyxl`, then run `python scripts/generate-training-materials.py`. These are documentation-generation dependencies, not application runtime dependencies.
 
 Both avatars open Account & appearance. Calendar supports human drafting/editing/workflow tasks separately from approved publication. Analytics reports real Studio records; social reach/engagement remains unconnected.
 

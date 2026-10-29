@@ -94,7 +94,7 @@
       "Save draft before switching work. Concurrent edits can be rejected rather than silently overwriting another editor; reload and compare versions.",
       "For carousels, use the slide editor for copy and layout. Add text/shape layers, drag or nudge with arrow keys, edit size/color/opacity, reorder, duplicate or remove; save the draft. Layers appear above base copy and their wording is included in factual checks even when transparent. For video, use scenes, scripts, narration, captions and aspect ratio controls. Script-only scenes are not finished rendered video.",
       "Use available generation controls only with a live qualified provider; preview must not be treated as genuine model output. Review every generated result.",
-      "Use DOCX import/export as needed. A linked Google Doc requires live OAuth configuration; preview fetching intentionally reports unavailable. Optional automatic mode requires founder authority and an initial manual fetch. Conflicts and approved versions hold incoming text for comparison/manual import; displaced branches stay in history.",
+      "Editorial workflow and the right-hand Creative direction start collapsed. Expand when needed; creative direction has a bounded reading area. Use DOCX import/export as needed. A linked Google Doc requires live OAuth configuration; preview fetching intentionally reports unavailable. Optional automatic mode requires founder authority and an initial manual fetch. Conflicts and approved versions hold incoming text for comparison/manual import; displaced branches stay in history.",
       "Use editable source export to retain supported slide/scene data. PNG/PDF are flattened exports; they are not a full design-editor source format.",
       "Complete the visible stage checks and Submit for review. Do not claim Independent review was an agent review unless a real review result supports it.",
       "When changing approved text, keep the old approval snapshot. Recheck affected stages; unchanged media need not be generated again."
@@ -111,12 +111,12 @@
     "purpose": "Release the exact reviewed package while preserving evidence and human authority.",
     "prereq": "Have a saved draft and active workflow. Only authorized profiles can approve packages.",
     "steps": [
-      "Open the draft stage tracker. Intake confirms topic, audience, channel and selected source.",
+      "Open Reviews: each submitted post is a compact full-width row. Choose Open review to inspect it in a popup. Expand Editorial workflow (collapsed initially) to record checks. Intake confirms topic, audience, channel and selected source.",
       "Record Evidence after checking factual claims, provenance and permissions. If there are no external factual claims, explain that explicitly; do not skip the stage.",
       "Record Creation once the required text and media are present. Record Independent review with the actual reviewer and findings. Founder self-review is allowed but must be described truthfully.",
       "Record Visual review after inspecting required images, slides, crops, captions or scenes. N/A is only for a genuinely text-only format and needs a meaningful reason.",
       "Record Release check against the exact current text, media, active workflow and protected rules. A hold or revise decision reopens later checks.",
-      "In Reviews, compare the submitted revision and choose Approve revision, request changes or reject as appropriate. All six prior checks must be current before approval.",
+      "In the review popup, compare the submitted revision and choose Approve revision or Request changes. All six prior checks must be current. Approval errors identify blocking rules/placeholders next to the button; they do not silently become success. Close or press Escape to return to the compact queue.",
       "Approval creates an immutable package snapshot. It does not publish anything, and it cannot waive misinformation or misrepresentation controls.",
       "Open the approved content and record Publication handoff for the exact package to be exported or copied. A different approved package needs its own handoff.",
       "After a person actually publishes, record Publication record through Calendar \u2192 Confirm published and provide the correct URL."
