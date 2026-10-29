@@ -4215,3 +4215,21 @@
 
 /* Keep labels readable in Daylight Teal when hovering primary buttons. */
 .studio-v2 .s-btn.s-primary:hover, .studio-v2 .s-btn.s-primary:focus-visible { color: var(--s-muted); }
+
+/* Full-width review queue; content and checks live in a focused native dialog. */
+.studio-v2 .s-review-grid { grid-template-columns: minmax(0, 1fr); }
+.studio-v2 .s-review-row { display: flex; align-items: center; gap: 24px; justify-content: space-between; }
+.studio-v2 .s-review-row > div { min-width: 0; }
+.studio-v2 .s-review-row h2 { margin: 10px 0 0; font-size: 20px; overflow-wrap: anywhere; }
+.studio-v2 .s-review-row > button { flex-shrink: 0; }
+.studio-v2 .s-review-dialog { width: min(1400px, calc(100vw - 48px)); max-height: 90dvh; padding: 0; border: 1px solid var(--s-line); border-radius: 14px; background: var(--s-panel); color: var(--s-text); }
+.studio-v2 .s-review-dialog::backdrop { background: #000b; }
+.studio-v2 .s-review-dialog-heading { position: sticky; top: 0; z-index: 2; display: flex; gap: 20px; align-items: center; justify-content: space-between; padding: 16px 24px; background: var(--s-panel); border-bottom: 1px solid var(--s-line); }
+.studio-v2 .s-review-dialog-heading h2 { margin: 0; font-size: 21px; }
+.studio-v2 .s-review-dialog-body { padding: 24px; }
+.studio-v2 .s-review-dialog-body .s-review-copy { max-height: none; overflow: visible; white-space: pre-wrap; line-height: 1.75; }
+.studio-v2 .s-creative-direction > summary { cursor: pointer; list-style: none; }
+.studio-v2 .s-creative-direction > summary::-webkit-details-marker { display: none; }
+.studio-v2 .s-creative-direction[open] > summary svg { transform: rotate(180deg); }
+.studio-v2 .s-creative-direction .s-panel-padding { max-height: 45dvh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .studio-v2 .s-review-row { align-items: stretch; flex-direction: column; gap: 12px; } .studio-v2 .s-review-dialog { width: calc(100vw - 20px); } .studio-v2 .s-review-dialog-body { padding: 16px; } }

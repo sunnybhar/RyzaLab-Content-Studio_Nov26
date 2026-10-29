@@ -83,7 +83,7 @@ export function StageTracker({
     }
   }
   return (
-    <details className="s-stage-tracker" open>
+    <details className="s-stage-tracker">
       <summary>
         <ShieldCheck size={17} />
         <strong>Editorial workflow</strong>

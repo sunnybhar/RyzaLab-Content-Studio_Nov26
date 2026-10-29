@@ -47,6 +47,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { ReviewCard } from "./review-card";
 import { WorkflowVersions } from "./workflow-versions";
 import { useStudio } from "@/lib/studio/client";
 import {
@@ -576,6 +577,7 @@ export default function Workspace() {
         }));
       return false;
     } finally {
+      if (approvalKey) setApprovalTarget("");
       setBusy(false);
     }
   }
@@ -586,6 +588,9 @@ export default function Workspace() {
     description?: string,
     submit = "Save changes",
   ) {
+    document
+      .querySelector<HTMLDialogElement>(".s-review-dialog[open]")
+      ?.close();
     setLocalError("");
     setDialog({
       title,
@@ -2788,7 +2793,12 @@ export default function Workspace() {
               </div>
               <div className="s-review-grid">
                 {reviews.filter(matches).map((c) => (
-                  <article className="s-panel s-review-card" key={c.id}>
+                  <ReviewCard
+                    key={c.id}
+                    title={c.title}
+                    channel={c.channel}
+                    revision={c.revision}
+                  >
                     <div className="s-inline s-between">
                       <span className="s-inline">
                         <ChannelIcon channel={c.channel} small />
@@ -2958,7 +2968,7 @@ export default function Workspace() {
                         Request changes
                       </button>
                     </div>
-                  </article>
+                  </ReviewCard>
                 ))}
               </div>
               {!reviews.filter(matches).length && (
@@ -5814,11 +5824,11 @@ function Editor({
           )}
         </section>
         <aside className="s-editor-aside">
-          <section className="s-panel">
-            <div className="s-section-heading">
+          <details className="s-panel s-creative-direction">
+            <summary className="s-section-heading">
               <h2>Creative direction</h2>
-              <Settings2 size={17} />
-            </div>
+              <ChevronDown size={17} />
+            </summary>
             <div className="s-panel-padding">
               {(() => {
                 const w = state.workflows.find((w) => w.id === c.workflowId);
@@ -5849,7 +5859,7 @@ function Editor({
                   "No protected rules configured."}
               </p>
             </div>
-          </section>
+          </details>
           <section className="s-panel">
             <div className="s-section-heading">
               <h2>Details & handoff</h2>

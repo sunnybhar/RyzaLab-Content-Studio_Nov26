@@ -461,6 +461,25 @@ async function main() {
       .click();
     await navigate("Reviews");
     const review = page.locator(".s-review-card").filter({ hasText: title });
+    assert.equal(await page.getByRole("dialog").count(), 0);
+    const queueWidth = await page
+      .locator(".s-review-grid")
+      .evaluate((el) => el.getBoundingClientRect().width);
+    assert.ok(
+      await review.evaluate(
+        (el, width) => el.getBoundingClientRect().width >= width * 0.95,
+        queueWidth,
+      ),
+    );
+    await review
+      .getByRole("button", { name: "Open review", exact: true })
+      .click();
+    assert.equal(
+      await review.locator(".s-stage-tracker").getAttribute("open"),
+      null,
+    );
+    await page.screenshot({ path: "/tmp/studio-review-popup.png" });
+    await review.locator(".s-stage-tracker > summary").click();
     await review.getByText(/Active workflow v1/).waitFor();
     for (const stage of [
       "Intake",
@@ -492,6 +511,18 @@ async function main() {
       .click();
     await page.locator(".s-list-row").filter({ hasText: title }).waitFor();
     await openContent(title);
+    assert.equal(
+      await page.locator(".s-creative-direction").getAttribute("open"),
+      null,
+    );
+    await page.locator(".s-creative-direction > summary").click();
+    assert.ok(
+      await page
+        .locator(".s-creative-direction .s-panel-padding")
+        .evaluate((el) => el.clientHeight <= innerHeight * 0.46),
+    );
+    await page.locator(".s-creative-direction > summary").click();
+    await page.locator(".s-stage-tracker > summary").click();
     await page
       .getByRole("button", {
         name: "Record Publication handoff check",
@@ -702,9 +733,18 @@ async function main() {
       .getByRole("button", { name: "Submit for review", exact: true })
       .click();
     await navigate("Reviews");
-    await page
+    const blockedReview = page
       .locator(".s-review-card")
-      .filter({ hasText: "Blocked placeholder verification" })
+      .filter({ hasText: "Blocked placeholder verification" });
+    await blockedReview
+      .getByRole("button", { name: "Open review", exact: true })
+      .click();
+    await page.keyboard.press("Escape");
+    assert.equal(await page.getByRole("dialog").count(), 0);
+    await blockedReview
+      .getByRole("button", { name: "Open review", exact: true })
+      .click();
+    await blockedReview
       .getByRole("button", { name: "Approve revision", exact: true })
       .click();
     await page
@@ -725,6 +765,9 @@ async function main() {
       !(await state()).packages.some((pkg) => pkg.contentId === blocked.id),
       "Unresolved placeholders must never acquire an approved package",
     );
+    await page
+      .getByRole("button", { name: "Close review", exact: true })
+      .click();
     await closeError();
 
     // Saving demo provider metadata discards the entered credential; checking access
