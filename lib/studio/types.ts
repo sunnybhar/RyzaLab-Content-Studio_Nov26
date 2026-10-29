@@ -266,6 +266,7 @@ export interface Content {
   preparationId?: string;
 }
 export interface Package {
+  copyAcceptanceSnapshot?: CopyAcceptance;
   id: string;
   contentId: string;
   channel: Channel;

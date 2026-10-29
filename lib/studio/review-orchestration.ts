@@ -27,7 +27,10 @@ export function orchestrateReviews(
     if (!acceptance) continue;
     if (
       state.packages.some(
-        (p) => p.contentId === original.id && p.revision === original.revision,
+        (p) =>
+          p.contentId === original.id &&
+          p.revision === original.revision &&
+          p.copyAcceptanceSnapshot?.id === acceptance.id,
       )
     )
       continue;

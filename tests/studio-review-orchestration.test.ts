@@ -183,3 +183,27 @@ test("required independence never automatically spends on same-provider or unkno
     );
   }
 });
+
+test("an older package cannot suppress a newly accepted review after policy or source changes", () => {
+  const s = fixture();
+  const c = s.contents[0];
+  s.packages.push({
+    id: "older-package",
+    contentId: c.id,
+    channel: c.channel,
+    account: c.account,
+    title: c.title,
+    revision: c.revision,
+    text: c.text,
+    metadata: c.metadata,
+    media: c.media,
+    ruleVersion: s.settings.protectedVersion,
+    approvedBy: DEMO_ACTOR.email,
+    approvedAt: now,
+    hash: "test",
+  });
+  const next = orchestrateReviews(s, now);
+  assert.equal(next.jobs.length, 1);
+  s.packages[0].copyAcceptanceSnapshot = s.contents[0].copyAcceptances![0];
+  assert.equal(orchestrateReviews(s, now), s);
+});

@@ -77,6 +77,7 @@ export function SoloReview({
     setError("");
     try {
       await send(command);
+      if (command.type === "content.generate") reviewKey.current = undefined;
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "The review could not be saved.",
