@@ -91,5 +91,15 @@
     "status": "Built\u2014needs live validation",
     "dependency": "Live multi-user/service acceptance remains; final focused code safety review completed.",
     "notes": "Astra identified four blockers, verified fixes and passed all 19 focused tests; full126-test suite/build pass. Live recovery/provider/Google acceptance remains separate."
+  },
+  "BL-048": {
+    "status": "Done",
+    "dependency": "",
+    "notes": "Collapsed numbered/date-stamped tiles, explicit mapped connections, expansion and native accessible reader implemented. Desktop/mobile browser and modal focus/state preservation checks pass."
+  },
+  "BL-049": {
+    "status": "Done",
+    "dependency": "",
+    "notes": "Edit connections changes/removes bindings by creating a reviewable draft. Disconnected current bindings preserved unless explicitly removed; active snapshots and credentials remain unchanged. Focused Astra review and browser regressions passed."
   }
 }

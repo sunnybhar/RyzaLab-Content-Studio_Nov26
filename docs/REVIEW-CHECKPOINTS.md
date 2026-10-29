@@ -19,3 +19,7 @@ No reviewer claimed live Supabase/Google/email/provider tests, paid media genera
 GPT-6 Astra identified four blockers: stale incoming-Docs modal imports, incoming branch loss on baseline reversion/relink, incomplete/object-error research misclassified as cited, and an undeclared notification-outbox recovery gap. Fixes pin the displayed incoming timestamp, retain both branch-clearing paths in history, require completed end_turn research with no tool errors, and explicitly exclude delivery evidence while forcing email-disabled local recovery until reconciliation. Astra re-reviewed the changes and all 19 focused tests passed; no remaining blockers found in that reviewed scope.
 
 The full 126-test suite and optimized build pass. Live provider qualification, production recovery acceptance and archive cutover remain separate. This review does not claim live Google/provider/email tests or completed archival.
+
+## Workflow UX and connection editing — 2026-10-29
+
+Astra focused review cleared collapsed version tiles, read-only native instruction dialogs and explicit binding summaries. Editing bindings uses existing workflow.save to create a new draft; activation permission remains separate. Reviewer found disconnected current options could silently clear; fixed by preserving and labelling the current option. Browser regressions verify unchanged saves, explicit removal and preservation of active version, instructions, credentials and packages. No backend authorization changes or credentialed calls.

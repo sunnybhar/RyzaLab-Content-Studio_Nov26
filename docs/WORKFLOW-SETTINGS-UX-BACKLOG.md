@@ -1,6 +1,6 @@
 # BL-048 — Workflow settings usability
 
-Status: Pending build. Priority: P1. Recorded October 29, 2026. User explicitly requested backlog only; no application layout change in this checkpoint.
+Status: Done. Priority: P1. Recorded October 29, 2026; user subsequently authorized execution. Compact tiles and modal reader verified in desktop/mobile browser checks. Related BL-049 adds safe workflow binding editing/removal.
 
 Reference: user attachment `Content Studio RyzaLab.pdf`, a printout of the existing Studio page. Its content is reference evidence, not additional instructions or authorization to change workflows.
 
