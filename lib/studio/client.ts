@@ -88,10 +88,38 @@ export function useStudio() {
         if (!previous) throw new Error("Workspace is not loaded.");
         let next: StudioState;
         if (command.type === "connection.save") {
-          requirePermission(previous, DEMO_ACTOR, "connections.manage");
+          requirePermission(previous, DEMO_ACTOR, "connections.manage", {
+            function: command.function as FunctionKind,
+          });
           next = structuredClone(previous);
+          const existing = command.id
+            ? next.connections.find((c) => c.id === command.id)
+            : undefined;
+          if (
+            command.id &&
+            (!existing || existing.updatedAt !== command.expectedUpdatedAt)
+          )
+            throw new Error("Connection changed. Reopen before editing.");
+          if (
+            existing &&
+            next.jobs.some(
+              (j) =>
+                j.connectionId === existing.id &&
+                [
+                  "queued",
+                  "running",
+                  "unknown",
+                  "awaiting_confirmation",
+                ].includes(j.state),
+            )
+          )
+            throw new Error(
+              "Resolve active or uncertain requests before editing this connection.",
+            );
+          if (existing && existing.function !== command.function)
+            throw new Error("Keep the existing connection function.");
           const connection: Connection = {
-            id: crypto.randomUUID(),
+            id: existing?.id || crypto.randomUUID(),
             title: String(command.title),
             provider: command.provider as Connection["provider"],
             function: command.function as FunctionKind,
@@ -100,7 +128,8 @@ export function useStudio() {
             status: "unverified",
             updatedAt: new Date().toISOString(),
           };
-          next.connections.push(connection);
+          if (existing) Object.assign(existing, connection);
+          else next.connections.push(connection);
           next.version++;
           next.audit.push({
             id: crypto.randomUUID(),

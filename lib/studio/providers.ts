@@ -1,3 +1,4 @@
+import { discoverModels } from "./model-discovery";
 import type { Connection, Job } from "./types";
 import { researchConfigSchema, extractResearchResult } from "./research";
 import { frozenSystem } from "./pricing";
@@ -12,33 +13,7 @@ export class ProviderFailure extends Error {
 }
 const TIMEOUT = 90000;
 export async function validateConnection(connection: Connection, key: string) {
-  const url =
-    connection.provider === "anthropic"
-      ? "https://api.anthropic.com/v1/models"
-      : connection.provider === "openai"
-        ? "https://api.openai.com/v1/models"
-        : "https://generativelanguage.googleapis.com/v1beta/models";
-  const headers: Record<string, string> =
-    connection.provider === "anthropic"
-      ? { "x-api-key": key, "anthropic-version": "2023-06-01" }
-      : connection.provider === "openai"
-        ? { authorization: `Bearer ${key}` }
-        : { "x-goog-api-key": key };
-  const response = await fetch(url, {
-    headers,
-    signal: AbortSignal.timeout(15000),
-    redirect: "error",
-  });
-  if (!response.ok)
-    throw new StudioError(
-      502,
-      `Provider validation failed (HTTP ${response.status}). Check the credential and account access.`,
-    );
-  const json = await response.json();
-  const ids = (json.data || json.models || []).map(
-    (x: { id?: string; name?: string }) =>
-      x.id || x.name?.replace(/^models\//, ""),
-  );
+  const ids = await discoverModels(connection.provider, key);
   if (!ids.includes(connection.model))
     throw new StudioError(
       400,

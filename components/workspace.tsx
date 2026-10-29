@@ -1,4 +1,5 @@
 "use client";
+import { ConnectionEditor } from "./connection-editor";
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
@@ -946,6 +947,15 @@ export default function Workspace() {
       move("Workflow settings");
     }
   }
+  async function discoverAccountModels(input: Record<string, unknown>) {
+    const session = await supabase?.auth.getSession();
+    const token = session?.data.session?.access_token;
+    if (!token) throw new Error("Sign in to load provider account models.");
+    const response = await fetch("/api/studio/connections/models", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(input), signal: AbortSignal.timeout(30000) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Could not load account models.");
+    return result.models as string[];
+  }
   async function validateAI(id: string) {
     if (mode === "demo") {
       setLocalError(
@@ -1751,7 +1761,8 @@ export default function Workspace() {
                   </div>
                 </section>
                 <div className="s-dashboard-side">
-                  <section className="s-panel">
+                  <section className="s-panel"><div className="s-section-heading"><div><h2>Set up by function</h2><p>Choose a provider and its account model for each type of work.</p></div></div><div className="s-actions">{FUNCTIONS.map((kind) => <ConnectionEditor key={kind} initialFunction={kind} demo={mode === "demo"} disabled={!allowed("connections.manage", {function: kind})} save={send} discover={discoverAccountModels} />)}</div></section>
+              <section className="s-panel">
                     <div className="s-section-heading">
                       <h2>Up next</h2>
                       <button
@@ -3775,6 +3786,7 @@ export default function Workspace() {
                 </div>
                 {state.connections.map((c) => (
                   <div className="s-list-row s-connection-row" key={c.id}>
+                    <ConnectionEditor connection={c} demo={mode === "demo"} disabled={!allowed("connections.manage", {function: c.function})} save={send} discover={discoverAccountModels} />
                     <span className="s-provider-icon">
                       <Sparkles size={20} />
                     </span>
