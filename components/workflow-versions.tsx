@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useId } from "react";
 import { BookOpen, ChevronDown, X } from "lucide-react";
 import {
   FUNCTIONS,
@@ -18,6 +18,7 @@ export function WorkflowVersions({
   readOnly,
   execute,
   editConnections,
+  history = false,
 }: {
   state: StudioState;
   actor: Actor;
@@ -25,12 +26,14 @@ export function WorkflowVersions({
   readOnly: boolean;
   execute: (command: Command) => unknown;
   editConnections: (id: string) => void;
+  history?: boolean;
 }) {
   const [reading, setReading] = useState<{
     title: string;
     text: string;
   } | null>(null);
   const reader = useRef<HTMLDialogElement>(null);
+  const readerTitle = useId();
   useEffect(() => {
     if (reading && !reader.current?.open) reader.current?.showModal();
   }, [reading]);
@@ -39,10 +42,13 @@ export function WorkflowVersions({
     .sort((a, b) => b.version - a.version);
   return (
     <div className="s-workflow-versions">
-      <p className="s-workflow-order">
-        Newest version first · Expand a version to review or activate it.
-      </p>
-      {versions.map((w) => {
+      {!history && (
+        <p className="s-workflow-order">
+          Edit this workflow in place. Pending changes require review before
+          activation.
+        </p>
+      )}
+      {(history ? versions.slice(1) : versions.slice(0, 1)).map((w) => {
         const bindings = FUNCTIONS.map((kind) => {
           const id =
             w.functionConnections?.[kind] ||
@@ -73,6 +79,24 @@ export function WorkflowVersions({
                 <time dateTime={w.createdAt}>{created}</time> (
                 {state.settings.timezone})
               </div>
+              <div className="s-workflow-created">
+                Updated{" "}
+                <time dateTime={w.updatedAt || w.createdAt}>
+                  {new Intl.DateTimeFormat("en-US", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                    timeZone: state.settings.timezone,
+                  }).format(new Date(w.updatedAt || w.createdAt))}
+                </time>
+              </div>
+              {!history && w.status !== "active" && (
+                <p className="s-muted">
+                  Pending changes ·{" "}
+                  {versions.find((v) => v.status === "active")
+                    ? `Active revision: v${versions.find((v) => v.status === "active")!.version}`
+                    : "No active revision"}
+                </p>
+              )}
               <div className="s-workflow-models">
                 {bindings
                   .filter(
@@ -172,14 +196,28 @@ export function WorkflowVersions({
           </details>
         );
       })}
+      {!history && versions.length > 1 && (
+        <details className="s-workflow-history">
+          <summary>Revision history ({versions.length - 1})</summary>
+          <WorkflowVersions
+            state={state}
+            actor={actor}
+            channel={channel}
+            readOnly={readOnly}
+            execute={execute}
+            editConnections={editConnections}
+            history
+          />
+        </details>
+      )}
       <dialog
         ref={reader}
         className="s-workflow-reader"
-        aria-labelledby="workflow-reader-title"
+        aria-labelledby={readerTitle}
         onClose={() => setReading(null)}
       >
         <div className="s-workflow-reader-heading">
-          <h2 id="workflow-reader-title">{reading?.title}</h2>
+          <h2 id={readerTitle}>{reading?.title}</h2>
           <button
             className="s-icon-button"
             aria-label="Close instruction reader"

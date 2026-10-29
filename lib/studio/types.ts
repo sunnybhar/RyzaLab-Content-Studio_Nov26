@@ -57,6 +57,8 @@ export interface Reference {
   createdAt: string;
 }
 export interface Workflow {
+  updatedAt?: string;
+  updatedBy?: string;
   id: string;
   channel: Channel;
   version: number;

@@ -3306,7 +3306,7 @@ export default function Workspace() {
                           .filter((w) => w.channel === workflowChannel)
                           .sort((a, b) => b.version - a.version)[0];
                         openForm(
-                          "Create a workflow version",
+                          "Edit workflow",
                           [
                             field(
                               "title",
@@ -3391,6 +3391,10 @@ export default function Workspace() {
                           ],
                           (d) => ({
                             type: "workflow.save",
+                            id: w?.id,
+                            expectedUpdatedAt: w
+                              ? w.updatedAt || w.createdAt
+                              : undefined,
                             channel: workflowChannel,
                             title: val(d, "title"),
                             audience: val(d, "audience"),
@@ -3411,15 +3415,16 @@ export default function Workspace() {
                               ]).filter(([, id]) => id),
                             ),
                           }),
-                          "Each save creates a draft version. Submit it for review before activation.",
+                          "Draft edits update the same revision and timestamp. Changes to an active workflow stay pending review before activation.",
                           "Save draft version",
                         );
                       }}
                     >
-                      <Plus size={15} /> New version
+                      <Plus size={15} /> Edit workflow
                     </button>
                   </div>
                   <WorkflowVersions
+                    key={workflowChannel}
                     state={state}
                     actor={actor}
                     channel={workflowChannel}
@@ -3465,6 +3470,8 @@ export default function Workspace() {
                         })),
                         (d) => ({
                           type: "workflow.save",
+                          id: w.id,
+                          expectedUpdatedAt: w.updatedAt || w.createdAt,
                           channel: w.channel,
                           title: w.title,
                           audience: w.audience,
@@ -3482,7 +3489,7 @@ export default function Workspace() {
                             ]).filter(([, id]) => id),
                           ),
                         }),
-                        `Editing Workflow v${w.version}. Saving creates a new draft; review and activate it to apply changes. Existing approvals and API credentials are preserved.`,
+                        `Editing Workflow v${w.version}. Draft edits update this revision. Changes to active instructions remain pending until reviewed and activated. Existing approvals and API credentials are preserved.`,
                         "Save draft version",
                       );
                     }}

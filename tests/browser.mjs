@@ -553,7 +553,7 @@ async function main() {
     await originalWorkflowTile.locator("summary").click();
 
     await page
-      .getByRole("button", { name: "New version", exact: true })
+      .getByRole("button", { name: "Edit workflow", exact: true })
       .click();
     await dialog()
       .getByLabel("Workflow name", { exact: true })
@@ -1239,6 +1239,17 @@ async function main() {
         stateKey,
       );
       assert.equal(removed.workflows[0].status, "draft");
+      assert.equal(
+        removed.workflows[0].id,
+        preserved.workflows[0].id,
+        "Draft editing stays on the same revision",
+      );
+      assert.equal(
+        removed.workflows.length,
+        preserved.workflows.length,
+        "Draft edits do not accumulate versions",
+      );
+      assert.ok(removed.workflows[0].updatedAt);
       assert.equal(removed.workflows[0].functionConnections.text, undefined);
       assert.equal(removed.workflows[0].connectionId, "");
       assert.equal(

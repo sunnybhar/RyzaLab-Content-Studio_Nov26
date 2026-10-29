@@ -4209,3 +4209,6 @@
     padding: 18px;
   }
 }
+
+.studio-v2 .s-workflow-history { border-top: 1px solid var(--s-line); margin-top: 16px; }
+.studio-v2 .s-workflow-history > summary { padding: 16px 24px; cursor: pointer; font-weight: 600; color: var(--s-muted); }

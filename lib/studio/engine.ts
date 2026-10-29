@@ -1104,7 +1104,28 @@ export function applyCommand(
         )
       )
         bad("Reference does not belong to this channel.");
-      const { type: _, id: _id, ...data } = c;
+      const existing = c.id
+        ? s.workflows.find((w) => w.id === c.id)
+        : undefined;
+      if (c.id && (!existing || existing.channel !== c.channel))
+        bad("Select an existing workflow in this channel.");
+      if (
+        existing &&
+        c.expectedUpdatedAt &&
+        (existing.updatedAt || existing.createdAt) !== c.expectedUpdatedAt
+      )
+        throw new StudioError(
+          409,
+          "Workflow changed while editing. Refresh before saving.",
+        );
+      const { type: _, id: _id, expectedUpdatedAt: _expected, ...data } = c;
+      if (existing?.status === "draft") {
+        Object.assign(existing, data, {
+          updatedAt: now,
+          updatedBy: actor.email,
+        });
+        break;
+      }
       s.workflows.unshift({
         ...data,
         id: id(),
@@ -1118,6 +1139,8 @@ export function applyCommand(
         status: "draft",
         createdBy: actor.email,
         createdAt: now,
+        updatedAt: now,
+        updatedBy: actor.email,
       });
       break;
     }

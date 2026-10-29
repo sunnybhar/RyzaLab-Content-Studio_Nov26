@@ -192,6 +192,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   command("schedule.block", { id }),
   command("workflow.save", {
     id: id.optional(),
+    expectedUpdatedAt: z.string().max(100).optional(),
     channel,
     title: short,
     audience: text,
