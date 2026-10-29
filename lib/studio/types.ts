@@ -177,6 +177,52 @@ export interface StageRecord {
   ruleVersion: string;
   packageId?: string;
 }
+export interface CopyAcceptance {
+  id: string;
+  actor: string;
+  at: string;
+  identity: string;
+  evidence: string;
+  policyVersion: string;
+}
+export interface AgentReview {
+  jobId: string;
+  identity: string;
+  provider: Connection["provider"];
+  model: string;
+  independent: boolean;
+  at: string;
+  summary: string;
+  issues: {
+    severity: "block" | "warning";
+    message: string;
+    referenceIds: string[];
+  }[];
+  context: "provided_references";
+}
+export interface PreparationAuthorization {
+  id: string;
+  contentId: string;
+  channel: Channel;
+  account: string;
+  authorizedFor: string;
+  authorizedBy: string;
+  at: string;
+  period: string;
+  maxCents: number;
+  functions: FunctionKind[];
+  policyVersion: string;
+}
+export interface SoloReviewPolicy {
+  mode: "two_step";
+  version: string;
+  adoptedBy: string;
+  adoptedAt: string;
+  requireIndependentReview: boolean;
+  packageCap: number;
+  autoDraft: boolean;
+  autoReview: boolean;
+}
 export interface Content {
   id: string;
   channel: Channel;
@@ -208,6 +254,14 @@ export interface Content {
   deletedAt?: string;
   collection?: string;
   stages?: StageRecord[];
+  copyAcceptances?: CopyAcceptance[];
+  agentReview?: AgentReview;
+  generatedBy?: {
+    provider: Connection["provider"];
+    model: string;
+    jobId: string;
+  };
+  preparationId?: string;
 }
 export interface Package {
   id: string;
@@ -253,6 +307,20 @@ export interface Connection {
   updatedAt: string;
 }
 export interface Job {
+  targetRevision?: number;
+  targetIdentity?: string;
+  targetAccepted?: boolean;
+  outputContract?: "draft_v1" | "review_v1";
+  outputStatus?: "ready" | "incomplete" | "invalid" | "conflict" | "applied";
+  candidate?: import("./output-contracts").DraftResult;
+  appliedAt?: string;
+  appliedRevision?: number;
+  preparationId?: string;
+  connectionSnapshot?: {
+    provider: Connection["provider"];
+    model: string;
+    function: FunctionKind;
+  };
   id: string;
   kind: FunctionKind;
   channel: Channel;
@@ -342,6 +410,9 @@ export interface Settings {
   protectedVersion: string;
   emailEnabled: boolean;
   docsMode: "manual" | "automatic";
+  reviewPolicy?: SoloReviewPolicy;
+  defaultConnections?: Partial<Record<FunctionKind, string>>;
+  qualifiedRates?: import("./pricing").Rate[];
 }
 export interface FounderException {
   id: string;
@@ -368,6 +439,7 @@ export interface PlanningTask {
   createdAt: string;
 }
 export interface StudioState {
+  preparations?: PreparationAuthorization[];
   planningTasks?: PlanningTask[];
   version: number;
   exceptions?: FounderException[];

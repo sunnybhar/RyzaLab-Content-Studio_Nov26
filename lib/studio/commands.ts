@@ -170,6 +170,10 @@ export const commandSchema = z.discriminatedUnion("type", [
     expectedRevision: z.number().int().positive(),
     expectedWorkflowId: id,
     expectedRuleVersion: short,
+    expectedCopyAcceptanceId: id.optional(),
+    expectedPolicyVersion: id.optional(),
+    handoff: z.boolean().optional(),
+    authorizeNote: z.boolean().optional(),
   }),
   command("package.reject", { contentId: id, reason: short }),
   command("schedule.create", {
@@ -244,6 +248,32 @@ export const commandSchema = z.discriminatedUnion("type", [
     docsMode: z.enum(["manual", "automatic"]).optional(),
   }),
   command("policy.save", { rules: text }),
+  command("policy.adoptSolo", {
+    packageCap: money,
+    monthlyCap: money,
+    requireIndependentReview: z.boolean(),
+    autoDraft: z.boolean(),
+    autoReview: z.boolean(),
+    expectedRuleVersion: short,
+  }),
+  command("preparation.authorize", {
+    contentId: id,
+    maxCents: money,
+    expectedRevision: z.number().int().positive(),
+  }),
+  command("content.acceptCopy", {
+    contentId: id,
+    expectedRevision: z.number().int().positive(),
+    expectedWorkflowId: id,
+    expectedRuleVersion: short,
+    expectedPolicyVersion: id,
+    evidence: z.string().trim().min(10).max(12000),
+  }),
+  command("job.applyDraft", {
+    jobId: id,
+    expectedRevision: z.number().int().positive(),
+  }),
+  command("connection.default", { id }),
   command("exception.record", {
     contentId: id,
     expectedRevision: z.number().int().positive(),

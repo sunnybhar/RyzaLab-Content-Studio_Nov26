@@ -1,4 +1,18 @@
 import type { Actor, Content, Job, StudioState } from "./types";
+import {
+  soloPolicy,
+  copyIdentity,
+  currentCopyAcceptance,
+  copyBlockers,
+  packageReadiness,
+  resolvedConnection,
+} from "./solo-quality";
+import {
+  preparationFor,
+  preparationSpend,
+  jobPreparation,
+} from "./preparation-budget";
+import { applyDraftCandidate } from "./draft-candidates";
 import { commandSchema } from "./commands";
 import { requirePermission, StudioError, memberFor, can } from "./permissions";
 import { EMPTY_MEDIA } from "./seed";
@@ -124,6 +138,20 @@ export function applyCommand(
       bad(
         "Validate a connected provider credential before reserving generation.",
       );
+    if (j.preparationId) {
+      const authorization = jobPreparation(s, j, now);
+      if (!authorization)
+        bad(
+          "Package budget authorization changed or expired; reauthorize before spending.",
+        );
+      if (
+        preparationSpend(s, authorization.id, j.id) + j.estimate >
+        authorization.maxCents
+      )
+        bad(
+          "The total package budget is exhausted. Ask the founder to increase it; no provider request was started.",
+        );
+    }
     const period = budgetMonth(now, s.settings.timezone),
       monthly = s.jobs.filter((x) => x.period === period && x.id !== j.id),
       amount = j.estimate;
@@ -892,7 +920,33 @@ export function applyCommand(
         bad(
           "Approval requires immutable uploaded Studio media, not mutable external URLs.",
         );
-      if (!stageSummary(d, s).readyForApproval)
+      const twoStep = soloPolicy(s);
+      const readiness = twoStep ? packageReadiness(d, s) : undefined;
+      if (twoStep) {
+        if (
+          c.expectedPolicyVersion !== twoStep.version ||
+          c.expectedCopyAcceptanceId !== readiness?.acceptance?.id
+        )
+          throw new StudioError(
+            409,
+            "Copy acceptance or review policy changed. Open the latest package before approval.",
+          );
+        if (!readiness?.ready)
+          bad(
+            readiness?.blockers.join(" ") ||
+              "Complete copy and package checks.",
+          );
+        if (d.channel === "Notes") {
+          need("policy.manage");
+          if (!c.authorizeNote)
+            bad(
+              "Founder release authorization is required for this exact Note source and assets.",
+            );
+        }
+        if (!c.handoff)
+          bad("Explicitly approve this exact package and its manual handoff.");
+      }
+      if (!twoStep && !stageSummary(d, s).readyForApproval)
         bad(
           "Complete all six pre-approval stages for this exact version before human approval.",
         );
@@ -917,6 +971,28 @@ export function applyCommand(
           exceptionSnapshots: (s.exceptions || []).filter(
             (e) => e.contentId === d.id && e.revision === d.revision,
           ),
+          ...(twoStep
+            ? {
+                reviewPolicySnapshot: structuredClone(twoStep),
+                copyAcceptanceSnapshot: structuredClone(readiness!.acceptance),
+                agentReviewSnapshot: readiness?.agent
+                  ? structuredClone(readiness.agent)
+                  : null,
+                qualityReport: packageReadiness(d, s),
+                noteReleaseAuthorization:
+                  d.channel === "Notes"
+                    ? {
+                        by: actor.email,
+                        at: now,
+                        contentId: d.id,
+                        revision: d.revision,
+                        workflowId: workflow.id,
+                        sourceIdentity: copyIdentity(d, s),
+                        assetManifest: ctx.assetManifest || [],
+                      }
+                    : null,
+              }
+            : {}),
           rulesSnapshot: s.settings.protectedRules,
           workflowSnapshot: structuredClone(workflow),
           referenceSnapshots: s.references
@@ -935,6 +1011,33 @@ export function applyCommand(
           ? ctx.hash(JSON.stringify(payload))
           : fingerprint(payload),
       });
+      if (twoStep) {
+        const pkg = s.packages[0];
+        d.stages ??= [];
+        d.stages.push({
+          key: "handoff",
+          status: "pass",
+          reason:
+            "Human approved this exact package and its manual handoff in final review.",
+          evidence: `Approved package ${pkg.id}`,
+          actor: actor.email,
+          at: now,
+          textRevision: d.textRevision || 1,
+          mediaRevision: d.mediaRevision || 1,
+          factsRevision: d.factsRevision,
+          workflowId: workflow.id,
+          ruleVersion: s.settings.protectedVersion,
+          packageId: pkg.id,
+        });
+        if (d.channel === "Notes")
+          s.audit.push({
+            id: id(),
+            actor: actor.email,
+            action: "note.release_authorized",
+            target: pkg.id,
+            at: now,
+          });
+      }
       break;
     }
     case "package.reject": {
@@ -1266,6 +1369,132 @@ export function applyCommand(
       Object.assign(s.settings, data);
       break;
     }
+    case "policy.adoptSolo": {
+      need("policy.manage");
+      if (c.expectedRuleVersion !== s.settings.protectedVersion)
+        throw new StudioError(
+          409,
+          "Protected policy changed; review it before adopting two-step review.",
+        );
+      if (!c.packageCap || !c.monthlyCap)
+        bad(
+          "Choose positive package and monthly caps before enabling automation.",
+        );
+      s.settings.reviewPolicy = {
+        mode: "two_step",
+        version: id(),
+        adoptedBy: actor.email,
+        adoptedAt: now,
+        packageCap: c.packageCap,
+        requireIndependentReview: c.requireIndependentReview,
+        autoDraft: c.autoDraft,
+        autoReview: c.autoReview,
+      };
+      s.settings.monthlyCap = c.monthlyCap;
+      if (!s.settings.requestCap) s.settings.requestCap = c.packageCap;
+      break;
+    }
+    case "preparation.authorize": {
+      const d = content(c.contentId, "package.approve");
+      const policy = soloPolicy(s);
+      if (!policy || !c.maxCents || c.maxCents > policy.packageCap)
+        bad("Choose an allowance within the founder-approved package cap.");
+      if (d.deletedAt || d.revision !== c.expectedRevision)
+        throw new StudioError(
+          409,
+          "Draft changed; reload before authorizing preparation.",
+        );
+      const current = preparationFor(s, d, d.assignedTo, now);
+      if (current) {
+        if (preparationSpend(s, current.id) > c.maxCents)
+          bad("The cap cannot be reduced below existing spend/reservations.");
+        current.maxCents = c.maxCents;
+      } else {
+        const authorization = {
+          id: id(),
+          contentId: d.id,
+          channel: d.channel,
+          account: d.account,
+          authorizedFor: d.assignedTo,
+          authorizedBy: actor.email,
+          at: now,
+          period: budgetMonth(now, s.settings.timezone),
+          maxCents: c.maxCents,
+          functions: [
+            "text",
+            "review",
+            "image",
+            "audio",
+            "video",
+          ] as import("./types").FunctionKind[],
+          policyVersion: policy.version,
+        };
+        s.preparations ??= [];
+        s.preparations.push(authorization);
+        d.preparationId = authorization.id;
+      }
+      break;
+    }
+    case "content.acceptCopy": {
+      const d = content(c.contentId, "package.approve"),
+        policy = soloPolicy(s);
+      if (
+        !policy ||
+        policy.version !== c.expectedPolicyVersion ||
+        currentWorkflow(d, s)?.id !== c.expectedWorkflowId ||
+        c.expectedRuleVersion !== s.settings.protectedVersion ||
+        d.revision !== c.expectedRevision ||
+        d.deletedAt
+      )
+        throw new StudioError(
+          409,
+          "Copy or policy changed. Review the current version before accepting it.",
+        );
+      const blockers = copyBlockers(d);
+      if (blockers.length) bad(blockers.join(" "));
+      const identity = copyIdentity(d, s);
+      if (!currentCopyAcceptance(d, s)) {
+        d.copyAcceptances ??= [];
+        d.copyAcceptances.push({
+          id: id(),
+          actor: actor.email,
+          at: now,
+          identity,
+          evidence: c.evidence,
+          policyVersion: policy.version,
+        });
+      }
+      d.state = "review";
+      break;
+    }
+    case "job.applyDraft": {
+      const job = jobFor(c.jobId);
+      if (job.kind !== "text" || job.state !== "succeeded" || !job.candidate)
+        bad("Select a complete saved writing candidate.");
+      const d = content(job.contentId || "");
+      if (job.createdBy !== actor.email && !can(s, actor, "users.manage"))
+        bad("This candidate belongs to another creator.");
+      if (job.appliedAt) return structuredClone(input);
+      if (d.deletedAt || d.revision !== c.expectedRevision)
+        throw new StudioError(
+          409,
+          "Draft changed. Compare again before applying this candidate.",
+        );
+      applyDraftCandidate(d, job, actor.email, now, id);
+      break;
+    }
+    case "connection.default": {
+      const connection = s.connections.find((x) => x.id === c.id);
+      if (!connection) bad("Connection unavailable.");
+      need("connections.manage", { function: connection.function });
+      if (connection.status === "disconnected")
+        bad("Choose a connected credential.");
+      s.settings.defaultConnections = {
+        ...s.settings.defaultConnections,
+        [connection.function]: connection.id,
+      };
+      break;
+    }
     case "policy.save":
       need("policy.manage");
       s.settings.protectedRules = c.rules;
@@ -1364,8 +1593,7 @@ export function applyCommand(
       );
       if (!workflow) bad("Activate a channel workflow first.");
       const boundConnection =
-        workflow.functionConnections?.[c.kind] ||
-        (c.kind === "text" ? workflow.connectionId : "") ||
+        resolvedConnection(s, c.channel, c.kind) ||
         (ctx.demo
           ? s.connections.find((x) => x.function === c.kind)?.id
           : undefined);
@@ -1398,6 +1626,8 @@ export function applyCommand(
         );
       const estimate = ctx.demo ? allowance || c.estimate : ctx.quotedCost || 0;
       if (!estimate) bad("A positive request allowance is required.");
+      const preparation = preparationFor(s, d, actor.email, now);
+      const preauthorized = preparation?.functions.includes(c.kind);
       const j: Job = {
         id: id(),
         kind: c.kind,
@@ -1408,7 +1638,9 @@ export function applyCommand(
         estimate,
         reserved: 0,
         state:
-          estimate > s.settings.confirmationThreshold && !c.confirmed
+          estimate > s.settings.confirmationThreshold &&
+          !c.confirmed &&
+          !preauthorized
             ? "awaiting_confirmation"
             : "queued",
         attempt: 0,
@@ -1422,6 +1654,21 @@ export function applyCommand(
         period: budgetMonth(now, s.settings.timezone),
         payloadHash,
         mediaRevision: d?.mediaRevision || 1,
+        preparationId: preauthorized ? preparation?.id : undefined,
+        targetRevision: d?.revision,
+        targetIdentity: d ? copyIdentity(d, s) : undefined,
+        targetAccepted: d ? Boolean(currentCopyAcceptance(d, s)) : false,
+        outputContract:
+          d && c.kind === "text"
+            ? "draft_v1"
+            : d && c.kind === "review"
+              ? "review_v1"
+              : undefined,
+        connectionSnapshot: {
+          provider: connection.provider,
+          model: connection.model,
+          function: connection.function,
+        },
         ...{
           createdById: actor.id,
           project: d?.collection || "Unassigned",
