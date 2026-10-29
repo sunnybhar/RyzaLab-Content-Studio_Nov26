@@ -90,10 +90,10 @@ module('06-Calendar','Calendar — Drafting, Editing, Workflows and Publication'
 ],'Work tasks and publications are visibly distinct; tasks open the correct target and never imply permission to publish.','Schedule one editing task for tomorrow, open its draft, move it, mark done, then schedule a workflow review. Test publication separately with an approved sample.','Cannot trash a draft with active tasks: complete/cancel those tasks first. Missing approved packages: complete Reviews first. A blocked publication must be explicitly rescheduled before confirmation.')
 module('07-Workflow-Settings','Workflow Settings — Instructions, Brand Sources and Guardrails','Writer/editor with workflow permission; authorized activator; founder for protected policy','Maintain channel-specific agent behavior in one reviewed workflow.','Select the target channel and gather approved brand/reference material.',[
 'Open Workflow settings and choose the channel, including Notes/Newsletter where relevant.',
-'Read the active version. Inspect Audience, Instructions, Guardrails, Output format, Review checks, Examples and linked references.',
+'Versions start collapsed, newest first. Check version number, creation date, Active status and Text/Ideas bindings. Expand a tile and choose Read instructions (or another reading button) to open the full text; close with the close button or Escape.',
 'Import a channel preset if needed. The import creates a draft, not an active replacement. Live imports use the uploaded channel material; preview imports sanitized samples.',
 'Create or save a draft version. Add channel instructions, audience constraints, output requirements and applicable brand/reference records. Treat uploaded documents as reference material, not permission to change protected policy.',
-'Bind the intended configured connection to each AI function. A different model requires a permitted settings change and reviewed activation.',
+'Use Edit connections on the chosen tile to change function mappings. Choose No connection (remove binding) to clear a mapping. Save draft version creates a new version and preserves instructions and credentials; submit and activate after review. Full instruction edits use New version.',
 'Submit the draft for review. An authorized activator chooses Approve & activate after checking the complete version.',
 'Confirm which version is active before generation. Older versions remain part of the history and approved package snapshots.',
 'Founder-protected rules require founder authority. Administrative infrastructure access alone does not silently become founder approval authority.'
@@ -371,6 +371,11 @@ for feature,steps,result,env in [
  ('Backup encryption','Trusted operator captures test archive and verifies; try wrong passphrase.','Archive private/encrypted; correct passphrase verifies; wrong password/tampering rejects.','Live'),
  ('Backup asset consistency','Verify test archive with mismatched evidence or corrupted/missing private asset.','Verification fails rather than accepting incomplete recovery data.','Live'),
  ('Local SQL restore drill','Run studio-restore-drill.mjs against an authorized test app backup.','Only local in-memory SQL restore; evidence/assets verified; Auth identities explicitly stubs; no production write.','Live')]:add('Execution batch 2',feature,steps,result,env,priority='P0' if feature in ['Invisible layer factual gate','Docs protected/stale branch','Operations privacy','Backup encryption'] else 'P1')
+for feature,steps,result in [
+ ('Collapsed workflow versions','Open Workflow settings; expand and collapse a selected tile.','All versions initially collapsed, newest first, with number/date/status and explicit Text/Ideas mappings.'),
+ ('Instruction reader','Expand a tile; Read instructions; close via Escape and close button.','Full stored copy readable in desktop/mobile modal; keyboard focus returns; no workflow changes.'),
+ ('Edit connection mapping','Edit connections; choose another configured provider; Save draft version.','New draft preserves instructions and prior active version; review/activation remains explicit.'),
+ ('Remove and preserve bindings','Edit a version with a disconnected binding; save unchanged, then explicitly remove binding in next draft.','Unchanged save retains disconnected mapping; explicit removal clears mapping only; credentials/packages unchanged.')]:add('Workflow settings',feature,steps,result,'Preview')
 for row in cases:qa.append(row)
 status=DataValidation(type='list',formula1='"Not run,Pass,Fail,Blocked,Not applicable"');status.errorTitle='Choose a test status';status.error='Select a listed status.';status.showErrorMessage=True;qa.add_data_validation(status);status.add(f'I2:I{qa.max_row}')
 for val,color in [('Pass','D9EAD3'),('Fail','F4CCCC'),('Blocked','FCE5CD'),('Not run','E7EEF3')]:qa.conditional_formatting.add(f'I2:I{qa.max_row}',FormulaRule(formula=[f'I2="{val}"'],fill=PatternFill('solid',fgColor=color)))

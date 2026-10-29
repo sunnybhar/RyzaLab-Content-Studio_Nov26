@@ -13,10 +13,10 @@ Available in preview. Live operation requires the configured /studio workspace.
 
 ## Step-by-step workflow
 1. Open Workflow settings and choose the channel, including Notes/Newsletter where relevant.
-2. Read the active version. Inspect Audience, Instructions, Guardrails, Output format, Review checks, Examples and linked references.
+2. Versions start collapsed, newest first. Check version number, creation date, Active status and Text/Ideas bindings. Expand a tile and choose Read instructions (or another reading button) to open the full text; close with the close button or Escape.
 3. Import a channel preset if needed. The import creates a draft, not an active replacement. Live imports use the uploaded channel material; preview imports sanitized samples.
 4. Create or save a draft version. Add channel instructions, audience constraints, output requirements and applicable brand/reference records. Treat uploaded documents as reference material, not permission to change protected policy.
-5. Bind the intended configured connection to each AI function. A different model requires a permitted settings change and reviewed activation.
+5. Use Edit connections on the chosen tile to change function mappings. Choose No connection (remove binding) to clear a mapping. Save draft version creates a new version and preserves instructions and credentials; submit and activate after review. Full instruction edits use New version.
 6. Submit the draft for review. An authorized activator chooses Approve & activate after checking the complete version.
 7. Confirm which version is active before generation. Older versions remain part of the history and approved package snapshots.
 8. Founder-protected rules require founder authority. Administrative infrastructure access alone does not silently become founder approval authority.

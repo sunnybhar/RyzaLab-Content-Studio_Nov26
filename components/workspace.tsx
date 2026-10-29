@@ -2592,7 +2592,7 @@ export default function Workspace() {
                 </a>
               </div>
               <p>
-                The QA workbook has 153 cases, a defect log and blank manual
+                The QA workbook has 157 cases, a defect log and blank manual
                 results. Live integration cases require a configured test
                 workspace.
               </p>
@@ -3443,7 +3443,12 @@ export default function Workspace() {
                               .filter(
                                 (c) =>
                                   c.function === kind &&
-                                  c.status !== "disconnected",
+                                  (c.status !== "disconnected" ||
+                                    c.id ===
+                                      (w.functionConnections?.[kind] ||
+                                        (kind === "text"
+                                          ? w.connectionId
+                                          : ""))),
                               )
                               .map((c) => c.id),
                           ],
@@ -3451,7 +3456,10 @@ export default function Workspace() {
                             ["", "No connection (remove binding)"],
                             ...state.connections
                               .filter((c) => c.function === kind)
-                              .map((c) => [c.id, `${c.title} · ${c.model}`]),
+                              .map((c) => [
+                                c.id,
+                                `${c.title} · ${c.model}${c.status === "disconnected" ? " (disconnected)" : ""}`,
+                              ]),
                           ]),
                           hint: "Choose No connection to remove this workflow binding. Saved API credentials are managed in AI & budgets.",
                         })),

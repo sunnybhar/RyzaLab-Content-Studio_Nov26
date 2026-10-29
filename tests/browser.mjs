@@ -1152,6 +1152,124 @@ async function main() {
         "Incoming Google Docs UI fixture",
       );
       assert.deepEqual(merged.packages, target.packages);
+      // Editing/removing workflow bindings preserves existing active policy and credentials.
+      const connectionFixture = await progressPage.evaluate((key) => {
+        const s = JSON.parse(localStorage.getItem(key));
+        const w = s.workflows.find(
+          (w) => w.channel === "LinkedIn" && w.status === "active",
+        );
+        s.connections.push({
+          id: "ui-disconnected-text",
+          title: "Disconnected writing",
+          provider: "anthropic",
+          model: "fixture",
+          function: "text",
+          status: "disconnected",
+          hasKey: false,
+          allowance: 0,
+          updatedAt: "2026-10-29T00:00:00Z",
+        });
+        w.functionConnections = {
+          ...w.functionConnections,
+          text: "ui-disconnected-text",
+        };
+        w.connectionId = "ui-disconnected-text";
+        localStorage.setItem(key, JSON.stringify(s));
+        return { workflow: w, connections: s.connections };
+      }, stateKey);
+      await progressPage.reload();
+      await progressPage
+        .locator(".s-sidebar nav")
+        .getByRole("button", { name: "Workflow settings", exact: true })
+        .click();
+      assert.equal(
+        await progressPage.locator("details.s-workflow-version[open]").count(),
+        0,
+      );
+      const bindingTile = progressPage
+        .locator("details.s-workflow-version")
+        .filter({ hasText: "Disconnected writing" })
+        .first();
+      await bindingTile.locator("summary").click();
+      await bindingTile
+        .getByRole("button", { name: "Edit connections", exact: true })
+        .click();
+      assert.equal(
+        await progressPage
+          .getByRole("dialog")
+          .getByLabel("Text connection", { exact: true })
+          .inputValue(),
+        "ui-disconnected-text",
+      );
+      await progressPage
+        .getByRole("dialog")
+        .getByRole("button", { name: "Save draft version", exact: true })
+        .click();
+      await progressPage.getByRole("dialog").waitFor({ state: "hidden" });
+      const preserved = await progressPage.evaluate(
+        (key) => JSON.parse(localStorage.getItem(key)),
+        stateKey,
+      );
+      assert.equal(
+        preserved.workflows[0].functionConnections.text,
+        "ui-disconnected-text",
+      );
+      assert.deepEqual(
+        preserved.workflows.find((w) => w.id === connectionFixture.workflow.id),
+        connectionFixture.workflow,
+      );
+      const editingTile = progressPage
+        .locator("details.s-workflow-version")
+        .first();
+      await editingTile.locator("summary").click();
+      await editingTile
+        .getByRole("button", { name: "Edit connections", exact: true })
+        .click();
+      await progressPage
+        .getByRole("dialog")
+        .getByLabel("Text connection", { exact: true })
+        .selectOption("");
+      await progressPage
+        .getByRole("dialog")
+        .getByRole("button", { name: "Save draft version", exact: true })
+        .click();
+      await progressPage.getByRole("dialog").waitFor({ state: "hidden" });
+      const removed = await progressPage.evaluate(
+        (key) => JSON.parse(localStorage.getItem(key)),
+        stateKey,
+      );
+      assert.equal(removed.workflows[0].status, "draft");
+      assert.equal(removed.workflows[0].functionConnections.text, undefined);
+      assert.equal(removed.workflows[0].connectionId, "");
+      assert.equal(
+        removed.workflows[0].instructions,
+        connectionFixture.workflow.instructions,
+      );
+      assert.deepEqual(removed.connections, connectionFixture.connections);
+      assert.deepEqual(removed.packages, target.packages);
+      assert.deepEqual(
+        removed.workflows.find((w) => w.id === connectionFixture.workflow.id),
+        connectionFixture.workflow,
+      );
+      await progressPage.setViewportSize({ width: 390, height: 844 });
+      await progressPage
+        .locator("details.s-workflow-version")
+        .first()
+        .locator("summary")
+        .click();
+      await progressPage
+        .getByRole("button", { name: "Read instructions", exact: true })
+        .first()
+        .click();
+      await progressPage.screenshot({
+        path: "/tmp/studio-workflow-reader-mobile.png",
+      });
+      assert.ok(
+        await progressPage
+          .getByRole("dialog")
+          .evaluate((el) => el.getBoundingClientRect().right <= innerWidth),
+      );
+      await progressPage.keyboard.press("Escape");
     } finally {
       await progressContext.close();
     }
