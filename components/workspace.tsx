@@ -428,6 +428,10 @@ export default function Workspace() {
     return () => clearTimeout(timer);
   }, [notice, noticeSequence]);
   const [localError, setLocalError] = useState("");
+  const [approvalErrors, setApprovalErrors] = useState<Record<string, string>>(
+    {},
+  );
+  const [approvalTarget, setApprovalTarget] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [libraryTab, setLibraryTab] = useState("Content");
   const [ideaTab, setIdeaTab] = useState("All ideas");
@@ -549,14 +553,27 @@ export default function Workspace() {
   async function execute(command: Command, message = "Changes saved") {
     setBusy(true);
     setLocalError("");
+    const approvalKey =
+      command.type === "package.approve"
+        ? `${command.contentId}:${command.expectedRevision}`
+        : "";
+    if (approvalKey) {
+      setApprovalTarget(approvalKey);
+      setApprovalErrors((previous) => ({ ...previous, [approvalKey]: "" }));
+    }
     try {
       await send(command);
       if (message) setNotice(message);
       return true;
     } catch (e) {
-      setLocalError(
-        e instanceof Error ? e.message : "The action could not be completed.",
-      );
+      const message =
+        e instanceof Error ? e.message : "The action could not be completed.";
+      setLocalError(message);
+      if (approvalKey)
+        setApprovalErrors((previous) => ({
+          ...previous,
+          [approvalKey]: message,
+        }));
       return false;
     } finally {
       setBusy(false);
@@ -2882,9 +2899,19 @@ export default function Workspace() {
                           Record founder CTA exception
                         </button>
                       )}
+                    {approvalErrors[`${c.id}:${c.revision}`] && (
+                      <div
+                        className="s-alert s-error"
+                        role="alert"
+                        aria-label="Approval error"
+                      >
+                        {approvalErrors[`${c.id}:${c.revision}`]}
+                      </div>
+                    )}
                     <div className="s-card-actions">
                       <button
                         disabled={
+                          busy ||
                           !allowed("package.approve", {
                             channel: c.channel,
                             contentId: c.id,
@@ -2911,7 +2938,10 @@ export default function Workspace() {
                           )
                         }
                       >
-                        <Check size={15} /> Approve revision
+                        <Check size={15} />{" "}
+                        {busy && approvalTarget === `${c.id}:${c.revision}`
+                          ? "Approving…"
+                          : "Approve revision"}
                       </button>
                       <button
                         disabled={

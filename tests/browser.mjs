@@ -708,12 +708,16 @@ async function main() {
       .getByRole("button", { name: "Approve revision", exact: true })
       .click();
     await page
-      .getByRole("alert")
+      .getByRole("alert", { name: "Approval error" })
       .filter({
         hasText:
           "Resolve blocking factual claims and confirmation placeholders",
       })
       .waitFor();
+    assert.match(
+      await page.getByRole("alert", { name: "Approval error" }).innerText(),
+      /\[source: verify this claim before publishing\]/,
+    );
     const blocked = (await state()).contents.find(
       (content) => content.title === "Blocked placeholder verification",
     );

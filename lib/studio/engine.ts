@@ -821,13 +821,22 @@ export function applyCommand(
       if (!d.text.trim()) bad("Add final written content before approval.");
       const all = contentWording(d);
       const check = review(all, "general");
-      if (
-        check.issues.some((x) => x.severity === "BLOCK") ||
-        /\[(?:Ryan|source|confirm|verify)[^\]]*\]/i.test(all) ||
-        /\bNEEDS_SOURCE\b/.test(all)
-      )
+      const blockers = check.issues
+        .filter((x) => x.severity === "BLOCK")
+        .map((x) => `${x.id}: ${x.message}`);
+      const placeholders = [
+        ...all.matchAll(/\[(?:Ryan|source|confirm|verify)[^\]]*\]/gi),
+      ]
+        .slice(0, 3)
+        .map((match) => `Unresolved placeholder: ${match[0].slice(0, 300)}`);
+      if (/\bNEEDS_SOURCE\b/.test(all))
+        placeholders.push(
+          "NEEDS_SOURCE remains in the content; supply verified evidence or remove the unsupported claim.",
+        );
+      if (blockers.length || placeholders.length)
         bad(
-          "Resolve blocking factual claims and confirmation placeholders before approval.",
+          "Resolve blocking factual claims and confirmation placeholders before approval. " +
+            [...blockers, ...placeholders].slice(0, 8).join(" "),
         );
       const priceLines = all
         .split("\n")

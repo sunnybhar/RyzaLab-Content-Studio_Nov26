@@ -148,3 +148,31 @@ test("draft edits require a token and strictly advance it even for same-millisec
     /changed while editing/,
   );
 });
+
+test("approval explains exact unresolved confirmation text without creating an approved package", () => {
+  const s = initialState(DEMO_ACTOR, true),
+    d = s.contents[0];
+  d.text = "A useful checklist. [Ryan: confirm the example] NEEDS_SOURCE";
+  const before = structuredClone(s);
+  assert.throws(
+    () =>
+      applyCommand(s, DEMO_ACTOR, {
+        type: "package.approve",
+        contentId: d.id,
+        expectedRevision: d.revision,
+        expectedWorkflowId: s.workflows.find(
+          (w) => w.channel === d.channel && w.status === "active",
+        )!.id,
+        expectedRuleVersion: s.settings.protectedVersion,
+      }),
+    (error) => {
+      assert.match(
+        (error as Error).message,
+        /Unresolved placeholder: \[Ryan: confirm the example\]/,
+      );
+      assert.match((error as Error).message, /NEEDS_SOURCE remains/);
+      return true;
+    },
+  );
+  assert.deepEqual(s, before);
+});

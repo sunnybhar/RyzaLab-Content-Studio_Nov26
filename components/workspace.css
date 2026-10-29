@@ -4212,3 +4212,6 @@
 
 .studio-v2 .s-workflow-history { border-top: 1px solid var(--s-line); margin-top: 16px; }
 .studio-v2 .s-workflow-history > summary { padding: 16px 24px; cursor: pointer; font-weight: 600; color: var(--s-muted); }
+
+/* Keep labels readable in Daylight Teal when hovering primary buttons. */
+.studio-v2 .s-btn.s-primary:hover, .studio-v2 .s-btn.s-primary:focus-visible { color: var(--s-muted); }
