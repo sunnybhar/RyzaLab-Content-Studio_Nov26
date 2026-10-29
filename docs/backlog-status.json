@@ -100,6 +100,11 @@
   "BL-049": {
     "status": "Done",
     "dependency": "",
-    "notes": "Edit connections changes/removes bindings by creating a reviewable draft. Disconnected current bindings preserved unless explicitly removed; active snapshots and credentials remain unchanged. Focused Astra review and browser regressions passed."
+    "notes": "Edit connections updates drafts in place; active changes create pending internal revisions. Credentials and approved inputs preserved. Explicit remove clears only mapping; disconnected current options preserved."
+  },
+  "BL-050": {
+    "status": "Done",
+    "dependency": "",
+    "notes": "Same-card editing and Updated timestamp; draft ID/version preserved, active/review immutable inputs retained pending activation. No archive feature. 130 domain tests and focused review pass; final browser verification tracked in release notes."
   }
 }

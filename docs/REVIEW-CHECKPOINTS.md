@@ -23,3 +23,7 @@ The full 126-test suite and optimized build pass. Live provider qualification, p
 ## Workflow UX and connection editing — 2026-10-29
 
 Astra focused review cleared collapsed version tiles, read-only native instruction dialogs and explicit binding summaries. Editing bindings uses existing workflow.save to create a new draft; activation permission remains separate. Reviewer found disconnected current options could silently clear; fixed by preserving and labelling the current option. Browser regressions verify unchanged saves, explicit removal and preservation of active version, instructions, credentials and packages. No backend authorization changes or credentialed calls.
+
+## Same-card workflow editing — 2026-10-29
+
+User rejected the unshipped archive approach. It was completely removed. One current workflow card with internal revision history replaces the version-card list; draft saves retain identity/version and show Updated time. Active/review inputs remain immutable pending a new internal revision and activation. Astra required timestamp tokens on every id-bearing save and strict advancement within the same millisecond; fixes verified with four focused tests. Focused review cleared, full130 tests pass. No deletion/archival command or database migration shipped.

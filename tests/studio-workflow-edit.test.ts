@@ -12,7 +12,7 @@ function edit(
   return {
     type: "workflow.save",
     id,
-    expectedUpdatedAt,
+    expectedUpdatedAt: expectedUpdatedAt || w.updatedAt || w.createdAt,
     channel: w.channel,
     title: w.title,
     audience: w.audience,
@@ -47,7 +47,7 @@ test("draft edits retain ID/version/creation date and update timestamp without a
   assert.equal(s.workflows[0].id, draft.id);
   assert.equal(s.workflows[0].version, draft.version);
   assert.equal(s.workflows[0].createdAt, draft.createdAt);
-  assert.equal(s.workflows[0].updatedAt, "2026-10-29T11:05:00Z");
+  assert.equal(s.workflows[0].updatedAt, "2026-10-29T11:05:00.000Z");
   assert.equal(s.workflows[0].instructions, "Edited pending change");
   assert.deepEqual(
     s.workflows.find((w) => w.id === active.id),
@@ -117,5 +117,34 @@ test("workflow edits enforce channel ownership and current editing permission", 
   assert.throws(
     () => applyCommand(initial, viewer, edit(initial, w.id, "Unauthorized")),
     /permission/,
+  );
+});
+
+test("draft edits require a token and strictly advance it even for same-millisecond saves", () => {
+  const initial = initialState(DEMO_ACTOR, true);
+  const active = initial.workflows[0];
+  const stamp = active.createdAt;
+  let s = applyCommand(
+    initial,
+    DEMO_ACTOR,
+    edit(initial, active.id, "Pending"),
+    { now: stamp },
+  );
+  const d = s.workflows[0];
+  const command = edit(s, d.id, "First same-ms edit");
+  assert.throws(
+    () =>
+      applyCommand(s, DEMO_ACTOR, { ...command, expectedUpdatedAt: undefined }),
+    /timestamp is required/,
+  );
+  assert.throws(
+    () => applyCommand(s, DEMO_ACTOR, { ...command, expectedUpdatedAt: "" }),
+    /Invalid command/,
+  );
+  s = applyCommand(s, DEMO_ACTOR, command, { now: stamp });
+  assert.ok(Date.parse(s.workflows[0].updatedAt!) > Date.parse(stamp));
+  assert.throws(
+    () => applyCommand(s, DEMO_ACTOR, command, { now: stamp }),
+    /changed while editing/,
   );
 });

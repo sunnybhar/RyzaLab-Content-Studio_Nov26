@@ -97,10 +97,12 @@ Use **Workflow settings** to import channel instructions as a draft, edit instru
 
 ### Training and acceptance testing
 
-Open **Training & QA** in the sidebar for 14 standalone Word training modules, the 157-case manual QA workbook and the 49-item delivery backlog. Source guides and downloads are in [docs/training](docs/training/README.md). To regenerate with Python, install `python-docx` and `openpyxl`, then run `python scripts/generate-training-materials.py`. These are documentation-generation dependencies, not application runtime dependencies.
+Open **Training & QA** in the sidebar for 14 standalone Word training modules, the 157-case manual QA workbook and the 50-item delivery backlog. Source guides and downloads are in [docs/training](docs/training/README.md). To regenerate with Python, install `python-docx` and `openpyxl`, then run `python scripts/generate-training-materials.py`. These are documentation-generation dependencies, not application runtime dependencies.
 
 Both avatars open Account & appearance. Calendar supports human drafting/editing/workflow tasks separately from approved publication. Analytics reports real Studio records; social reach/engagement remains unconnected.
 
 ### Current backlog batch
 
 Carousel slides support editable text and rectangle/ellipse layers, position, order, opacity and PNG/PDF/source export. Operations provides administrator diagnostics and real job alerts; database reachability does not prove a worker heartbeat. Operator-only encrypted backup and a local SQL restore drill are documented in [Backup and recovery](docs/BACKUP-AND-RECOVERY.md); Auth passwords, project configuration and the root encryption key need separate recovery. History archival remains a proposed coordinated migration, not an implemented storage cutover. Live integrations and independent release review are tracked separately from local checks.
+
+Workflow editing keeps one current card per channel with Created and Updated timestamps. Draft changes save in place. Editing active instructions creates a pending internal revision until reviewed and activated; earlier revisions stay in collapsed Revision history. No archive/deletion behavior was added.

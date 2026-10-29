@@ -3416,7 +3416,7 @@ export default function Workspace() {
                             ),
                           }),
                           "Draft edits update the same revision and timestamp. Changes to an active workflow stay pending review before activation.",
-                          "Save draft version",
+                          "Save changes",
                         );
                       }}
                     >
@@ -3490,7 +3490,7 @@ export default function Workspace() {
                           ),
                         }),
                         `Editing Workflow v${w.version}. Draft edits update this revision. Changes to active instructions remain pending until reviewed and activated. Existing approvals and API credentials are preserved.`,
-                        "Save draft version",
+                        "Save changes",
                       );
                     }}
                   />

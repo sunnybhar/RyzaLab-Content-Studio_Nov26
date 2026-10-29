@@ -1109,6 +1109,10 @@ export function applyCommand(
         : undefined;
       if (c.id && (!existing || existing.channel !== c.channel))
         bad("Select an existing workflow in this channel.");
+      if (c.id && !c.expectedUpdatedAt)
+        bad(
+          "Refresh the workflow before editing; an edit timestamp is required.",
+        );
       if (
         existing &&
         c.expectedUpdatedAt &&
@@ -1121,7 +1125,12 @@ export function applyCommand(
       const { type: _, id: _id, expectedUpdatedAt: _expected, ...data } = c;
       if (existing?.status === "draft") {
         Object.assign(existing, data, {
-          updatedAt: now,
+          updatedAt: new Date(
+            Math.max(
+              Date.parse(now),
+              Date.parse(existing.updatedAt || existing.createdAt) + 1,
+            ),
+          ).toISOString(),
           updatedBy: actor.email,
         });
         break;

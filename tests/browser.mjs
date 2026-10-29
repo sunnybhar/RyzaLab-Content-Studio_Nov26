@@ -579,13 +579,15 @@ async function main() {
         1,
       );
     await dialog()
-      .getByRole("button", { name: "Save draft version", exact: true })
+      .getByRole("button", { name: "Save changes", exact: true })
       .click();
     const workflowCard = page
       .locator(".s-workflow-version")
       .filter({ hasText: "LinkedIn workflow — browser revision" });
     assert.equal(await workflowCard.getAttribute("open"), null);
-    assert.ok(await workflowCard.locator("time").getAttribute("datetime"));
+    assert.ok(
+      await workflowCard.locator("time").first().getAttribute("datetime"),
+    );
     assert.match(
       await workflowCard.locator("summary").innerText(),
       /Text: Not configured/i,
@@ -1203,7 +1205,7 @@ async function main() {
       );
       await progressPage
         .getByRole("dialog")
-        .getByRole("button", { name: "Save draft version", exact: true })
+        .getByRole("button", { name: "Save changes", exact: true })
         .click();
       await progressPage.getByRole("dialog").waitFor({ state: "hidden" });
       const preserved = await progressPage.evaluate(
@@ -1231,7 +1233,7 @@ async function main() {
         .selectOption("");
       await progressPage
         .getByRole("dialog")
-        .getByRole("button", { name: "Save draft version", exact: true })
+        .getByRole("button", { name: "Save changes", exact: true })
         .click();
       await progressPage.getByRole("dialog").waitFor({ state: "hidden" });
       const removed = await progressPage.evaluate(
@@ -1263,11 +1265,19 @@ async function main() {
         connectionFixture.workflow,
       );
       await progressPage.setViewportSize({ width: 390, height: 844 });
-      await progressPage
+      const mobileWorkflow = progressPage
         .locator("details.s-workflow-version")
-        .first()
-        .locator("summary")
-        .click();
+        .first();
+      if ((await mobileWorkflow.getAttribute("open")) === null)
+        await mobileWorkflow.locator("summary").click();
+      assert.equal(
+        await progressPage
+          .locator(".s-workflow-versions")
+          .first()
+          .locator(":scope > details.s-workflow-version")
+          .count(),
+        1,
+      );
       await progressPage
         .getByRole("button", { name: "Read instructions", exact: true })
         .first()
