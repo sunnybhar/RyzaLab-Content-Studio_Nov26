@@ -9,6 +9,8 @@ import {
 } from "../lib/studio/solo-quality";
 import { settleWrittenOutput } from "../lib/studio/draft-candidates";
 import { preparationSpend } from "../lib/studio/preparation-budget";
+import { filteredState } from "../lib/studio/permissions";
+import { canDispatchJob } from "../lib/studio/dispatch-permissions";
 import type { Job, StudioState } from "../lib/studio/types";
 const now = "2026-10-29T12:00:00Z";
 const ctx = { demo: true, now };
@@ -101,6 +103,24 @@ const output = {
     questions: [],
   }),
 };
+test("human wording changes clear provider provenance, including restored drafts and imports", () => {
+  let s = adopted();
+  let c = s.contents[0];
+  c.generatedBy = { provider: "anthropic", model: "test", jobId: "job" };
+  s = applyCommand(s, DEMO_ACTOR, {
+    type: "content.save", id: c.id, expectedRevision: c.revision,
+    title: c.title, text: "A replacement written by a person.",
+    metadata: c.metadata, media: c.media, format: c.format, account: c.account,
+  }, ctx);
+  c = s.contents[0];
+  assert.equal(c.generatedBy, undefined);
+  c.generatedBy = { provider: "anthropic", model: "test", jobId: "job" };
+  s = applyCommand(s, DEMO_ACTOR, {
+    type: "docs.import", contentId: c.id, expectedRevision: c.revision,
+    text: "Imported wording from a document.",
+  }, ctx);
+  assert.equal(s.contents[0].generatedBy, undefined);
+});
 test("only founder adopts versioned two-review policy; ordinary settings cannot inject it", () => {
   const s = initialState(DEMO_ACTOR, true);
   const admin = { id: "admin", email: "admin@example.com" };
@@ -641,4 +661,64 @@ test("structured missing-fact questions remain a retained candidate and never au
       ),
     /missing facts/,
   );
+});
+
+test("preparation authorizations are visible only with access to the associated draft", () => {
+  const s = adopted();
+  const editor = { id: "scoped-editor", email: "editor@example.com" };
+  const visible = s.contents[0];
+  visible.assignedTo = editor.email;
+  const hidden = structuredClone(visible);
+  hidden.id = "hidden-content";
+  hidden.assignedTo = "another@example.com";
+  s.contents.push(hidden);
+  s.members.push({ ...editor, roles: ["editor"], grants: [], revoked: false });
+  s.preparations = [visible, hidden].map((c) => ({
+    id: `prep-${c.id}`,
+    contentId: c.id,
+    channel: c.channel,
+    account: c.account,
+    authorizedFor: c.assignedTo,
+    authorizedBy: DEMO_ACTOR.email,
+    at: now,
+    period: "2026-10",
+    maxCents: 50,
+    functions: ["text"],
+    policyVersion: s.settings.reviewPolicy!.version,
+  }));
+  assert.deepEqual(
+    filteredState(s, editor).preparations?.map((p) => p.contentId),
+    [visible.id],
+  );
+  assert.equal(filteredState(s, DEMO_ACTOR).preparations?.length, 2);
+});
+
+test("dispatch blocks revoked read/edit or changed content scope before provider disclosure", () => {
+  const s = adopted();
+  const editor = { id: "dispatch-editor", email: "dispatch@example.com" };
+  const c = s.contents[0];
+  c.assignedTo = editor.email;
+  const member = {
+    ...editor,
+    roles: ["editor" as const],
+    revoked: false,
+    grants: [
+      { action: "job.create" },
+      { action: "read" },
+      { action: "content.edit" },
+    ],
+  };
+  s.members.push(member);
+  const j = { ...job(s), createdBy: editor.email };
+  assert.equal(canDispatchJob(s, editor, j), true);
+  member.grants = [{ action: "job.create" }, { action: "content.edit" }];
+  assert.equal(canDispatchJob(s, editor, j), false);
+  member.grants = [{ action: "job.create" }, { action: "read" }];
+  assert.equal(canDispatchJob(s, editor, j), false);
+  member.grants.push({ action: "content.edit" });
+  c.account = "Changed account";
+  assert.equal(canDispatchJob(s, editor, j), false);
+  c.account = j.account!;
+  c.deletedAt = now;
+  assert.equal(canDispatchJob(s, editor, j), false);
 });

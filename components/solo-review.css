@@ -1,0 +1,15 @@
+.studio-v2 .s-solo-review { display: grid; gap: 1rem; }
+.studio-v2 .s-solo-review-progress { display: flex; flex-wrap: wrap; gap: .6rem; }
+.studio-v2 .s-solo-review-progress span { border: 1px solid var(--s-border, #9bb6b9); border-radius: 1rem; padding: .4rem .8rem; }
+.studio-v2 .s-solo-review-progress .s-solo-current { font-weight: 700; color: var(--s-teal, #087c72); border-color: currentColor; }
+.studio-v2 .s-solo-review-progress .s-solo-done { color: var(--s-teal, #087c72); }
+.studio-v2 .s-solo-review section { display: grid; gap: .9rem; }
+.studio-v2 .s-solo-review section h3, .studio-v2 .s-solo-review section h4, .studio-v2 .s-solo-review section p { margin: 0; }
+.studio-v2 .s-solo-prewrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+.studio-v2 .s-solo-label { display: grid; gap: .5rem; font-weight: 600; }
+.studio-v2 .s-solo-label textarea { min-height: 7rem; width: 100%; }
+.studio-v2 .s-solo-confirm { display: flex; align-items: flex-start; gap: .6rem; }
+.studio-v2 .s-solo-destination { display: flex; gap: .5rem; flex-wrap: wrap; justify-content: space-between; }
+.studio-v2 .s-solo-asset { display: grid; gap: .5rem; max-width: 34rem; }
+.studio-v2 .s-solo-asset img, .studio-v2 .s-solo-asset video { max-width: 100%; }
+.studio-v2 .s-solo-asset .s-slide-preview { width: min(100%, 28rem); }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowDownToLine,
   BarChart3,
@@ -48,6 +48,8 @@ import {
   Zap,
 } from "lucide-react";
 import { ReviewCard } from "./review-card";
+import { SoloReview } from "./solo-review";
+import { DraftAssistant } from "./draft-assistant";
 import { WorkflowVersions } from "./workflow-versions";
 import { useStudio } from "@/lib/studio/client";
 import {
@@ -58,6 +60,7 @@ import {
   type Actor,
   type Command,
   type Content,
+  type Idea,
   type MediaProject,
   type StudioState,
   type Slide,
@@ -81,6 +84,9 @@ import { SlideLayerEditor, SlideLayerPreview } from "./slide-layers";
 import { StudioOperations } from "./studio-operations";
 import { StudioAnalytics } from "./studio-analytics";
 import { IdeaGenerationStatus } from "./idea-generation-status";
+import { IdeasBrowser } from "./ideas-browser";
+import { GenerationActivity } from "./generation-activity";
+import { CalendarPackagePreview } from "./calendar-package-preview";
 import { StageTracker } from "./stage-tracker";
 import { PasswordLogin } from "./password-login";
 import { configured, supabase } from "@/lib/supabase";
@@ -437,6 +443,7 @@ export default function Workspace() {
   const [libraryTab, setLibraryTab] = useState("Content");
   const [ideaTab, setIdeaTab] = useState("All ideas");
   const [calendarView, setCalendarView] = useState("Month");
+  const [calendarPreview, setCalendarPreview] = useState<string | null>(null);
   const [month, setMonth] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
@@ -719,7 +726,28 @@ export default function Workspace() {
       "Start with a clear idea. Your channel workflow will guide the draft.",
       "Create draft",
     );
-  const scheduleForm = (contentId?: string) => {
+  async function useIdea(idea: Idea, format: string, account: string) {
+    setBusy(true);
+    setLocalError("");
+    try {
+      const result = await send({
+        type: "idea.use", id: idea.id, format, account,
+      });
+      const draft = result.state.contents.find(
+        (item) => item.ideaId === idea.id && item.createdBy === actor!.email && !item.deletedAt,
+      );
+      if (!draft) throw new Error("The linked draft could not be found. Refresh the workspace and try again.");
+      setPage("Create");
+      setSelected(draft.id);
+      setSearch("");
+      setNotice("Draft ready to edit.");
+      return true;
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : "The idea could not be opened.");
+      return false;
+    } finally { setBusy(false); }
+  }
+  const scheduleForm = (contentId?: string, initialPackageId?: string) => {
     const packages = activePackages.filter(
       (p) => !contentId || p.contentId === contentId,
     );
@@ -738,7 +766,7 @@ export default function Workspace() {
         {
           name: "packageId",
           label: "Approved package",
-          value: packages[0].id,
+          value: packages.find((p) => p.id === initialPackageId)?.id || packages[0].id,
           options: packages.map((p) => p.id),
           optionLabels: Object.fromEntries(
             packages.map((p) => [
@@ -1156,7 +1184,7 @@ export default function Workspace() {
       "Inspect job failures, uncertain charges and application dependencies.",
     "Training & QA":
       "Step-by-step training, manual acceptance tests and the delivery backlog.",
-    Home: "A clear view of your content. A little more room to create.",
+    Home: "You create. Your team reviews. A person always hits publish.",
     Ideas: "The starting point for your next great story.",
     Calendar:
       "Plan publications, drafting, editing and workflow work in one calendar.",
@@ -1273,6 +1301,7 @@ export default function Workspace() {
           <button
             aria-label="Workflow settings"
             title="Workflow settings"
+            aria-current={page === "Workflow settings" ? "page" : undefined}
             className={page === "Workflow settings" ? "s-active" : ""}
             onClick={() => move("Workflow settings")}
           >
@@ -1282,6 +1311,7 @@ export default function Workspace() {
           <button
             aria-label="People & access"
             title="People & access"
+            aria-current={page === "People" ? "page" : undefined}
             className={page === "People" ? "s-active" : ""}
             onClick={() => move("People")}
           >
@@ -1291,6 +1321,7 @@ export default function Workspace() {
           <button
             aria-label="AI & budgets"
             title="AI & budgets"
+            aria-current={page === "AI & budgets" ? "page" : undefined}
             className={page === "AI & budgets" ? "s-active" : ""}
             onClick={() => move("AI & budgets")}
           >
@@ -1300,24 +1331,17 @@ export default function Workspace() {
         </nav>
         {allowed("settings.manage") && (
           <button
-            className="s-btn s-small-btn"
+            className={`s-btn s-small-btn ${page === "Operations" ? "s-active" : ""}`}
+            aria-current={page === "Operations" ? "page" : undefined}
             onClick={() => move("Operations")}
           >
             <ShieldCheck size={16} /> Operations
           </button>
         )}
         <div className="s-sidebar-bottom">
-          <div className="s-sidebar-note">
-            <span>
-              <ShieldCheck size={17} /> Human by design
-            </span>
-            <p>
-              You create. Your team reviews.
-              <br />A person always hits publish.
-            </p>
-          </div>
           <button
-            className="s-user"
+            className={`s-user ${page === "Account & appearance" ? "s-active" : ""}`}
+            aria-current={page === "Account & appearance" ? "page" : undefined}
             onClick={() => move("Account & appearance")}
             title="Account & appearance"
             aria-label="Open account and appearance"
@@ -1445,7 +1469,7 @@ export default function Workspace() {
                       weekday: "long",
                       month: "long",
                       day: "numeric",
-                    })
+                    }) + " · RYZALAB STUDIO · HUMAN BY DESIGN"
                   : "RYZALAB STUDIO"}
               </div>
               <h1 tabIndex={-1}>{heading}</h1>
@@ -1598,9 +1622,10 @@ export default function Workspace() {
             "Reviews",
             "Library",
           ].includes(page) && (
-            <div className="s-channel-tabs">
+            <div className="s-channel-tabs" aria-label="Filter by channel">
               <button
                 className={channel === "All channels" ? "s-selected" : ""}
+                aria-pressed={channel === "All channels"}
                 onClick={() => setChannel("All channels")}
               >
                 <Grid2X2 size={15} />
@@ -1610,6 +1635,7 @@ export default function Workspace() {
                 <button
                   key={c}
                   className={channel === c ? "s-selected" : ""}
+                  aria-pressed={channel === c}
                   onClick={() => setChannel(c)}
                 >
                   <ChannelIcon channel={c} small />
@@ -1836,6 +1862,7 @@ export default function Workspace() {
                   ].map((v) => (
                     <button
                       className={ideaTab === v ? "s-selected" : ""}
+                      aria-pressed={ideaTab === v}
                       key={v}
                       onClick={() => setIdeaTab(v)}
                     >
@@ -1949,143 +1976,22 @@ export default function Workspace() {
                   ))}
                 </section>
               ) : (
-                <div className="s-idea-grid">
-                  {state.ideas
-                    .filter(
-                      (i) =>
-                        matches(i) &&
-                        (ideaTab === "All ideas" ||
-                          i.state.toLowerCase() === ideaTab.toLowerCase()),
-                    )
-                    .map((i) => (
-                      <article className="s-idea-card" key={i.id}>
-                        <div className="s-inline s-between">
-                          <span className="s-inline">
-                            <ChannelIcon channel={i.channel} small />
-                            {i.channel}
-                          </span>
-                          <Badge
-                            tone={
-                              i.state === "approved"
-                                ? "green"
-                                : i.state === "rejected"
-                                  ? "red"
-                                  : "amber"
-                            }
-                          >
-                            {i.state}
-                          </Badge>
-                        </div>
-                        <h2>{i.title}</h2>
-                        <p>{i.brief || "An idea waiting to take shape."}</p>
-                        {i.rejection && (
-                          <div className="s-feedback">{i.rejection}</div>
-                        )}
-                        <Badge>
-                          {i.origin === "demo_sample"
-                            ? "Demo sample · no agent run"
-                            : i.origin === "agent"
-                              ? "Agent generated"
-                              : "Added manually"}
-                        </Badge>
-                        {i.sources?.length > 0 && (
-                          <details className="s-idea-sources">
-                            <summary>
-                              Source references ({i.sources.length})
-                            </summary>
-                            {i.sources.map((source, index) => (
-                              <p key={index}>{source}</p>
-                            ))}
-                          </details>
-                        )}
-                        <small className="s-muted">
-                          Added {stamp(i.createdAt)}
-                          {i.sourceId ? " · Reused idea" : ""}
-                        </small>
-                        <div className="s-card-actions">
-                          {i.state === "approved" ? (
-                            <button
-                              disabled={readOnly}
-                              className="s-text-button"
-                              onClick={() =>
-                                newContent(i.id, i.title, i.channel)
-                              }
-                            >
-                              Create content <ArrowRight size={14} />
-                            </button>
-                          ) : i.state === "pending" ? (
-                            <>
-                              <button
-                                className="s-btn s-small-btn"
-                                disabled={
-                                  !allowed("idea.review", {
-                                    channel: i.channel,
-                                  })
-                                }
-                                onClick={() =>
-                                  void execute({
-                                    type: "idea.review",
-                                    id: i.id,
-                                    decision: "approved",
-                                  })
-                                }
-                              >
-                                <Check size={14} />
-                                Approve
-                              </button>
-                              <button
-                                className="s-text-button"
-                                disabled={
-                                  !allowed("idea.review", {
-                                    channel: i.channel,
-                                  })
-                                }
-                                onClick={() => reject("idea.review", i.id)}
-                              >
-                                Request changes
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                className="s-text-button"
-                                disabled={readOnly}
-                                onClick={() =>
-                                  void execute({
-                                    type: "idea.reuse",
-                                    id: i.id,
-                                    mode: "revise",
-                                  })
-                                }
-                              >
-                                Revise idea <ArrowRight size={14} />
-                              </button>
-                              <button
-                                className="s-icon-button"
-                                disabled={readOnly}
-                                aria-label={`Copy ${i.title}`}
-                                onClick={() =>
-                                  void execute({
-                                    type: "idea.reuse",
-                                    id: i.id,
-                                    mode: "copy",
-                                  })
-                                }
-                              >
-                                <Copy size={15} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </article>
-                    ))}
-                  {!state.ideas.filter(matches).length && (
-                    <Empty icon={Lightbulb} title="Make room for a spark">
-                      Capture an angle, an observation or a question. Your team
-                      can shape it from there.
-                    </Empty>
-                  )}
-                </div>
+                <IdeasBrowser
+                  ideas={state.ideas.filter((idea) => matches(idea) && (ideaTab === "All ideas" || idea.state.toLowerCase() === ideaTab.toLowerCase()))}
+                  contents={state.contents}
+                  schedules={state.schedules}
+                  actorEmail={actor.email}
+                  busy={busy}
+                  error={localError}
+                  onOpen={() => setLocalError("")}
+                  canReview={(idea) => allowed("idea.review", { channel: idea.channel })}
+                  canUse={(idea, account) => allowed("content.create", { channel: idea.channel, account }) && (idea.state !== "pending" || allowed("idea.review", { channel: idea.channel }))}
+                  canReuse={(idea) => allowed("idea.edit", { channel: idea.channel })}
+                  onUse={useIdea}
+                  onApprove={(idea) => execute({ type: "idea.review", id: idea.id, decision: "approved" })}
+                  onReject={(idea) => reject("idea.review", idea.id)}
+                  onReuse={(idea, mode) => execute({ type: "idea.reuse", id: idea.id, mode })}
+                />
               )}
             </>
           )}
@@ -2141,6 +2047,7 @@ export default function Workspace() {
                     <button
                       key={v}
                       className={v === calendarView ? "s-selected" : ""}
+                      aria-pressed={v === calendarView}
                       onClick={() => setCalendarView(v)}
                     >
                       {v}
@@ -2776,7 +2683,7 @@ export default function Workspace() {
                 back={() => setSelected(null)}
                 form={openForm}
                 onError={setLocalError}
-                refresh={refresh}
+                refresh={() => refresh(true)}
                 queue={() => setQueueTarget(activeContent)}
               />
             ) : (
@@ -2831,6 +2738,18 @@ export default function Workspace() {
                       )?.version || "not configured"}{" "}
                       · Protected rules {state.settings.protectedVersion}
                     </div>
+                    {state.settings.reviewPolicy ? (
+                      <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send}
+                        renderAsset={(source, kind) => <AssetMedia source={source} kind={kind} />}
+                        openDraft={() => openContent(c)}
+                        recordPriceException={() => openForm(
+                          "Scoped founder price exception",
+                          [{ name: "wording", label: "Exact content line", required: true, type: "textarea" },
+                           { name: "reason", label: "Reason and evidence", required: true }],
+                          (d) => ({ type: "exception.record", contentId: c.id, expectedRevision: c.revision, wording: val(d, "wording"), reason: val(d, "reason") }),
+                          "This applies only to the quoted wording in this exact revision. It cannot waive misinformation or misrepresentation.",
+                        )} />
+                    ) : <>
                     <StageTracker
                       content={c}
                       state={state}
@@ -2977,6 +2896,7 @@ export default function Workspace() {
                         Request changes
                       </button>
                     </div>
+                    </>}
                   </ReviewCard>
                 ))}
               </div>
@@ -3096,6 +3016,7 @@ export default function Workspace() {
                     <button
                       key={t}
                       className={libraryTab === t ? "s-selected" : ""}
+                      aria-pressed={libraryTab === t}
                       onClick={() => setLibraryTab(t)}
                     >
                       {t === "History" && <History size={14} />}{" "}
@@ -3300,17 +3221,24 @@ export default function Workspace() {
           )}
           {page === "Workflow settings" && (
             <div className="s-workflow-layout">
-              <aside className="s-panel s-channel-list">
+              <nav className="s-panel s-channel-list" aria-label="Channel workflows">
                 <span className="s-nav-label">CHANNEL WORKFLOWS</span>
                 {CHANNELS.map((c) => (
                   <button
                     key={c}
                     className={c === workflowChannel ? "s-selected" : ""}
+                    aria-pressed={c === workflowChannel}
                     onClick={() => setWorkflowChannel(c)}
                   >
                     <ChannelIcon channel={c} small />
                     {c}
                     <span
+                      aria-hidden="true"
+                      title={
+                        state.workflows.some(
+                          (w) => w.channel === c && w.status === "active",
+                        ) ? "Active workflow" : "No active workflow"
+                      }
                       className={
                         state.workflows.some(
                           (w) => w.channel === c && w.status === "active",
@@ -3321,7 +3249,7 @@ export default function Workspace() {
                     />
                   </button>
                 ))}
-              </aside>
+              </nav>
               <div>
                 <section className="s-panel">
                   <div className="s-section-heading">
@@ -4118,10 +4046,9 @@ export default function Workspace() {
               <section className="s-panel s-recent-panel">
                 <div className="s-section-heading">
                   <div>
-                    <h2>Generation queue</h2>
+                    <h2>Generation activity</h2>
                     <p>
-                      Jobs show their actual status. Queued work is not a
-                      finished asset.
+                      Track current requests and your 10 most recent results.
                     </p>
                   </div>
                   <button
@@ -4132,17 +4059,18 @@ export default function Workspace() {
                     <Plus size={15} /> Queue request
                   </button>
                 </div>
-                {state.jobs
-                  .slice()
-                  .reverse()
-                  .map((j) => (
+                <GenerationActivity jobs={state.jobs} renderJob={(j) => (
                     <div className="s-job-row" key={j.id}>
                       <div>
                         <strong>
                           {j.kind} · {j.channel}
                         </strong>
-                        <p>{j.prompt}</p>
+                        <p>{stamp(j.createdAt)}</p>
                         {j.error && <p className="s-red-text">{j.error}</p>}
+                        <details>
+                          <summary>View request</summary>
+                          <p>{j.prompt}</p>
+                        </details>
                         {j.result && (
                           <details>
                             <summary>View provider result</summary>
@@ -4161,7 +4089,7 @@ export default function Workspace() {
                       >
                         {j.state.replaceAll("_", " ")}
                       </Badge>
-                      <span>{money(j.actual ?? j.reserved ?? j.estimate)}</span>
+                      <span>{money(j.actual ?? (j.reserved || j.estimate))} {j.actual != null ? "actual" : j.reserved ? "reserved" : "estimated"}</span>
                       {j.kind === "research" &&
                         j.state === "succeeded" &&
                         j.result && (
@@ -4221,7 +4149,7 @@ export default function Workspace() {
                         </button>
                       )}
                     </div>
-                  ))}
+                  )} />
               </section>
             </>
           )}
@@ -4682,7 +4610,7 @@ function Editor({
   actor,
   send,
   state,
-  readOnly,
+  readOnly: editorReadOnly,
   busy,
   mode,
   run,
@@ -4712,6 +4640,9 @@ function Editor({
   refresh: () => Promise<void>;
   queue: () => void;
 }) {
+  const writingInFlight = state.settings.reviewPolicy?.mode === "two_step" && state.jobs.some((job) => job.contentId === c.id && job.kind === "text" && job.outputContract === "draft_v1" && ["queued", "running"].includes(job.state));
+  // Prevent local edits while the worker may apply a result to the saved revision.
+  const readOnly = editorReadOnly || Boolean(writingInFlight) || (state.settings.reviewPolicy?.mode === "two_step" && busy);
   const [title, setTitle] = useState(c.title);
   const [text, setText] = useState(c.text);
   const [metadata, setMetadata] = useState(c.metadata);
@@ -4722,7 +4653,9 @@ function Editor({
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [docsText, setDocsText] = useState("");
-  useEffect(() => {
+  const baseline = useRef({ id: c.id, revision: c.revision, title: c.title, text: c.text, metadata: c.metadata, collection: c.collection || "", media: JSON.stringify(c.media) });
+  const [externalChange, setExternalChange] = useState(false);
+  function loadSavedDraft() {
     setTitle(c.title);
     setText(c.text);
     setMetadata(c.metadata);
@@ -4730,6 +4663,18 @@ function Editor({
     setMedia(c.media || initialMedia());
     setSlideIndex((i) => Math.max(0, Math.min(i, c.media.slides.length - 1)));
     setSceneIndex((i) => Math.max(0, Math.min(i, c.media.scenes.length - 1)));
+    baseline.current = { id: c.id, revision: c.revision, title: c.title, text: c.text, metadata: c.metadata, collection: c.collection || "", media: JSON.stringify(c.media) };
+    setExternalChange(false);
+  }
+  useEffect(() => {
+    const previous = baseline.current;
+    const unsaved = title !== previous.title || text !== previous.text || metadata !== previous.metadata || collection !== previous.collection || JSON.stringify(media) !== previous.media;
+    const matchesSaved = title === c.title && text === c.text && metadata === c.metadata && collection === (c.collection || "") && JSON.stringify(media) === JSON.stringify(c.media);
+    if (previous.id === c.id && previous.revision !== c.revision && unsaved && !matchesSaved) {
+      setExternalChange(true);
+      return;
+    }
+    loadSavedDraft();
   }, [c.id, c.revision]);
   const dirty =
     title !== c.title ||
@@ -4740,7 +4685,7 @@ function Editor({
   const slide = media.slides[slideIndex];
   const scene = media.scenes[sceneIndex];
   const save = () =>
-    run(
+    externalChange ? Promise.resolve(false) : run(
       {
         type: "content.save",
         id: c.id,
@@ -4896,14 +4841,14 @@ function Editor({
             {dirty ? "Unsaved changes" : "Saved"}
           </Badge>
           <button
-            disabled={readOnly || busy || !dirty}
+            disabled={readOnly || busy || !dirty || externalChange}
             className="s-btn"
             onClick={() => void save()}
           >
             Save draft
           </button>
           <button
-            disabled={readOnly || busy || dirty}
+            disabled={readOnly || busy || dirty || externalChange}
             className="s-btn s-primary"
             title={dirty ? "Save your changes before submitting" : ""}
             onClick={() =>
@@ -4917,6 +4862,15 @@ function Editor({
           </button>
         </div>
       </div>
+      {externalChange && (
+        <div className="s-info-strip" role="alert">
+          <span>This saved draft changed elsewhere while you had unsaved edits. Your edits are still here; copy them somewhere safe before loading the updated draft.</span>
+          <button className="s-btn" onClick={() => { if (window.confirm("Discard your unsaved edits and load the current saved draft?")) loadSavedDraft(); }}>Discard unsaved edits and load latest</button>
+        </div>
+      )}
+      {state.settings.reviewPolicy?.mode === "two_step" && (
+        <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} />
+      )}
       <StageTracker
         content={c}
         state={state}
@@ -4947,6 +4901,7 @@ function Editor({
             ].map((t) => (
               <button
                 className={tab === t ? "s-selected" : ""}
+                aria-pressed={tab === t}
                 key={t}
                 onClick={() => setTab(t)}
               >

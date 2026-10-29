@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { database, loadState, persist, decrypt } from "@/lib/studio/store";
-import { can, StudioError } from "@/lib/studio/permissions";
+import { StudioError } from "@/lib/studio/permissions";
+import { canDispatchJob } from "@/lib/studio/dispatch-permissions";
 import { budgetMonth } from "@/lib/studio/time";
 import { parseGeneratedIdeas } from "@/lib/studio/idea-generation";
 import { readRates, pricingSnapshotIsCurrent } from "@/lib/studio/pricing";
@@ -84,18 +85,9 @@ export async function POST(req: NextRequest) {
       return blockJob("Job owner is revoked. No provider request was sent.");
     const actor = { id: member.id, email: member.email };
     await loadState(db, actor);
-    const content = state.contents.find((d) => d.id === job.contentId);
-    if (
-      !can(state, actor, "job.create", {
-        channel: job.channel,
-        function: job.kind,
-        contentId: job.contentId,
-        account: job.account,
-        assignedTo: content?.assignedTo,
-      })
-    )
+    if (!canDispatchJob(state, actor, job))
       return blockJob(
-        "Job authority changed. Cancel and reauthorize this request.",
+        "Content access or job authority changed. Cancel and reauthorize this request.",
       );
     if (job.period !== budgetMonth(now, state.settings.timezone))
       return blockJob(

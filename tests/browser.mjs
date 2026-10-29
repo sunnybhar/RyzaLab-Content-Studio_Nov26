@@ -342,21 +342,27 @@ async function main() {
     await page.getByRole("heading", { name: title, exact: true }).waitFor();
     await page.reload();
     await navigate("Ideas");
-    const idea = page.locator(".s-idea-card").filter({ hasText: title });
-    await idea.getByRole("button", { name: "Approve", exact: true }).click();
-    await idea
-      .getByRole("button", { name: "Create content", exact: true })
-      .click();
-    await dialog()
-      .getByRole("button", { name: "Create draft", exact: true })
-      .click();
-    await openContent(title);
+    await page.getByRole("button", { name: "List", exact: true }).click();
+    assert.equal(await page.getByRole("button", { name: "List", exact: true }).getAttribute("aria-pressed"), "true");
+    const idea = page.locator(".s-idea-summary").filter({ hasText: title });
+    await idea.click();
+    const ideaDialog = page.locator(".s-idea-detail");
+    await ideaDialog.getByText("An editorial perspective grounded in the team’s own working process.").waitFor();
+    await ideaDialog.getByRole("button", { name: "Use idea & open draft", exact: true }).click();
+    await page.getByLabel("Content text", { exact: true }).waitFor();
     await page
       .getByLabel("Content text", { exact: true })
       .fill(
         "A useful story from the team. We start with a clear question and make time for a thoughtful review.",
       );
     await saveDraft();
+    const linkedDraftId = (await state()).contents.find((content) => content.title === title).id;
+    await navigate("Ideas");
+    await page.locator(".s-idea-summary").filter({ hasText: title }).click();
+    await page.locator(".s-idea-detail").getByRole("button", { name: "Open linked draft", exact: true }).click();
+    await page.getByLabel("Content text", { exact: true }).waitFor();
+    assert.equal((await state()).contents.filter((content) => content.title === title).length, 1);
+    assert.equal((await state()).contents.find((content) => content.title === title).id, linkedDraftId);
     await page.getByRole("button", { name: "Slides", exact: true }).click();
     await page.getByRole("button", { name: "Add slide", exact: true }).click();
     await page

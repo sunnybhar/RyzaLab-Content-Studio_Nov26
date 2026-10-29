@@ -832,6 +832,10 @@ export function applyCommand(
       });
       if (!textChanged && priorWords !== contentWording(d))
         d.textRevision = (d.textRevision || 1) + 1;
+      // Once a person changes the copy, the original provider no longer
+      // establishes the provenance of the current wording for independence.
+      if (textChanged || priorWords !== contentWording(d))
+        d.generatedBy = undefined;
       d.factsRevision =
         oldFactsRevision + (oldFacts !== factsSignature(d) ? 1 : 0);
       if (oldTitle !== d.title && d.stages?.length)
@@ -877,6 +881,7 @@ export function applyCommand(
         title: r.title + " — restored",
         copyAcceptances: [],
         agentReview: undefined,
+        generatedBy: undefined,
         preparationId: undefined,
         text: r.text,
         metadata: r.metadata,
@@ -1417,6 +1422,14 @@ export function applyCommand(
     case "member.save": {
       need("users.manage");
       let m = s.members.find((x) => x.email === c.email);
+      if (c.roles.includes("founder") || m?.roles.includes("founder"))
+        need("policy.manage");
+      if (
+        m && !m.revoked && m.roles.includes("founder") &&
+        !c.roles.includes("founder") &&
+        !s.members.some((x) => x.email !== m!.email && !x.revoked && x.roles.includes("founder"))
+      )
+        bad("Keep at least one active founder.");
       if (
         m &&
         m.email === actor.email &&
@@ -1450,6 +1463,11 @@ export function applyCommand(
       {
         const m = s.members.find((x) => x.email === c.email);
         if (!m) bad("Member not found.");
+        if (m.roles.includes("founder")) {
+          need("policy.manage");
+          if (!s.members.some((x) => x.email !== m.email && !x.revoked && x.roles.includes("founder")))
+            bad("Keep at least one active founder.");
+        }
         m.revoked = true;
         break;
       }
@@ -1896,6 +1914,7 @@ export function applyCommand(
       );
       d.factsRevision = (d.factsRevision ?? d.textRevision ?? 1) + 1;
       d.text = c.text;
+      d.generatedBy = undefined;
       d.textRevision = (d.textRevision || 1) + 1;
       d.docsBase = c.text;
       d.docsFetchedAt = now;

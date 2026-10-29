@@ -1,0 +1,33 @@
+import type { Actor, Job, StudioState } from "./types";
+import { can } from "./permissions";
+
+// Recheck authority before disclosure to a provider, not merely at settlement.
+export function canDispatchJob(state: StudioState, actor: Actor, job: Job) {
+  const content = job.contentId
+    ? state.contents.find((item) => item.id === job.contentId)
+    : undefined;
+  if (
+    job.contentId &&
+    (!content ||
+      content.deletedAt ||
+      content.channel !== job.channel ||
+      content.account !== job.account)
+  )
+    return false;
+
+  const scope = {
+    channel: job.channel,
+    function: job.kind,
+    contentId: job.contentId,
+    account: content?.account ?? job.account,
+    assignedTo: content?.assignedTo,
+  };
+  if (!can(state, actor, "job.create", scope)) return false;
+  if (content && !can(state, actor, "read", scope)) return false;
+  if (
+    job.outputContract === "draft_v1" &&
+    !can(state, actor, "content.edit", scope)
+  )
+    return false;
+  return true;
+}

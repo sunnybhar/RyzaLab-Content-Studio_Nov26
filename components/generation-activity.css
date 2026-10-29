@@ -1,0 +1,15 @@
+.studio-v2 .s-activity-label {
+  padding: 15px 23px 0;
+  color: var(--s-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+.studio-v2 .s-activity-empty,
+.studio-v2 .s-activity-footer { padding: 18px 23px; color: var(--s-muted); }
+.studio-v2 .s-activity-search { display: grid; gap: 8px; margin-bottom: 20px; }
+.studio-v2 .s-activity-search input {
+  width: 100%; padding: 11px 12px; border: 1px solid var(--s-line);
+  border-radius: 6px; background: var(--s-paper); color: var(--s-text);
+}
+.studio-v2 .s-activity-pagination { display: flex; align-items: center; gap: 16px; padding-top: 20px; }
+.studio-v2 .s-activity-dialog .s-job-row pre { overflow-wrap: anywhere; }

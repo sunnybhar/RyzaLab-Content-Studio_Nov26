@@ -4233,3 +4233,16 @@
 .studio-v2 .s-creative-direction[open] > summary svg { transform: rotate(180deg); }
 .studio-v2 .s-creative-direction .s-panel-padding { max-height: 45dvh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 600px) { .studio-v2 .s-review-row { align-items: stretch; flex-direction: column; gap: 12px; } .studio-v2 .s-review-dialog { width: calc(100vw - 20px); } .studio-v2 .s-review-dialog-body { padding: 16px; } }
+
+/* Keep channel selection visible above the workflow on every screen size. */
+.studio-v2 .s-workflow-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.studio-v2 .s-channel-list { display: flex; align-items: center; gap: 6px; max-width: 100%; overflow-x: auto; padding: 10px; }
+.studio-v2 .s-channel-list > .s-nav-label { display: none; }
+.studio-v2 .s-channel-list > button { flex: 0 0 auto; width: auto; white-space: nowrap; padding: 9px 12px; border: 1px solid transparent; color: var(--s-muted); }
+.studio-v2 .s-channel-list > button:hover { background: var(--s-raised); color: var(--s-text); }
+.studio-v2 .s-channel-list > button.s-selected { border-color: var(--s-accent); background: var(--s-raised); color: var(--s-accent); font-weight: 700; }
+.studio-v2 .s-channel-list .s-status-dot { display: block; flex: 0 0 auto; width: 7px; height: 7px; margin-left: 1px; background: var(--s-accent); }
+.studio-v2 .s-channel-list .s-status-dot.s-inactive { background: var(--s-line); }
+.studio-v2 .s-sidebar-bottom { padding-top: 20px; }
+.studio-v2 .s-sidebar > .s-btn.s-active,
+.studio-v2 .s-sidebar .s-user.s-active { background: var(--s-raised); color: var(--s-accent); box-shadow: inset 3px 0 var(--s-accent); }
