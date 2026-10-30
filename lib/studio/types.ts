@@ -271,6 +271,7 @@ export interface Content {
   preparationId?: string;
 }
 export interface Package {
+  researchSnapshots?: {jobId:string;raw:string}[];
   copyAcceptanceSnapshot?: CopyAcceptance;
   id: string;
   contentId: string;

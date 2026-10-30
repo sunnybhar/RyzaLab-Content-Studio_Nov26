@@ -354,6 +354,11 @@ for (const sample of samples)
     });
     const pkg = s.packages[0];
     assert.equal(pkg.text, body);
+    if (researchJobIds.length)
+      assert.equal(
+        pkg.researchSnapshots?.[0].raw,
+        s.jobs.find((j) => j.id === "local-research")!.result,
+      );
     s = cmd(s, {
       type: "schedule.create",
       contentId: c.id,

@@ -13,6 +13,7 @@ import { currentWorkflow } from "@/lib/studio/stages";
 import { copyBlockers, packageReadiness } from "@/lib/studio/solo-quality";
 import { SlideLayerPreview } from "./slide-layers";
 import "./solo-review.css";
+import { researchEvidence } from "@/lib/studio/research-link";
 
 /** Two explicit human decisions, each pinned to the version displayed. */
 export function SoloReview({
@@ -53,6 +54,8 @@ export function SoloReview({
   const workflow = currentWorkflow(content, state);
   const readiness = packageReadiness(content, state);
   const copyIssues = copyBlockers(content);
+  let webSources: ReturnType<typeof researchEvidence> = [], webSourceError = "";
+  try {webSources=researchEvidence(state,actor,content.channel,content.researchJobIds);}catch(error){webSourceError=error instanceof Error ? error.message : "Research sources need attention.";copyIssues.push(webSourceError);}
   const scope = {
     channel: content.channel,
     contentId: content.id,
@@ -105,6 +108,7 @@ export function SoloReview({
   if (!policy) return null;
   return (
     <div className="s-solo-review">
+      {!!content.researchJobIds?.length && <details className="s-review-policy"><summary>Web sources used in this draft ({webSources.reduce((sum,source)=>sum+source.citations.length,0)})</summary>{webSourceError&&<p role="alert">{webSourceError}</p>}{webSources.map(source=><section key={source.jobId}><p>{source.retrievedAt ? `Retrieved ${new Date(source.retrievedAt).toLocaleString()}` : `Requested ${new Date(source.requestedAt).toLocaleString()}`}</p>{source.citations.map((citation,i)=><article key={i}><a href={citation.url} target="_blank" rel="noopener noreferrer">{citation.title||citation.url}</a><p>{citation.citedText}</p></article>)}<p>{source.notice}</p></section>)}</details>}
       <div className="s-solo-review-progress" aria-label="Review progress">
         <span className={!accepted ? "s-solo-current" : "s-solo-done"}>
           1. Copy {accepted ? "approved" : "review"}
@@ -452,6 +456,7 @@ export function SoloReview({
               !allowed ||
               !workflow ||
               !readiness.ready ||
+              Boolean(webSourceError) ||
               !reviewedPackage ||
               (requiresNote && (!founder || !authorizeNote))
             }

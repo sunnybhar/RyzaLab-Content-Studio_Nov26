@@ -1069,6 +1069,7 @@ export function applyCommand(
           "Approval requires immutable uploaded Studio media, not mutable external URLs.",
         );
       const twoStep = soloPolicy(s);
+      researchEvidence(s,actor,d.channel,d.researchJobIds);
       const readiness = twoStep ? packageReadiness(d, s) : undefined;
       if (twoStep) {
         if (
@@ -1146,6 +1147,7 @@ export function applyCommand(
           referenceSnapshots: s.references
             .filter((r) => workflow.references.includes(r.id))
             .map((r) => structuredClone(r)),
+          researchSnapshots: (d.researchJobIds || []).map(jobId=>({jobId,raw:s.jobs.find(j=>j.id===jobId)!.result!})),
         },
       };
       s.packages.unshift({
@@ -1668,6 +1670,7 @@ export function applyCommand(
           "Copy or policy changed. Review the current version before accepting it.",
         );
       const blockers = copyBlockers(d);
+      researchEvidence(s,actor,d.channel,d.researchJobIds);
       if (blockers.length) bad(blockers.join(" "));
       const identity = copyIdentity(d, s);
       if (!currentCopyAcceptance(d, s)) {
