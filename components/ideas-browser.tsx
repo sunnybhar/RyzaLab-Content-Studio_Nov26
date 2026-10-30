@@ -19,6 +19,7 @@ export function IdeasBrowser({
   contents,
   schedules,
   actorEmail,
+  automaticWriting = false,
   canReview,
   canUse,
   canReuse,
@@ -35,6 +36,7 @@ export function IdeasBrowser({
   contents: Content[];
   schedules: Schedule[];
   actorEmail: string;
+  automaticWriting?: boolean;
   canReview: (idea: Idea) => boolean;
   canUse: (idea: Idea, account: string) => boolean;
   canReuse: (idea: Idea) => boolean;
@@ -286,7 +288,7 @@ export function IdeasBrowser({
                   >
                     {linkedDraft
                       ? "Open linked draft"
-                      : "Use idea & open draft"}
+                      : automaticWriting ? "Use idea & prepare draft with AI" : "Use idea & open draft"}
                   </button>
                 )}
                 {selected.state === "pending" && (

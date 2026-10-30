@@ -1,3 +1,4 @@
+import { orchestrateInitialWriting } from "@/lib/studio/writing-orchestration";
 import { orchestrateReviews } from "@/lib/studio/review-orchestration";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
         .single();
     if (!data) throw new StudioError(503, "Initialize Studio first.");
     const previous = data.state as StudioState,
-      next = orchestrateReviews(maintenance(previous));
+      next = orchestrateReviews(orchestrateInitialWriting(maintenance(previous)));
     await persist(db, previous, next);
     const docs = await syncOneGoogleDoc(db, next);
     return NextResponse.json({

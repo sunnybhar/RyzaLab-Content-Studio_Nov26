@@ -257,6 +257,8 @@ export interface Content {
   stages?: StageRecord[];
   copyAcceptances?: CopyAcceptance[];
   agentReview?: AgentReview;
+  initialWriting?: {id:string; actor:string; at:string; policyVersion:string; identity:string; revision:number};
+  automaticWriting?: {intentId:string; jobId?:string; error?:string; at:string};
   automaticReview?: { acceptanceId: string; jobId?: string; error?: string; at: string };
   generatedBy?: {
     provider: Connection["provider"];

@@ -87,7 +87,7 @@ try {
     await page.evaluate(
       () => window.getState().settings.reviewPolicy.autoDraft,
     ),
-    false,
+    true,
   );
   await page
     .getByRole("button", { name: "Edit settings", exact: true })

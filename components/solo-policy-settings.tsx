@@ -31,6 +31,9 @@ export function SoloPolicySettings({
   const [independent, setIndependent] = useState(
     policy?.requireIndependentReview ?? false,
   );
+  const [automaticWriting, setAutomaticWriting] = useState(
+    policy?.autoDraft ?? true,
+  );
   const [automaticReview, setAutomaticReview] = useState(
     policy?.autoReview ?? true,
   );
@@ -72,7 +75,7 @@ export function SoloPolicySettings({
         packageCap: perPackage,
         monthlyCap: perMonth,
         requireIndependentReview: independent,
-        autoDraft: policy?.autoDraft ?? false,
+        autoDraft: automaticWriting,
         autoReview: automaticReview,
         expectedRuleVersion: editRules,
       });
@@ -106,6 +109,7 @@ export function SoloPolicySettings({
               );
               setIndependent(policy?.requireIndependentReview ?? false);
               setAutomaticReview(policy?.autoReview ?? true);
+              setAutomaticWriting(policy?.autoDraft ?? true);
               setEditVersion(policy?.version);
               setEditRules(state.settings.protectedVersion);
               setEditMonthlyCap(state.settings.monthlyCap);
@@ -176,6 +180,19 @@ export function SoloPolicySettings({
               />
             </label>
           </div>
+          <label>
+            <input
+              type="checkbox"
+              checked={automaticWriting}
+              onChange={(event) => setAutomaticWriting(event.target.checked)}
+            />{" "}
+            Write the first draft automatically when I select an idea
+          </label>
+          <p>
+            Only newly selected ideas start automatic writing, within an
+            authorized package allowance. Existing drafts stay unchanged. Image,
+            audio and video generation remain separate.
+          </p>
           <label>
             <input
               type="checkbox"

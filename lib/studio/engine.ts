@@ -723,6 +723,7 @@ export function applyCommand(
       };
       s.contents.unshift(d);
       const policy = soloPolicy(s);
+      if (policy?.autoDraft) d.initialWriting = {id:id(), actor:actor.email, at:now, policyVersion:policy.version, identity:copyIdentity(d,s), revision:d.revision};
       if (
         policy &&
         can(s, actor, "package.approve", {
@@ -882,6 +883,8 @@ export function applyCommand(
         copyAcceptances: [],
         agentReview: undefined,
         automaticReview: undefined,
+        initialWriting: undefined,
+        automaticWriting: undefined,
         generatedBy: undefined,
         preparationId: undefined,
         text: r.text,

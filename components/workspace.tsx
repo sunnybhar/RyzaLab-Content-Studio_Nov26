@@ -2022,6 +2022,7 @@ export default function Workspace() {
                   contents={state.contents}
                   schedules={state.schedules}
                   actorEmail={actor.email}
+                  automaticWriting={state.settings.reviewPolicy?.autoDraft === true && mode === "live"}
                   busy={busy}
                   error={localError}
                   onOpen={() => setLocalError("")}

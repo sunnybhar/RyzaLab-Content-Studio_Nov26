@@ -1,3 +1,4 @@
+import { orchestrateInitialWriting } from "@/lib/studio/writing-orchestration";
 import { orchestrateReviews } from "@/lib/studio/review-orchestration";
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -108,6 +109,7 @@ export async function POST(req: NextRequest) {
           ? await loadChannelPreset(command.channel)
           : undefined,
     });
+    if (command.type === "idea.use") next = orchestrateInitialWriting(next);
     if (command.type === "content.acceptCopy") next = orchestrateReviews(next);
     if (Buffer.byteLength(JSON.stringify(next)) > 24000000)
       throw new StudioError(

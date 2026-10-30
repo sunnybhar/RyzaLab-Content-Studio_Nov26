@@ -85,6 +85,21 @@ export function DraftAssistant({
       aria-label="Draft writing assistance"
     >
       <h2>Writing assistance</h2>
+      {content.initialWriting?.policyVersion === policy?.version &&
+        policy?.autoDraft &&
+        content.automaticWriting?.error && (
+          <p role="status">{content.automaticWriting.error}</p>
+        )}
+      {content.initialWriting &&
+        content.initialWriting.policyVersion === policy?.version &&
+        policy.autoDraft &&
+        !content.automaticWriting &&
+        !content.text.trim() && (
+          <p role="status">
+            First writing is waiting for the configured live worker. Demo does
+            not run providers.
+          </p>
+        )}
       <p>
         Create or revise this saved draft with the configured writing model.
         Results and questions appear here.
