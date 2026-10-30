@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Actor, Command, Content, StudioState } from "@/lib/studio/types";
+import { ResearchPanel } from "./research-panel";
 import { preparationFor } from "@/lib/studio/preparation-budget";
 
 const cost = (cents: number) => `$${(cents / 100).toFixed(2)}`;
@@ -22,6 +23,7 @@ export function DraftAssistant({
   busy,
   run,
   refresh,
+  demo = false,
 }: {
   content: Content;
   state: StudioState;
@@ -31,8 +33,10 @@ export function DraftAssistant({
   busy: boolean;
   run: (command: Command, message?: string) => Promise<boolean>;
   refresh: () => Promise<void>;
+  demo?: boolean;
 }) {
   const [notes, setNotes] = useState("");
+  const [researchIds,setResearchIds] = useState<string[]>(content.researchJobIds || state.ideas.find(i=>i.id===content.ideaId)?.researchJobIds || []);
   const [resolution, setResolution] = useState<Record<string, string>>({});
   const pendingKey = useRef<{ signature: string; key: string } | null>(null);
   const jobs = state.jobs.filter(
@@ -70,7 +74,7 @@ export function DraftAssistant({
   }, [active?.id, active?.state, refresh]);
 
   async function generate() {
-    const signature = JSON.stringify([content.id, content.revision, notes]);
+    const signature = JSON.stringify([content.id, content.revision, notes, researchIds]);
     if (!pendingKey.current || pendingKey.current.signature !== signature)
       pendingKey.current = { signature, key: crypto.randomUUID() };
     const ok = await run(
@@ -80,6 +84,7 @@ export function DraftAssistant({
         kind: "text",
         expectedRevision: content.revision,
         notes,
+        researchJobIds: researchIds,
         idempotencyKey: pendingKey.current.key,
       },
       "Writing request started",
@@ -93,6 +98,7 @@ export function DraftAssistant({
       aria-label="Draft writing assistance"
     >
       <h3>Write with AI</h3>
+      <details className="s-version"><summary>Web research{researchIds.length ? ` · ${researchIds.length} selected` : ""}</summary><ResearchPanel state={state} actor={actor} channel={content.channel} content={content} selected={researchIds} onSelected={setResearchIds} run={run} refresh={refresh} disabled={readOnly||busy||dirty||Boolean(active)} demo={demo} /></details>
       {content.initialWriting?.policyVersion === policy?.version &&
         policy?.autoDraft &&
         content.automaticWriting?.error && (

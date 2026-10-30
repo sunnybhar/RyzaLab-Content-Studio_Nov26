@@ -52,7 +52,7 @@ export function PricingManager({
         <div>
           <h2>Verified pricing</h2>
           <p>
-            Manage conservative USD prices for writing, ideas and review. Budget
+            Manage conservative USD prices for writing, ideas, review and bounded web research. Budget
             limits remain separate.
           </p>
         </div>
@@ -119,7 +119,7 @@ export function PricingManager({
               disabled={
                 busy ||
                 disabled ||
-                !["text", "ideas", "review"].includes(rate.function)
+                !["text", "ideas", "review", "research"].includes(rate.function)
               }
               onClick={() => edit(rate)}
             >
@@ -201,6 +201,7 @@ export function PricingManager({
                   model: editing?.model || text("model"),
                   function: editing?.function || text("function"),
                   currency: "USD",
+                  ...((editing?.function || text("function")) === "research" ? {webSearchTool:"web_search_20250305",maxSearchUses:1}:{}),
                   inputCentsPerMillion: n("input") * 100,
                   outputCentsPerMillion: n("output") * 100,
                   maxInputBytes: n("bytes"),
@@ -272,7 +273,7 @@ export function PricingManager({
                 disabled={!!editing}
                 defaultValue={editing?.function || "text"}
               >
-                {["text", "ideas", "review"].map((value) => (
+                {["text", "ideas", "review", "research"].map((value) => (
                   <option key={value}>{value}</option>
                 ))}
               </select>
@@ -325,8 +326,9 @@ export function PricingManager({
                 defaultValue={editing?.maxOutputTokens || 3000}
               />
             </label>
+            <p>Research supports the Claude bounded-search adapter only (one search). For Research, a fixed reservation is required and must cover the maximum input/output tokens, retrieved-search context and server-tool charges. Verify tool support for this exact account/model. Saving records your qualification; it does not prove live search succeeded.</p>
             <label style={fieldStyle}>
-              Fixed conservative reservation (USD, optional)
+              Fixed conservative reservation (USD; required for research)
               <input
                 name="fixed"
                 type="number"

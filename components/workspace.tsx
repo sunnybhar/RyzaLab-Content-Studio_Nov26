@@ -54,6 +54,8 @@ import {
 import { ReviewCard } from "./review-card";
 import { SoloReview } from "./solo-review";
 import { DraftAssistant } from "./draft-assistant";
+import { ResearchPanel } from "./research-panel";
+import { researchEvidence } from "@/lib/studio/research-link";
 import { PostPreview } from "./post-preview";
 import { HighlightedTextarea } from "./highlighted-textarea";
 import { ReviewContentEditor } from "./review-content-editor";
@@ -450,6 +452,7 @@ export default function Workspace() {
   const [approvalTarget, setApprovalTarget] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [libraryTab, setLibraryTab] = useState("Content");
+  const [ideaResearchIds, setIdeaResearchIds] = useState<string[]>([]);
   const [ideaTab, setIdeaTab] = useState("All ideas");
   const [calendarView, setCalendarView] = useState("Month");
   const [reviewEditing, setReviewEditing] = useState<string | null>(null);
@@ -1564,10 +1567,10 @@ export default function Workspace() {
                               channel === "All channels" ? "LinkedIn" : channel,
                           },
                           {
-                            name: "research",
-                            label: "Use web research",
-                            type: "checkbox",
-                            hint: "Research is optional and only runs with your explicit choice.",
+                            name: "researchJobId", label: "Web research evidence", value: ideaResearchIds[0] || "",
+                            options: ["",...state.jobs.filter(job=>job.kind==="research"&&job.channel===(channel==="All channels"?"LinkedIn":channel)&&job.createdBy===actor.email).filter(job=>{try {researchEvidence(state,actor,job.channel,[job.id]);return true;}catch{return false;}}).slice(0,10).map(job=>job.id)],
+                            optionLabels: Object.fromEntries([["","Saved references only"],...state.jobs.filter(job=>job.kind==="research").map(job=>[job.id,job.prompt.slice(0,100)])]),
+                            hint: "Run research in the Ideas screen first, then select cited evidence here. Generating ideas does not start another search.",
                           },
                           {
                             ...field(
@@ -1596,7 +1599,8 @@ export default function Workspace() {
                           topic: val(d, "topic"),
                           audience: val(d, "audience"),
                           quantity: Number(val(d, "quantity")),
-                          research: d.get("research") === "on",
+                          research: Boolean(val(d,"researchJobId")),
+                          researchJobIds: val(d,"researchJobId") ? [val(d,"researchJobId")] : [],
                           sourceText: val(d, "sourceText"),
                           idempotencyKey: key(),
                         }),
@@ -1895,6 +1899,7 @@ export default function Workspace() {
           )}
           {page === "Ideas" && (
             <>
+              <details className="s-version"><summary>Web research{ideaResearchIds.length ? ` · ${ideaResearchIds.length} selected` : ""}</summary><ResearchPanel state={state} actor={actor} channel={channel === "All channels" ? "LinkedIn" : channel} selected={ideaResearchIds} onSelected={ids=>setIdeaResearchIds(ids.slice(-1))} run={execute} refresh={()=>refresh(true)} disabled={readOnly||busy} demo={mode==="demo"} /></details>
               <IdeaGenerationStatus
                 state={state}
                 actor={actor}
@@ -5009,7 +5014,7 @@ function Editor({
           {tab === "Write" && (
             <div className="s-writing">
               {c.newsletterSource && <details className="s-version"><summary>Newsletter source · {c.newsletterSource.channel} · {c.newsletterSource.title}</summary><p>Saved source snapshot{c.newsletterSource.revision ? ` · revision ${c.newsletterSource.revision}` : ""}. Use this as reference for manual writing or AI adaptation.</p><div style={{whiteSpace:"pre-wrap"}}>{c.newsletterSource.text}</div><p>{c.newsletterSource.metadata}</p></details>}
-              {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} />}
+              {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} demo={mode === "demo"} />}
               <HighlightedTextarea
                 aria-label="Content text"
                 aria-describedby={requirements.length ? "draft-needs-input" : undefined}
