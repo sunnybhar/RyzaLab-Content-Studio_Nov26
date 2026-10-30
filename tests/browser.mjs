@@ -771,9 +771,13 @@ async function main() {
         "A perspective from the team. [source: verify this claim before publishing]",
       );
     await saveDraft();
-    await page
-      .getByRole("button", { name: "Submit for review", exact: true })
-      .click();
+    assert.equal(await page.getByRole("button", {name:"Submit for review",exact:true}).isDisabled(),true);
+    await page.getByRole("region",{name:"Needs your input"}).waitFor();
+    // Retain coverage for an unfinished review saved by an older release.
+    const historical = await state();
+    historical.contents.find(item=>item.title==="Blocked placeholder verification").state="review";
+    await page.evaluate(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{key:stateKey,value:historical});
+    await page.reload();
     await navigate("Reviews");
     const blockedReview = page
       .locator(".s-review-card")

@@ -4955,7 +4955,7 @@ function Editor({
           <button className="s-btn" onClick={() => { if (window.confirm("Discard your unsaved edits and load the current saved draft?")) loadSavedDraft(); }}>Discard unsaved edits and load latest</button>
         </div>
       )}
-      {requirements.length > 0 && <section className="s-input-required" aria-label="Needs your input"><h3>Needs your input · {requirements.length} {requirements.length === 1 ? "item" : "items"}</h3><p>Highlighted passages need verified details or a rewrite. Saving does not resolve them. Submit for review becomes available after all markers are removed and your changes are saved.</p><ul>{requirements.map((item,i)=><li key={`${item.field}:${item.start}`}><button className="s-text-button" onClick={()=>jumpToRequirement(item)}>{item.label}: {item.text}</button></li>)}</ul></section>}
+      {requirements.length > 0 && <section id="draft-needs-input" className="s-input-required" aria-label="Needs your input"><h3 aria-live="polite">Needs your input · {requirements.length} {requirements.length === 1 ? "item" : "items"}</h3><p>Highlighted passages need verified details or a rewrite. Saving does not resolve them. Submit for review becomes available after all markers are removed and your changes are saved.</p><ul>{requirements.map((item,i)=><li key={`${item.field}:${item.start}`}><button className="s-text-button" onClick={()=>jumpToRequirement(item)}>{item.label}: {item.text}</button></li>)}</ul></section>}
       {postPreview && <PostPreview text={text} account={c.account} channel={c.channel} media={media} unsaved={dirty} AssetMedia={AssetMedia} onClose={() => setPostPreview(false)} />}
       <StageTracker
         content={c}
@@ -5010,6 +5010,8 @@ function Editor({
               {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} />}
               <HighlightedTextarea
                 aria-label="Content text"
+                aria-describedby={requirements.length ? "draft-needs-input" : undefined}
+                aria-invalid={requirements.some(item => item.field === "text")}
                 disabled={readOnly}
                 placeholder="Start with something worth saying…"
                 value={text}
