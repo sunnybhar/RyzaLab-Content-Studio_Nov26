@@ -1,6 +1,6 @@
 # RyzaLab Training — Library — References, Templates, History and Trash
 
-Version: 2026-10-28 | Audience: All users within read scope; editing/approval actions require permissions
+Version: 2026-10-30 | Audience: All users within read scope; editing/approval actions require permissions
 
 ## Objective
 Find retained material and export the right version without confusing working files with release evidence.
@@ -9,7 +9,7 @@ Find retained material and export the right version without confusing working fi
 Know whether you need the working draft or an approved package.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
 1. Open Library. Use Content for saved items and choose a title to open the working draft.

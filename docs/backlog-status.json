@@ -106,5 +106,15 @@
     "status": "Done",
     "dependency": "",
     "notes": "Same-card editing and Updated timestamp; draft ID/version preserved, active/review immutable inputs retained pending activation. No archive feature. 130 domain tests and focused review pass; final browser verification tracked in release notes."
+  },
+  "BL-051": {
+    "status": "Built\u2014needs live validation",
+    "dependency": "Live provider acceptance remains.",
+    "notes": "Strict selected-piece output, incomplete candidate retention and explicit apply implemented; live provider acceptance remains."
+  },
+  "BL-054": {
+    "status": "Done",
+    "dependency": "",
+    "notes": "Tall sidebar message moved to compact home header; browser verified."
   }
 }

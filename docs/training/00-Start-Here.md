@@ -1,6 +1,6 @@
 # RyzaLab Training — Start Here — Complete User Journey
 
-Version: 2026-10-28 | Audience: All users
+Version: 2026-10-30 | Audience: All users
 
 ## Objective
 Understand the complete content journey and distinguish preview from live work.
@@ -9,19 +9,18 @@ Understand the complete content journey and distinguish preview from live work.
 Open the deployed Studio in Chrome. Use a desktop for your first exercise.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
-1. Check the mode label. Preview says “Demo mode · saved on this device”. DE is the preview identity, not your personal account. Preview data is local to this browser; it is not shared team storage.
-2. Open either avatar, then Account & appearance. Choose your theme and home layout. Use Appearance in the top bar to return to these controls.
-3. Open Workflow settings. Choose the channel and review its instructions, brand references, guardrails and output requirements. Import channel packages as drafts, then submit and activate only after review.
-4. Open Ideas. Add an idea manually or choose Generate with agent. Preview generates labelled local samples. Review the idea, explicitly approve it, then create a draft.
-5. Open Create and select the draft. Write or edit the content, maintain separate text/media, and Save draft. Build slides or scenes only when required by the intended format.
-6. Complete Intake, Evidence, Creation, Independent review, Visual review and Release check for the current version. Submit for review and explicitly approve the complete revision in Reviews.
-7. Record Publication handoff for the exact approved package. Open Calendar and plan its manual publication. For drafting, editing or workflow reminders, use the separate planning actions.
-8. A person publishes outside Studio. Return to Calendar → Agenda and Confirm published with the live URL and correct approved revision.
-9. Open Analytics to inspect current inventory and recorded activity. Keep social reach and engagement separate: these are not connected.
-10. Open Training & QA to download the modules, QA workbook and backlog. Use the QA workbook during acceptance testing. Record failures and actual results; do not mark a feature passed because its button is visible.
+1. Open /studio for live work; /preview stores local demo data and never runs providers.
+2. In AI & budgets, an existing founder explicitly enables Review and preparation. For an administrator-only workspace, follow docs/FOUNDER-SETUP.md; the deployment-designated owner must explicitly claim founder authority first.
+3. Choose per-package/monthly allowances, writing/review connections and verified pricing. Saving credentials or listing a model does not qualify its capabilities or price.
+4. Select an idea to open its linked draft. If automatic first writing is enabled and authorized, copy is prepared within the package allowance. Missing setup stays actionable; older drafts are not auto-generated.
+5. Edit and save the selected draft. Incomplete responses and factual questions remain retained candidates; never pay for an automatic retry of an uncertain result.
+6. Submit for review. In the adopted flow, first approve the exact copy with evidence, then inspect the real textual review and all assets and approve the final package.
+7. Choose date/time in the immediate planner or plan later from Calendar. The exact approved package/platform/account stays selected; no time is invented.
+8. A person publishes outside Studio and separately confirms the live URL. Analytics does not include unconnected social reach or engagement.
+9. Use the training QA workbook for actual acceptance. All manual cases start Not run; local automated checks are not live acceptance.
 
 ## Expected result
 You can explain each stage and complete one sample post without claiming a real provider call or real publication occurred.

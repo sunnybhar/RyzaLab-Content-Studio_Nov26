@@ -1,6 +1,6 @@
 # RyzaLab Training — Analytics — Content, Publication and Activity
 
-Version: 2026-10-28 | Audience: All users within their permitted read scope
+Version: 2026-10-30 | Audience: All users within their permitted read scope
 
 ## Objective
 Interpret real Studio metrics without confusing records with social engagement.
@@ -9,7 +9,7 @@ Interpret real Studio metrics without confusing records with social engagement.
 Create content and test planning/review flows first to generate meaningful records.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
 1. Open Analytics in the sidebar. Check the channel filter; metrics reflect records visible to your profile.

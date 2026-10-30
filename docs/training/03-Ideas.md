@@ -1,6 +1,6 @@
 # RyzaLab Training — Ideas — Manual and Agent-Assisted
 
-Version: 2026-10-28 | Audience: Creator, editor, manager, founder or permitted administrator
+Version: 2026-10-30 | Audience: Creator, editor, manager, founder or permitted administrator
 
 ## Objective
 Capture ideas, request candidate ideas and require human selection before drafting.
@@ -9,17 +9,15 @@ Capture ideas, request candidate ideas and require human selection before drafti
 Have an active channel workflow. Live generation additionally needs an Ideas provider binding, validated pricing, budgets and a worker.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
-1. Open Ideas and select the relevant channel. Review existing ideas to avoid duplicates.
-2. For your own idea, click Add manually, enter its title, angle and channel, then save. The idea begins pending.
-3. For agent-assisted candidates, click Generate with agent. Enter Topic / Brief, Audience, Quantity, Channel and source notes or URLs.
-4. In preview, submit Preview sample ideas. These are local examples, explicitly labelled, and do not use a paid API.
-5. In live mode, review the configured model and budget settings first. Submit only when you authorize the request. Paid jobs can wait for cost confirmation. Inline research during idea generation remains unavailable. A separate Claude Research adapter is implemented but requires account/model qualification and a fixed search-inclusive rate card; supplied references are not automatically browsed.
-6. Idea generation status now shows waiting confirmation, queue and running states. If a completed response was not imported, use Import saved ideas — no AI call to recover it once without a new provider charge. Read each returned card. Check specificity, supporting evidence needed, channel fit and repetition. Agent results remain pending and do not approve themselves.
-7. Explicitly approve, reject or revise the idea. Use Create draft on an approved idea to start a separate content item.
-8. For recurring idea work, use the recurrence controls where available. A recurring reminder is not standing permission to bypass budget confirmation or run a paid job.
+1. Choose Tiles or List; summary rows show title, platform, status and created/published dates.
+2. Click an idea to open its complete brief, evidence and details in a popup.
+3. Use idea and open draft approves/selects it within your permissions and opens one linked draft. Reopening the idea does not duplicate it.
+4. With founder-enabled automatic first writing, a new selection can prepare its first copy within the scoped package allowance. Provider/pricing gaps preserve the saved draft and show a reason.
+5. Generate ideas only with configured provider access and verified rates; inspect progress and retained results. Recover existing saved idea results without another AI call where available.
+6. Demo samples are labelled. References do not imply web browsing; actual research/media integrations require separate qualification.
 
 ## Expected result
 Ideas keep their origin and pending status until a human decides; approved ideas can seed drafts.

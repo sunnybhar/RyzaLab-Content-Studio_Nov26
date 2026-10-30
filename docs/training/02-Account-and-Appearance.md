@@ -1,6 +1,6 @@
 # RyzaLab Training — Account and Appearance
 
-Version: 2026-10-28 | Audience: All users
+Version: 2026-10-30 | Audience: All users
 
 ## Objective
 Inspect your identity and choose an accessible theme, layout and navigation style.
@@ -9,7 +9,7 @@ Inspect your identity and choose an accessible theme, layout and navigation styl
 Your workspace has loaded.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
 1. Click the initials avatar at the top right or the user control at the bottom of the sidebar. Both open Account & appearance.

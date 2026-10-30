@@ -1,6 +1,6 @@
 # RyzaLab Training — AI and Budgets — Providers, Models and Cost Controls
 
-Version: 2026-10-28 | Audience: Founder and administrators granted AI-settings access
+Version: 2026-10-30 | Audience: Founder and administrators granted AI-settings access
 
 ## Objective
 Configure providers by function and control paid requests and retries.
@@ -9,18 +9,17 @@ Configure providers by function and control paid requests and retries.
 Use live credentials only in the secure settings form or server environment; never in documents.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
-1. Open AI & budgets. Choose the function: research, ideas, text, review, image, video or audio.
-2. Add the supported provider, exact accessible model ID and relevant API key. Different functions can have different connections. A text-only model does not become an image/video generator because it has a key.
-3. In preview, keys are discarded and validation is unavailable. In live mode, validate supported model access and qualify sample quality before activation.
-4. Configure conservative request allowances and qualified pricing. Missing/unqualified prices keep paid execution blocked.
-5. Set monthly/per-request and relevant function/user/channel caps. Choose confirmation thresholds only after sample cost evaluation.
-6. Use Edit allowance to change a saved connection budget without creating another connection. Disconnect clears its saved key and retains history; Delete is for unused connections only. Resolve active jobs first. Activate the intended connection mapping in the channel workflow. Creating a connection alone does not switch an active workflow.
-7. Review queued jobs and reservations. Confirm an awaiting-confirmation job only after checking scope and estimated cost.
-8. If a dispatched outcome is unknown, reconcile it before retrying. Do not automatically rerun a potentially charged request.
-9. Compare actual reconciled costs with reservations. Hosting/storage are separate from AI budget caps.
+1. Function setup offers Claude/Anthropic, OpenAI and Gemini/Google, with exact account model discovery or manual API model identifier. Listing is access only, not capability qualification.
+2. Edit an existing connection in place. Leave its key blank to retain encrypted credentials; a changed provider needs a fresh key and model-access check. Active/unknown work protects connection edits.
+3. Load verified pricing, record provider/model/function, USD input/output prices, limits, HTTPS source, date and qualification evidence. Research and media adapters require separate evaluation.
+4. Founder-only Review and preparation explicitly enables two-step policy and optional first writing/automatic textual review. Suggested initial caps are $0.50/package and $5/month, not unlimited spending.
+5. Routine canonical writing/review can reserve within a current scoped allowance. Global, request, connection and total-package caps remain enforced across revisions and retries.
+6. Changed/removed prices block affected queued snapshots before dispatch. Stale forms require reload. Unknown outcomes retain reservations until reconciliation.
+7. Activity keeps active/uncertain work visible, recent ten completed records concise and older history searchable. No queued item is a finished asset.
+8. Keys belong only in Studio/provider setup, never chat, QA evidence or exported training. Demo saves metadata only and cannot qualify paid work.
 
 ## Expected result
 Paid generation stays blocked until provider, pricing, budget and execution requirements are met.

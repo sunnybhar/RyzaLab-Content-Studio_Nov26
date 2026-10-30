@@ -1,6 +1,6 @@
 # RyzaLab Training — Notifications — Inbox and Reminders
 
-Version: 2026-10-28 | Audience: Each member for their own inbox
+Version: 2026-10-30 | Audience: Each member for their own inbox
 
 ## Objective
 Read workflow reminders and understand delivery prerequisites.
@@ -9,7 +9,7 @@ Read workflow reminders and understand delivery prerequisites.
 Have an event that creates a notice. Due reminders require maintenance to run.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
 1. Click the bell or Notifications to open your inbox.

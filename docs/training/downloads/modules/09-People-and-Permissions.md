@@ -1,6 +1,6 @@
 # RyzaLab Training — People and Access — Profiles and Scoped Grants
 
-Version: 2026-10-28 | Audience: Administrator with membership permission; founder for founder policy
+Version: 2026-10-30 | Audience: Administrator with membership permission; founder for founder policy
 
 ## Objective
 Assign membership by email while supporting a solo founder or a larger team.
@@ -9,17 +9,18 @@ Assign membership by email while supporting a solo founder or a larger team.
 Live authentication and database must be configured for actual teammate access.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
-1. Open People & access. Review existing members, profiles and any scoped grants.
-2. Choose the add-member control. Enter the teammate email exactly. Assign only the profiles needed: founder, administrator, manager, editor, creator or viewer.
-3. When supported by the live member form, use an initial password to create a sign-in account without an invitation email. Share it through a separate secure channel; never put it in the QA workbook.
-4. One person can have multiple profiles. Explicitly assigning Founder grants founder authority and must be deliberate and auditable.
-5. Use scoped grants only if needed. The current advanced form accepts JSON. Channel/content/account/function restrictions must match within one grant; ask the administrator to validate complex grants.
-6. Test the member in a separate browser profile. Verify assigned drafts, read visibility and allowed actions before granting broader access.
-7. Edit profiles or revoke membership as responsibilities change. Confirm the account loses access after revocation.
-8. In preview, member changes are local demonstrations; they do not invite a real person or create a Supabase account.
+1. Only an existing Founder may assign/remove/revoke Founder authority. Administrators cannot self-promote. The one-time server-designated first-founder claim is separate from policy/budget adoption; see docs/FOUNDER-SETUP.md.
+2. Open People & access. Review existing members, profiles and any scoped grants.
+3. Choose the add-member control. Enter the teammate email exactly. Assign only the profiles needed: founder, administrator, manager, editor, creator or viewer.
+4. When supported by the live member form, use an initial password to create a sign-in account without an invitation email. Share it through a separate secure channel; never put it in the QA workbook.
+5. One person can have multiple profiles. Explicitly assigning Founder grants founder authority and must be deliberate and auditable.
+6. Use scoped grants only if needed. The current advanced form accepts JSON. Channel/content/account/function restrictions must match within one grant; ask the administrator to validate complex grants.
+7. Test the member in a separate browser profile. Verify assigned drafts, read visibility and allowed actions before granting broader access.
+8. Edit profiles or revoke membership as responsibilities change. Confirm the account loses access after revocation.
+9. In preview, member changes are local demonstrations; they do not invite a real person or create a Supabase account.
 
 ## Expected result
 Access is enforced by server/database rules and scoped grants, not just hidden UI controls.
