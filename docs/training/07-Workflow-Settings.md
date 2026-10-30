@@ -9,7 +9,7 @@ Maintain channel-specific agent behavior in one reviewed workflow.
 Select the target channel and gather approved brand/reference material.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
 1. Choose a highlighted channel tab across the top. Keep workflows collapsed until needed; instruction reading opens separately. Setup is reused for later drafts and does not require reactivation for every post.

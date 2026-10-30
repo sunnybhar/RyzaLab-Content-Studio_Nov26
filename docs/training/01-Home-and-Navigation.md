@@ -9,7 +9,7 @@ Find work quickly using the dashboard, channel filter, layouts and sidebar.
 Have access to preview or a live workspace.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
 1. Open Home. Read the current mode before entering important work.

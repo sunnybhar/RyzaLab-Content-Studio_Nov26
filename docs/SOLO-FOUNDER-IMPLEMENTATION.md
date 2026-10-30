@@ -12,7 +12,7 @@ User authorized the approved design on October29,2026. Two human decisions; manu
 - [x] Activity recent ten plus active work and older history popup
 - [x] Calendar ready tray and read-only approved text/media preview
 - [x] Horizontal channel navigation, selected states and compact home message
-- [x] Server-authorized first-founder claim and separate policy setup
+- [x] Administrator/founder People role administration and direct own-founder setup; separate policy adoption
 - [x] Automatic first writing from selected idea within scoped allowance
 - [x] Immediate date/time planner after final package approval and duplicate/permission domain tests (integrated browser verified; see WORK-IN-PROGRESS)
 - [x] Final integrated permission/budget/worker and browser release checks (no model-specific independent review clearance claimed)

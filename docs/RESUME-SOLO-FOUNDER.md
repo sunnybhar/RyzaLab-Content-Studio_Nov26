@@ -27,7 +27,7 @@ Current working branch: `studio-rebuild`. Read the latest `docs/WORK-IN-PROGRESS
 - Versioned qualified-rate registry UI/API, source/date/evidence, inherited environment rates retained at first adoption, snapshot comparison at dispatch.
 - Recent-ten activity plus active/unknown jobs and older searchable popup; horizontal channel tabs/selected states; compact home brand message.
 - Calendar ready-to-plan tray and read-only approved snapshots with authenticated asset rendering; existing explicit schedule controls and manual publication confirmation.
-- Founder-only role changes and last-founder protection. New first-founder claim requires server-only STUDIO_FOUNDER_EMAIL matching a verified signed-in existing administrator, no prior founder/setup record, explicit acknowledgment, CAS and audit. It never changes a role on load. See docs/FOUNDER-SETUP.md.
+- User changed role administration policy: both administrators and founders may manage all people and assign any role, including founder to themselves or others. No server email setting or extra API key is required. People uses role checkboxes plus a direct own-founder confirmation. Keep at least one active administrator-or-founder and audit changes. This supersedes older founder-only/bootstrap guidance; see docs/FOUNDER-SETUP.md.
 - Founder policy settings now wired in AI & budgets. Explicit adoption only; current policy/rules/budget captured on edit; active/unknown jobs block policy change on server. Automatic review option is visible. Automatic first writing is now implemented as an explicit founder option for new idea selections; existing drafts and saved opt-outs stay unchanged.
 
 ## Latest validation

@@ -9,7 +9,7 @@ Inspect recorded failures and dependencies without mistaking a reachable app for
 Open a live administrator workspace for real health checks; preview uses local fixtures.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
 1. Open Operations using its sidebar button. In preview no external health request is made.

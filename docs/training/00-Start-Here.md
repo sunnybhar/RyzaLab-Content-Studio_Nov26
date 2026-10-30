@@ -9,11 +9,11 @@ Understand the complete content journey and distinguish preview from live work.
 Open the deployed Studio in Chrome. Use a desktop for your first exercise.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
 1. Open /studio for live work; /preview stores local demo data and never runs providers.
-2. In AI & budgets, an existing founder explicitly enables Review and preparation. For an administrator-only workspace, follow docs/FOUNDER-SETUP.md; the deployment-designated owner must explicitly claim founder authority first.
+2. Administrators and founders manage each member’s roles in People & access. An administrator can use Set up founder access for their own account or Edit access to assign any role; no extra email setting or API key is required. A founder then explicitly enables Review and preparation in AI & budgets.
 3. Choose per-package/monthly allowances, writing/review connections and verified pricing. Saving credentials or listing a model does not qualify its capabilities or price.
 4. Select an idea to open its linked draft. If automatic first writing is enabled and authorized, copy is prepared within the package allowance. Missing setup stays actionable; older drafts are not auto-generated.
 5. Edit and save the selected draft. Incomplete responses and factual questions remain retained candidates; never pay for an automatic retry of an uncertain result.

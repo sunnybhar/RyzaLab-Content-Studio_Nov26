@@ -9,7 +9,7 @@ Configure providers by function and control paid requests and retries.
 Use live credentials only in the secure settings form or server environment; never in documents.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
 1. Function setup offers Claude/Anthropic, OpenAI and Gemini/Google, with exact account model discovery or manual API model identifier. Listing is access only, not capability qualification.

@@ -7,7 +7,7 @@
     "prereq": "Open the deployed Studio in Chrome. Use a desktop for your first exercise.",
     "steps": [
       "Open /studio for live work; /preview stores local demo data and never runs providers.",
-      "In AI & budgets, an existing founder explicitly enables Review and preparation. For an administrator-only workspace, follow docs/FOUNDER-SETUP.md; the deployment-designated owner must explicitly claim founder authority first.",
+      "Administrators and founders manage each member\u2019s roles in People & access. An administrator can use Set up founder access for their own account or Edit access to assign any role; no extra email setting or API key is required. A founder then explicitly enables Review and preparation in AI & budgets.",
       "Choose per-package/monthly allowances, writing/review connections and verified pricing. Saving credentials or listing a model does not qualify its capabilities or price.",
       "Select an idea to open its linked draft. If automatic first writing is enabled and authorized, copy is prepared within the package allowance. Missing setup stays actionable; older drafts are not auto-generated.",
       "Edit and save the selected draft. Incomplete responses and factual questions remain retained candidates; never pay for an automatic retry of an uncertain result.",
@@ -19,7 +19,7 @@
     "expected": "You can explain each stage and complete one sample post without claiming a real provider call or real publication occurred.",
     "exercise": "Create a sample LinkedIn text post about documenting a routine. Complete its checks using honest human evidence. Stop before Confirm published unless you actually published a test item.",
     "troubleshooting": "If a control is disabled, check your profile, assignment, channel and active workflow. Do not paste API keys into training files or QA evidence.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   },
   {
     "slug": "01-Home-and-Navigation",
@@ -39,7 +39,7 @@
     "expected": "The selected layout and navigation preferences survive a refresh for the same account on that device.",
     "exercise": "Switch to Production Board, refresh, switch back, collapse the sidebar, unpin it and reopen it.",
     "troubleshooting": "If records seem missing, check the channel filter and search. Browser preferences are local and are not account settings synchronized across devices.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   },
   {
     "slug": "02-Account-and-Appearance",
@@ -58,7 +58,7 @@
     "expected": "Both avatars open a useful account page; theme and layout choices visibly apply and persist.",
     "exercise": "Select Daylight Teal, refresh, return to Midnight Teal, and confirm your email/profile labels.",
     "troubleshooting": "Role changes are managed in People & access, not by clicking your own role label. Appearance changes do not grant permissions.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   },
   {
     "slug": "03-Ideas",
@@ -77,7 +77,7 @@
     "expected": "Ideas keep their origin and pending status until a human decides; approved ideas can seed drafts.",
     "exercise": "Generate three preview ideas about recovery routines for family caregivers, approve one and create a draft.",
     "troubleshooting": "Missing provider connection: configure the Ideas function in AI & budgets and activate the mapping. Research unavailable is an honest limitation, not a successful search. Never cite a source the agent did not actually access.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   },
   {
     "slug": "04-Create",
@@ -100,7 +100,7 @@
     "expected": "The draft saves with a new revision; text edits preserve unchanged visual review while affected factual/release checks reopen.",
     "exercise": "Create a text post, save it, export DOCX, change one paragraph and save again. Verify the previous version remains in history.",
     "troubleshooting": "Cannot approve video: complete scene media, not just scripts. Cannot save: check stale revision errors and required fields. Uploaded media must be retained Studio assets for live package approval.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   },
   {
     "slug": "05-Reviews-and-Approvals",
@@ -121,7 +121,7 @@
     "expected": "Only a human can approve; approval, handoff and publication refer to the exact package and retain their history.",
     "exercise": "Try approving before the six checks: it must fail. Complete the checks, approve, edit text and verify the old package is retained.",
     "troubleshooting": "Stale workflow/rule/revision: reread current content and repeat affected checks. Founder pricing exceptions are exact-wording/revision scoped; they do not override factual blockers.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   },
   {
     "slug": "06-Calendar",
@@ -145,7 +145,7 @@
     "expected": "Work tasks and publications are visibly distinct; tasks open the correct target and never imply permission to publish.",
     "exercise": "Schedule one editing task for tomorrow, open its draft, move it, mark done, then schedule a workflow review. Test publication separately with an approved sample.",
     "troubleshooting": "Cannot trash a draft with active tasks: complete/cancel those tasks first. Missing approved packages: complete Reviews first. A blocked publication must be explicitly rescheduled before confirmation.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   },
   {
     "slug": "07-Workflow-Settings",
@@ -167,7 +167,7 @@
     "expected": "One reviewed active version governs each channel; importing/editing does not silently activate instructions.",
     "exercise": "Import the LinkedIn preset in preview, edit a draft and submit it. Confirm the previous active version remains until explicit activation.",
     "troubleshooting": "No activation button: check role/grants. Existing checks become stale after active workflow/protected-rule changes and must be reconsidered. Do not copy the private brand library into public demo exports.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   },
   {
     "slug": "08-Library-and-Exports",
@@ -188,7 +188,7 @@
     "expected": "Exports contain the selected version; restored drafts re-enter review and protected snapshots remain retained.",
     "exercise": "Export a draft as DOCX and a slide as PNG, then restore an earlier text version and inspect its new draft status.",
     "troubleshooting": "Missing media export: ensure assets exist and are supported/accessible. Flattened PDF/PNG are not editable design layers. Active planning/publication dependencies can prevent Trash actions.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   },
   {
     "slug": "09-People-and-Permissions",
@@ -197,7 +197,7 @@
     "purpose": "Assign membership by email while supporting a solo founder or a larger team.",
     "prereq": "Live authentication and database must be configured for actual teammate access.",
     "steps": [
-      "Only an existing Founder may assign/remove/revoke Founder authority. Administrators cannot self-promote. The one-time server-designated first-founder claim is separate from policy/budget adoption; see docs/FOUNDER-SETUP.md.",
+      "Both administrators and founders can manage every person and assign any role, including founder. Use role checkboxes in Edit access, or Set up founder access for your own administrator account. No additional email setting or API key is required. Role changes are audited and keep at least one active administrator or founder.",
       "Open People & access. Review existing members, profiles and any scoped grants.",
       "Choose the add-member control. Enter the teammate email exactly. Assign only the profiles needed: founder, administrator, manager, editor, creator or viewer.",
       "When supported by the live member form, use an initial password to create a sign-in account without an invitation email. Share it through a separate secure channel; never put it in the QA workbook.",
@@ -210,7 +210,7 @@
     "expected": "Access is enforced by server/database rules and scoped grants, not just hidden UI controls.",
     "exercise": "In preview, add a sample viewer profile. For live acceptance, test a real invited viewer in a separate session and verify editing/approval are denied.",
     "troubleshooting": "Cannot log in: verify actual account provisioning and membership, not just a preview row. Founder authority and administrator access are distinct. Keep email addresses used in QA limited to test accounts.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   },
   {
     "slug": "10-AI-and-Budgets",
@@ -231,7 +231,7 @@
     "expected": "Paid generation stays blocked until provider, pricing, budget and execution requirements are met.",
     "exercise": "Preview an unconfigured generation request and verify it reports the missing setup honestly. Perform paid sample tests only in a separately authorized live test.",
     "troubleshooting": "Invalid model: use an ID your provider account actually exposes. No request allowance/rate card: configure and qualify it; do not invent prices or bypass caps. Full video/audio provider qualification remains pending.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   },
   {
     "slug": "11-Analytics",
@@ -252,7 +252,7 @@
     "expected": "Metrics change in line with actual records and filters; no social engagement is fabricated.",
     "exercise": "Create an editing task, check Open planning tasks, mark it done and verify the count decreases. Compare approval snapshots with unique approved content.",
     "troubleshooting": "Missing teammate records may be correct permission filtering. Published means a human supplied a URL, not independently verified reach. Deleted working content is excluded from current inventory.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   },
   {
     "slug": "12-Notifications",
@@ -272,7 +272,7 @@
     "expected": "Inbox notices identify events honestly and never substitute for approval or publication.",
     "exercise": "Read the sample welcome notice, then test a due task reminder in an authorized maintenance test.",
     "troubleshooting": "Preview actions do not send email. Repeated maintenance should not duplicate the same due reminder. A stale reminder can remain in history after the underlying task changes.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   },
   {
     "slug": "13-Operations",
@@ -293,6 +293,6 @@
     "expected": "Operators can identify incidents and next actions without exposing keys or replaying uncertain jobs.",
     "exercise": "In preview, inspect a blocked/unknown fixture job. In a credentialed test workspace, refresh checks and compare them with Render logs.",
     "troubleshooting": "Only administrators/founders can inspect server health. External email, Google, research pricing/model qualification, platform Auth recovery and final independent review remain separate acceptance items.",
-    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
+    "availability": "Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents."
   }
 ]

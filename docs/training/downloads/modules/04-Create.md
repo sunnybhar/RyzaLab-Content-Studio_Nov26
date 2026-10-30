@@ -9,7 +9,7 @@ Create and maintain the written draft and selected media as separate dependencie
 Start from an approved idea or Create content. Know your intended channel and format.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
 1. Newly selected ideas open one linked draft. Automatic first writing, if enabled and authorized, places complete copy directly in that draft; incomplete/conflicting output stays a reviewable candidate. Explicit Write/Revise with AI remains available within the package allowance.

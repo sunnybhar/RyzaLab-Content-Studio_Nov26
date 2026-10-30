@@ -9,10 +9,10 @@ Assign membership by email while supporting a solo founder or a larger team.
 Live authentication and database must be configured for actual teammate access.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
-1. Only an existing Founder may assign/remove/revoke Founder authority. Administrators cannot self-promote. The one-time server-designated first-founder claim is separate from policy/budget adoption; see docs/FOUNDER-SETUP.md.
+1. Both administrators and founders can manage every person and assign any role, including founder. Use role checkboxes in Edit access, or Set up founder access for your own administrator account. No additional email setting or API key is required. Role changes are audited and keep at least one active administrator or founder.
 2. Open People & access. Review existing members, profiles and any scoped grants.
 3. Choose the add-member control. Enter the teammate email exactly. Assign only the profiles needed: founder, administrator, manager, editor, creator or viewer.
 4. When supported by the live member form, use an initial password to create a sign-in account without an invitation email. Share it through a separate secure channel; never put it in the QA workbook.

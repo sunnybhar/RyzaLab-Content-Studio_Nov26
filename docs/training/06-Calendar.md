@@ -9,7 +9,7 @@ Plan work and manual publication, open the correct target, and record completion
 A draft or workflow must already exist for work tasks. Publication requires an approved package.
 
 ## Availability
-Available in preview. Live operation requires the configured /studio workspace. Release 0.3.0: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
+Available in preview. Live operation requires the configured /studio workspace. Release 0.3.2: the two-decision flow requires explicit founder adoption; any legacy stage instructions below apply only before adoption. No paid provider or live-account acceptance is implied by these documents.
 
 ## Step-by-step workflow
 1. After two-step final approval, a permitted calendar manager receives a date/time planner for the exact returned approved package. Time stays blank until chosen. The ready tray and read-only approved snapshot preview remain available if planning is postponed.

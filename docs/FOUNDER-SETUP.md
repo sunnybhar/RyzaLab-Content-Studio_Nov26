@@ -1,16 +1,18 @@
-# First-founder setup and review policy
+# People access — administrators and founders
 
-An existing Founder can assign or remove founder roles through People & access. Administrators cannot grant themselves founder authority, alter a founder's role, revoke a founder, or change protected policy. The last active founder is retained.
+Current policy (explicitly requested by the user): both **administrator** and **founder** can manage every person and assign any Studio role, including founder to themselves or others. Founder includes all Studio permissions. There is no extra API key or server email setting required for role management.
 
-For an administrator-only workspace with no founder ever recorded:
+## Give someone access
 
-1. The deployment owner sets the **server-only** `STUDIO_FOUNDER_EMAIL` to the intended founder's verified Studio sign-in email and redeploys the verified release. Do not use a `NEXT_PUBLIC_` variable. This setting is not an API key and is never taken from a browser request.
-2. That existing administrator signs in at `/studio`, opens AI & budgets, and selects **Check founder setup**. The server validates the Supabase session and confirmed email.
-3. They explicitly accept founder responsibility and select **Confirm founder role**. This records the actor ID, email, timestamp and audit event atomically. It does not change budgets, enable automation, approve content, or call a provider.
-4. They can then open **Set up two-step review**. The suggested limits are $0.50 per package and $5 monthly. Saving is a separate founder decision. Existing package/request/global limits still apply; provider connections, qualified pricing, a package authorization and the running worker are required for paid work.
+1. Open People & access.
+2. On the person's row, select Edit access.
+3. Select the desired role checkboxes. Founder, administrator, manager, editor, creator and viewer are available to both administrators and founders.
+4. Save changes. Scoped grants remain available for narrower permissions where applicable.
 
-The first-founder claim is unavailable if any founder record exists, including a revoked founder or a previous setup record. It cannot be used to replace an owner or recover a locked account; deployment-owner recovery must be handled separately. Repeated successful claims by the same authenticated principal are idempotent. Stale workspace versions reject rather than overwrite changes. No settings or privileges change on page load.
+An administrator can also select Set up founder access at the top of People & access and confirm their own founder role. This uses the same audited member update as the role editor, preserving other roles/grants. It does not change budgets, adopt a review policy, approve content or start AI work.
 
-The review policy is versioned and remains legacy until explicitly adopted. The form holds the original policy/rule/budget values while editing, rejects stale saves, and the server independently blocks policy changes while jobs are waiting, queued, running or uncertain. Automatic textual review is an explicit option. Notes still require founder authorization and the required independent report. Automatic first writing is now a separate explicit option in the same form. It applies only to newly selected ideas, requires the actual scoped allowance and provider/pricing setup, and never auto-retries failed or uncertain work.
+Managers, editors, creators and viewers cannot grant roles. An active administrator or founder must remain, and self-revocation is blocked. The API checks current verified sign-in and management authority; disabled/visible UI alone does not confer authority.
 
-Validation uses isolated domain and browser fixtures. No live founder claim, environment change, policy adoption or paid provider request was performed during implementation. The deployment owner still needs to configure and accept this setup after release.
+Protected policy actions still require the founder role. Administrators may grant that role through People & access. After doing so, Review and preparation settings become available in AI & budgets. Saving those settings remains a separate explicit action.
+
+This replaces the earlier founder-only assignment and deployment-designated first-founder setup instructions. The legacy optional claim endpoint is retained for compatibility, but is not needed or shown in the current People workflow. Existing deployments do not need another environment variable or API key for this change.
