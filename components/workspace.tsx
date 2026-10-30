@@ -4763,7 +4763,9 @@ function Editor({
     }
     if (item.field.startsWith("scene:")) setSceneIndex(Number(item.field.split(":")[1]));
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      const field=Array.from(document.querySelectorAll<HTMLInputElement|HTMLTextAreaElement>(".s-editor-layout input, .s-editor-layout textarea")).find(el=>el.getClientRects().length && el.value.includes(item.text));
+      const fields=Array.from(document.querySelectorAll<HTMLInputElement|HTMLTextAreaElement>(".s-editor-layout input, .s-editor-layout textarea")).filter(el=>el.getClientRects().length && el.value.includes(item.text));
+      const labels: Record<string,string> = {title:"Content title",text:"Content text",metadata:"Publication metadata",narration:"Narration / voiceover",captions:"Captions"};
+      const field=fields.find(el=>el.getAttribute("aria-label") === labels[item.field]) || fields[0];
       if(field){field.focus();const start=field.value.indexOf(item.text);field.setSelectionRange(start,start+item.text.length);field.scrollIntoView({behavior:"smooth",block:"center"});}
     }));
   }

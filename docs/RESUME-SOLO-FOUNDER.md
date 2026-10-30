@@ -55,3 +55,7 @@ Latest batch:170 tests and the optimized production build pass. Full browser wal
 ## October30 Create follow-up
 
 Read docs/RELEASE-0.3.3.md and latest WIP. Recovery normalizes flat metadata and prepares saved response without AI. Write controls are inside editor; direct first writing carries unresolved [Confirm:] metadata. Preview shows current unsaved text/media, not notes/raw JSON. Ideas and LinkedIn/Reddit can create linked Newsletter drafts for manual or AI writing without auto spending. User priority acceptance queue: docs/CONTENT-ACCEPTANCE-QUEUE.md, LinkedIn first then Newsletter,3AI+2manual cases, no paid test run started.
+
+## 0.3.4 reviewer follow-up
+
+See docs/RELEASE-0.3.4.md. Shared confirmation markers highlight editor text; Needs your input jumps to fields, including hidden notes. Server submit rejects unfinished markers. Reviews allow Edit content→Save and submit in the same popup with revision/history/permissions and atomic resubmission. Notes are collapsed; two human approvals remain, with optional evidence notes and explicit copy-check attestation.188 domain tests/build/full browser/focused input/review-to-calendar fixtures passed. Web research for ideas AND posts is explicitly queued only in CONTENT-ACCEPTANCE-QUEUE; no paid calls/activation.

@@ -22,7 +22,7 @@ fixture = applyCommand(
 const c = fixture.contents[0];
 c.title = "Input-required browser sample";
 c.text = "Document the routine. [Ryan to confirm: actual example]";
-c.metadata = "Internal note. [Confirm: real device]";
+c.metadata = "Internal note. [Ryan to confirm: actual example]";
 c.state = "draft";
 c.media.slides = [];
 c.media.scenes = [];
@@ -70,12 +70,35 @@ try {
   );
   await panel.getByRole("button", { name: /Post text:/ }).click();
   const text = page.getByLabel("Content text", { exact: true });
+  await page.waitForFunction(() => {
+    const el = document.querySelector<HTMLTextAreaElement>(
+      'textarea[aria-label="Content text"]',
+    );
+    return (
+      el?.value.slice(el.selectionStart, el.selectionEnd) ===
+      "[Ryan to confirm: actual example]"
+    );
+  });
   assert.equal(
     await text.evaluate((el: HTMLTextAreaElement) =>
       el.value.slice(el.selectionStart, el.selectionEnd),
     ),
     "[Ryan to confirm: actual example]",
   );
+  await panel.getByRole("button", { name: /Publication notes:/ }).click();
+  await page.waitForFunction(
+    () =>
+      document.activeElement?.getAttribute("aria-label") ===
+      "Publication metadata",
+  );
+  assert.equal(
+    await page
+      .getByLabel("Publication metadata", { exact: true })
+      .evaluate((el) => el === document.activeElement),
+    true,
+  );
+  await page.getByText("Publication notes (optional)", { exact: true }).click();
+  await panel.getByRole("button", { name: /Post text:/ }).click();
   const mark = page.locator(".s-highlighted-mirror mark").first();
   assert.equal(
     await mark.evaluate((el) => getComputedStyle(el).backgroundColor),
