@@ -59,3 +59,7 @@ Read docs/RELEASE-0.3.3.md and latest WIP. Recovery normalizes flat metadata and
 ## 0.3.4 reviewer follow-up
 
 See docs/RELEASE-0.3.4.md. Shared confirmation markers highlight editor text; Needs your input jumps to fields, including hidden notes. Server submit rejects unfinished markers. Reviews allow Edit content→Save and submit in the same popup with revision/history/permissions and atomic resubmission. Notes are collapsed; two human approvals remain, with optional evidence notes and explicit copy-check attestation.188 domain tests/build/full browser/focused input/review-to-calendar fixtures passed. Web research for ideas AND posts is explicitly queued only in CONTENT-ACCEPTANCE-QUEUE; no paid calls/activation.
+
+##0.3.5 research continuation
+
+Research connected to Ideas and Write through explicit public queries, retained citations and selected evidence IDs. Domain/API canonical prompts, budget authorization, frozen source snapshots and dispatch/settlement/application permission checks are implemented. Price editor supports bounded Claude research qualification; validated connections can become Research default.198 tests/build/full browser/research selection/automatic writing/pricing UI pass. Five local synthetic samples pass; live paid acceptance remains Not run. Read WEB-RESEARCH-SETUP.md and ACCEPTANCE-SAMPLES-0.3.5.md; current docs network blocked, so do not invent live model support/prices. No live state or provider call executed.
