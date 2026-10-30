@@ -67,6 +67,7 @@ import {
   type Idea,
   type MediaProject,
   type StudioState,
+  type Package,
   type Slide,
   type Scene,
   type FunctionKind,
@@ -759,10 +760,11 @@ export default function Workspace() {
       return false;
     } finally { setBusy(false); }
   }
-  const scheduleForm = (contentId?: string, initialPackageId?: string) => {
-    const packages = activePackages.filter(
-      (p) => !contentId || p.contentId === contentId,
-    );
+  const scheduleForm = (contentId?: string, initialPackageId?: string, exactPackage?: Package) => {
+    const packages = (exactPackage ? [exactPackage] : activePackages).filter((p) => {
+      const draft = state.contents.find((c) => c.id === p.contentId);
+      return (!contentId || p.contentId === contentId) && Boolean(draft && allowed("schedule.manage", {channel:p.channel,account:p.account,contentId:p.contentId,assignedTo:draft.assignedTo}));
+    });
     if (!packages.length) {
       setLocalError(
         "Approve a content revision in Reviews before adding it to the calendar.",
@@ -772,7 +774,7 @@ export default function Workspace() {
     setDialog({
       title: "Plan a manual publication",
       description:
-        "Schedule an approved package. A person will publish it and confirm the final link.",
+        exactPackage ? `Choose the publication date and time for the approved ${exactPackage.channel} package (${exactPackage.account}). A person will publish it and confirm the link.` : "Schedule an approved package. A person will publish it and confirm the final link.",
       submit: "Add to calendar",
       fields: [
         {
@@ -783,7 +785,7 @@ export default function Workspace() {
           optionLabels: Object.fromEntries(
             packages.map((p) => [
               p.id,
-              `${p.title} · ${p.channel} · Revision ${p.revision}`,
+              `${p.title} · ${p.channel} · ${p.account} · Revision ${p.revision}`,
             ]),
           ),
           hint: packages
@@ -2805,6 +2807,14 @@ export default function Workspace() {
                     </div>
                     {state.settings.reviewPolicy ? (
                       <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send} refresh={() => refresh(true)} demo={mode === "demo"}
+                        onApproved={(pkg, approvedState) => {
+                          const draft = approvedState.contents.find((d) => d.id === pkg.contentId);
+                          if (!draft || !can(approvedState, actor, "schedule.manage", {channel:pkg.channel, account:pkg.account, contentId:pkg.contentId, assignedTo:draft.assignedTo})) {
+                            setNotice("Package approved. A calendar manager can plan its publication."); return;
+                          }
+                          document.querySelector<HTMLDialogElement>(".s-review-dialog[open]")?.close();
+                          scheduleForm(pkg.contentId, pkg.id, pkg);
+                        }}
                         renderAsset={(source, kind) => <AssetMedia source={source} kind={kind} />}
                         openDraft={() => openContent(c)}
                         requestChanges={() => reject("package.reject", c.id)}

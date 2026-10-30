@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, type ReactNode } from "react";
-import type { Actor, Command, Content, StudioState } from "@/lib/studio/types";
+import type {
+  Actor,
+  Command,
+  Content,
+  StudioState,
+  Package,
+} from "@/lib/studio/types";
 import { can } from "@/lib/studio/permissions";
 import { currentWorkflow } from "@/lib/studio/stages";
 import { copyBlockers, packageReadiness } from "@/lib/studio/solo-quality";
@@ -20,6 +26,7 @@ export function SoloReview({
   requestChanges,
   refresh,
   demo,
+  onApproved,
 }: {
   content: Content;
   state: StudioState;
@@ -34,6 +41,7 @@ export function SoloReview({
   requestChanges: () => void;
   refresh: () => Promise<void>;
   demo: boolean;
+  onApproved?: (pkg: Package, state: StudioState) => void;
 }) {
   const [evidence, setEvidence] = useState("");
   const [reviewedPackage, setReviewedPackage] = useState(false);
@@ -76,7 +84,14 @@ export function SoloReview({
     setBusy(true);
     setError("");
     try {
-      await send(command);
+      const result = (await send(command)) as
+        { state?: StudioState } | undefined;
+      if (command.type === "package.approve" && result?.state) {
+        const pkg = result.state.packages.find(
+          (p) => p.contentId === content.id && p.revision === content.revision,
+        );
+        if (pkg) onApproved?.(pkg, result.state);
+      }
       if (command.type === "content.generate") reviewKey.current = undefined;
     } catch (e) {
       setError(

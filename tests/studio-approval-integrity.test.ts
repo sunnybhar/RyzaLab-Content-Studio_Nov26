@@ -94,3 +94,36 @@ test("founder price exception is exact-revision scoped and cannot waive misinfor
     "Nothing ever leaves your home.\nBook a free intro call.";
   assert.throws(() => approve(state), /blocking/);
 });
+
+test("repeated calendar submits reuse the exact package and instant while calendar authority stays separate", () => {
+  let state = approve(fixture());
+  const original = state.packages[0];
+  const command = {
+    type: "schedule.create",
+    contentId: original.contentId,
+    packageId: original.id,
+    at: "2026-11-05T14:30:00Z",
+  };
+  state = applyCommand(state, DEMO_ACTOR, command);
+  state = applyCommand(state, DEMO_ACTOR, {
+    ...command,
+    at: "2026-11-05T09:30:00-05:00",
+  });
+  assert.equal(state.schedules.length, 1);
+  assert.equal(state.schedules[0].packageId, original.id);
+  assert.equal(state.schedules[0].state, "planned");
+  assert.equal(state.schedules[0].publicationUrl, undefined);
+  const reviewer = { id: "reviewer-only", email: "reviewer-only@example.com" };
+  state.members.push({
+    ...reviewer,
+    roles: ["viewer"],
+    grants: [{ action: "package.approve", contentId: original.contentId }],
+    revoked: false,
+  });
+  assert.throws(
+    () =>
+      applyCommand(state, reviewer, { ...command, at: "2026-11-06T14:30:00Z" }),
+    /permission/,
+  );
+  assert.deepEqual(state.packages[0], original);
+});

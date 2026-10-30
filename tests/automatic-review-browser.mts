@@ -161,6 +161,29 @@ try {
     (key) => JSON.parse(localStorage.getItem(key)!).packages.length === 1,
     key,
   );
+  const planner = page.getByRole("dialog");
+  await planner
+    .getByRole("heading", { name: "Plan a manual publication", exact: true })
+    .waitFor();
+  const packageSelect = planner.getByLabel("Approved package");
+  assert.equal(await packageSelect.locator("option").count(), 1);
+  const time = planner.getByLabel(/Publication time/);
+  assert.equal(await time.inputValue(), "");
+  await time.fill("2026-11-05T09:30");
+  await planner
+    .getByRole("button", { name: "Add to calendar", exact: true })
+    .click();
+  await page.waitForFunction(
+    (key) => JSON.parse(localStorage.getItem(key)!).schedules.length === 1,
+    key,
+  );
+  const planned = await page.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key)!),
+    key,
+  );
+  assert.equal(planned.schedules[0].packageId, planned.packages[0].id);
+  assert.equal(planned.schedules[0].at, "2026-11-05T14:30:00.000Z");
+  assert.equal(planned.schedules[0].publicationUrl, undefined);
   console.log(
     "PASS: simulated auto review gates final approval; exact report and two human decisions retained; no provider calls",
   );
