@@ -55,6 +55,8 @@ import { ReviewCard } from "./review-card";
 import { SoloReview } from "./solo-review";
 import { DraftAssistant } from "./draft-assistant";
 import { PostPreview } from "./post-preview";
+import { HighlightedTextarea } from "./highlighted-textarea";
+import { inputRequirements } from "@/lib/studio/input-requirements";
 import { WorkflowVersions } from "./workflow-versions";
 import { useStudio } from "@/lib/studio/client";
 import {
@@ -1447,7 +1449,7 @@ export default function Workspace() {
             <div className="s-release-label" aria-label="Studio version">
               <strong>RyzaLab Studio</strong>
               <small>
-                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.3"} ·{" "}
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.4"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>
@@ -4714,6 +4716,7 @@ function Editor({
   const [title, setTitle] = useState(c.title);
   const [text, setText] = useState(c.text);
   const [metadata, setMetadata] = useState(c.metadata);
+  const [notesOpen, setNotesOpen] = useState(false);
   const [collection, setCollection] = useState(c.collection || "");
   const [media, setMedia] = useState<MediaProject>(c.media || initialMedia());
   const [tab, setTab] = useState("Write");
@@ -4751,6 +4754,20 @@ function Editor({
     metadata !== c.metadata ||
     collection !== (c.collection || "") ||
     comparableMedia(media) !== comparableMedia(c.media);
+  const requirements = inputRequirements({...c, title, text, metadata, media});
+  function jumpToRequirement(item: ReturnType<typeof inputRequirements>[number]) {
+    setTab(item.tab);
+    if (item.field === "metadata") setNotesOpen(true);
+    if (item.field.startsWith("slide:")) {
+      const parts=item.field.split(":"); setSlideIndex(Number(parts[1]));
+      if(parts[2] === "layer") setSelectedLayerId(media.slides[Number(parts[1])]?.layers?.[Number(parts[3])]?.id || null);
+    }
+    if (item.field.startsWith("scene:")) setSceneIndex(Number(item.field.split(":")[1]));
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      const field=Array.from(document.querySelectorAll<HTMLInputElement|HTMLTextAreaElement>(".s-editor-layout input, .s-editor-layout textarea")).find(el=>el.getClientRects().length && el.value.includes(item.text));
+      if(field){field.focus();const start=field.value.indexOf(item.text);field.setSelectionRange(start,start+item.text.length);field.scrollIntoView({behavior:"smooth",block:"center"});}
+    }));
+  }
   const slide = media.slides[slideIndex];
   const scene = media.scenes[sceneIndex];
   const save = () =>
@@ -4919,7 +4936,7 @@ function Editor({
             Save draft
           </button>
           <button
-            disabled={readOnly || busy || dirty || externalChange}
+            disabled={readOnly || busy || dirty || externalChange || requirements.length > 0}
             className="s-btn s-primary"
             title={dirty ? "Save your changes before submitting" : ""}
             onClick={() =>
@@ -4939,6 +4956,7 @@ function Editor({
           <button className="s-btn" onClick={() => { if (window.confirm("Discard your unsaved edits and load the current saved draft?")) loadSavedDraft(); }}>Discard unsaved edits and load latest</button>
         </div>
       )}
+      {requirements.length > 0 && <section className="s-input-required" aria-label="Needs your input"><h3>Needs your input · {requirements.length} {requirements.length === 1 ? "item" : "items"}</h3><p>Highlighted passages need verified details or a rewrite. Saving does not resolve them. Submit for review becomes available after all markers are removed and your changes are saved.</p><ul>{requirements.map((item,i)=><li key={`${item.field}:${item.start}`}><button className="s-text-button" onClick={()=>jumpToRequirement(item)}>{item.label}: {item.text}</button></li>)}</ul></section>}
       {postPreview && <PostPreview text={text} account={c.account} channel={c.channel} media={media} unsaved={dirty} AssetMedia={AssetMedia} onClose={() => setPostPreview(false)} />}
       <StageTracker
         content={c}
@@ -4991,7 +5009,7 @@ function Editor({
             <div className="s-writing">
               {c.newsletterSource && <details className="s-version"><summary>Newsletter source · {c.newsletterSource.channel} · {c.newsletterSource.title}</summary><p>Saved source snapshot{c.newsletterSource.revision ? ` · revision ${c.newsletterSource.revision}` : ""}. Use this as reference for manual writing or AI adaptation.</p><div style={{whiteSpace:"pre-wrap"}}>{c.newsletterSource.text}</div><p>{c.newsletterSource.metadata}</p></details>}
               {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} />}
-              <textarea
+              <HighlightedTextarea
                 aria-label="Content text"
                 disabled={readOnly}
                 placeholder="Start with something worth saying…"
@@ -5002,9 +5020,10 @@ function Editor({
                 {text.trim() ? text.trim().split(/\s+/).length : 0} words{" "}
                 <span>{text.length} characters</span>
               </div>
+              <details className="s-version" open={notesOpen} onToggle={event => setNotesOpen(event.currentTarget.open)}><summary>Publication notes (optional)</summary>
               <label className="s-field">
                 Publication metadata / caption
-                <textarea
+                <HighlightedTextarea
                   aria-label="Publication metadata"
                   disabled={readOnly}
                   value={metadata}
@@ -5013,6 +5032,7 @@ function Editor({
                   rows={4}
                 />
               </label>
+              </details>
               <label className="s-field">
                 Collection
                 <input
@@ -5158,7 +5178,7 @@ function Editor({
                     </label>
                     <label className="s-field">
                       Body
-                      <textarea
+                      <HighlightedTextarea
                         aria-label="Slide body"
                         disabled={readOnly}
                         value={slide.body}
@@ -5425,7 +5445,7 @@ function Editor({
                   </label>
                   <label className="s-field">
                     Scene script
-                    <textarea
+                    <HighlightedTextarea
                       aria-label="Scene script"
                       disabled={readOnly}
                       rows={5}
@@ -5583,7 +5603,7 @@ function Editor({
               )}
               <label className="s-field">
                 Narration / voiceover
-                <textarea
+                <HighlightedTextarea
                   aria-label="Narration / voiceover"
                   disabled={readOnly}
                   rows={4}
@@ -5593,7 +5613,7 @@ function Editor({
               </label>
               <label className="s-field">
                 Captions
-                <textarea
+                <HighlightedTextarea
                   aria-label="Captions"
                   disabled={readOnly}
                   rows={4}

@@ -3,6 +3,7 @@ import { currentWorkflow, hasVisuals } from "./stages";
 import { contentWording } from "./content-wording";
 import { review } from "../brand";
 import { StudioError } from "./permissions";
+import { confirmationMarkers } from "./input-requirements";
 
 export function soloPolicy(state: StudioState) {
   const policy = state.settings.reviewPolicy;
@@ -55,8 +56,8 @@ export function copyBlockers(c: Content) {
   const issues = review(words, "general")
     .issues.filter((i) => i.severity === "BLOCK")
     .map((i) => i.message);
-  for (const m of words.matchAll(/\[(?:Ryan|source|confirm|verify)[^\]]*\]/gi))
-    issues.push(`Resolve ${m[0].slice(0, 300)}`);
+  for (const m of confirmationMarkers(words))
+    issues.push(`Resolve ${m.text.slice(0, 300)}`);
   if (/\bNEEDS_SOURCE\b|\[INCOMPLETE OUTPUT|\[INVALID OUTPUT/i.test(words))
     issues.push(
       "The output is incomplete or needs source evidence. Retain the response and finish the draft before approval.",

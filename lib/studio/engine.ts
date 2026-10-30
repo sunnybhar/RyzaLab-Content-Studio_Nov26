@@ -33,6 +33,7 @@ import {
 import { demoPreset, type ChannelPreset } from "./presets";
 import { ideaJobInput } from "./idea-generation";
 import { contentWording } from "./content-wording";
+import { inputRequirements } from "./input-requirements";
 import { savedResearchSchema } from "./research";
 import { review } from "../brand";
 export type ExecutionContext = {
@@ -893,6 +894,7 @@ export function applyCommand(
     }
     case "content.submit": {
       const d = content(c.id);
+      if (inputRequirements(d).length) bad("Resolve the highlighted items in Needs your input before submitting for review. Replace them with verified details or rewrite the unsupported passage.");
       if (!d.text.trim() && !d.media.slides.length && !d.media.scenes.length)
         bad("Add content before submitting.");
       d.state = "review";

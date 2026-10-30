@@ -120,10 +120,7 @@ export function SoloReview({
             references. Approving copy does not publish it.
           </p>
           {content.metadata && (
-            <>
-              <h4>Publication metadata / caption</h4>
-              <p className="s-solo-prewrap">{content.metadata}</p>
-            </>
+            <details><summary>Publication notes (optional)</summary><p className="s-solo-prewrap">{content.metadata}</p></details>
           )}
           {content.media.slides.map((slide, i) => (
             <div key={slide.id}>
@@ -249,10 +246,7 @@ export function SoloReview({
             </span>
           </div>
           {content.metadata && (
-            <>
-              <h4>Publication metadata / caption</h4>
-              <p className="s-solo-prewrap">{content.metadata}</p>
-            </>
+            <details><summary>Publication notes (optional)</summary><p className="s-solo-prewrap">{content.metadata}</p></details>
           )}
           {content.media.imageUrl && (
             <div className="s-solo-asset">

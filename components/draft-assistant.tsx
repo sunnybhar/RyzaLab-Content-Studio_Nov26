@@ -283,10 +283,10 @@ export function DraftAssistant({
               <h3>Suggested text</h3>
               <pre>{job.candidate.body}</pre>
               {job.candidate.metadata && (
-                <>
-                  <h3>Suggested publication notes</h3>
+                <details>
+                  <summary>Suggested publication notes (optional)</summary>
                   <pre>{job.candidate.metadata}</pre>
-                </>
+                </details>
               )}
               {!!job.candidate.sources.length && (
                 <>
