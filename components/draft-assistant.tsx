@@ -306,6 +306,23 @@ export function DraftAssistant({
               </button>
             </div>
           )}
+          {!job.candidate &&
+            job.result &&
+            job.state === "succeeded" &&
+            job.outputStatus === "invalid" && (
+              <button
+                className="s-btn"
+                disabled={readOnly || busy}
+                onClick={() =>
+                  void run(
+                    { type: "job.prepareSavedDraft", jobId: job.id },
+                    "Saved draft prepared — no AI call",
+                  )
+                }
+              >
+                Prepare saved draft — no AI call
+              </button>
+            )}
           {!job.candidate && job.result && job.outputStatus !== "applied" && (
             <details>
               <summary>View saved provider response</summary>

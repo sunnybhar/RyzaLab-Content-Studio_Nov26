@@ -1,3 +1,4 @@
+import { parseOutput, draftResultSchema } from "./output-contracts";
 import type { Actor, Content, Job, StudioState } from "./types";
 import {
   soloPolicy,
@@ -1657,6 +1658,53 @@ export function applyCommand(
       d.state = "review";
       break;
     }
+    case "job.prepareSavedDraft": {
+      const job = jobFor(c.jobId);
+      if (
+        job.kind !== "text" ||
+        job.state !== "succeeded" ||
+        job.outputContract !== "draft_v1"
+      )
+        bad(
+          "Select a completed canonical writing request. No provider request was made.",
+        );
+      if (job.createdBy !== actor.email && !can(s, actor, "users.manage"))
+        throw new StudioError(
+          403,
+          "This saved result belongs to another creator.",
+        );
+      const d = content(job.contentId || "");
+      need("read", {
+        channel: job.channel,
+        account: job.account,
+        contentId: job.contentId,
+        assignedTo: d.assignedTo,
+      });
+      need("read", {
+        channel: d.channel,
+        account: d.account,
+        contentId: d.id,
+        assignedTo: d.assignedTo,
+      });
+      if (d.deletedAt)
+        bad("Restore the draft before preparing its saved result.");
+      if (job.appliedAt || job.candidate) return structuredClone(input);
+      if (job.outputStatus !== "invalid" || !job.result)
+        bad(
+          "Only a retained format-invalid writing response can be prepared. Incomplete or uncertain outcomes remain blocked.",
+        );
+      try {
+        job.candidate = parseOutput(job.result, draftResultSchema);
+      } catch {
+        bad(
+          "The saved response still does not match the complete draft format. The raw result is unchanged and no AI call was made.",
+        );
+      }
+      job.outputStatus = "ready";
+      job.error =
+        "Saved response prepared for comparison only. No draft text was replaced and no provider request was made. Resolve all factual questions and placeholders before approval.";
+      break;
+    }
     case "job.applyDraft": {
       const job = jobFor(c.jobId);
       if (job.kind !== "text" || job.state !== "succeeded" || !job.candidate)
@@ -2008,7 +2056,9 @@ export function applyCommand(
         ? String(c.id)
         : "contentId" in c
           ? String(c.contentId)
-          : "workspace",
+          : "jobId" in c
+            ? String(c.jobId)
+            : "workspace",
     at: now,
   });
   return s;

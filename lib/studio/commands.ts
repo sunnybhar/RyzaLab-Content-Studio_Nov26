@@ -280,6 +280,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     expectedPolicyVersion: id,
     evidence: z.string().trim().min(10).max(12000),
   }),
+  command("job.prepareSavedDraft", { jobId: id }),
   command("job.applyDraft", {
     jobId: id,
     expectedRevision: z.number().int().positive(),
