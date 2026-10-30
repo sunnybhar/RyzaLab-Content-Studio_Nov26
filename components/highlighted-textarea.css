@@ -1,11 +1,67 @@
-.studio-v2 .s-highlighted-editor { position:relative; margin:12px 0; }
-.studio-v2 .s-highlighted-editor textarea, .studio-v2 .s-highlighted-mirror { box-sizing:border-box; padding:16px; font:inherit; font-size:15px; line-height:1.8; letter-spacing:normal; white-space:pre-wrap; overflow-wrap:break-word; word-break:normal; tab-size:8; border:1px solid transparent; border-radius:8px; }
-.studio-v2 .s-highlighted-mirror { position:absolute; inset:0; pointer-events:none; overflow:hidden; color:transparent; }
-.studio-v2 .s-highlighted-mirror mark { background:#f6cf65; color:transparent; border-radius:2px; }
-.studio-v2 .s-highlighted-editor textarea { position:relative; display:block; width:100%; background:transparent; color:var(--s-text); min-height:360px; resize:vertical; border-color:var(--s-line); }
-.studio-v2 .s-highlighted-short textarea { min-height:135px; }
-.studio-v2 .s-input-required { border:1px solid #b88016; border-radius:10px; padding:16px; margin:16px 0; background:color-mix(in srgb, #e9b841 10%, var(--s-panel)); }
-.studio-v2 .s-input-required h3 { margin:0 0 8px; }
-.studio-v2 .s-input-required ul { max-height:220px; overflow:auto; padding-left:20px; }
-.studio-v2 .s-input-required li { margin:8px 0; }
-.studio-v2 .s-input-required button { text-align:left; white-space:normal; overflow-wrap:anywhere; }
+.studio-v2 .s-highlighted-editor {
+  position: relative;
+  margin: 12px 0;
+}
+.studio-v2 .s-highlighted-editor textarea,
+.studio-v2 .s-highlighted-mirror {
+  box-sizing: border-box;
+  padding: 16px;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.8;
+  letter-spacing: normal;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  tab-size: 8;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+.studio-v2 .s-highlighted-mirror {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  color: transparent;
+}
+.studio-v2 .s-highlighted-mirror mark {
+  background: #f6cf65;
+  color: transparent;
+  border-radius: 2px;
+}
+.studio-v2 .s-highlighted-editor textarea {
+  position: relative;
+  display: block;
+  width: 100%;
+  background: transparent;
+  color: var(--s-text);
+  min-height: 360px;
+  resize: vertical;
+  border-color: var(--s-line);
+}
+.studio-v2 .s-highlighted-short textarea {
+  min-height: 135px;
+}
+.studio-v2 .s-input-required {
+  border: 1px solid #b88016;
+  border-radius: 10px;
+  padding: 16px;
+  margin: 16px 0;
+  background: color-mix(in srgb, #e9b841 10%, var(--s-panel));
+}
+.studio-v2 .s-input-required h3 {
+  margin: 0 0 8px;
+}
+.studio-v2 .s-input-required ul {
+  max-height: 220px;
+  overflow: auto;
+  padding-left: 20px;
+}
+.studio-v2 .s-input-required li {
+  margin: 8px 0;
+}
+.studio-v2 .s-input-required button {
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

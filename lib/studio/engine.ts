@@ -892,6 +892,12 @@ export function applyCommand(
         });
       break;
     }
+    case "content.reviewEdit": {
+      const d = content(c.id);
+      if (d.deletedAt || d.state !== "review") bad("Open a current review before editing it.");
+      const saved = applyCommand(input, actor, {type:"content.save",id:d.id,expectedRevision:c.expectedRevision,title:d.title,text:c.text,metadata:c.metadata,media:d.media,collection:d.collection},ctx);
+      return applyCommand(saved, actor, {type:"content.submit",id:d.id},ctx);
+    }
     case "content.submit": {
       const d = content(c.id);
       if (inputRequirements(d).length) bad("Resolve the highlighted items in Needs your input before submitting for review. Replace them with verified details or rewrite the unsupported passage.");

@@ -44,6 +44,7 @@ export function SoloReview({
   onApproved?: (pkg: Package, state: StudioState) => void;
 }) {
   const [evidence, setEvidence] = useState("");
+  const [copyChecked, setCopyChecked] = useState(false);
   const [reviewedPackage, setReviewedPackage] = useState(false);
   const [authorizeNote, setAuthorizeNote] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -119,9 +120,7 @@ export function SoloReview({
             Read the text above and check factual claims against the available
             references. Approving copy does not publish it.
           </p>
-          {content.metadata && (
-            <details><summary>Publication notes (optional)</summary><p className="s-solo-prewrap">{content.metadata}</p></details>
-          )}
+
           {content.media.slides.map((slide, i) => (
             <div key={slide.id}>
               <h4>Slide {i + 1} wording</h4>
@@ -161,11 +160,11 @@ export function SoloReview({
           {copyIssues.length > 0 && (
             <div className="s-alert s-error" role="alert">
               <strong>Resolve before copy approval</strong>
-              <ul>
+              <details><summary>{copyIssues.length} items need attention — edit the content above</summary><ul>
                 {copyIssues.map((issue) => (
                   <li key={issue}>{issue}</li>
                 ))}
-              </ul>
+              </ul></details>
             </div>
           )}
           <details className="s-review-policy">
@@ -195,7 +194,8 @@ export function SoloReview({
             <h4>Brand rules</h4>
             <p className="s-solo-prewrap">{state.settings.protectedRules}</p>
           </details>
-          <label className="s-solo-label">
+          <label className="s-solo-confirm"><input type="checkbox" checked={copyChecked} onChange={e=>setCopyChecked(e.target.checked)} /> I checked the copy, factual claims and required answers.</label>
+          <details><summary>Add review notes or sources checked (optional)</summary><label className="s-solo-label">
             What did you check?
             <textarea
               value={evidence}
@@ -203,14 +203,14 @@ export function SoloReview({
               maxLength={12000}
               placeholder="Describe the sources or evidence you checked, or explain why this copy makes no external factual claims."
             />
-          </label>
+          </label></details>
           <button
             className="s-btn s-primary"
             disabled={
               busy ||
               !allowed ||
               !workflow ||
-              evidence.trim().length < 10 ||
+              (!copyChecked && evidence.trim().length < 10) ||
               copyIssues.length > 0
             }
             onClick={() =>
@@ -222,7 +222,7 @@ export function SoloReview({
                 expectedWorkflowId: workflow.id,
                 expectedRuleVersion: state.settings.protectedVersion,
                 expectedPolicyVersion: policy.version,
-                evidence: evidence.trim(),
+                evidence: evidence.trim().length >= 10 ? evidence.trim() : "Reviewer confirmed checking the current copy, factual claims and required answers.",
               })
             }
           >

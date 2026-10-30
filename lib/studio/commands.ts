@@ -171,6 +171,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     account: z.string().max(200).optional(),
     collection: z.string().max(100).optional(),
   }),
+  command("content.reviewEdit", { id, expectedRevision: z.number().int().positive(), text, metadata: text }),
   command("content.submit", { id }),
   command("content.restore", { id, revisionId: id }),
   command("content.trash", { id }),

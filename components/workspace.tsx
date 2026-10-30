@@ -56,6 +56,7 @@ import { SoloReview } from "./solo-review";
 import { DraftAssistant } from "./draft-assistant";
 import { PostPreview } from "./post-preview";
 import { HighlightedTextarea } from "./highlighted-textarea";
+import { ReviewContentEditor } from "./review-content-editor";
 import { inputRequirements } from "@/lib/studio/input-requirements";
 import { WorkflowVersions } from "./workflow-versions";
 import { useStudio } from "@/lib/studio/client";
@@ -451,6 +452,7 @@ export default function Workspace() {
   const [libraryTab, setLibraryTab] = useState("Content");
   const [ideaTab, setIdeaTab] = useState("All ideas");
   const [calendarView, setCalendarView] = useState("Month");
+  const [reviewEditing, setReviewEditing] = useState<string | null>(null);
   const [calendarPreview, setCalendarPreview] = useState<string | null>(null);
   const [month, setMonth] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1),
@@ -2800,10 +2802,7 @@ export default function Workspace() {
                       <Badge tone="amber">Review requested</Badge>
                     </div>
                     <h2>{c.title}</h2>
-                    <p className="s-review-copy">
-                      {c.text ||
-                        "No written copy in this draft. Open the media project to review its assets."}
-                    </p>
+                    <ReviewContentEditor content={c} canEdit={allowed("content.edit", {channel:c.channel,account:c.account,contentId:c.id,assignedTo:c.assignedTo})} send={send} onEditing={editing=>setReviewEditing(editing ? c.id : null)} openDraft={()=>openContent(c)} />
                     <div className="s-review-meta">
                       Revision {c.revision} · {c.format} ·{" "}
                       {c.media.slides.length} slides · {c.media.scenes.length}{" "}
@@ -2815,7 +2814,7 @@ export default function Workspace() {
                       )?.version || "not configured"}{" "}
                       · Protected rules {state.settings.protectedVersion}
                     </div>
-                    {state.settings.reviewPolicy ? (
+                    {reviewEditing === c.id ? <p>Save and submit your changes above to continue the review.</p> : state.settings.reviewPolicy ? (
                       <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send} refresh={() => refresh(true)} demo={mode === "demo"}
                         onApproved={(pkg, approvedState) => {
                           const draft = approvedState.contents.find((d) => d.id === pkg.contentId);
