@@ -132,3 +132,137 @@ test("credential clearing and lifecycle metadata commit atomically; stale cleari
     await db.close();
   }
 });
+
+test("composed policy, idea selection and automatic writing persist as one real PostgreSQL CAS", async () => {
+  const { persist } = await import("../lib/studio/store");
+  const { applyCommand } = await import("../lib/studio/engine");
+  const { orchestrateInitialWriting } =
+    await import("../lib/studio/writing-orchestration");
+  const db = new PGlite();
+  const now = "2026-10-30T12:00:00Z";
+  try {
+    await db.exec(bootstrap);
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/20261027_studio_v2.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    const original = initialState(DEMO_ACTOR, true);
+    original.ideas.unshift({
+      ...original.ideas[0],
+      id: "composed-idea",
+      title: "New composed idea",
+      state: "pending",
+    });
+    const workflow = original.workflows.find(
+      (w) => w.channel === original.ideas[0].channel && w.status === "active",
+    )!;
+    original.connections.push({
+      id: "composed-writer",
+      title: "Local test writer",
+      provider: "anthropic",
+      model: "local-test",
+      function: "text",
+      hasKey: true,
+      status: "validated",
+      updatedAt: now,
+      ...{ maxRequestCost: 50 },
+    });
+    workflow.functionConnections = {
+      ...workflow.functionConnections,
+      text: "composed-writer",
+    };
+    original.settings.qualifiedRates = [
+      {
+        provider: "anthropic",
+        model: "local-test",
+        function: "text",
+        currency: "USD",
+        inputCentsPerMillion: 100,
+        outputCentsPerMillion: 500,
+        maxInputBytes: 500000,
+        maxOutputTokens: 1000,
+        source: "https://example.com/prices",
+        verifiedAt: "2026-10-29",
+        qualified: true,
+      },
+    ];
+    await db.query("select public.studio_commit(-1,$1::jsonb)", [
+      JSON.stringify(original),
+    ]);
+    let next = applyCommand(
+      original,
+      DEMO_ACTOR,
+      {
+        type: "policy.adoptSolo",
+        expectedRuleVersion: original.settings.protectedVersion,
+        packageCap: 50,
+        monthlyCap: 500,
+        requireIndependentReview: false,
+        autoDraft: true,
+        autoReview: true,
+      },
+      { now },
+    );
+    next = applyCommand(
+      next,
+      DEMO_ACTOR,
+      {
+        type: "idea.use",
+        id: "composed-idea",
+        format: "Text post",
+        account: "RyzaLab",
+      },
+      { now },
+    );
+    next = orchestrateInitialWriting(next, now);
+    assert.ok(next.version > 1);
+    assert.equal(next.jobs.length, 1);
+    const adapter = {
+      rpc: async (
+        _name: string,
+        args: {
+          p_expected_version: number;
+          p_state: unknown;
+          p_secret: unknown;
+        },
+      ) => {
+        try {
+          await db.query(
+            "select public.studio_commit($1,$2::jsonb,$3::jsonb)",
+            [
+              args.p_expected_version,
+              JSON.stringify(args.p_state),
+              args.p_secret === null ? null : JSON.stringify(args.p_secret),
+            ],
+          );
+          return { error: null };
+        } catch (error) {
+          return { error: error as { code: string } };
+        }
+      },
+    } as unknown as Parameters<typeof persist>[0];
+    await persist(adapter, original, next);
+    assert.equal(next.version, 1);
+    const saved = await db.query<{ state: typeof next }>(
+      "select state from studio_workspace",
+    );
+    assert.equal(saved.rows[0].state.jobs.length, 1);
+    assert.ok(saved.rows[0].state.jobs[0].reserved > 0);
+    assert.equal(original.jobs.length, 0);
+    await assert.rejects(
+      () => persist(adapter, original, structuredClone(next)),
+      /concurrently/,
+    );
+    const final = await db.query<{ state: typeof next }>(
+      "select state from studio_workspace",
+    );
+    assert.equal(final.rows[0].state.jobs.length, 1);
+  } finally {
+    await db.close();
+  }
+});

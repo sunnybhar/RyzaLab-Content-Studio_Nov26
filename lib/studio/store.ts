@@ -138,6 +138,11 @@ export async function persist(
   secret?: { id: string; ciphertext: string },
 ) {
   if (next.version === previous.version) return;
+  if (next.version < previous.version)
+    throw new StudioError(409, "Cannot persist an older workspace version.");
+  // Several authorized domain transitions may form one atomic operation. The
+  // database CAS advances once per commit, not once per internal transition.
+  next.version = previous.version + 1;
   const { error } = await db.rpc("studio_commit", {
     p_expected_version: previous.version,
     p_state: next,
