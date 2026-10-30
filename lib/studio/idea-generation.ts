@@ -21,14 +21,34 @@ export const generatedIdeasSchema = z
       .max(20),
   })
   .strict();
-export function parseGeneratedIdeas(text: string) {
+export function requestedIdeaQuantity(prompt: string): number | undefined {
+  try {
+    const value = JSON.parse(prompt).quantity;
+    return Number.isInteger(value) && value >= 1 && value <= 20
+      ? value
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+export function ideaCountContract(quantity?: number) {
+  return `Generate ${quantity ? `exactly ${quantity}` : "the requested number of"} distinct IDEA CARDS in a JSON ideas array, not finished posts or a single combined content pack. Workflow posting cadence and examples do not change this count. Each card needs title, brief, audience, format, sources. Keep each brief to two short sentences (at most 400 characters) so the entire set fits. Keep citations compact and use only supplied evidence. Return the complete JSON set and no extra commentary.`;
+}
+export function parseGeneratedIdeas(text: string, expectedQuantity?: number) {
   const clean = text
     .trim()
     .replace(/^```(?:json)?\s*/, "")
     .replace(/\s*```$/, "");
   try {
-    return generatedIdeasSchema.parse(JSON.parse(clean)).ideas;
-  } catch {
+    const ideas = generatedIdeasSchema.parse(JSON.parse(clean)).ideas;
+    if (expectedQuantity !== undefined && ideas.length !== expectedQuantity)
+      throw new StudioError(
+        422,
+        `Requested ${expectedQuantity} ideas, but the provider returned ${ideas.length}. The response is retained; no incomplete batch was imported and no additional AI call was made.`,
+      );
+    return ideas;
+  } catch (error) {
+    if (error instanceof StudioError) throw error;
     throw new Error(
       "The provider result is not a complete idea-card set. Preserve the result and revise it; no partial or invented idea cards were imported.",
     );
@@ -94,7 +114,9 @@ export function ideaJobInput(
     estimate: 0,
     idempotencyKey: c.idempotencyKey,
     prompt: JSON.stringify({
-      task: 'Generate idea cards, not finished posts. Return ONLY JSON with no additional fields. Limits: title 3–200 characters, brief 5–4000 characters, audience at most 500 characters, format at most 1000 characters, sources at most 20 nonempty citations of at most 2000 characters each. Sources can be provided internal document names with section references or relevant web URLs; a citation does not imply external access. Schema: {"ideas":[{"title":"...","brief":"specific angle, proof needed, why useful","audience":"...","format":"...","sources":[]}]}. Do not invent source access. This request uses provided reference context, not current web research.',
+      task:
+        ideaCountContract(c.quantity) +
+        ' Generate idea cards, not finished posts. Return ONLY JSON with no additional fields. Limits: title 3–200 characters, brief 5–4000 characters, audience at most 500 characters, format at most 1000 characters, sources at most 20 nonempty citations of at most 2000 characters each. Sources can be provided internal document names with section references or relevant web URLs; a citation does not imply external access. Schema: {"ideas":[{"title":"...","brief":"specific angle, proof needed, why useful","audience":"...","format":"...","sources":[]}]}. Do not invent source access. This request uses provided reference context, not current web research.',
       quantity: c.quantity,
       topic: c.topic,
       audience: c.audience,

@@ -135,3 +135,30 @@ test("source/format limits still reject oversized data and unknown card fields",
       /no partial/,
     );
 });
+
+test("a request for four requires all four complete cards, not one combined card", () => {
+  assert.throws(
+    () => parseGeneratedIdeas(JSON.stringify({ ideas: [card] }), 4),
+    /Requested 4 ideas, but the provider returned 1/,
+  );
+  const four = Array.from({ length: 4 }, (_, i) => ({
+    ...card,
+    title: `Idea ${i + 1}: distinct handoff angle`,
+  }));
+  assert.equal(
+    parseGeneratedIdeas(JSON.stringify({ ideas: four }), 4).length,
+    4,
+  );
+  const s = fixture();
+  s.jobs[0].prompt = JSON.stringify({ quantity: 4 });
+  s.jobs[0].result = JSON.stringify({ ideas: [card] });
+  assert.throws(
+    () => applyCommand(s, DEMO_ACTOR, command, { demo: true }),
+    /Requested 4 ideas/,
+  );
+  assert.equal(s.jobs.length, 1);
+  assert.equal(
+    s.ideas.filter((i) => i.generationRunId === s.jobs[0].id).length,
+    0,
+  );
+});

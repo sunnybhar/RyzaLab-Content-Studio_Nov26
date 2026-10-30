@@ -24,7 +24,11 @@ import {
   recordIsCurrent,
   factsSignature,
 } from "./stages";
-import { sampleIdeas, parseGeneratedIdeas } from "./idea-generation";
+import {
+  sampleIdeas,
+  parseGeneratedIdeas,
+  requestedIdeaQuantity,
+} from "./idea-generation";
 import { demoPreset, type ChannelPreset } from "./presets";
 import { ideaJobInput } from "./idea-generation";
 import { contentWording } from "./content-wording";
@@ -377,8 +381,12 @@ export function applyCommand(
         return structuredClone(input);
       let items: ReturnType<typeof parseGeneratedIdeas>;
       try {
-        items = parseGeneratedIdeas(job.result!);
-      } catch {
+        items = parseGeneratedIdeas(
+          job.result!,
+          requestedIdeaQuantity(job.prompt),
+        );
+      } catch (error) {
+        if (error instanceof StudioError) bad(error.message);
         bad(
           "The saved result still does not match the complete idea-card format. No partial cards were imported and no provider request was made.",
         );
@@ -723,7 +731,15 @@ export function applyCommand(
       };
       s.contents.unshift(d);
       const policy = soloPolicy(s);
-      if (policy?.autoDraft) d.initialWriting = {id:id(), actor:actor.email, at:now, policyVersion:policy.version, identity:copyIdentity(d,s), revision:d.revision};
+      if (policy?.autoDraft)
+        d.initialWriting = {
+          id: id(),
+          actor: actor.email,
+          at: now,
+          policyVersion: policy.version,
+          identity: copyIdentity(d, s),
+          revision: d.revision,
+        };
       if (
         policy &&
         can(s, actor, "package.approve", {
@@ -1172,10 +1188,16 @@ export function applyCommand(
       // Repeated planner submissions for the same package and instant should
       // not create duplicate publication tasks. A different time remains a
       // separate intentional scheduling choice.
-      if (s.schedules.some((item) =>
-        item.contentId === d.id && item.packageId === c.packageId &&
-        Date.parse(item.at) === Date.parse(c.at) && item.groupId === c.groupId
-      )) break;
+      if (
+        s.schedules.some(
+          (item) =>
+            item.contentId === d.id &&
+            item.packageId === c.packageId &&
+            Date.parse(item.at) === Date.parse(c.at) &&
+            item.groupId === c.groupId,
+        )
+      )
+        break;
       s.schedules.push({
         id: id(),
         contentId: d.id,
@@ -1436,9 +1458,14 @@ export function applyCommand(
       if (c.roles.includes("founder") || m?.roles.includes("founder"))
         need("policy.manage");
       if (
-        m && !m.revoked && m.roles.includes("founder") &&
+        m &&
+        !m.revoked &&
+        m.roles.includes("founder") &&
         !c.roles.includes("founder") &&
-        !s.members.some((x) => x.email !== m!.email && !x.revoked && x.roles.includes("founder"))
+        !s.members.some(
+          (x) =>
+            x.email !== m!.email && !x.revoked && x.roles.includes("founder"),
+        )
       )
         bad("Keep at least one active founder.");
       if (
@@ -1476,7 +1503,14 @@ export function applyCommand(
         if (!m) bad("Member not found.");
         if (m.roles.includes("founder")) {
           need("policy.manage");
-          if (!s.members.some((x) => x.email !== m.email && !x.revoked && x.roles.includes("founder")))
+          if (
+            !s.members.some(
+              (x) =>
+                x.email !== m.email &&
+                !x.revoked &&
+                x.roles.includes("founder"),
+            )
+          )
             bad("Keep at least one active founder.");
         }
         m.revoked = true;
@@ -1497,12 +1531,29 @@ export function applyCommand(
     }
     case "policy.adoptSolo": {
       need("policy.manage");
-      if (c.expectedMonthlyCap !== undefined && c.expectedMonthlyCap !== s.settings.monthlyCap)
-        throw new StudioError(409, "Monthly budget changed. Reload current settings before saving.");
+      if (
+        c.expectedMonthlyCap !== undefined &&
+        c.expectedMonthlyCap !== s.settings.monthlyCap
+      )
+        throw new StudioError(
+          409,
+          "Monthly budget changed. Reload current settings before saving.",
+        );
       if (c.expectedPolicyVersion !== s.settings.reviewPolicy?.version)
-        throw new StudioError(409, "Review policy changed. Reload the current settings before saving.");
-      if (s.jobs.some((job) => ["awaiting_confirmation", "queued", "running", "unknown"].includes(job.state)))
-        bad("Resolve active or uncertain requests before changing the review policy.");
+        throw new StudioError(
+          409,
+          "Review policy changed. Reload the current settings before saving.",
+        );
+      if (
+        s.jobs.some((job) =>
+          ["awaiting_confirmation", "queued", "running", "unknown"].includes(
+            job.state,
+          ),
+        )
+      )
+        bad(
+          "Resolve active or uncertain requests before changing the review policy.",
+        );
       if (c.expectedRuleVersion !== s.settings.protectedVersion)
         throw new StudioError(
           409,

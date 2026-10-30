@@ -1,4 +1,5 @@
-"use client";
+import { requestedIdeaQuantity } from "@/lib/studio/idea-generation";
+("use client");
 import { useEffect, useRef, useState } from "react";
 import type { Actor, Channel, Command, StudioState } from "@/lib/studio/types";
 import { can } from "@/lib/studio/permissions";
@@ -118,6 +119,8 @@ export function IdeaGenerationStatus({
         const count = state.ideas.filter(
           (i) => i.generationRunId === job.id,
         ).length;
+        const expected = requestedIdeaQuantity(job.prompt);
+        const mismatch = Boolean(expected && count && count !== expected);
         const authorized =
           can(state, actor, "job.create", {
             channel: job.channel,
@@ -138,7 +141,9 @@ export function IdeaGenerationStatus({
               : job.state === "running"
                 ? "Agent is generating ideas"
                 : job.state === "succeeded" && count
-                  ? `${count} ideas ready for review`
+                  ? mismatch
+                    ? `${count} of ${expected} requested ideas imported — needs attention`
+                    : `${count} ideas ready for review`
                   : job.state === "succeeded"
                     ? "Provider finished — result needs attention"
                     : job.state === "unknown"
@@ -160,6 +165,13 @@ export function IdeaGenerationStatus({
               </strong>
               <span>{money(job.estimate)} estimated</span>
             </div>
+            {mismatch && (
+              <p role="status">
+                The existing {count} imported cards are preserved, but this is
+                not a complete batch of {expected}. Inspect the saved provider
+                result before authorizing another paid request.
+              </p>
+            )}
             {["queued", "running"].includes(job.state) && (
               <>
                 <progress aria-label={label} />

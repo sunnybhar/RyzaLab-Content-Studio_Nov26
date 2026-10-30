@@ -1541,6 +1541,7 @@ export default function Workspace() {
                           { ...field("audience", "Audience"), required: true },
                           {
                             ...field("quantity", "Quantity", 3, "number"),
+                            hint: "This field controls the number of idea cards. Set it to 4 to request four ideas.",
                             min: 1,
                             max: 20,
                             step: 1,

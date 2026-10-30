@@ -118,7 +118,11 @@ export function maintenance(
         type: "job.enqueue",
         kind: "ideas",
         channel: schedule.channel,
-        prompt: `Generate ${schedule.quantity} useful ideas for ${schedule.title}. Web research is off for this occurrence. Do not imply current sources were opened.`,
+        prompt: JSON.stringify({
+          task: "Generate idea cards as a complete JSON ideas array. Web research is off; use only supplied references and never imply current sources were opened.",
+          quantity: schedule.quantity,
+          topic: schedule.title,
+        }),
         connectionId,
         estimate: 0,
         idempotencyKey: `recurrence:${schedule.id}:${occurrence}`,

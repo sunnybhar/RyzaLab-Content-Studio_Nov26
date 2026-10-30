@@ -4,7 +4,10 @@ import { database, loadState, persist, decrypt } from "@/lib/studio/store";
 import { StudioError } from "@/lib/studio/permissions";
 import { canDispatchJob } from "@/lib/studio/dispatch-permissions";
 import { budgetMonth } from "@/lib/studio/time";
-import { parseGeneratedIdeas } from "@/lib/studio/idea-generation";
+import {
+  parseGeneratedIdeas,
+  requestedIdeaQuantity,
+} from "@/lib/studio/idea-generation";
 import { effectiveRates, pricingSnapshotIsCurrent } from "@/lib/studio/pricing";
 import { runProvider, ProviderFailure } from "@/lib/studio/providers";
 import { settleWrittenOutput } from "@/lib/studio/draft-candidates";
@@ -247,7 +250,14 @@ export async function POST(req: NextRequest) {
           settleWrittenOutput(next, j, outcome || {}, new Date().toISOString());
         if (j.kind === "ideas" && outcome?.text) {
           try {
-            const items = parseGeneratedIdeas(outcome.text);
+            if (outcome.completion !== "complete")
+              throw new Error(
+                "Idea generation was incomplete. The raw response is retained; no incomplete batch was imported.",
+              );
+            const items = parseGeneratedIdeas(
+              outcome.text,
+              requestedIdeaQuantity(j.prompt),
+            );
             for (const item of items)
               next.ideas.unshift({
                 ...item,
@@ -259,9 +269,11 @@ export async function POST(req: NextRequest) {
                 createdBy: j.createdBy,
                 createdAt: new Date().toISOString(),
               });
-          } catch {
+          } catch (error) {
             j.error =
-              "The provider response did not match the idea-card format. The raw result is retained for import/review; no partial cards were imported.";
+              error instanceof Error
+                ? error.message
+                : "The provider response did not match the idea-card format. The raw result is retained; no partial cards were imported.";
           }
         }
 
