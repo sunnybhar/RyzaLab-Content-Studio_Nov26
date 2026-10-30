@@ -8,6 +8,7 @@ import {
   hash,
   encrypt,
 } from "@/lib/studio/store";
+import { researchJobInput } from "@/lib/studio/research-link";
 import { generationInput } from "@/lib/studio/generation";
 import { ideaJobInput } from "@/lib/studio/idea-generation";
 import { loadChannelPreset } from "@/lib/studio/preset-store";
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
     const command = commandSchema.parse(
       parsed.type === "content.generate"
         ? generationInput(state, actor, parsed)
-        : parsed,
+        : parsed.type === "research.start" ? researchJobInput(state,actor,parsed) : parsed,
     );
     if (command.type === "idea.generate") {
       requirePermission(state, actor, "idea.edit", {
@@ -95,12 +96,12 @@ export async function POST(req: NextRequest) {
     const priced =
       command.type === "job.enqueue"
         ? quote(state, command)
-        : command.type === "idea.generate" && !command.research
+        : command.type === "idea.generate"
           ? quote(state, ideaJobInput(state, actor, command))
           : undefined;
     let next = applyCommand(state, actor, command, {
       hash,
-      canonicalGeneration: parsed.type === "content.generate",
+      canonicalGeneration: parsed.type === "content.generate" || parsed.type === "research.start",
       quotedCost: priced?.cost,
       pricingSnapshot: priced?.pricingSnapshot,
       assetManifest,

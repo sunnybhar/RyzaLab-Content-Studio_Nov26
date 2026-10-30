@@ -111,6 +111,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     audience: z.string().min(2).max(500),
     quantity: z.number().int().min(1).max(20),
     research: z.boolean(),
+    researchJobIds: z.array(id).max(5).optional(),
     sourceText: z.string().max(12000),
     idempotencyKey: id,
   }),
@@ -135,6 +136,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   }),
   command("workflow.importPreset", { channel }),
   command("research.saveReference", { jobId: id, title: short }),
+  command("research.start", { channel, contentId: id.optional(), query: z.string().trim().min(5).max(2000), idempotencyKey: id }),
   command("idea.importSavedResult", { jobId: id }),
   command("idea.create", { title: short, brief: text, channel }),
   command("idea.review", {
@@ -148,6 +150,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     kind: z.enum(["text", "review"]),
     expectedRevision: z.number().int().positive(),
     notes: text.optional(),
+    researchJobIds: z.array(id).max(5).optional(),
     idempotencyKey: short,
   }),
   command("idea.reuse", { id, mode: z.enum(["copy", "revise"]) }),
@@ -311,6 +314,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     allowed: z.boolean(),
   }),
   command("job.enqueue", {
+    researchJobIds: z.array(id).max(5).optional(),
     kind: z.enum(FUNCTIONS),
     channel,
     contentId: id.optional(),

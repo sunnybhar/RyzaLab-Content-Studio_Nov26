@@ -192,7 +192,7 @@ export async function runProvider(
   }
   if (job.kind === "research") {
     const result = extractResearchResult(json);
-    const text = JSON.stringify(result);
+    const text = JSON.stringify({...result,retrievedAt:new Date().toISOString()});
     if (text.length > 60000)
       throw new ProviderFailure(
         true,

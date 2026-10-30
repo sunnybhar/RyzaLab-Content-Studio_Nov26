@@ -26,6 +26,7 @@ export function copyIdentity(c: Content, s: StudioState) {
     account: c.account,
     format: c.format,
     newsletterSource: c.newsletterSource,
+    researchJobIds: c.researchJobIds,
     words: contentWording(c),
     workflow: workflow?.id,
     activation: workflow?.activationId || workflow?.createdAt,

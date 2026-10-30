@@ -34,6 +34,7 @@ import { demoPreset, type ChannelPreset } from "./presets";
 import { ideaJobInput } from "./idea-generation";
 import { contentWording } from "./content-wording";
 import { inputRequirements } from "./input-requirements";
+import { researchJobInput, researchEvidence } from "./research-link";
 import { savedResearchSchema } from "./research";
 import { review } from "../brand";
 export type ExecutionContext = {
@@ -246,6 +247,7 @@ export function applyCommand(
     }
   }
   switch (c.type) {
+    case "research.start": return applyCommand(input,actor,researchJobInput(s,actor,c),{...ctx,canonicalGeneration:true});
     case "research.saveReference": {
       const job = jobFor(c.jobId);
       if (job.contentId) {
@@ -579,11 +581,6 @@ export function applyCommand(
         });
         break;
       }
-      if (c.research)
-        throw new StudioError(
-          503,
-          "Inline research-to-ideas is not qualified. Run a separately qualified Claude Research job, review and save its cited result as a reference, then attach it to a reviewed workflow. No request was started.",
-        );
       const jobInput = ideaJobInput(s, actor, c);
       return applyCommand(input, actor, jobInput, ctx);
     }
@@ -1892,6 +1889,7 @@ export function applyCommand(
         channel: c.channel,
         contentId: c.contentId,
         prompt: c.prompt,
+        researchJobIds: c.researchJobIds,
         connectionId: c.connectionId,
       });
       const existing = s.jobs.find(
@@ -1924,12 +1922,15 @@ export function applyCommand(
       const preauthorized = Boolean(
         ctx.canonicalGeneration && preparation?.functions.includes(c.kind),
       );
+      researchEvidence(s,actor,c.channel,c.researchJobIds);
       const j: Job = {
         id: id(),
         kind: c.kind,
         channel: c.channel,
         contentId: c.contentId,
         prompt: c.prompt,
+        researchJobIds: c.researchJobIds,
+        researchSnapshots: (c.researchJobIds || []).map(jobId=>({jobId,raw:s.jobs.find(j=>j.id===jobId)!.result!})),
         connectionId: c.connectionId,
         estimate,
         reserved: 0,

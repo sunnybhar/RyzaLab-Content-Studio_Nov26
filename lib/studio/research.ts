@@ -15,10 +15,12 @@ const citation = z.object({
   title: z.string().max(2000),
   citedText: z.string().max(10000),
 });
+const claim = z.object({ text:z.string().max(10000), sourceUrls:z.array(z.url()).max(50) });
 export function extractResearchResult(value: unknown) {
   const json = value as { content?: unknown[]; stop_reason?: unknown };
   const summaries: string[] = [];
   const citations: z.infer<typeof citation>[] = [];
+  const claims: z.infer<typeof claim>[] = [];
   let searches = 0;
   const errors: string[] = [];
   const stopReason =
@@ -32,6 +34,7 @@ export function extractResearchResult(value: unknown) {
       searches++;
     if (block.type === "text" && typeof block.text === "string") {
       summaries.push(block.text);
+      const claimUrls: string[] = [];
       for (const item of Array.isArray(block.citations)
         ? block.citations
         : []) {
@@ -42,8 +45,9 @@ export function extractResearchResult(value: unknown) {
           title: c.title || "",
           citedText: c.cited_text || "",
         });
-        if (parsed.success) citations.push(parsed.data);
+        if (parsed.success) { citations.push(parsed.data);claimUrls.push(parsed.data.url); }
       }
+      if(claimUrls.length) claims.push({text:block.text.slice(0,10000),sourceUrls:[...new Set(claimUrls)].slice(0,50)});
     }
     if (block.type === "web_search_tool_result")
       for (const raw of Array.isArray(block.content)
@@ -62,6 +66,7 @@ export function extractResearchResult(value: unknown) {
     version: 1,
     summary: summaries.join("\n"),
     citations: unique,
+    claims,
     searchesObserved: searches,
     stopReason,
     errors,
@@ -84,5 +89,7 @@ export const savedResearchSchema = z
     errors: z.array(z.string()).max(0),
     status: z.literal("cited_research"),
     notice: z.string().max(2000),
+    claims: z.array(claim).max(100).optional(),
+    retrievedAt: z.iso.datetime().optional(),
   })
   .strict();

@@ -266,6 +266,7 @@ export async function POST(req: NextRequest) {
                 state: "pending",
                 origin: "agent",
                 generationRunId: j.id,
+                researchJobIds: j.researchJobIds,
                 createdBy: j.createdBy,
                 createdAt: new Date().toISOString(),
               });

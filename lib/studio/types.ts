@@ -78,6 +78,7 @@ export interface Workflow {
   createdAt: string;
 }
 export interface Idea {
+  researchJobIds?: string[];
   id: string;
   title: string;
   brief: string;
@@ -225,6 +226,7 @@ export interface SoloReviewPolicy {
   autoReview: boolean;
 }
 export interface Content {
+  researchJobIds?: string[];
   id: string;
   channel: Channel;
   account: string;
@@ -313,6 +315,8 @@ export interface Connection {
   updatedAt: string;
 }
 export interface Job {
+  researchJobIds?: string[];
+  researchSnapshots?: {jobId: string; raw: string}[];
   targetRevision?: number;
   targetIdentity?: string;
   targetAccepted?: boolean;

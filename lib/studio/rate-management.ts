@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { rateSchema, type Rate } from "./pricing";
 import { requirePermission, StudioError } from "./permissions";
+import { researchConfigSchema } from "./research";
 import type { Actor, StudioState } from "./types";
 export const rateChangeSchema = z.discriminatedUnion("action", [
   z
@@ -42,11 +43,12 @@ export function updateRates(
     );
   const selected = input.action === "save" ? input.card : input;
   if (input.action === "save") {
-    if (!["text", "ideas", "review"].includes(input.card.function))
+    if (!["text", "ideas", "review", "research"].includes(input.card.function))
       throw new StudioError(
         400,
-        "This editor currently qualifies text, ideas and review only. Research and media need separate adapter evaluation.",
+        "Media needs separate adapter evaluation.",
       );
+    if(input.card.function === "research" && !researchConfigSchema.safeParse(input.card).success) throw new StudioError(400,"Research needs the Claude bounded-search adapter, max one search, and a fixed reservation covering all token and search charges.");
     const verified = Date.parse(input.card.verifiedAt);
     if (!Number.isFinite(verified) || verified > Date.parse(now))
       throw new StudioError(

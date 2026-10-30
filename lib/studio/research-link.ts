@@ -1,0 +1,30 @@
+import type { Actor, Channel, StudioState } from "./types";
+import { can, requirePermission, StudioError } from "./permissions";
+import { savedResearchSchema } from "./research";
+import { resolvedConnection } from "./solo-quality";
+
+export function researchEvidence(state: StudioState, actor: Actor, channel: Channel, ids: string[] = []) {
+  if(ids.length > 5 || new Set(ids).size !== ids.length) throw new StudioError(400,"Select at most five distinct research results.");
+  return ids.map(id=>{
+    const job=state.jobs.find(j=>j.id===id);
+    if(!job || job.kind!=="research" || job.channel!==channel || job.state!=="succeeded" || !job.result) throw new StudioError(409,"Select completed cited research from this channel. Failed or uncertain research cannot be used as evidence.");
+    requirePermission(state,actor,"read",{channel:job.channel,contentId:job.contentId,account:job.account,assignedTo:state.contents.find(c=>c.id===job.contentId)?.assignedTo});
+    if(job.createdBy!==actor.email && !can(state,actor,"users.manage")) throw new StudioError(403,"This research belongs to another creator.");
+    if(job.contentId){const source=state.contents.find(c=>c.id===job.contentId && !c.deletedAt);if(!source)throw new StudioError(403,"Research source draft is unavailable.");}
+    let value;try {value=savedResearchSchema.parse(JSON.parse(job.result));} catch{throw new StudioError(422,"Research needs source review: missing citations, incomplete response or search errors. No generation started.");}
+    return {jobId:job.id,requestedAt:job.createdAt,provider:job.connectionSnapshot?.provider,model:job.connectionSnapshot?.model,...value};
+  });
+}
+
+export function researchJobInput(state:StudioState,actor:Actor,input:{channel:Channel;contentId?:string;query:string;idempotencyKey:string}) {
+  const content=input.contentId ? state.contents.find(c=>c.id===input.contentId && !c.deletedAt):undefined;
+  if(input.contentId && (!content || content.channel!==input.channel))throw new StudioError(409,"Select the current draft in this channel.");
+  const scope={channel:input.channel,contentId:content?.id,account:content?.account,assignedTo:content?.assignedTo,function:"research" as const};
+  requirePermission(state,actor,"read",scope);requirePermission(state,actor,"job.create",scope);
+  if(content)requirePermission(state,actor,"content.edit",scope);
+  const connectionId=resolvedConnection(state,input.channel,"research");
+  if(!connectionId)throw new StudioError(409,"Set up and validate a Claude Research connection in AI & budgets, then select it for Research in the channel workflow or workspace defaults.");
+  if(state.jobs.some(j=>j.kind==="research" && j.channel===input.channel && j.contentId===input.contentId && j.createdBy===actor.email && ["queued","running","unknown","awaiting_confirmation"].includes(j.state) && j.idempotencyKey!==input.idempotencyKey))throw new StudioError(409,"Resolve the existing research request before starting another. No automatic paid retry was made.");
+  // Only this explicit public query is sent. Never append private draft or workflow text.
+  return {type:"job.enqueue" as const,kind:"research" as const,channel:input.channel,contentId:content?.id,connectionId,prompt:input.query,estimate:0,idempotencyKey:input.idempotencyKey};
+}
