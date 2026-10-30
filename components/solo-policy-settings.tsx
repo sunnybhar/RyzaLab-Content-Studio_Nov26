@@ -31,6 +31,9 @@ export function SoloPolicySettings({
   const [independent, setIndependent] = useState(
     policy?.requireIndependentReview ?? false,
   );
+  const [automaticReview, setAutomaticReview] = useState(
+    policy?.autoReview ?? true,
+  );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const activeJobs = state.jobs.some((job) =>
@@ -70,7 +73,7 @@ export function SoloPolicySettings({
         monthlyCap: perMonth,
         requireIndependentReview: independent,
         autoDraft: policy?.autoDraft ?? false,
-        autoReview: policy?.autoReview ?? true,
+        autoReview: automaticReview,
         expectedRuleVersion: editRules,
       });
       setEditing(false);
@@ -102,6 +105,7 @@ export function SoloPolicySettings({
                 ((policy ? state.settings.monthlyCap : 500) / 100).toFixed(2),
               );
               setIndependent(policy?.requireIndependentReview ?? false);
+              setAutomaticReview(policy?.autoReview ?? true);
               setEditVersion(policy?.version);
               setEditRules(state.settings.protectedVersion);
               setEditMonthlyCap(state.settings.monthlyCap);
@@ -172,6 +176,20 @@ export function SoloPolicySettings({
               />
             </label>
           </div>
+          <label>
+            <input
+              type="checkbox"
+              checked={automaticReview}
+              onChange={(event) => setAutomaticReview(event.target.checked)}
+            />{" "}
+            Prepare an AI textual review automatically after copy approval
+          </label>
+          <p>
+            Automatic review requires a validated review connection, verified
+            pricing, a running worker and a package allowance. Missing setup or
+            budget blocks final approval until resolved. This does not inspect
+            images or publish content.
+          </p>
           <label>
             <input
               type="checkbox"

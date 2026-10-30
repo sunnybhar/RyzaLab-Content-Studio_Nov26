@@ -54,6 +54,20 @@ test("only the server-designated existing administrator explicitly claims the fi
       ),
     /changed/,
   );
+  assert.throws(() =>
+    claimFounder(
+      s,
+      actor,
+      {
+        expectedVersion: s.version,
+        acknowledge: true,
+        configuredEmail: actor.email,
+      },
+      actor.email,
+      now,
+      "id",
+    ),
+  );
   const next = claimFounder(
     s,
     actor,

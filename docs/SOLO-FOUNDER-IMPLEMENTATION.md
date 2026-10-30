@@ -1,18 +1,21 @@
-# Solo-founder implementation — active work
+# Solo-founder implementation — development status
 
-User authorized Start on October 29, 2026. Approved design: docs/design/solo-founder-v1/PROPOSAL.md. User selected initial $0.50 total preparation budget and $5 monthly; routine work within package authorization, exception-only confirmations. No paid provider tests, account access, database migrations or social posting implied by this build.
+User authorized the approved design on October29,2026. Two human decisions; manual publication; initial suggested50c total preparation/$5monthly. Development checkpoints do not imply live acceptance or release.
 
-- [ ] Candidate/result contracts, incomplete detection and target-safe direct draft application
-- [ ] Selected idea opens a linked draft; inline generation/progress/recovery
-- [ ] Versioned founder adoption of two-review policy, copy acceptance and exact final approval
-- [ ] Real agent review reports + truthful deterministic checks; required independence and Notes release gate
-- [ ] Stable package preparation authorization; all existing monetary caps still apply
-- [ ] Function-specific AI editor, account model discovery, credential reuse and versioned server rates
-- [ ] Compact Ideas list/tiles and full detail popup
-- [ ] Activity latest ten completed records, active work and paginated history popup
-- [ ] Calendar ready tray, immediate planner, approved read-only text/media preview and edit link
-- [ ] Horizontal channel setup, consistent selected states and compact home brand message
-- [ ] Domain, worker/concurrency, browser and final approval-integrity review
-- [ ] Training/backlog/release evidence refreshed; verified release pushed
+- [x] Strict result contracts and target-safe draft settlement
+- [x] Selected idea opens one linked draft; inline writing/progress/recovery
+- [x] Explicit versioned founder adoption, copy acceptance and exact final approval
+- [x] Automatic textual review with real report provenance and required independence/Notes gates
+- [x] Stable package authorization and existing global/connection budget caps
+- [x] Function AI editor, account model discovery, credential reuse and qualified rate registry
+- [x] Compact Ideas list/tiles/detail popup
+- [x] Activity recent ten plus active work and older history popup
+- [x] Calendar ready tray and read-only approved text/media preview
+- [x] Horizontal channel navigation, selected states and compact home message
+- [x] Server-authorized first-founder claim and separate policy setup
+- [ ] Automatic first writing from selected idea within scoped allowance
+- [ ] Immediate date/time planner after final package approval and remaining integrated schedule tests
+- [ ] Final integrated permission/budget/worker and browser release review
+- [ ] Training/backlog evidence refreshed; complete verified release pushed to main
 
-No app work will be described as a qualified image/video/audio integration merely because its settings card exists. Exact model listing uses provider account responses; access is not capability or cost qualification. Infrastructure key setup remains one-time. Founder policy adoption is explicit; missing policy retains legacy behavior. Code checkpoints go to studio-rebuild every five minutes; unfinished work stays off main.
+No actual media integration is qualified merely because a setup card exists. API access is not capability or pricing qualification. No live founder/policy adoption or provider tests were performed during development. See WORK-IN-PROGRESS for exact final check results and current Git log for the latest saved checkpoint.

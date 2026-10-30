@@ -1,52 +1,53 @@
 # Resume the authorized solo-founder build
 
-The user said Start, then asked for everything saved before the session limit. Continue implementation; do not restart design, request the same approvals, deploy unfinished code, or claim the build is complete.
+Current working branch: `studio-rebuild`. Read the latest `docs/WORK-IN-PROGRESS.md` tail and Git status/log first. October 30 continuation builds explicit first-founder setup and policy adoption after saved checkpoint2037af5. The latest Git commit is authoritative; older checkpoint numbers in historical notes are not the current state.
 
-## Git and authorization
+## Operating requirements
 
-- Repository /workspace/RyzaLab-Content-Creation, remote sunnybhar/RyzaLab-Content-Creation.
-- Working branch studio-rebuild. Latest code checkpoint8520ccc; documentation checkpoint follows.
-- Live main094b69c. Never deploy WIP. User already authorizes verified main release after checks.
-- Git author sunnybhargava1611@gmail.com. Push every five minutes while active. Read AGENTS.md.
-- No paid provider calls, live database writes/migrations, emails or social publishing during implementation.
-- User selected Claude/OpenAI/Gemini for text functions; media integrations remain unqualified/pending. Do not fake completion.
-- Confirmed TWO human reviews (copy then full package), routine spending within initial50c total preparation/$5month, ask exceptions only. Adoption is an explicit founder policy command in the future UI. No live settings changed.
+- Read AGENTS.md and relevant installed Next.js docs before implementation.
+- User wants one feature at a time, an estimated time before starting, a verified status update when it is done, then the next feature.
+- Commit and push at least every five minutes while changes exist, before long checks and before ending. Use `studio-rebuild` for WIP; never push an unfinished release to main. Author email sunnybhargava1611@gmail.com.
+- Existing main remains094b69c. User authorizes a completed verified release, but the broad rebuild still has remaining work. Do not deploy a partial checkpoint.
+- Do not claim background work after a turn ends. If paused, stop; resume only when requested.
+- No paid provider calls, live database/environment changes, emails, social publishing or schema migrations during this implementation.
 
-## Current evidence
+## Confirmed product decisions
 
-TypeScript and all146 tests pass. Tests: npm run typecheck; npm test. New tests tests/studio-solo.test.ts cover the domain scaffold and review findings. No new integrated browser/build result is claimed yet. docs/design/solo-founder-v1 contains approved12-pagePDF/clickablewireframes; docs/SOLO-FOUNDER-IMPLEMENTATION.md has the work checklist. Other current release tests/browser.mjs is the OLD UI walkthrough and needs expansion for new flows, while legacy behavior should still be covered.
+- Two human decisions: copy approval, then exact final package approval/handoff. Manual human publishing.
+- Claude, OpenAI and Gemini account-model selection; actual model IDs come from provider account discovery. Media integrations and social metrics remain pending qualification.
+- Routine preparation within founder-authorized total package cap; ask only for exceptions. Suggested starting caps:50c/package and$5/month. No live caps have been changed by this build.
+- Agents must report true provenance, supplied-reference scope and incomplete results. Same-provider second pass is not independent; Notes retain separate founder release authority and required independent report.
 
-## Backend work already saved
+## Implemented on working branch
 
-- lib/studio/output-contracts.ts: strict selected-piece JSON and review JSON contracts; questions/sources retained.
-- lib/studio/solo-quality.ts: exact copy identity with content ID/text revision/words/destination/workflowactivation/rules/policy/references, current acceptance, deterministic blockers, required independent report/Notes readiness. Reports are not fabricated six human passes.
-- lib/studio/draft-candidates.ts: target-safe settlement, current permission checks after dispatch, incomplete/invalid/conflict retention, no overwriting manual or accepted/reviewing/trashed content, existing media preserved, questions hold autoapplication.
-- lib/studio/preparation-budget.ts: stable authorization, globalcaps plus lifetime content consumption including untagged historical jobs. All two-step content operations require applicable preparation; no confirmed-job bypass.
-- Engine policy.adoptSolo (Founder policy.manage), preparation.authorize, content.acceptCopy (package.approve scope), job.applyDraft (manual question disposition), connection.default, idea.use (idempotent linked draft).
-- Final package.approve in two-step compares current acceptance/policy IDs, retains policy/copy/report snapshots, enforces Founder authority for Notes and actual independent report, explicitly records human final handoff atomically. Legacy checks stay intact when policy absent.
-- content.save now enforces destination account permission and advances text revision for destination/format/slide wording; old acceptance cannot resurrect on reversion. Restore clears inherited copy/report/preparation. Workflow activation gets fresh activationId.
-- lib/studio/generation.ts builds canonical actual-content requests. New content.generate is transformed server-side to priced job.enqueue. ONLY trusted context.canonicalGeneration may assign authoritative outputContract and auto-confirm within preparation allowance; raw browser prompts cannot certify unrelated content.
-- Enqueue pins target revision/copy identity/current acceptance/connection snapshot. Providers return structured completion state and receive strict output contract. Quote includes contract bytes.
-- Worker dispatch checks preparation + model snapshot. Settlement invokes shared safe candidate attachment. No complete orchestration/follow-up review yet.
+- Exact-copy acceptance, immutable final snapshots, stable package budget across revisions, canonical draft/review contracts and safe candidate settlement.
+- Compact Ideas tile/list/detail and idempotent linked draft opening; inline Write/Revise with status, retained candidate comparison and protection for unsaved edits.
+- Two-step review UI and automatic textual-review orchestration after copy approval, with atomic preparation and maintenance recovery. No auto retry of failed/unknown/incomplete work. Live worker still performs provider dispatch.
+- Provider/function setup cards, credential-preserving connection editor, real account model discovery with fixed official URLs/pagination; no invented current catalogue.
+- Versioned qualified-rate registry UI/API, source/date/evidence, inherited environment rates retained at first adoption, snapshot comparison at dispatch.
+- Recent-ten activity plus active/unknown jobs and older searchable popup; horizontal channel tabs/selected states; compact home brand message.
+- Calendar ready-to-plan tray and read-only approved snapshots with authenticated asset rendering; existing explicit schedule controls and manual publication confirmation.
+- Founder-only role changes and last-founder protection. New first-founder claim requires server-only STUDIO_FOUNDER_EMAIL matching a verified signed-in existing administrator, no prior founder/setup record, explicit acknowledgment, CAS and audit. It never changes a role on load. See docs/FOUNDER-SETUP.md.
+- Founder policy settings now wired in AI & budgets. Explicit adoption only; current policy/rules/budget captured on edit; active/unknown jobs block policy change on server. Automatic review option is visible. First adoption leaves autoDraft=false until automatic initial writing is built.
 
-## Critical next work
+## Latest validation
 
-1. Read latest WORK-IN-PROGRESS tail and relevant code; preserve existing changes. Obtain focused reviewer recheck of fixes (previous review found4P1s+questions/media issues; six regressions now pass). Existing architecture_review agent can review; do not claim exact Astra routing if unavailable.
-2. UI/API integration: explicit Founder one-time adoption (initialuseradmin may assign Founder through existing audited People flow; never silently escalate). Show package cap/use and exceptions inside draft.
-3. Add direct Use idea -> linked draft, inline Generate/Revise and status/result recovery, safe saved-candidate diff/manual apply. No copy/paste from Activity. Add truthful AI reviewer orchestration after copy/asset changes within same budget. Automatic only under configured provider/prices/authority.
-4. Two-review UI: copy acceptance facts/source findings, then final exact copy+media report preview. Permission/version/source changes invalidate correctly. Ordinary no-required-independent can be human-reviewed honestly; Notes/requiring independence must hold without real qualified separate-provider report. Never label same-model second pass independent. Add human handoff decision + planner after approval.
-5. Function matrix AI settings, create/edit existing connection with active/unknown job guard, reuse encrypted credential server-side, provider model listing with pagination/fixed URLs/redacted errors. Current connection endpoints only create; no new model-discovery endpoint yet. Settings.defaultConnections exists but UI/resolve adoption not complete. Current workflow explicit bindings override defaults. Missing vs explicit-disabled/inherited routing needs clear treatment.
-6. Server-maintained qualified rate catalogue editable via protected Studio UI (Settings.qualifiedRates type scaffold only; readRates currently env-only). Do not let arbitrary client estimates self-qualify. Keep source/date/capability validation and worker snapshot matching. Official docs fetch was blocked403 in design session; no invented current model catalogue.
-7. Ideas list/tile/detail popup. Activity latest10completed +allactive +older searchable/paginated popup, incomplete shows Needsattention. Remove Queue request jargon from normal flow.
-8. Calendar: Ready-to-schedule approved packages, immediate planner, exact approved destination read-only, read-only text/image/slides/video preview with auth asset fetching, edit link opens working draft, explicit scheduled snapshot replacement, no duplicate task on repeated planner submits. Schedule.manage independent of package approval. Actual publication remains human-confirmed URL.
-9. Horizontal Channel setup and selected indicators everywhere. Move tall Human by design sidebar message into compact homepage header. BL054 was queued, not implemented yet.
-10. Root-level tests/build/browser and focused final integrity review; refresh14 training modules/QA/backlog honestly, then push verified release to main. Current latest shipped docs have160manualcases/54backlogitems; all manual cases Notrun. Backend scaffolding passing tests is NOT complete UI/provider acceptance.
+Before founder setup:160 tests, production build, full browser walkthrough and isolated simulated automatic-review approval flow passed. Founder batch:163 tests, TypeScript/build and isolated claim/adoption/stale-form browser fixture pass; inspect newest WORK-IN-PROGRESS for final full browser results. Tests use mocks/local fixtures, not live credentials or paid provider calls.
 
-## Useful cautions
+## Remaining work
 
-- Main entry /studio is live; /preview is separate local demo. User previously believed data lost due preview. No resets/clearbrowserstorage.
-- Existing runtime Secrets AESGCM, CAS studio_commit and private assets; no schema rollout needed for additional canonicalJSON fields. Keep scope filtering for new preparations/candidates/reports.
-- Existing worker is Render Node poller calling Vercel, not an external queue UI. Preserve durable leases, unknown outcomes/reservations and no paid auto retries.
-- Old seeded previews remain legacy unless policy explicitly adopted; keep old tests and add new-mode fixtures rather than secretly weakening requirements.
-- Native review dialogs currently close before custom global dialogs. Preserve modal focus/interaction and exact snapshot controls.
-- UI code mostly components/workspace.tsx/css; split new components to keep ownership clear. Asset GET requires bearer token; use existing authenticated asset fetch/export utilities, not plain private img URL.
+1. Finish verification/documentation/checkpoint for founder setup if any checks are pending. Do not configure STUDIO_FOUNDER_EMAIL in a live deployment or claim a live founder role yourself.
+2. Automatic first writing after human Use idea selection is still pending. The current policy deliberately leaves it off. Implement bounded/idempotent canonical generation within an actual scoped package authorization. Missing provider/pricing/budget must stay actionable; no blind paid retries. Explicit Write with AI already works for opted-in policy.
+3. Final-package approval should offer the calendar date/time planner immediately when authorized; preserve ready tray and explicit immutable package/account selection. Add missing exact duplicate schedule regression coverage and any integrated flow gaps.
+4. Improve default per-function routing controls if needed, keeping explicit overrides and disconnected bindings fail closed. Do not silently change live workflows or guess provider capabilities.
+5. Refresh training/QA/backlog artifacts honestly; manual QA remains Not run until a human actually tests. Existing14 modules/160manualcases/54 backlog rows are older release documentation.
+6. Final integrated browser, permission/budget/worker integrity review, production build, then only a complete verified release to main. Exact requested review-model routing may be unavailable; do not claim a specific reviewer clearance without evidence.
+
+## Useful files and commands
+
+- `lib/studio/review-orchestration.ts`, `generation.ts`, `draft-candidates.ts`, `solo-quality.ts`, `preparation-budget.ts`, `dispatch-permissions.ts`.
+- `lib/studio/founder-setup.ts`, `components/founder-setup.tsx`, `solo-policy-settings.tsx`, founder API route.
+- `npm test`; `npm run typecheck`; `npm run build`; full browser `TEST_BASE_URL=http://127.0.0.1:PORT npm run test:browser`.
+- Isolated `npx tsx tests/founder-settings-browser.mts` bundles components with local fixtures. Automatic-review browser fixture expects a running production app. No fixture represents live success.
+- `/studio` is live; `/preview` is demo. User previously opened preview and feared data loss; never reset storage or imply preview data are production.
+- Supabase state/secret persistence uses atomic CAS. Private asset preview requires authenticated fetching. Preserve historical evidence, frozen references, leases and unknown-outcome reservations.
