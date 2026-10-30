@@ -1,5 +1,5 @@
+"use client";
 import { requestedIdeaQuantity } from "@/lib/studio/idea-generation";
-("use client");
 import { useEffect, useRef, useState } from "react";
 import type { Actor, Channel, Command, StudioState } from "@/lib/studio/types";
 import { can } from "@/lib/studio/permissions";

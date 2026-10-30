@@ -1442,7 +1442,7 @@ export default function Workspace() {
             <div className="s-release-label" aria-label="Studio version">
               <strong>RyzaLab Studio</strong>
               <small>
-                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.0"} ·{" "}
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.1"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>
@@ -2033,7 +2033,7 @@ export default function Workspace() {
                   canUse={(idea, account) => allowed("content.create", { channel: idea.channel, account }) && (idea.state !== "pending" || allowed("idea.review", { channel: idea.channel }))}
                   canReuse={(idea) => allowed("idea.edit", { channel: idea.channel })}
                   onUse={useIdea}
-                  onApprove={(idea) => execute({ type: "idea.review", id: idea.id, decision: "approved" })}
+                  onApprove={(idea) => execute({ type: "idea.review", id: idea.id, decision: "approved" }, "Idea approved — find it in Ideas → Approved. Use idea opens its draft.")}
                   onReject={(idea) => reject("idea.review", idea.id)}
                   onReuse={(idea, mode) => execute({ type: "idea.reuse", id: idea.id, mode })}
                 />

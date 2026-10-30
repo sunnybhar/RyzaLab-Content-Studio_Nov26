@@ -255,7 +255,7 @@ export async function runProvider(
   return {
     completion: refusal
       ? "refused"
-      : truncated || (job.outputContract && !terminal)
+      : truncated || ((job.outputContract || job.kind === "ideas") && !terminal)
         ? "incomplete"
         : "complete",
     text: truncated
