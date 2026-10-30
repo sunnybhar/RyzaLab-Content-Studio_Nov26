@@ -27,6 +27,7 @@ function adopted() {
       autoDraft: true,
       autoReview: false,
       expectedRuleVersion: s.settings.protectedVersion,
+      expectedPolicyVersion: s.settings.reviewPolicy?.version,
     },
     ctx,
   );
@@ -143,6 +144,7 @@ test("only founder adopts versioned two-review policy; ordinary settings cannot 
           autoDraft: true,
           autoReview: true,
           expectedRuleVersion: s.settings.protectedVersion,
+      expectedPolicyVersion: s.settings.reviewPolicy?.version,
         },
         ctx,
       ),
@@ -341,6 +343,7 @@ test("preparation spending survives revision/policy authorization changes and ne
       autoDraft: true,
       autoReview: true,
       expectedRuleVersion: s.settings.protectedVersion,
+      expectedPolicyVersion: s.settings.reviewPolicy?.version,
     },
     ctx,
   );

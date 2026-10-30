@@ -258,6 +258,8 @@ export const commandSchema = z.discriminatedUnion("type", [
   }),
   command("policy.save", { rules: text }),
   command("policy.adoptSolo", {
+    expectedPolicyVersion: id.optional(),
+    expectedMonthlyCap: money.optional(),
     packageCap: money,
     monthlyCap: money,
     requireIndependentReview: z.boolean(),

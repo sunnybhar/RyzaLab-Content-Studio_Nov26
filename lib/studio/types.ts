@@ -418,6 +418,7 @@ export interface Settings {
   defaultConnections?: Partial<Record<FunctionKind, string>>;
   qualifiedRates?: import("./pricing").Rate[];
   pricingRegistryVersion?: number;
+  founderSetup?: {actorId:string; email:string; at:string};
 }
 export interface FounderException {
   id: string;

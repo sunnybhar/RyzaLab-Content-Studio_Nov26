@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { can } from "@/lib/studio/permissions";
 import type { Actor, Command, StudioState } from "@/lib/studio/types";
 
-/** Keep adoption disabled until both two-step review screens and automation are ready. */
+/** Founder explicitly adopts the two-step policy; no settings change on load. */
 export function SoloPolicySettings({
   state,
   actor,
@@ -19,6 +19,9 @@ export function SoloPolicySettings({
   const policy = state.settings.reviewPolicy;
   const founder = can(state, actor, "policy.manage");
   const [editing, setEditing] = useState(false);
+  const [editVersion, setEditVersion] = useState<string | undefined>();
+  const [editRules, setEditRules] = useState("");
+  const [editMonthlyCap, setEditMonthlyCap] = useState(0);
   const [packageCap, setPackageCap] = useState(
     ((policy?.packageCap ?? 50) / 100).toFixed(2),
   );
@@ -61,12 +64,14 @@ export function SoloPolicySettings({
     try {
       await send({
         type: "policy.adoptSolo",
+        expectedPolicyVersion: editVersion,
+        expectedMonthlyCap: editMonthlyCap,
         packageCap: perPackage,
         monthlyCap: perMonth,
         requireIndependentReview: independent,
-        autoDraft: policy?.autoDraft ?? true,
+        autoDraft: policy?.autoDraft ?? false,
         autoReview: policy?.autoReview ?? true,
-        expectedRuleVersion: state.settings.protectedVersion,
+        expectedRuleVersion: editRules,
       });
       setEditing(false);
     } catch (cause) {
@@ -97,6 +102,9 @@ export function SoloPolicySettings({
                 ((policy ? state.settings.monthlyCap : 500) / 100).toFixed(2),
               );
               setIndependent(policy?.requireIndependentReview ?? false);
+              setEditVersion(policy?.version);
+              setEditRules(state.settings.protectedVersion);
+              setEditMonthlyCap(state.settings.monthlyCap);
               setEditing(true);
             }}
           >

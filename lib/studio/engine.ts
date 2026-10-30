@@ -1494,6 +1494,12 @@ export function applyCommand(
     }
     case "policy.adoptSolo": {
       need("policy.manage");
+      if (c.expectedMonthlyCap !== undefined && c.expectedMonthlyCap !== s.settings.monthlyCap)
+        throw new StudioError(409, "Monthly budget changed. Reload current settings before saving.");
+      if (c.expectedPolicyVersion !== s.settings.reviewPolicy?.version)
+        throw new StudioError(409, "Review policy changed. Reload the current settings before saving.");
+      if (s.jobs.some((job) => ["awaiting_confirmation", "queued", "running", "unknown"].includes(job.state)))
+        bad("Resolve active or uncertain requests before changing the review policy.");
       if (c.expectedRuleVersion !== s.settings.protectedVersion)
         throw new StudioError(
           409,

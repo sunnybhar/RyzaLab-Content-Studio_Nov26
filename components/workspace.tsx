@@ -1,4 +1,6 @@
 "use client";
+import { FounderSetup } from "./founder-setup";
+import { SoloPolicySettings } from "./solo-policy-settings";
 import { PricingManager } from "./pricing-manager";
 import { ConnectionEditor } from "./connection-editor";
 
@@ -947,6 +949,15 @@ export default function Workspace() {
       setWorkflowChannel(task.channel);
       move("Workflow settings");
     }
+  }
+  async function founderRequest(body?: unknown) {
+    const session = await supabase?.auth.getSession();
+    const token = session?.data.session?.access_token;
+    if (!token) throw new Error("Sign in to check founder setup.");
+    const response = await fetch("/api/studio/founder", { method: body ? "POST" : "GET", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, ...(body ? {body: JSON.stringify(body)} : {}), signal: AbortSignal.timeout(30000) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Could not complete founder setup.");
+    return result;
   }
   async function pricingRequest(body?: unknown) {
     const session = await supabase?.auth.getSession();
@@ -3698,6 +3709,8 @@ export default function Workspace() {
           )}
           {page === "AI & budgets" && (
             <>
+              {!allowed("policy.manage") && state.members.some((m) => m.email === actor.email && m.roles.includes("administrator")) && <FounderSetup request={founderRequest} changed={refresh} demo={mode === "demo"}/>}
+              <SoloPolicySettings state={state} actor={actor} send={send} ready />
               <PricingManager request={pricingRequest} demo={mode === "demo"} disabled={!allowed("settings.manage")} changed={refresh}/>
               <div className="s-stats s-budget-stats">
                 <Stat

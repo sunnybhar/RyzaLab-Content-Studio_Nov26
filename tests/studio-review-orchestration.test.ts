@@ -15,6 +15,7 @@ function fixture() {
     {
       type: "policy.adoptSolo",
       expectedRuleVersion: s.settings.protectedVersion,
+      expectedPolicyVersion: s.settings.reviewPolicy?.version,
       packageCap: 50,
       monthlyCap: 500,
       requireIndependentReview: false,
