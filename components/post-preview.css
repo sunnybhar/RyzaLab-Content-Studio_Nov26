@@ -1,0 +1,15 @@
+.studio-v2 .s-post-preview { width: min(760px, calc(100vw - 24px)); }
+.studio-v2 .s-feed-post { max-width: 600px; margin: 20px auto; border: 1px solid var(--s-line); border-radius: 12px; overflow: hidden; background: var(--s-panel); }
+.studio-v2 .s-feed-post header { display:flex; gap:12px; align-items:center; padding:20px; }
+.studio-v2 .s-feed-avatar { display:grid; place-items:center; width:48px; height:48px; border-radius:6px; background:var(--s-accent, #176a65); color:white; font-size:24px; }
+.studio-v2 .s-feed-copy { white-space:pre-wrap; overflow-wrap:anywhere; padding:0 20px 16px; line-height:1.65; }
+.studio-v2 .s-feed-clamped { display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
+.studio-v2 .s-feed-post > .s-text-button { margin:0 20px 15px; }
+.studio-v2 .s-feed-media img, .studio-v2 .s-feed-media video { max-width:100%; height:auto; }
+.studio-v2 .s-feed-media audio { width:100%; }
+.studio-v2 .s-feed-post footer { padding:16px 20px; border-top:1px solid var(--s-line); color:var(--s-muted); }
+.studio-v2 .s-inline-writing-assistant { padding:18px 0; border-bottom:1px solid var(--s-line); }
+.studio-v2 .s-inline-writing-assistant p { font-size:13px; margin:8px 0; }
+.studio-v2 .s-inline-writing-assistant pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:280px; overflow:auto; }
+.studio-v2 .s-ai-instructions { margin:12px 0; }
+.studio-v2 .s-inline-writing-assistant .s-version { margin-top:10px; }

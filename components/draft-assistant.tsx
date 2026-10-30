@@ -22,6 +22,7 @@ export function DraftAssistant({
   busy,
   run,
   refresh,
+  onEditCandidate,
 }: {
   content: Content;
   state: StudioState;
@@ -31,6 +32,7 @@ export function DraftAssistant({
   busy: boolean;
   run: (command: Command, message?: string) => Promise<boolean>;
   refresh: () => Promise<void>;
+  onEditCandidate?: (body: string, metadata: string) => void;
 }) {
   const [notes, setNotes] = useState("");
   const [resolution, setResolution] = useState<Record<string, string>>({});
@@ -81,10 +83,10 @@ export function DraftAssistant({
 
   return (
     <section
-      className="s-panel s-panel-padding"
+      className="s-inline-writing-assistant"
       aria-label="Draft writing assistance"
     >
-      <h2>Writing assistance</h2>
+      <h3>Write with AI</h3>
       {content.initialWriting?.policyVersion === policy?.version &&
         policy?.autoDraft &&
         content.automaticWriting?.error && (
@@ -102,7 +104,7 @@ export function DraftAssistant({
         )}
       <p>
         Create or revise this saved draft with the configured writing model.
-        Results and questions appear here.
+        Complete results appear in the editor below. Questions and saved alternatives stay in the result details.
       </p>
       {policy ? (
         <p>
@@ -135,7 +137,7 @@ export function DraftAssistant({
           Authorize package allowance
         </button>
       )}
-      <label className="s-field">
+      <details className="s-ai-instructions"><summary>Optional instructions</summary><label className="s-field">
         Optional instructions for this draft
         <textarea
           rows={3}
@@ -144,7 +146,7 @@ export function DraftAssistant({
           onChange={(e) => setNotes(e.target.value)}
           placeholder="For example, make the opening shorter."
         />
-      </label>
+      </label></details>
       <div className="s-actions">
         <button
           className="s-btn s-primary"
@@ -220,6 +222,8 @@ export function DraftAssistant({
           {job.error && <p role="status">{job.error}</p>}
           {job.candidate && !job.appliedAt && (
             <div>
+              {onEditCandidate && <button className="s-btn" disabled={readOnly || busy || dirty} onClick={() => onEditCandidate(job.candidate!.body, [job.candidate!.metadata, ...job.candidate!.questions.map((q) => `[Confirm: ${q}]`)].filter(Boolean).join("\n\n"))}>Open suggested text in editor</button>}
+              {onEditCandidate && <p>Opens an unsaved working draft. Any unanswered questions remain confirmation markers in the publication notes and block approval.</p>}
               <h3>Current saved text</h3>
               <pre>{content.text || "No text yet."}</pre>
               <h3>Suggested text</h3>

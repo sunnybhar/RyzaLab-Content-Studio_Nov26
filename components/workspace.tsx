@@ -54,6 +54,7 @@ import {
 import { ReviewCard } from "./review-card";
 import { SoloReview } from "./solo-review";
 import { DraftAssistant } from "./draft-assistant";
+import { PostPreview } from "./post-preview";
 import { WorkflowVersions } from "./workflow-versions";
 import { useStudio } from "@/lib/studio/client";
 import {
@@ -464,6 +465,7 @@ export default function Workspace() {
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, []);
+  const [queueKind, setQueueKind] = useState<FunctionKind>("text");
   const [queueTarget, setQueueTarget] = useState<Content | "general" | null>(
     null,
   );
@@ -2745,7 +2747,7 @@ export default function Workspace() {
                 form={openForm}
                 onError={setLocalError}
                 refresh={() => refresh(true)}
-                queue={() => setQueueTarget(activeContent)}
+                queue={(kind = "text") => { setQueueKind(kind); setQueueTarget(activeContent); }}
               />
             ) : (
               <>
@@ -4248,6 +4250,7 @@ export default function Workspace() {
       {queueTarget && (
         <QueueRequest
           state={state}
+          initialKind={queueKind}
           content={queueTarget === "general" ? undefined : queueTarget}
           busy={busy}
           readOnly={readOnly}
@@ -4434,6 +4437,7 @@ function ProductionBoard({
 }
 
 function QueueRequest({
+  initialKind = "text",
   state,
   content,
   busy,
@@ -4444,6 +4448,7 @@ function QueueRequest({
 }: {
   state: StudioState;
   content?: Content;
+  initialKind?: FunctionKind;
   busy: boolean;
   readOnly: boolean;
   error: string;
@@ -4453,7 +4458,7 @@ function QueueRequest({
   const [channel, setChannel] = useState<Channel>(
     content?.channel || "LinkedIn",
   );
-  const [kind, setKind] = useState<FunctionKind>("text");
+  const [kind, setKind] = useState<FunctionKind>(initialKind);
   const workflow = state.workflows.find(
     (w) => w.channel === channel && w.status === "active",
   );
@@ -4687,7 +4692,7 @@ function Editor({
   ) => void;
   onError: (e: string) => void;
   refresh: () => Promise<void>;
-  queue: () => void;
+  queue: (kind?: FunctionKind) => void;
 }) {
   const writingInFlight = state.settings.reviewPolicy?.mode === "two_step" && state.jobs.some((job) => job.contentId === c.id && job.kind === "text" && job.outputContract === "draft_v1" && ["queued", "running"].includes(job.state));
   // Prevent local edits while the worker may apply a result to the saved revision.
@@ -4698,6 +4703,7 @@ function Editor({
   const [collection, setCollection] = useState(c.collection || "");
   const [media, setMedia] = useState<MediaProject>(c.media || initialMedia());
   const [tab, setTab] = useState("Write");
+  const [postPreview, setPostPreview] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
@@ -4884,6 +4890,7 @@ function Editor({
           <ArrowLeft size={15} /> All drafts
         </button>
         <div className="s-actions">
+          <button className="s-btn" onClick={() => setPostPreview(true)}>Preview post</button>
           <Badge>{c.channel}</Badge>
           <Badge>Revision {c.revision}</Badge>
           <Badge tone={dirty ? "amber" : "green"}>
@@ -4917,9 +4924,7 @@ function Editor({
           <button className="s-btn" onClick={() => { if (window.confirm("Discard your unsaved edits and load the current saved draft?")) loadSavedDraft(); }}>Discard unsaved edits and load latest</button>
         </div>
       )}
-      {state.settings.reviewPolicy?.mode === "two_step" && (
-        <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} />
-      )}
+      {postPreview && <PostPreview text={text} account={c.account} channel={c.channel} media={media} unsaved={dirty} AssetMedia={AssetMedia} onClose={() => setPostPreview(false)} />}
       <StageTracker
         content={c}
         state={state}
@@ -4969,6 +4974,7 @@ function Editor({
           </div>
           {tab === "Write" && (
             <div className="s-writing">
+              {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} onEditCandidate={(body, notes) => { setText(body); setMetadata(notes); }} />}
               <textarea
                 aria-label="Content text"
                 disabled={readOnly}
@@ -5004,6 +5010,8 @@ function Editor({
           )}
           {tab === "Slides" && (
             <div className="s-media-editor">
+              <div className="s-actions"><button className="s-btn" disabled={readOnly || dirty} onClick={() => setTab("Write")}>Write slide copy with AI</button><button className="s-btn" disabled={readOnly || dirty} onClick={() => queue("image")}>AI image assistance</button></div>
+              <p>Slide copy uses the writing connection and the selected carousel format. Image generation requires a qualified image provider.</p>
               <div className="s-media-tools">
                 <span>{media.slides.length} slides</span>
                 <div className="s-actions">
@@ -5335,6 +5343,7 @@ function Editor({
           )}
           {tab === "Video & audio" && (
             <div className="s-media-editor">
+              <div className="s-actions"><button className="s-btn" disabled={readOnly || dirty} onClick={() => queue("video")}>AI video assistance</button><button className="s-btn" disabled={readOnly || dirty} onClick={() => queue("audio")}>AI audio assistance</button></div>
               <div className="s-info-strip">
                 <Video size={17} />
                 <span>
@@ -5975,7 +5984,7 @@ function Editor({
               <button
                 className="s-btn s-full"
                 disabled={readOnly || dirty}
-                onClick={queue}
+                onClick={() => queue("image")}
               >
                 <Sparkles size={15} /> Queue creative request
               </button>
