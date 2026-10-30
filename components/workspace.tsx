@@ -1,5 +1,5 @@
 "use client";
-import { FounderSetup } from "./founder-setup";
+import { MemberAccessEditor } from "./member-access-editor";
 import { SoloPolicySettings } from "./solo-policy-settings";
 import { PricingManager } from "./pricing-manager";
 import { ConnectionEditor } from "./connection-editor";
@@ -952,15 +952,6 @@ export default function Workspace() {
       move("Workflow settings");
     }
   }
-  async function founderRequest(body?: unknown) {
-    const session = await supabase?.auth.getSession();
-    const token = session?.data.session?.access_token;
-    if (!token) throw new Error("Sign in to check founder setup.");
-    const response = await fetch("/api/studio/founder", { method: body ? "POST" : "GET", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, ...(body ? {body: JSON.stringify(body)} : {}), signal: AbortSignal.timeout(30000) });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "Could not complete founder setup.");
-    return result;
-  }
   async function pricingRequest(body?: unknown) {
     const session = await supabase?.auth.getSession();
     const token = session?.data.session?.access_token;
@@ -1080,6 +1071,8 @@ export default function Workspace() {
         const email = val(d, "email");
         const password = val(d, "password");
         const grants = JSON.parse(val(d, "grants") || "[]");
+
+
         if (password && mode === "live") {
           setBusy(true);
           try {
@@ -1442,7 +1435,7 @@ export default function Workspace() {
             <div className="s-release-label" aria-label="Studio version">
               <strong>RyzaLab Studio</strong>
               <small>
-                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.1"} ·{" "}
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.2"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>
@@ -3611,10 +3604,10 @@ export default function Workspace() {
               <div className="s-info-strip">
                 <Users size={17} />
                 <span>
-                  Access follows each member’s roles and scoped grants. Founders
-                  can be assigned explicitly by administrators.
+                  Administrators and founders can manage every person and assign any role. Founder includes all Studio permissions; other roles need no separate keys.
                 </span>
               </div>
+              {!founder && admin && <section className="s-panel"><div className="s-section-heading"><div><h2>Founder access</h2><p>Administrators can grant founder access here. No extra email setting or API key is required. Founder includes all permissions.</p></div><button className="s-btn" onClick={() => openForm("Enable founder access for your account", [], () => {const member=state.members.find((m)=>m.email===actor.email)!;return {type:"member.save",email:member.email,roles:Array.from(new Set([...member.roles,"founder"])),grants:member.grants};}, "This grants your account founder permissions. It does not change budgets, approve content or start AI work.", "Confirm founder access")}>Set up founder access</button></div></section>}
               <section className="s-panel">
                 {state.members.map((m) => (
                   <div className="s-member-row" key={m.id}>
@@ -3640,40 +3633,7 @@ export default function Workspace() {
                       ))}
                       {m.revoked && <Badge tone="red">Revoked</Badge>}
                     </div>
-                    <button
-                      disabled={!admin}
-                      className="s-btn s-small-btn"
-                      onClick={() =>
-                        openForm(
-                          `Edit ${m.email}`,
-                          [
-                            {
-                              name: "roles",
-                              label: "Roles (comma separated)",
-                              value: m.roles.join(", "),
-                              hint: ROLES.join(", "),
-                            },
-                            {
-                              name: "grants",
-                              label: "Scoped grants (JSON)",
-                              type: "textarea",
-                              value: JSON.stringify(m.grants, null, 2),
-                            },
-                          ],
-                          (d) => ({
-                            type: "member.save",
-                            email: m.email,
-                            roles: val(d, "roles")
-                              .split(",")
-                              .map((x) => x.trim())
-                              .filter(Boolean),
-                            grants: JSON.parse(val(d, "grants") || "[]"),
-                          }),
-                        )
-                      }
-                    >
-                      Edit access
-                    </button>
+                    <MemberAccessEditor member={m} disabled={!admin} send={send} onSaved={() => setNotice("Member access saved")}/>
                     <button
                       disabled={!admin || m.revoked}
                       className="s-icon-button"
@@ -3721,7 +3681,7 @@ export default function Workspace() {
           )}
           {page === "AI & budgets" && (
             <>
-              {!allowed("policy.manage") && state.members.some((m) => m.email === actor.email && m.roles.includes("administrator")) && <FounderSetup request={founderRequest} changed={refresh} demo={mode === "demo"}/>}
+              {!founder && admin && <section className="s-panel"><div className="s-section-heading"><div><h2>Founder access</h2><p>Grant founder access in People & access to configure review and preparation. No additional email setting or API key is required.</p></div><button className="s-btn" onClick={() => move("People")}>Open People & access</button></div></section>}
               <SoloPolicySettings state={state} actor={actor} send={send} ready />
               <PricingManager request={pricingRequest} demo={mode === "demo"} disabled={!allowed("settings.manage")} changed={refresh}/>
               <div className="s-stats s-budget-stats">

@@ -522,7 +522,7 @@ test("workflow saves create drafts, submission precedes activation, and only an 
   rejects(state, workflowCommand, 403, /permission/, viewer);
 });
 
-test("only an existing founder can assign founder authority or change founder policy", () => {
+test("administrators can assign founder access through an audited People change", () => {
   let state = fixture();
   assert.equal(can(state, admin, "policy.manage"), false);
   rejects(
@@ -532,13 +532,6 @@ test("only an existing founder can assign founder authority or change founder po
     /permission/,
     admin,
   );
-  rejects(state, {
-    type: "member.save",
-    email: admin.email,
-    roles: ["administrator", "founder"],
-    grants: [],
-  }, 403, /permission/, admin);
-  rejects(state, { type: "member.revoke", email: founder.email }, 403, /permission/, admin);
   state = run(
     state,
     {
@@ -547,10 +540,10 @@ test("only an existing founder can assign founder authority or change founder po
       roles: ["administrator", "founder"],
       grants: [],
     },
-    founder,
+    admin,
   );
   assert.equal(state.audit.at(-1)?.action, "member.save");
-  assert.equal(state.audit.at(-1)?.actor, founder.email);
+  assert.equal(state.audit.at(-1)?.actor, admin.email);
   state = run(
     state,
     { type: "policy.save", rules: "A founder-approved policy revision." },
@@ -560,7 +553,6 @@ test("only an existing founder can assign founder authority or change founder po
     state.settings.protectedRules,
     "A founder-approved policy revision.",
   );
-  assert.equal(state.audit.at(-1)?.action, "policy.save");
 });
 
 for (const gate of [

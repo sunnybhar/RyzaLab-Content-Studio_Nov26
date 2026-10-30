@@ -1455,32 +1455,27 @@ export function applyCommand(
     case "member.save": {
       need("users.manage");
       let m = s.members.find((x) => x.email === c.email);
-      if (c.roles.includes("founder") || m?.roles.includes("founder"))
-        need("policy.manage");
+      if (
+        !memberFor(s, actor).roles.some(
+          (role) => role === "administrator" || role === "founder",
+        )
+      )
+        throw new StudioError(
+          403,
+          "Only administrators and founders can manage people.",
+        );
+      const privileged = (roles: string[]) =>
+        roles.includes("founder") || roles.includes("administrator");
       if (
         m &&
         !m.revoked &&
-        m.roles.includes("founder") &&
-        !c.roles.includes("founder") &&
+        privileged(m.roles) &&
+        !privileged(c.roles) &&
         !s.members.some(
-          (x) =>
-            x.email !== m!.email && !x.revoked && x.roles.includes("founder"),
+          (x) => x.email !== m!.email && !x.revoked && privileged(x.roles),
         )
       )
-        bad("Keep at least one active founder.");
-      if (
-        m &&
-        m.email === actor.email &&
-        m.roles.includes("administrator") &&
-        !c.roles.includes("administrator") &&
-        !s.members.some(
-          (x) =>
-            x.email !== actor.email &&
-            x.roles.includes("administrator") &&
-            !x.revoked,
-        )
-      )
-        bad("Keep at least one active administrator.");
+        bad("Keep at least one active founder or administrator.");
       if (!m) {
         m = {
           id: id(),
@@ -1501,18 +1496,29 @@ export function applyCommand(
       {
         const m = s.members.find((x) => x.email === c.email);
         if (!m) bad("Member not found.");
-        if (m.roles.includes("founder")) {
-          need("policy.manage");
-          if (
-            !s.members.some(
-              (x) =>
-                x.email !== m.email &&
-                !x.revoked &&
-                x.roles.includes("founder"),
-            )
+        if (
+          !memberFor(s, actor).roles.some(
+            (role) => role === "administrator" || role === "founder",
           )
-            bad("Keep at least one active founder.");
-        }
+        )
+          throw new StudioError(
+            403,
+            "Only administrators and founders can manage people.",
+          );
+        if (
+          m.roles.some(
+            (role) => role === "founder" || role === "administrator",
+          ) &&
+          !s.members.some(
+            (x) =>
+              x.email !== m.email &&
+              !x.revoked &&
+              x.roles.some(
+                (role) => role === "founder" || role === "administrator",
+              ),
+          )
+        )
+          bad("Keep at least one active founder or administrator.");
         m.revoked = true;
         break;
       }
