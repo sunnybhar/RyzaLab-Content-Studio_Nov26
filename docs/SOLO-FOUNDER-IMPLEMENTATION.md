@@ -14,7 +14,7 @@ User authorized the approved design on October29,2026. Two human decisions; manu
 - [x] Horizontal channel navigation, selected states and compact home message
 - [x] Server-authorized first-founder claim and separate policy setup
 - [x] Automatic first writing from selected idea within scoped allowance
-- [ ] Immediate date/time planner after final package approval and remaining integrated schedule tests
+- [x] Immediate date/time planner after final package approval and duplicate/permission domain tests (integrated browser verified; see WORK-IN-PROGRESS)
 - [ ] Final integrated permission/budget/worker and browser release review
 - [ ] Training/backlog evidence refreshed; complete verified release pushed to main
 

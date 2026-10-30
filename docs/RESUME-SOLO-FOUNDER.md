@@ -32,13 +32,13 @@ Current working branch: `studio-rebuild`. Read the latest `docs/WORK-IN-PROGRESS
 
 ## Latest validation
 
-Before founder setup:160 tests, production build, full browser walkthrough and isolated simulated automatic-review approval flow passed. Founder batch:163 tests, TypeScript/build and isolated claim/adoption/stale-form browser fixture pass; inspect newest WORK-IN-PROGRESS for final full browser results. Tests use mocks/local fixtures, not live credentials or paid provider calls.
+Latest batch:170 tests and the optimized production build pass. Full browser walkthrough plus isolated founder settings, automatic-writing, and automatic-review-to-exact-calendar-planner fixtures pass. Real local PostgreSQL verifies composed operations commit once and stale repeats reject. Tests use mocks/local fixtures, not live credentials or paid provider calls.
 
 ## Remaining work
 
 1. Finish verification/documentation/checkpoint for founder setup if any checks are pending. Do not configure STUDIO_FOUNDER_EMAIL in a live deployment or claim a live founder role yourself.
 2. Automatic first writing is implemented and verified; see docs/AUTOMATIC-WRITING.md. Preserve actor/context-pinned intent, existing-draft opt-outs, total budget enforcement and no automatic paid retries.
-3. Final-package approval should offer the calendar date/time planner immediately when authorized; preserve ready tray and explicit immutable package/account selection. Add missing exact duplicate schedule regression coverage and any integrated flow gaps.
+3. Immediate final-approval planner is implemented for the two-step flow, using the exact returned package and separate scheduling authority. Domain checks cover equivalent-instant duplicates and permission separation. Its final browser/build verification passes; see latest WORK-IN-PROGRESS. Shared persist now normalizes multiple internal transitions to one database version increment; the real local PostgreSQL regression passes.
 4. Improve default per-function routing controls if needed, keeping explicit overrides and disconnected bindings fail closed. Do not silently change live workflows or guess provider capabilities.
 5. Refresh training/QA/backlog artifacts honestly; manual QA remains Not run until a human actually tests. Existing14 modules/160manualcases/54 backlog rows are older release documentation.
 6. Final integrated browser, permission/budget/worker integrity review, production build, then only a complete verified release to main. Exact requested review-model routing may be unavailable; do not claim a specific reviewer clearance without evidence.
