@@ -1454,7 +1454,7 @@ export default function Workspace() {
             <div className="s-release-label" aria-label="Studio version">
               <strong>RyzaLab Studio</strong>
               <small>
-                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.4"} ·{" "}
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.5"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>
@@ -3852,6 +3852,7 @@ export default function Workspace() {
                       function: c.function,
                     }) && (
                       <div className="s-actions s-connection-actions">
+                        {c.function === "research" && c.status === "validated" && <button className="s-btn s-small-btn" disabled={busy || state.settings.defaultConnections?.research === c.id} onClick={()=>void execute({type:"connection.default",id:c.id},"Research default selected. Explicit channel overrides still take precedence.")}>{state.settings.defaultConnections?.research === c.id ? "Research default" : "Use as Research default"}</button>}
                         <button
                           className="s-btn s-small-btn"
                           disabled={busy || c.status === "disconnected"}

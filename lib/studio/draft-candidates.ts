@@ -7,6 +7,7 @@ import {
 import { copyIdentity, currentCopyAcceptance } from "./solo-quality";
 import { can } from "./permissions";
 import { factsSignature } from "./stages";
+import { researchSourcesCurrent } from "./research-link";
 export function applyDraftCandidate(
   content: Content,
   job: Job,
@@ -94,6 +95,7 @@ export function settleWrittenOutput(
       "Source access changed. Result retained without altering the draft or current review.";
     return;
   }
+  if(!researchSourcesCurrent(state,actor!,job)) {job.outputStatus="conflict";job.error="Research evidence or access changed. Result retained without replacing the draft or review report.";return;}
   if (
     output.completion !== "complete" ||
     /\[INCOMPLETE OUTPUT/i.test(output.text || "")

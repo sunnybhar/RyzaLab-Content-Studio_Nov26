@@ -1,6 +1,6 @@
 import { copyIdentity, currentCopyAcceptance } from "./solo-quality";
 import type { Actor, Job, StudioState } from "./types";
-import { researchEvidence } from "./research-link";
+import { researchSourcesCurrent } from "./research-link";
 import { can } from "./permissions";
 import { canReadNewsletterSource } from "./newsletter-source";
 
@@ -29,11 +29,7 @@ export function canDispatchJob(state: StudioState, actor: Actor, job: Job) {
   )
     return false;
 
-  try {
-    researchEvidence(state,actor,job.channel,job.researchJobIds);
-    if ((job.researchJobIds || []).length !== (job.researchSnapshots || []).length) return false;
-    if(job.researchSnapshots?.some(snapshot => state.jobs.find(j=>j.id===snapshot.jobId)?.result !== snapshot.raw)) return false;
-  } catch { return false; }
+  if(!researchSourcesCurrent(state,actor,job))return false;
   const scope = {
     channel: job.channel,
     function: job.kind,

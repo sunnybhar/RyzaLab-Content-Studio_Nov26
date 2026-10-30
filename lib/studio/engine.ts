@@ -34,7 +34,7 @@ import { demoPreset, type ChannelPreset } from "./presets";
 import { ideaJobInput } from "./idea-generation";
 import { contentWording } from "./content-wording";
 import { inputRequirements } from "./input-requirements";
-import { researchJobInput, researchEvidence } from "./research-link";
+import { researchJobInput, researchEvidence, researchSourcesCurrent } from "./research-link";
 import { savedResearchSchema } from "./research";
 import { review } from "../brand";
 export type ExecutionContext = {
@@ -1737,6 +1737,7 @@ export function applyCommand(
       if (job.kind !== "text" || job.state !== "succeeded" || !job.candidate)
         bad("Select a complete saved writing candidate.");
       const d = content(job.contentId || "");
+      if(!researchSourcesCurrent(s,actor,job))bad("Research evidence or access changed. Compare the saved sources before using this candidate.");
       if (job.createdBy !== actor.email && !can(s, actor, "users.manage"))
         bad("This candidate belongs to another creator.");
       if (job.appliedAt) return structuredClone(input);

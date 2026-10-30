@@ -10,6 +10,7 @@ import { generationInput } from "../lib/studio/generation";
 import { ideaJobInput } from "../lib/studio/idea-generation";
 import { canDispatchJob } from "../lib/studio/dispatch-permissions";
 import { updateRates } from "../lib/studio/rate-management";
+import { settleWrittenOutput } from "../lib/studio/draft-candidates";
 import { quote } from "../lib/studio/pricing";
 import type { Job, StudioState } from "../lib/studio/types";
 const now = "2026-10-30T12:00:00Z";
@@ -267,6 +268,7 @@ test("selected evidence is frozen and checked again before provider disclosure",
     .find((j) => j.id === "cited")!
     .result!.replace("neutral", "modified");
   assert.equal(canDispatchJob(next, DEMO_ACTOR, job), false);
+  const before=next.contents[0].text;job.state="succeeded";settleWrittenOutput(next,job,{completion:"complete",text:JSON.stringify({body:"A changed-source result must stay retained.",metadata:"",sources:[],questions:[]})},now);assert.equal(next.contents[0].text,before);assert.equal(job.outputStatus,"conflict");
 });
 test("research pricing qualification rejects missing search bounds and unsupported providers", () => {
   const s = researchFixture();
