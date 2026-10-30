@@ -11,11 +11,17 @@ export const researchConfigSchema = z
   })
   .passthrough();
 const citation = z.object({
-  url: z.url().refine((v) => /^https?:\/\//i.test(v)),
+  url: z.url().refine((v) => {
+    const url = new URL(v);
+    return /^https?:$/.test(url.protocol) && !url.username && !url.password;
+  }),
   title: z.string().max(2000),
   citedText: z.string().max(10000),
 });
-const claim = z.object({ text:z.string().max(10000), sourceUrls:z.array(z.url()).max(50) });
+const claim = z.object({
+  text: z.string().max(10000),
+  sourceUrls: z.array(citation.shape.url).max(50),
+});
 export function extractResearchResult(value: unknown) {
   const json = value as { content?: unknown[]; stop_reason?: unknown };
   const summaries: string[] = [];
@@ -45,9 +51,16 @@ export function extractResearchResult(value: unknown) {
           title: c.title || "",
           citedText: c.cited_text || "",
         });
-        if (parsed.success) { citations.push(parsed.data);claimUrls.push(parsed.data.url); }
+        if (parsed.success) {
+          citations.push(parsed.data);
+          claimUrls.push(parsed.data.url);
+        }
       }
-      if(claimUrls.length) claims.push({text:block.text.slice(0,10000),sourceUrls:[...new Set(claimUrls)].slice(0,50)});
+      if (claimUrls.length)
+        claims.push({
+          text: block.text.slice(0, 10000),
+          sourceUrls: [...new Set(claimUrls)].slice(0, 50),
+        });
     }
     if (block.type === "web_search_tool_result")
       for (const raw of Array.isArray(block.content)

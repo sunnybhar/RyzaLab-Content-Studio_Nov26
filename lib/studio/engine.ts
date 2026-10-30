@@ -403,6 +403,7 @@ export function applyCommand(
           state: "pending",
           origin: "agent",
           generationRunId: job.id,
+          researchJobIds: job.researchJobIds,
           createdBy: job.createdBy,
           createdAt: now,
         });
@@ -715,6 +716,7 @@ export function applyCommand(
         metadata: "",
         media: structuredClone(EMPTY_MEDIA),
         ideaId: idea.id,
+        researchJobIds: idea.researchJobIds,
         assignedTo: actor.email,
         revision: 1,
         textRevision: 1,
