@@ -1,0 +1,11 @@
+# 0.3.4 — Required-input highlighting and simpler review editing
+
+Create highlights explicit confirmation markers in the editable text and lists them in a live Needs your input panel. Each item opens the relevant field and selects its text. Publication notes remain collapsed until requested or opened through a required-input link. The detector covers title, body, notes, slide text and overlays, narration, captions and scene wording. It detects known missing-input markers, not the truth of arbitrary claims; human review still checks factual accuracy.
+
+Submit for review is blocked while required markers remain, both in the UI and the domain command. Saving does not clear them. Replace markers with verified details or rewrite unsupported passages. Copy approval uses the same marker detection, including explicit incomplete-output markers.
+
+Review now shows content with Edit content directly below. The reviewer can edit the text in the same popup, then Save and submit. This saves a new revision and resubmits atomically, preserving history; stale updates and unresolved required input reject without persisting a partial save. Content editing requires existing content.edit permission. Media editing remains in the full editor. Saving does not imply approval, and changed wording invalidates the prior copy acceptance/report identity.
+
+Publication notes and technical metadata are collapsed by default in Create, saved AI candidates and the review stages. Required answers in those notes remain visible through the action panel. Copy approval offers an explicit human review checkbox plus optional collapsed review notes; the recorded confirmation describes the human's own check and does not imply an AI, independent or external-source review. Final package approval remains separate and retains existing requirements.
+
+Validation and release status are in the latest WORK-IN-PROGRESS entry. Browser tests use synthetic local content. No live provider calls, state migrations, spending, role changes or social publishing performed.

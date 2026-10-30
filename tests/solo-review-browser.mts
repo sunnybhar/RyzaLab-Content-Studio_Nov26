@@ -28,6 +28,7 @@ try {
   await modal.getByText("1. Review the copy", {exact: true}).waitFor();
   assert.equal(await modal.locator(".s-stage-tracker").count(), 0);
   assert.equal(await modal.getByRole("button", {name: "Approve copy"}).isDisabled(), true);
+  await modal.getByText("Add review notes or sources checked (optional)",{exact:true}).click();
   await modal.getByLabel("What did you check?").fill("Reviewed the wording and the supplied brand reference.");
   await modal.getByRole("button", {name: "Approve copy"}).click();
   await modal.getByText("2. Review the complete package", {exact: true}).waitFor();

@@ -102,6 +102,7 @@ try {
   };
   await open();
   let dialog = page.getByRole("dialog");
+  await dialog.getByText("Add review notes or sources checked (optional)",{exact:true}).click();
   await dialog
     .getByLabel("What did you check?")
     .fill("Read the exact wording and supplied brand references.");

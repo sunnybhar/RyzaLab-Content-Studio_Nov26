@@ -141,7 +141,7 @@ export function ReviewContentEditor({
             Edit content
           </button>
         )}
-        <button className="s-text-button" disabled={busy} onClick={openDraft}>
+        <button className="s-text-button" disabled={busy || editing} onClick={openDraft}>
           Open full editor for media
         </button>
       </div>

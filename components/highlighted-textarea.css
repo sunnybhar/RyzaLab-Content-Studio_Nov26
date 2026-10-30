@@ -25,7 +25,7 @@
   color: transparent;
 }
 .studio-v2 .s-highlighted-mirror mark {
-  background: #f6cf65;
+  background: #765800;
   color: transparent;
   border-radius: 2px;
 }
@@ -64,4 +64,8 @@
   text-align: left;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+.studio-v2.s-theme-daylight .s-highlighted-mirror mark {
+  background: #f6cf65;
 }
