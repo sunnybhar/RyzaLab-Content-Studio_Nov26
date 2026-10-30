@@ -268,7 +268,24 @@ test("selected evidence is frozen and checked again before provider disclosure",
     .find((j) => j.id === "cited")!
     .result!.replace("neutral", "modified");
   assert.equal(canDispatchJob(next, DEMO_ACTOR, job), false);
-  const before=next.contents[0].text;job.state="succeeded";settleWrittenOutput(next,job,{completion:"complete",text:JSON.stringify({body:"A changed-source result must stay retained.",metadata:"",sources:[],questions:[]})},now);assert.equal(next.contents[0].text,before);assert.equal(job.outputStatus,"conflict");
+  const before = next.contents[0].text;
+  job.state = "succeeded";
+  settleWrittenOutput(
+    next,
+    job,
+    {
+      completion: "complete",
+      text: JSON.stringify({
+        body: "A changed-source result must stay retained.",
+        metadata: "",
+        sources: [],
+        questions: [],
+      }),
+    },
+    now,
+  );
+  assert.equal(next.contents[0].text, before);
+  assert.equal(job.outputStatus, "conflict");
 });
 test("research pricing qualification rejects missing search bounds and unsupported providers", () => {
   const s = researchFixture();

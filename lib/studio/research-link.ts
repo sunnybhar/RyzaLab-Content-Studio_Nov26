@@ -3,12 +3,26 @@ import { can, requirePermission, StudioError } from "./permissions";
 import { savedResearchSchema } from "./research";
 import { resolvedConnection } from "./solo-quality";
 
-export function researchSourcesCurrent(state:StudioState,actor:Actor,job:Job) {
+export function researchSourcesCurrent(
+  state: StudioState,
+  actor: Actor,
+  job: Job,
+) {
   try {
-    researchEvidence(state,actor,job.channel,job.researchJobIds);
-    if((job.researchJobIds||[]).length !== (job.researchSnapshots||[]).length)return false;
-    return (job.researchSnapshots||[]).every((snapshot,index)=>snapshot.jobId===job.researchJobIds?.[index] && state.jobs.find(j=>j.id===snapshot.jobId)?.result===snapshot.raw);
-  } catch {return false;}
+    researchEvidence(state, actor, job.channel, job.researchJobIds);
+    if (
+      (job.researchJobIds || []).length !== (job.researchSnapshots || []).length
+    )
+      return false;
+    return (job.researchSnapshots || []).every(
+      (snapshot, index) =>
+        snapshot.jobId === job.researchJobIds?.[index] &&
+        state.jobs.find((j) => j.id === snapshot.jobId)?.result ===
+          snapshot.raw,
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function researchEvidence(

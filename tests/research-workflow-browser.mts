@@ -1,6 +1,7 @@
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
 import { initialState, DEMO_ACTOR, EMPTY_MEDIA } from "../lib/studio/seed";
+import { settleWrittenOutput } from "../lib/studio/draft-candidates";
 import { applyCommand } from "../lib/studio/engine";
 const key = "ryzalab-studio-v2",
   now = new Date().toISOString();
@@ -196,6 +197,13 @@ try {
     "https://example.com/source",
   );
   assert.equal(job.researchSnapshots[0].raw, fixture.jobs[0].result);
+  job.state="succeeded";
+  settleWrittenOutput(state,job,{completion:"complete",text:JSON.stringify({body:"A household handoff can document the routine and contacts.",metadata:"",sources:["https://example.com/source"],questions:[]})},now);
+  const submitted=applyCommand(state,DEMO_ACTOR,{type:"content.submit",id:c.id},{demo:true,now});
+  await page.evaluate(({key,state})=>localStorage.setItem(key,JSON.stringify(state)),{key,state:submitted});
+  await page.reload();await nav("Reviews");await page.locator(".s-review-card").filter({hasText:c.title}).getByRole("button",{name:"Open review",exact:true}).click();
+  await page.getByRole("dialog").getByText("Web sources used in this draft (1)",{exact:true}).click();
+  assert.equal(await page.getByRole("dialog").getByRole("link",{name:"Neutral source fixture"}).getAttribute("href"),"https://example.com/source");
   assert.equal(calls.length, 0);
   assert.deepEqual(errors, []);
   console.log(

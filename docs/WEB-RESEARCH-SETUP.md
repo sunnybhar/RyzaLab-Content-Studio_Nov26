@@ -15,7 +15,7 @@ Open Web research → Search the web. Enter an explicit public question, excludi
 
 ## Create
 
-Inside Write → Web research, run a public query or select existing usable research from the same channel. Select Use this evidence in writing, then Write/Revise with AI. The server includes the retained summary, exact citations/excerpts, retrieval date when available and provider finding-to-source links in the draft request. Selecting an AI-generated researched idea carries its evidence into the linked draft. Review generation also receives the retained evidence.
+Inside Write → Web research, run a public query or select existing usable research from the same channel. Select Use this evidence in writing, then Write/Revise with AI. The server includes the retained summary, exact citations/excerpts, retrieval date when available and provider finding-to-source links in the draft request. Selecting an AI-generated researched idea carries its evidence into the linked draft. Review generation also receives the retained evidence. In Reviews, Web sources used in this draft shows the cited URLs/excerpts and retrieval dates. Copy/package approval rechecks usable evidence access, and the approved package preserves exact research snapshots.
 
 Search only receives the explicit query. Private draft text, workflow instructions and internal references are not automatically sent as search context. A separate writing call continues to receive its normal authorized drafting context.
 
