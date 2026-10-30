@@ -43,7 +43,13 @@ export function DraftAssistant({
   );
   const active = jobs.find((job) => activeStates.has(job.state));
   const suggested = jobs.find((job) => job.candidate && !job.appliedAt);
-  const recoverable = jobs.find((job) => !job.candidate && job.result && job.state === "succeeded" && job.outputStatus === "invalid");
+  const recoverable = jobs.find(
+    (job) =>
+      !job.candidate &&
+      job.result &&
+      job.state === "succeeded" &&
+      job.outputStatus === "invalid",
+  );
   const policy =
     state.settings.reviewPolicy?.mode === "two_step"
       ? state.settings.reviewPolicy
@@ -104,7 +110,8 @@ export function DraftAssistant({
         )}
       <p>
         Create or revise this saved draft with the configured writing model.
-        Complete results appear in the editor below. Questions and saved alternatives stay in the result details.
+        Complete results appear in the editor below. Questions and saved
+        alternatives stay in the result details.
       </p>
       {policy ? (
         <p>
@@ -137,16 +144,19 @@ export function DraftAssistant({
           Authorize package allowance
         </button>
       )}
-      <details className="s-ai-instructions"><summary>Optional instructions</summary><label className="s-field">
-        Optional instructions for this draft
-        <textarea
-          rows={3}
-          value={notes}
-          disabled={readOnly || busy || Boolean(active)}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="For example, make the opening shorter."
-        />
-      </label></details>
+      <details className="s-ai-instructions">
+        <summary>Optional instructions</summary>
+        <label className="s-field">
+          Optional instructions for this draft
+          <textarea
+            rows={3}
+            value={notes}
+            disabled={readOnly || busy || Boolean(active)}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="For example, make the opening shorter."
+          />
+        </label>
+      </details>
       <div className="s-actions">
         <button
           className="s-btn s-primary"
@@ -205,8 +215,47 @@ export function DraftAssistant({
           </button>
         </div>
       )}
-      {suggested?.candidate && <div className="s-info-strip"><span>Suggested draft ready{suggested.candidate.questions.length ? ` · ${suggested.candidate.questions.length} questions to answer` : ""}.</span><button className="s-btn" disabled={readOnly || busy || dirty} onClick={() => void run({type: "job.editDraft", jobId: suggested.id, expectedRevision: content.revision}, "Suggested text opened in editor; questions still need answers")}>Open suggested text in editor</button></div>}
-      {recoverable && <button className="s-btn" disabled={readOnly || busy} onClick={() => void run({type: "job.prepareSavedDraft", jobId: recoverable.id}, "Saved draft prepared — no AI call")}>Prepare saved draft — no AI call</button>}
+      {suggested?.candidate && (
+        <div className="s-info-strip">
+          <span>
+            Suggested draft ready
+            {suggested.candidate.questions.length
+              ? ` · ${suggested.candidate.questions.length} questions to answer`
+              : ""}
+            .
+          </span>
+          <button
+            className="s-btn"
+            disabled={readOnly || busy || dirty}
+            onClick={() =>
+              void run(
+                {
+                  type: "job.editDraft",
+                  jobId: suggested.id,
+                  expectedRevision: content.revision,
+                },
+                "Suggested text opened in editor; questions still need answers",
+              )
+            }
+          >
+            Open suggested text in editor
+          </button>
+        </div>
+      )}
+      {recoverable && (
+        <button
+          className="s-btn"
+          disabled={readOnly || busy}
+          onClick={() =>
+            void run(
+              { type: "job.prepareSavedDraft", jobId: recoverable.id },
+              "Saved draft prepared — no AI call",
+            )
+          }
+        >
+          Prepare saved draft — no AI call
+        </button>
+      )}
       {jobs.slice(0, 10).map((job) => (
         <details key={job.id} className="s-version">
           <summary>
@@ -224,7 +273,11 @@ export function DraftAssistant({
           {job.error && <p role="status">{job.error}</p>}
           {job.candidate && !job.appliedAt && (
             <div>
-              <p>Open suggested text in the editor to finish it. Unanswered questions remain confirmation markers in publication notes and block approval. Your previous saved copy remains in history.</p>
+              <p>
+                Open suggested text in the editor to finish it. Unanswered
+                questions remain confirmation markers in publication notes and
+                block approval. Your previous saved copy remains in history.
+              </p>
               <h3>Current saved text</h3>
               <pre>{content.text || "No text yet."}</pre>
               <h3>Suggested text</h3>

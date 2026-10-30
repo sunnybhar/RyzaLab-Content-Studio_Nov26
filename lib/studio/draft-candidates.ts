@@ -114,9 +114,11 @@ export function settleWrittenOutput(
     job.outputStatus = "ready";
     if (job.candidate.questions.length) {
       job.error =
-        "The candidate has unresolved factual questions. Review them before applying it: " +
+        "The draft has unresolved factual questions. Answer the confirmation markers before approval: " +
         job.candidate.questions.join(" ").slice(0, 3000);
-      return;
+      // An untouched empty editor can receive an unfinished working draft.
+      // Existing human copy still needs explicit comparison before replacement.
+      if (c.text.trim()) return;
     }
     if (
       !c ||
@@ -132,7 +134,7 @@ export function settleWrittenOutput(
         "Your working version changed or is protected. Review this candidate beside your current draft; nothing was overwritten.";
       return;
     }
-    applyDraftCandidate(c, job, job.createdBy, now, id);
+    applyDraftCandidate(c, job, job.createdBy, now, id, Boolean(job.candidate.questions.length));
   } else {
     let report;
     try {

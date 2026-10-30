@@ -185,15 +185,45 @@ test("a new provider response with structured metadata and unanswered facts is h
 });
 
 test("opening an unfinished candidate in the editor retains provenance and every question as an approval blocker", () => {
-  const s=fixture();
-  const prepared=applyCommand(s,DEMO_ACTOR,{type:"job.prepareSavedDraft",jobId:"saved-writing"},{demo:true,now});
-  const original=structuredClone(prepared.contents[0]);
-  const result=applyCommand(prepared,DEMO_ACTOR,{type:"job.editDraft",jobId:"saved-writing",expectedRevision:original.revision},{demo:true,now});
-  const c=result.contents[0];
-  assert.equal(c.text,payload.body);
+  const s = fixture();
+  const prepared = applyCommand(
+    s,
+    DEMO_ACTOR,
+    { type: "job.prepareSavedDraft", jobId: "saved-writing" },
+    { demo: true, now },
+  );
+  const original = structuredClone(prepared.contents[0]);
+  const result = applyCommand(
+    prepared,
+    DEMO_ACTOR,
+    {
+      type: "job.editDraft",
+      jobId: "saved-writing",
+      expectedRevision: original.revision,
+    },
+    { demo: true, now },
+  );
+  const c = result.contents[0];
+  assert.equal(c.text, payload.body);
   assert.ok(c.metadata.includes(`[Confirm: ${payload.questions[0]}]`));
-  assert.ok(copyBlockers(c).some(b=>b.includes(payload.questions[0])));
-  assert.ok(c.history.some(h=>h.text===original.text));
-  assert.equal(result.jobs.find(j=>j.id==="saved-writing")!.questionsDisposition,undefined);
-  assert.deepEqual(result.jobs.map(j=>[j.state,j.reserved,j.attempt]),prepared.jobs.map(j=>[j.state,j.reserved,j.attempt]));
+  assert.ok(copyBlockers(c).some((b) => b.includes(payload.questions[0])));
+  assert.ok(c.history.some((h) => h.text === original.text));
+  assert.equal(
+    result.jobs.find((j) => j.id === "saved-writing")!.questionsDisposition,
+    undefined,
+  );
+  assert.deepEqual(
+    result.jobs.map((j) => [j.state, j.reserved, j.attempt]),
+    prepared.jobs.map((j) => [j.state, j.reserved, j.attempt]),
+  );
+});
+
+test("complete first writing appears in an unchanged empty editor with every factual question still blocking approval", () => {
+ const s=fixture(), c=s.contents[0], job=s.jobs[0];
+ c.text=""; job.targetIdentity=copyIdentity(c,s);
+ settleWrittenOutput(s,job,{text:JSON.stringify(payload),completion:"complete"},now);
+ assert.equal(c.text,payload.body); assert.equal(job.outputStatus,"applied");
+ assert.ok(c.metadata.includes(`[Confirm: ${payload.questions[0]}]`));
+ assert.ok(copyBlockers(c).some(x=>x.includes(payload.questions[0])));
+ assert.equal(job.questionsDisposition,undefined);
 });

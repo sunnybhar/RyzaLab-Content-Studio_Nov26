@@ -5026,7 +5026,7 @@ function Editor({
           )}
           {tab === "Slides" && (
             <div className="s-media-editor">
-              <div className="s-actions"><button className="s-btn" disabled={readOnly || dirty} onClick={() => setTab("Write")}>Write slide copy with AI</button><button className="s-btn" disabled={readOnly || dirty} onClick={() => queue("image")}>AI image assistance</button></div>
+              <div className="s-actions"><button className="s-btn" disabled={readOnly || dirty} onClick={() => setTab("Write")}>Open AI writing controls</button><button className="s-btn" disabled={readOnly || dirty} onClick={() => queue("image")}>AI image assistance</button></div>
               <p>Slide copy uses the writing connection and the selected carousel format. Image generation requires a qualified image provider.</p>
               <div className="s-media-tools">
                 <span>{media.slides.length} slides</span>
