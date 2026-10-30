@@ -13,7 +13,7 @@ User authorized the approved design on October29,2026. Two human decisions; manu
 - [x] Calendar ready tray and read-only approved text/media preview
 - [x] Horizontal channel navigation, selected states and compact home message
 - [x] Server-authorized first-founder claim and separate policy setup
-- [ ] Automatic first writing from selected idea within scoped allowance
+- [x] Automatic first writing from selected idea within scoped allowance
 - [ ] Immediate date/time planner after final package approval and remaining integrated schedule tests
 - [ ] Final integrated permission/budget/worker and browser release review
 - [ ] Training/backlog evidence refreshed; complete verified release pushed to main

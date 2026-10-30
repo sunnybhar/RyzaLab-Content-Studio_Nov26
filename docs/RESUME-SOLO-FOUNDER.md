@@ -28,7 +28,7 @@ Current working branch: `studio-rebuild`. Read the latest `docs/WORK-IN-PROGRESS
 - Recent-ten activity plus active/unknown jobs and older searchable popup; horizontal channel tabs/selected states; compact home brand message.
 - Calendar ready-to-plan tray and read-only approved snapshots with authenticated asset rendering; existing explicit schedule controls and manual publication confirmation.
 - Founder-only role changes and last-founder protection. New first-founder claim requires server-only STUDIO_FOUNDER_EMAIL matching a verified signed-in existing administrator, no prior founder/setup record, explicit acknowledgment, CAS and audit. It never changes a role on load. See docs/FOUNDER-SETUP.md.
-- Founder policy settings now wired in AI & budgets. Explicit adoption only; current policy/rules/budget captured on edit; active/unknown jobs block policy change on server. Automatic review option is visible. First adoption leaves autoDraft=false until automatic initial writing is built.
+- Founder policy settings now wired in AI & budgets. Explicit adoption only; current policy/rules/budget captured on edit; active/unknown jobs block policy change on server. Automatic review option is visible. Automatic first writing is now implemented as an explicit founder option for new idea selections; existing drafts and saved opt-outs stay unchanged.
 
 ## Latest validation
 
@@ -37,7 +37,7 @@ Before founder setup:160 tests, production build, full browser walkthrough and i
 ## Remaining work
 
 1. Finish verification/documentation/checkpoint for founder setup if any checks are pending. Do not configure STUDIO_FOUNDER_EMAIL in a live deployment or claim a live founder role yourself.
-2. Automatic first writing after human Use idea selection is still pending. The current policy deliberately leaves it off. Implement bounded/idempotent canonical generation within an actual scoped package authorization. Missing provider/pricing/budget must stay actionable; no blind paid retries. Explicit Write with AI already works for opted-in policy.
+2. Automatic first writing is implemented and verified; see docs/AUTOMATIC-WRITING.md. Preserve actor/context-pinned intent, existing-draft opt-outs, total budget enforcement and no automatic paid retries.
 3. Final-package approval should offer the calendar date/time planner immediately when authorized; preserve ready tray and explicit immutable package/account selection. Add missing exact duplicate schedule regression coverage and any integrated flow gaps.
 4. Improve default per-function routing controls if needed, keeping explicit overrides and disconnected bindings fail closed. Do not silently change live workflows or guess provider capabilities.
 5. Refresh training/QA/backlog artifacts honestly; manual QA remains Not run until a human actually tests. Existing14 modules/160manualcases/54 backlog rows are older release documentation.
