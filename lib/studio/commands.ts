@@ -158,6 +158,8 @@ export const commandSchema = z.discriminatedUnion("type", [
     ideaId: id.optional(),
     account: z.string().max(200).optional(),
   }),
+  command("content.newsletter", { sourceKind: z.enum(["idea", "content"]), sourceId: id, expectedRevision: z.number().int().positive().optional() }),
+  command("job.editDraft", { jobId: id, expectedRevision: z.number().int().positive() }),
   command("content.save", {
     id,
     expectedRevision: z.number().int().positive(),

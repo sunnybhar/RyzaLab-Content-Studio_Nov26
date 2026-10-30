@@ -30,6 +30,7 @@ export function IdeasBrowser({
   onApprove,
   onReject,
   onReuse,
+  onNewsletter,
 }: {
   ideas: Idea[];
   allIdeas: Idea[];
@@ -47,6 +48,7 @@ export function IdeasBrowser({
   onApprove: (idea: Idea) => Promise<boolean>;
   onReject: (idea: Idea) => void;
   onReuse: (idea: Idea, mode: "revise" | "copy") => Promise<boolean>;
+  onNewsletter?: (idea: Idea) => Promise<boolean>;
 }) {
   const [view, setView] = useState<"tiles" | "list">("tiles");
   const [selectedId, setSelectedId] = useState<string>();
@@ -272,6 +274,7 @@ export function IdeasBrowser({
                 </div>
               )}
               <div className="s-card-actions">
+                {onNewsletter && <button className="s-btn" disabled={busy} onClick={async () => { if (await onNewsletter(selected)) close(); }}>Create newsletter from this idea</button>}
                 {selected.state !== "rejected" && (
                   <button
                     type="button"

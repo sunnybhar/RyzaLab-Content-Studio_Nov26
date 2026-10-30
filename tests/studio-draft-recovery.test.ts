@@ -183,3 +183,17 @@ test("a new provider response with structured metadata and unanswered facts is h
   assert.match(s.contents[0].text, /Current human text/);
   assert.match(s.jobs[0].error!, /unresolved factual questions/);
 });
+
+test("opening an unfinished candidate in the editor retains provenance and every question as an approval blocker", () => {
+  const s=fixture();
+  const prepared=applyCommand(s,DEMO_ACTOR,{type:"job.prepareSavedDraft",jobId:"saved-writing"},{demo:true,now});
+  const original=structuredClone(prepared.contents[0]);
+  const result=applyCommand(prepared,DEMO_ACTOR,{type:"job.editDraft",jobId:"saved-writing",expectedRevision:original.revision},{demo:true,now});
+  const c=result.contents[0];
+  assert.equal(c.text,payload.body);
+  assert.ok(c.metadata.includes(`[Confirm: ${payload.questions[0]}]`));
+  assert.ok(copyBlockers(c).some(b=>b.includes(payload.questions[0])));
+  assert.ok(c.history.some(h=>h.text===original.text));
+  assert.equal(result.jobs.find(j=>j.id==="saved-writing")!.questionsDisposition,undefined);
+  assert.deepEqual(result.jobs.map(j=>[j.state,j.reserved,j.attempt]),prepared.jobs.map(j=>[j.state,j.reserved,j.attempt]));
+});

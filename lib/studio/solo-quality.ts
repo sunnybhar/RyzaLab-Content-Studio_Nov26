@@ -24,6 +24,7 @@ export function copyIdentity(c: Content, s: StudioState) {
     channel: c.channel,
     account: c.account,
     format: c.format,
+    newsletterSource: c.newsletterSource,
     words: contentWording(c),
     workflow: workflow?.id,
     activation: workflow?.activationId || workflow?.createdAt,

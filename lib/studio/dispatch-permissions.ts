@@ -1,6 +1,7 @@
 import { copyIdentity, currentCopyAcceptance } from "./solo-quality";
 import type { Actor, Job, StudioState } from "./types";
 import { can } from "./permissions";
+import { canReadNewsletterSource } from "./newsletter-source";
 
 // Recheck authority before disclosure to a provider, not merely at settlement.
 export function canDispatchJob(state: StudioState, actor: Actor, job: Job) {
@@ -34,6 +35,7 @@ export function canDispatchJob(state: StudioState, actor: Actor, job: Job) {
     account: content?.account ?? job.account,
     assignedTo: content?.assignedTo,
   };
+  if (content && !canReadNewsletterSource(state, actor, content)) return false;
   if (!can(state, actor, "job.create", scope)) return false;
   if (content && !can(state, actor, "read", scope)) return false;
   if (

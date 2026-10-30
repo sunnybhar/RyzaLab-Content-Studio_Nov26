@@ -13,6 +13,7 @@ export function applyDraftCandidate(
   actor: string,
   now: string,
   id: () => string,
+  unresolvedQuestions = false,
 ) {
   if (!job.candidate)
     throw new Error("No parsed draft candidate is available.");
@@ -31,7 +32,7 @@ export function applyDraftCandidate(
   content.revision++;
   content.textRevision = (content.textRevision || 1) + 1;
   content.text = result.body;
-  content.metadata = result.metadata;
+  content.metadata = [result.metadata, ...(unresolvedQuestions ? result.questions.map(q => `[Confirm: ${q}]`) : [])].filter(Boolean).join("\n\n");
   if (result.slides?.length && !content.media.slides.length) {
     content.media.slides = result.slides.map((slide, i) => ({
       ...content.media.slides[i],

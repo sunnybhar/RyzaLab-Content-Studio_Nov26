@@ -762,6 +762,16 @@ export default function Workspace() {
       return false;
     } finally { setBusy(false); }
   }
+  async function createNewsletter(sourceKind: "idea" | "content", sourceId: string, expectedRevision?: number) {
+    setBusy(true); setLocalError("");
+    try {
+      const result = await send({type: "content.newsletter", sourceKind, sourceId, expectedRevision});
+      const draft = result.state.contents.find(item => !item.deletedAt && item.createdBy === actor!.email && item.newsletterSource?.kind === sourceKind && item.newsletterSource.id === sourceId && item.newsletterSource.revision === expectedRevision);
+      if (!draft) throw new Error("Newsletter draft could not be opened.");
+      setPage("Create"); setSelected(draft.id); setChannel("All channels"); setSearch(""); setNotice("Newsletter draft ready — write manually or use AI. No AI request started."); return true;
+    } catch (e) { setLocalError(e instanceof Error ? e.message : "Newsletter draft could not be created."); return false; }
+    finally { setBusy(false); }
+  }
   const scheduleForm = (contentId?: string, initialPackageId?: string, exactPackage?: Package) => {
     const packages = (exactPackage ? [exactPackage] : activePackages).filter((p) => {
       const draft = state.contents.find((c) => c.id === p.contentId);
@@ -2028,6 +2038,7 @@ export default function Workspace() {
                   canUse={(idea, account) => allowed("content.create", { channel: idea.channel, account }) && (idea.state !== "pending" || allowed("idea.review", { channel: idea.channel }))}
                   canReuse={(idea) => allowed("idea.edit", { channel: idea.channel })}
                   onUse={useIdea}
+                  onNewsletter={allowed("content.create", {channel: "Newsletter", account: "RyzaLab"}) ? (idea) => createNewsletter("idea", idea.id) : undefined}
                   onApprove={(idea) => execute({ type: "idea.review", id: idea.id, decision: "approved" }, "Idea approved — find it in Ideas → Approved. Use idea opens its draft.")}
                   onReject={(idea) => reject("idea.review", idea.id)}
                   onReuse={(idea, mode) => execute({ type: "idea.reuse", id: idea.id, mode })}
@@ -2747,6 +2758,7 @@ export default function Workspace() {
                 form={openForm}
                 onError={setLocalError}
                 refresh={() => refresh(true)}
+                newsletter={allowed("content.create", {channel: "Newsletter", account: "RyzaLab"}) ? () => createNewsletter("content", activeContent.id, activeContent.revision) : undefined}
                 queue={(kind = "text") => { setQueueKind(kind); setQueueTarget(activeContent); }}
               />
             ) : (
@@ -4673,6 +4685,7 @@ function Editor({
   onError,
   refresh,
   queue,
+  newsletter,
 }: {
   content: Content;
   actor: Actor;
@@ -4693,6 +4706,7 @@ function Editor({
   onError: (e: string) => void;
   refresh: () => Promise<void>;
   queue: (kind?: FunctionKind) => void;
+  newsletter?: () => Promise<boolean>;
 }) {
   const writingInFlight = state.settings.reviewPolicy?.mode === "two_step" && state.jobs.some((job) => job.contentId === c.id && job.kind === "text" && job.outputContract === "draft_v1" && ["queued", "running"].includes(job.state));
   // Prevent local edits while the worker may apply a result to the saved revision.
@@ -4891,6 +4905,7 @@ function Editor({
         </button>
         <div className="s-actions">
           <button className="s-btn" onClick={() => setPostPreview(true)}>Preview post</button>
+          {newsletter && ["LinkedIn", "Reddit"].includes(c.channel) && <button className="s-btn" disabled={busy || dirty || externalChange} onClick={() => void newsletter()}>Create newsletter from this</button>}
           <Badge>{c.channel}</Badge>
           <Badge>Revision {c.revision}</Badge>
           <Badge tone={dirty ? "amber" : "green"}>
@@ -4974,7 +4989,8 @@ function Editor({
           </div>
           {tab === "Write" && (
             <div className="s-writing">
-              {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} onEditCandidate={(body, notes) => { setText(body); setMetadata(notes); }} />}
+              {c.newsletterSource && <details className="s-version"><summary>Newsletter source · {c.newsletterSource.channel} · {c.newsletterSource.title}</summary><p>Saved source snapshot{c.newsletterSource.revision ? ` · revision ${c.newsletterSource.revision}` : ""}. Use this as reference for manual writing or AI adaptation.</p><div style={{whiteSpace:"pre-wrap"}}>{c.newsletterSource.text}</div><p>{c.newsletterSource.metadata}</p></details>}
+              {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} />}
               <textarea
                 aria-label="Content text"
                 disabled={readOnly}

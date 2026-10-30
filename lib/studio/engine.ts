@@ -776,6 +776,25 @@ export function applyCommand(
       }
       break;
     }
+    case "content.newsletter": {
+      need("content.create", { channel: "Newsletter", account: "RyzaLab" });
+      let source: NonNullable<Content["newsletterSource"]>;
+      if (c.sourceKind === "content") {
+        const original = content(c.sourceId, "read");
+        if (original.deletedAt || original.revision !== c.expectedRevision) bad("Open the current source draft before creating its newsletter.");
+        if (!["LinkedIn", "Reddit"].includes(original.channel)) bad("Choose a LinkedIn or Reddit source.");
+        source = { kind: "content", id: original.id, channel: original.channel, title: original.title, text: original.text, metadata: original.metadata, revision: original.revision, capturedAt: now };
+      } else {
+        const original = s.ideas.find(i => i.id === c.sourceId);
+        if (!original) bad("Source idea not found.");
+        need("read", { channel: original.channel });
+        source = { kind: "idea", id: original.id, channel: original.channel, title: original.title, text: original.brief, metadata: original.sources.join("\n"), capturedAt: now };
+      }
+      const existing = s.contents.find(d => !d.deletedAt && d.createdBy === actor.email && d.newsletterSource?.kind === source.kind && d.newsletterSource.id === source.id && d.newsletterSource.revision === source.revision);
+      if (existing) { content(existing.id); break; }
+      s.contents.unshift({ id: id(), channel: "Newsletter", account: "RyzaLab", title: source.title.slice(0,200), format: "Newsletter", text: "", metadata: "", media: structuredClone(EMPTY_MEDIA), newsletterSource: source, assignedTo: actor.email, revision: 1, textRevision: 1, mediaRevision: 1, factsRevision: 1, history: [], state: "draft", workflowId: s.workflows.find(w => w.channel === "Newsletter" && w.status === "active")?.id, createdBy: actor.email, updatedAt: now });
+      break;
+    }
     case "content.create": {
       need("content.create", { channel: c.channel, account: c.account });
       if (
@@ -1705,6 +1724,7 @@ export function applyCommand(
         "Saved response prepared for comparison only. No draft text was replaced and no provider request was made. Resolve all factual questions and placeholders before approval.";
       break;
     }
+    case "job.editDraft":
     case "job.applyDraft": {
       const job = jobFor(c.jobId);
       if (job.kind !== "text" || job.state !== "succeeded" || !job.candidate)
@@ -1718,18 +1738,18 @@ export function applyCommand(
           409,
           "Draft changed. Compare again before applying this candidate.",
         );
-      if (job.candidate.questions.length && !c.questionsResolution)
+      if (c.type === "job.applyDraft" && job.candidate.questions.length && !c.questionsResolution)
         bad(
           "Record how the candidate's missing facts were resolved before applying it.",
         );
-      if (job.candidate.questions.length) {
+      if (c.type === "job.applyDraft" && job.candidate.questions.length) {
         job.questionsDisposition = {
           by: actor.email,
           at: now,
           evidence: c.questionsResolution!,
         };
       }
-      applyDraftCandidate(d, job, actor.email, now, id);
+      applyDraftCandidate(d, job, actor.email, now, id, c.type === "job.editDraft");
       break;
     }
     case "connection.default": {

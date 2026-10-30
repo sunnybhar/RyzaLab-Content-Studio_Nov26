@@ -234,6 +234,7 @@ export interface Content {
   metadata: string;
   media: MediaProject;
   ideaId?: string;
+  newsletterSource?: { kind: "idea" | "content"; id: string; channel: Channel; title: string; text: string; metadata: string; revision?: number; capturedAt: string };
   assignedTo: string;
   revision: number;
   factsRevision?: number;

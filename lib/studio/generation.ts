@@ -2,6 +2,7 @@ import type { Actor, FunctionKind, StudioState } from "./types";
 import { resolvedConnection, currentCopyAcceptance } from "./solo-quality";
 import { requirePermission, StudioError } from "./permissions";
 import { contentWording } from "./content-wording";
+import { canReadNewsletterSource } from "./newsletter-source";
 export function generationInput(
   state: StudioState,
   actor: Actor,
@@ -29,6 +30,7 @@ export function generationInput(
     function: input.kind as FunctionKind,
   };
   requirePermission(state, actor, "read", scope);
+  if (!canReadNewsletterSource(state, actor, c)) throw new StudioError(403, "The linked newsletter source is unavailable or source access changed.");
   requirePermission(state, actor, "job.create", scope);
   if (input.kind === "text")
     requirePermission(state, actor, "content.edit", scope);
@@ -78,6 +80,7 @@ export function generationInput(
     account: c.account,
     format: c.format,
     title: c.title,
+    newsletterSource: c.newsletterSource || null,
     idea: idea
       ? { title: idea.title, brief: idea.brief, sources: idea.sources }
       : null,

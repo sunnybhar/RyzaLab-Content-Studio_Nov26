@@ -22,7 +22,6 @@ export function DraftAssistant({
   busy,
   run,
   refresh,
-  onEditCandidate,
 }: {
   content: Content;
   state: StudioState;
@@ -32,7 +31,6 @@ export function DraftAssistant({
   busy: boolean;
   run: (command: Command, message?: string) => Promise<boolean>;
   refresh: () => Promise<void>;
-  onEditCandidate?: (body: string, metadata: string) => void;
 }) {
   const [notes, setNotes] = useState("");
   const [resolution, setResolution] = useState<Record<string, string>>({});
@@ -44,6 +42,8 @@ export function DraftAssistant({
       job.outputContract === "draft_v1",
   );
   const active = jobs.find((job) => activeStates.has(job.state));
+  const suggested = jobs.find((job) => job.candidate && !job.appliedAt);
+  const recoverable = jobs.find((job) => !job.candidate && job.result && job.state === "succeeded" && job.outputStatus === "invalid");
   const policy =
     state.settings.reviewPolicy?.mode === "two_step"
       ? state.settings.reviewPolicy
@@ -205,6 +205,8 @@ export function DraftAssistant({
           </button>
         </div>
       )}
+      {suggested?.candidate && <div className="s-info-strip"><span>Suggested draft ready{suggested.candidate.questions.length ? ` · ${suggested.candidate.questions.length} questions to answer` : ""}.</span><button className="s-btn" disabled={readOnly || busy || dirty} onClick={() => void run({type: "job.editDraft", jobId: suggested.id, expectedRevision: content.revision}, "Suggested text opened in editor; questions still need answers")}>Open suggested text in editor</button></div>}
+      {recoverable && <button className="s-btn" disabled={readOnly || busy} onClick={() => void run({type: "job.prepareSavedDraft", jobId: recoverable.id}, "Saved draft prepared — no AI call")}>Prepare saved draft — no AI call</button>}
       {jobs.slice(0, 10).map((job) => (
         <details key={job.id} className="s-version">
           <summary>
@@ -222,8 +224,7 @@ export function DraftAssistant({
           {job.error && <p role="status">{job.error}</p>}
           {job.candidate && !job.appliedAt && (
             <div>
-              {onEditCandidate && <button className="s-btn" disabled={readOnly || busy || dirty} onClick={() => onEditCandidate(job.candidate!.body, [job.candidate!.metadata, ...job.candidate!.questions.map((q) => `[Confirm: ${q}]`)].filter(Boolean).join("\n\n"))}>Open suggested text in editor</button>}
-              {onEditCandidate && <p>Opens an unsaved working draft. Any unanswered questions remain confirmation markers in the publication notes and block approval.</p>}
+              <p>Open suggested text in the editor to finish it. Unanswered questions remain confirmation markers in publication notes and block approval. Your previous saved copy remains in history.</p>
               <h3>Current saved text</h3>
               <pre>{content.text || "No text yet."}</pre>
               <h3>Suggested text</h3>
@@ -310,23 +311,6 @@ export function DraftAssistant({
               </button>
             </div>
           )}
-          {!job.candidate &&
-            job.result &&
-            job.state === "succeeded" &&
-            job.outputStatus === "invalid" && (
-              <button
-                className="s-btn"
-                disabled={readOnly || busy}
-                onClick={() =>
-                  void run(
-                    { type: "job.prepareSavedDraft", jobId: job.id },
-                    "Saved draft prepared — no AI call",
-                  )
-                }
-              >
-                Prepare saved draft — no AI call
-              </button>
-            )}
           {!job.candidate && job.result && job.outputStatus !== "applied" && (
             <details>
               <summary>View saved provider response</summary>
