@@ -12,4 +12,4 @@ Create newsletter from this is available on LinkedIn/Reddit drafts; ideas have C
 
 ## Validation
 
-Local automated domain, production build and browser checks are recorded in WORK-IN-PROGRESS. No paid provider acceptance, live state migration or social publication was performed. User acceptance queue is docs/CONTENT-ACCEPTANCE-QUEUE.md: LinkedIn first, Newsletter next; three AI plus two manual cases, tested step by step. Those paid sample runs remain queued.
+185 automated tests, optimized production build, full browser walkthrough, automatic-writing fixture and new composer browser pass. The composer fixture covers metadata recovery, question blockers, direct editor loading, unsaved feed preview/see-more/Escape, desktop/mobile width, and both post-to-newsletter and idea-to-newsletter links. All use local synthetic data. No paid provider acceptance, live state migration or social publication was performed. User acceptance queue is docs/CONTENT-ACCEPTANCE-QUEUE.md: LinkedIn first, Newsletter next; three AI plus two manual cases, tested step by step. Those paid sample runs remain queued.

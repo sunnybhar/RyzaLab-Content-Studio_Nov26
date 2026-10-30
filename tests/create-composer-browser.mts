@@ -124,6 +124,10 @@ try {
     await dialog.getByText("No image needed", { exact: true }).count(),
     0,
   );
+  assert.ok((await dialog.boundingBox())!.width <= 760);
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.ok((await dialog.boundingBox())!.width <= 390);
+  await page.setViewportSize({ width: 1440, height: 1100 });
   await page.screenshot({
     path: "/tmp/create-feed-preview.png",
     fullPage: true,
@@ -146,6 +150,25 @@ try {
     await page.getByLabel("Content text", { exact: true }).inputValue(),
     "",
   );
+  await page
+    .locator(".s-sidebar nav")
+    .getByRole("button", { name: "Ideas", exact: true })
+    .click();
+  await page.locator(".s-idea-summary").first().click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", {
+      name: "Create newsletter from this idea",
+      exact: true,
+    })
+    .click();
+  await page.getByLabel("Content text", { exact: true }).waitFor();
+  const afterIdea = await page.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key)!),
+    key,
+  );
+  assert.equal(afterIdea.contents[0].newsletterSource.kind, "idea");
+  assert.equal(afterIdea.jobs.length, fixture.jobs.length);
   assert.equal(external.length, 0);
   console.log(
     "PASS: inline writing recovery, editable body, retained question blockers, unsaved feed preview, Escape close, linked newsletter source; no provider calls",

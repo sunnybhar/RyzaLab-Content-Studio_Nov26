@@ -7,7 +7,7 @@ Current working branch: `studio-rebuild`. Read the latest `docs/WORK-IN-PROGRESS
 - Read AGENTS.md and relevant installed Next.js docs before implementation.
 - User wants one feature at a time, an estimated time before starting, a verified status update when it is done, then the next feature.
 - Commit and push at least every five minutes while changes exist, before long checks and before ending. Use `studio-rebuild` for WIP; never push an unfinished release to main. Author email sunnybhargava1611@gmail.com.
-- Existing main remains094b69c. User authorizes a completed verified release, but the broad rebuild still has remaining work. Do not deploy a partial checkpoint.
+- Main most recently shipped0.3.2/4e19ec8; verify Git remote for current state. User authorizes completed verified releases.0.3.3 composer/recovery/newsletter source changes are being verified; never deploy a partial checkpoint.
 - Do not claim background work after a turn ends. If paused, stop; resume only when requested.
 - No paid provider calls, live database/environment changes, emails, social publishing or schema migrations during this implementation.
 
@@ -36,7 +36,7 @@ Latest batch:170 tests and the optimized production build pass. Full browser wal
 
 ## Remaining work
 
-1. Finish verification/documentation/checkpoint for founder setup if any checks are pending. Do not configure STUDIO_FOUNDER_EMAIL in a live deployment or claim a live founder role yourself.
+1. People0.3.2 implements the user’s explicitly revised policy: both administrator and founder may grant all roles including founder. No extra founder environment/key is required by current People flow. See docs/FOUNDER-SETUP.md. Do not change live memberships yourself.
 2. Automatic first writing is implemented and verified; see docs/AUTOMATIC-WRITING.md. Preserve actor/context-pinned intent, existing-draft opt-outs, total budget enforcement and no automatic paid retries.
 3. Immediate final-approval planner is implemented for the two-step flow, using the exact returned package and separate scheduling authority. Domain checks cover equivalent-instant duplicates and permission separation. Its final browser/build verification passes; see latest WORK-IN-PROGRESS. Shared persist now normalizes multiple internal transitions to one database version increment; the real local PostgreSQL regression passes.
 4. Improve default per-function routing controls if needed, keeping explicit overrides and disconnected bindings fail closed. Do not silently change live workflows or guess provider capabilities.
@@ -51,3 +51,7 @@ Latest batch:170 tests and the optimized production build pass. Full browser wal
 - Isolated `npx tsx tests/founder-settings-browser.mts` bundles components with local fixtures. Automatic-review browser fixture expects a running production app. No fixture represents live success.
 - `/studio` is live; `/preview` is demo. User previously opened preview and feared data loss; never reset storage or imply preview data are production.
 - Supabase state/secret persistence uses atomic CAS. Private asset preview requires authenticated fetching. Preserve historical evidence, frozen references, leases and unknown-outcome reservations.
+
+## October30 Create follow-up
+
+Read docs/RELEASE-0.3.3.md and latest WIP. Recovery normalizes flat metadata and prepares saved response without AI. Write controls are inside editor; direct first writing carries unresolved [Confirm:] metadata. Preview shows current unsaved text/media, not notes/raw JSON. Ideas and LinkedIn/Reddit can create linked Newsletter drafts for manual or AI writing without auto spending. User priority acceptance queue: docs/CONTENT-ACCEPTANCE-QUEUE.md, LinkedIn first then Newsletter,3AI+2manual cases, no paid test run started.
