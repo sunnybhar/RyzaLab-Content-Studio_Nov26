@@ -1,4 +1,4 @@
-import {usageCost,type ClaudeUsage} from "@/lib/studio/usage-cost";
+import {settleUsageCost,type ClaudeUsage} from "@/lib/studio/usage-cost";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { database, loadState, persist, decrypt } from "@/lib/studio/store";
@@ -42,10 +42,11 @@ export async function POST(req: NextRequest) {
         .eq("id", true)
         .single();
     if (!data) throw new StudioError(503, "Initialize Studio first.");
+    const requestedJobId=req.nextUrl.searchParams.get("jobId");
     const state = data.state as Awaited<ReturnType<typeof loadState>>,
       now = new Date().toISOString(),
       expired = state.jobs.find(
-        (j) => j.state === "running" && j.leaseUntil && j.leaseUntil < now,
+        (j) => j.state === "running" && j.leaseUntil && j.leaseUntil < now && (!requestedJobId || j.id===requestedJobId),
       );
     if (expired) {
       const next = structuredClone(state),
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
       await persist(db, state, next);
       return NextResponse.json({ jobId: j.id, state: "unknown" });
     }
-    const job = state.jobs.find((j) => j.state === "queued");
+    const job = state.jobs.find((j) => j.state === "queued" && (!requestedJobId || j.id===requestedJobId));
     if (!job) return NextResponse.json({ message: "No queued jobs." });
     async function blockJob(reason: string) {
       const next = structuredClone(state),
@@ -284,14 +285,7 @@ export async function POST(req: NextRequest) {
         j.error ||=
           "Provider completed; cost remains conservatively reserved pending invoice reconciliation.";
       }
-      if(outcome?.usage) {
-        j.providerUsage=outcome.usage;
-        const cost=usageCost(j,outcome.usage);
-        if(cost!==undefined) {
-          j.actual=cost;j.reserved=0;j.costBasis="provider_usage";
-          if(j.error==="Provider completed; cost remains conservatively reserved pending invoice reconciliation.")j.error=undefined;
-        }
-      }
+      if(outcome?.usage)settleUsageCost(j,outcome.usage);
       next.version++;
       next.audit.push({
         id: crypto.randomUUID(),

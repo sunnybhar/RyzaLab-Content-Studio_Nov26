@@ -5,7 +5,7 @@ import {requirePermission,StudioError,filteredState} from '@/lib/studio/permissi
 import {inspectClaudeModelBounds} from '@/lib/studio/model-discovery';
 import {saveBoundedWorkflowSetup} from '@/lib/studio/bounded-workflow-setup';
 import {failure} from '@/lib/studio/http';
-const schema=z.object({connectionId:z.string().min(1).max(150),expectedVersion:z.number().int().nonnegative()}).strict();
+const schema=z.object({connectionId:z.string().min(1).max(150),expectedVersion:z.number().int().nonnegative(),channels:z.array(z.enum(["LinkedIn","Newsletter"])).max(2).optional()}).strict();
 export async function POST(req:NextRequest){try{
  if(Number(req.headers.get('content-length')||0)>5000)throw new StudioError(413,'Setup request too large.');
  const {db,actor}=await authenticate(req),state=await loadState(db,actor),input=schema.parse(await req.json());
@@ -15,7 +15,7 @@ export async function POST(req:NextRequest){try{
  if(!c||c.provider!=='anthropic'||c.function!=='text'||!c.hasKey||c.status==='disconnected'||state.version!==input.expectedVersion)throw new StudioError(409,'Select a current stored Claude writing connection.');
  const {data}=await db.from('studio_secrets').select('ciphertext').eq('id',c.id).single();
  if(!data)throw new StudioError(503,'Stored writing credential unavailable.');
- const capability=await inspectClaudeModelBounds(c.model,decrypt(data.ciphertext));
+ const capability=await inspectClaudeModelBounds(c.model,decrypt(data.ciphertext),fetch,true);
  const next=saveBoundedWorkflowSetup(state,actor,input,capability,new Date().toISOString());await persist(db,state,next);
  return NextResponse.json({state:filteredState(next,actor),actor,mode:'live'},{headers:{'Cache-Control':'no-store'}});
 }catch(e){return failure(e);}}

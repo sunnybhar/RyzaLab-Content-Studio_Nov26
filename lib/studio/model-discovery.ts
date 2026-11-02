@@ -5,6 +5,7 @@ export async function inspectClaudeModelBounds(
   model: string,
   key: string,
   request = fetch,
+  allowDocumentedFallback = false,
 ) {
   if (!/^[A-Za-z0-9_.-]{1,150}$/.test(model))
     throw new StudioError(400, "Use an exact Claude model identifier.");
@@ -21,6 +22,23 @@ export async function inspectClaudeModelBounds(
     if (!response.ok) throw new Error("Model metadata unavailable");
     const body = await response.json();
     if (body.id !== model) throw new Error("Model identity mismatch");
+    // The account Models API may expose identity only. The exact model's
+    // user-supplied dated documentation is an explicit fallback for tool-free
+    // setup only; never infer server-search support or weaken its envelope.
+    if (
+      allowDocumentedFallback &&
+      model === "claude-sonnet-5-5" &&
+      body.max_input_tokens === undefined &&
+      body.max_tokens === undefined
+    ) {
+      return {
+        model,
+        webSearchSupported: false,
+        maxInputTokens: 1000000,
+        maxOutputTokens: 128000,
+        documentedBounds: true as const,
+      };
+    }
     if (
       !Number.isSafeInteger(body.max_input_tokens) ||
       body.max_input_tokens < 1 ||
@@ -31,11 +49,12 @@ export async function inspectClaudeModelBounds(
     )
       throw new StudioError(
         409,
-        "The Models API did not provide usable input/output token bounds. Research remains blocked.",
+        "The Models API did not provide usable input/output token bounds. Model setup remains blocked.",
       );
     return {
       model,
-      webSearchSupported: body.capabilities?.server_tools?.web_search?.supported === true,
+      webSearchSupported:
+        body.capabilities?.server_tools?.web_search?.supported === true,
       maxInputTokens: body.max_input_tokens,
       maxOutputTokens: body.max_tokens,
     };
@@ -43,15 +62,23 @@ export async function inspectClaudeModelBounds(
     if (error instanceof StudioError) throw error;
     throw new StudioError(
       502,
-      "Could not verify research capability from the Models API. No paid request was sent.",
+      "Could not verify model token bounds from the Models API. No paid request was sent.",
     );
   }
 }
 
-export async function inspectClaudeResearchModel(model:string,key:string,request=fetch) {
- const result=await inspectClaudeModelBounds(model,key,request);
- if(!result.webSearchSupported)throw new StudioError(409,"This model does not report web-search support. No paid request was sent.");
- return {...result,webSearchSupported:true as const};
+export async function inspectClaudeResearchModel(
+  model: string,
+  key: string,
+  request = fetch,
+) {
+  const result = await inspectClaudeModelBounds(model, key, request);
+  if (!result.webSearchSupported)
+    throw new StudioError(
+      409,
+      "This model does not report web-search support. No paid request was sent.",
+    );
+  return { ...result, webSearchSupported: true as const };
 }
 
 /** Account access only: listing does not qualify a model's capability or pricing. */

@@ -1,14 +1,19 @@
-# Research setup —0.3.6
+# Public research — v0.3.7
 
-The old manual Research pricing form has been replaced. Do not fill a guessed Fixed conservative reservation or tick a qualification checkbox.
+1. Open **Ideas**, or a saved draft in **Create → Write**.
+2. Expand **Web research → Find public references**.
+3. Enter a public question without private details; click **Find references**.
+4. Inspect the excerpts, original source links, retrieval date and coverage gaps.
+5. Select **Use this evidence in idea generation/writing**, then use the existing AI generation button. Claude still needs a validated Ideas/Writing connection and qualified token pricing. Retrieval itself needs no Research key or manual reservation.
 
-1. In live AI & budgets, add/select a stored Claude Research connection. Enter keys only in Studio.
-2. In Review and preparation, the founder chooses a named package category or custom$0.50–$2.00 cap and their own monthly limit. No monthly default is imposed when unset. Save only changes you intend. Inside Create → Write → Post budget, choose a lower category/custom allowance for an individual post without changing the monthly or workspace ceiling.
-3. In Research setup, select the connection, preview category and response size, then Check capability & calculate. This reads the Models API; it does not generate content or perform paid search.
-4. Inspect supported/unknown status, model token bounds and the calculated envelope. Prices are dated to the user's Oct30 documentation; source links are shown.
-5. If the calculation fits all current limits and the saved policy matches the chosen cap, Save calculated research setup records the rate and connection allowance after rechecking capability. Neither policy nor monthly budget changes there.
-6. If it does not fit, setup remains blocked. Do not increase the price field or verification checkbox to bypass the result. There is no manual Research price field in this version.
+Sources: Wikipedia introductory extracts and Crossref scholarly abstracts. This does not search unrestricted web/news or full papers and cannot confirm personal stories. No paid model/search endpoint runs during retrieval. The existing request, post and monthly limits apply to subsequent Claude calls. Source text is evidence, never instructions or automatic truth.
 
-Important: native Sonnet5.5 basic search with the documented1M context lacks a tight retrieved-input cap. The new deliberately conservative envelope exceeds$2, so this release does not make that configuration usable under$2. See RELEASE-0.3.6.md. To meet the requested hard ceiling, a bounded/fixed-cost public retrieval step followed by an ordinary token-bounded Claude writing call, or a provider-enforced per-request billing ceiling, must be evaluated next. No alternative provider or credentials have been selected/activated.
+The legacy Claude native server-search setup remains separate and is unsuitable for the $2 ceiling with the documented large model envelope. See RELEASE-0.3.6.md for that historical limitation; do not enter a guessed fixed reservation to bypass it.
 
-Existing cited results remain retained evidence for ideas, writing and review. Legacy guessed search reservations cannot authorize new paid execution. Live paid sample tests remain Not run.
+## v0.3.8 — Claude setup
+
+Use **AI & budgets → Bounded research and writing** with the stored Sonnet 5.5 Text key. Click **Check model and enable bounded workflow**. This checks model bounds and sets tool-free workspace defaults for Ideas/Text/Review. Explicit workflow overrides stay in place and may still need their own validated connection/pricing. Monthly and post budgets are preserved. Same-provider review does not satisfy an independent-provider policy.
+
+## Final verification workflow
+
+The full LinkedIn/Newsletter path and five-build changes are described in [LINKEDIN-NEWSLETTER-VERIFY.md](LINKEDIN-NEWSLETTER-VERIFY.md). Bounded public reference retrieval has no paid search API fee, so it can accompany a Short text allowance when all subsequent model calls fit. Categories are planning ceilings, not fixed charges. Live samples still require actual deployed API connectivity and user authorization through the preparation button.

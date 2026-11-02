@@ -1,0 +1,158 @@
+import { build } from "esbuild";
+import { chromium } from "playwright";
+import assert from "node:assert/strict";
+import { initialState, DEMO_ACTOR } from "../lib/studio/seed";
+import { applyCommand } from "../lib/studio/engine";
+import { saveBoundedWorkflowSetup } from "../lib/studio/bounded-workflow-setup";
+import { retrievePublicReferences } from "../lib/studio/public-retrieval";
+const now = "2026-11-02T12:00:00Z";
+let fixture = initialState(DEMO_ACTOR, true);
+fixture = applyCommand(
+  fixture,
+  DEMO_ACTOR,
+  {
+    type: "policy.adoptSolo",
+    expectedRuleVersion: fixture.settings.protectedVersion,
+    packageCap: 50,
+    monthlyCap: 500,
+    requireIndependentReview: false,
+    autoDraft: false,
+    autoReview: false,
+  },
+  { demo: true, now },
+);
+fixture.settings.requestCap = 50;
+fixture.connections.push({
+  id: "writing",
+  title: "Local fixture key",
+  provider: "anthropic",
+  function: "text",
+  model: "claude-sonnet-5-5",
+  hasKey: true,
+  status: "validated",
+  updatedAt: now,
+});
+fixture = saveBoundedWorkflowSetup(
+  fixture,
+  DEMO_ACTOR,
+  { connectionId: "writing", expectedVersion: fixture.version },
+  {
+    model: "claude-sonnet-5-5",
+    maxInputTokens: 1000000,
+    maxOutputTokens: 128000,
+  },
+  now,
+);
+for (const w of fixture.workflows) {
+  w.functionConnections = {};
+  w.connectionId = "";
+}
+const refs = await retrievePublicReferences(
+  "household handoff",
+  async (url) =>
+    Response.json(
+      String(url).includes("wikipedia")
+        ? {
+            query: {
+              pages: {
+                1: {
+                  title: "Home automation",
+                  extract:
+                    "Local browser fixture source about household control documentation. ".repeat(
+                      4,
+                    ),
+                },
+              },
+            },
+          }
+        : { message: { items: [] } },
+    ),
+  now,
+);
+const script = await build({
+  stdin: {
+    contents: `import React,{useState}from'react';import{createRoot}from'react-dom/client';import{VerificationPack}from'./components/verification-pack';import{startVerificationPack,advanceVerificationPacks}from'./lib/studio/verification-pack';import{settleWrittenOutput}from'./lib/studio/draft-candidates';const actor=${JSON.stringify(DEMO_ACTOR)},refs=${JSON.stringify(refs)};window.calls=[];function App(){const[state,setState]=useState(${JSON.stringify(fixture)});async function request(body){window.calls.push(body);if(body.action==='start'){setState(s=>startVerificationPack(s,actor,body.idempotencyKey,refs,'${now}'));return;}setState(previous=>{let s=structuredClone(previous),job=s.jobs.find(j=>j.state==='queued');if(job){job.state='succeeded';job.actual=2;job.reserved=0;if(job.kind==='ideas'){s.ideas.unshift({id:crypto.randomUUID(),title:'A useful household handoff',brief:'Explain a general checklist without personal claims.',channel:job.channel,state:'pending',sources:[],generationRunId:job.id,createdBy:actor.email,createdAt:'${now}'});}else{job.result=JSON.stringify({body:'A useful handoff explains everyday controls, fallback operation and where to find instructions. LOCAL TEST ONLY.',metadata:'',questions:[],sources:['https://en.wikipedia.org/wiki/Home_automation']});settleWrittenOutput(s,job,{text:job.result,completion:'complete'},'${now}');}}return advanceVerificationPacks(s,'${now}');});}return <VerificationPack state={state} actor={actor} request={request} refresh={async()=>{}} openDraft={id=>window.opened=id} disabled={false} demo={false}/>};createRoot(document.getElementById('app')).render(<App/>);`,
+    resolveDir: process.cwd(),
+    loader: "tsx",
+  },
+  bundle: true,
+  write: false,
+  format: "iife",
+  jsx: "automatic",
+  define: { "process.env.NODE_ENV": '"production"' },
+});
+const browser = await chromium.launch({
+  executablePath: "/usr/bin/chromium",
+  headless: true,
+  args: ["--no-sandbox"],
+});
+try {
+  const page = await browser.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.route("http://localhost:31339/**", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body:
+        '<div id="app"></div><script>' +
+        script.outputFiles[0].text.replaceAll("</script", "<\\/script") +
+        "</script>",
+    }),
+  );
+  await page.goto("http://localhost:31339/");
+  assert.equal(
+    (await page.evaluate(() => (window as any).calls)).length,
+    0,
+    "opening the dashboard alone cannot authorize a sample",
+  );
+  await page
+    .getByRole("button", {
+      name: "Prepare five-sample verification pack",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByText(
+      "Write this manual sample yourself in the editor. It has not been completed by AI or by a template.",
+      { exact: true },
+    )
+    .last()
+    .waitFor({ timeout: 45000 });
+  assert.equal(
+    await page
+      .getByText("AI draft prepared — human verification pending", {
+        exact: true,
+      })
+      .count(),
+    3,
+  );
+  await page
+    .getByText(/LOCAL TEST ONLY/)
+    .first()
+    .waitFor();
+  await page
+    .getByText("1 source excerpts · inspect before approving", { exact: true })
+    .first()
+    .click();
+  assert.equal(
+    await page
+      .getByRole("link", { name: "Home automation" })
+      .first()
+      .getAttribute("href"),
+    "https://en.wikipedia.org/wiki/Home_automation",
+  );
+  await page
+    .getByRole("button", { name: "Open content to edit and review" })
+    .first()
+    .click();
+  assert.ok(await page.evaluate(() => (window as any).opened));
+  const calls = await page.evaluate(() => (window as any).calls);
+  assert.equal(calls.filter((c: any) => c.action === "start").length, 1);
+  assert.equal(calls.filter((c: any) => c.action === "advance").length, 6);
+  assert.deepEqual(errors, []);
+  console.log(
+    "PASS: explicit first-sample authorization, sequential progress, readable draft/sources and editor link; local fixtures only, no paid calls",
+  );
+} finally {
+  await browser.close();
+}

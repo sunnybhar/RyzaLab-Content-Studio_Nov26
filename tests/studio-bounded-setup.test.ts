@@ -1,19 +1,151 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';
-import {initialState,DEMO_ACTOR} from '../lib/studio/seed';
-import {saveBoundedWorkflowSetup} from '../lib/studio/bounded-workflow-setup';
-import {claudeUsage,usageCost} from '../lib/studio/usage-cost';
-import {inspectClaudeModelBounds} from '../lib/studio/model-discovery';
-import type {Job} from '../lib/studio/types';
-test('plain Claude setup works without native search and preserves founder budgets and overrides',async()=>{
- const s=initialState(DEMO_ACTOR,true);s.connections.push({id:'writing',title:'Writing',provider:'anthropic',function:'text',model:'claude-sonnet-5-5',hasKey:true,status:'unverified',updatedAt:'before'});
- const cap=await inspectClaudeModelBounds('claude-sonnet-5-5','fixture',async()=>Response.json({id:'claude-sonnet-5-5',max_input_tokens:1000000,max_tokens:128000}));
- assert.equal(cap.webSearchSupported,false);
- const before=structuredClone(s.settings),next=saveBoundedWorkflowSetup(s,DEMO_ACTOR,{connectionId:'writing',expectedVersion:s.version},cap,'2026-11-02T12:00:00Z');
- assert.deepEqual(next.settings.reviewPolicy,before.reviewPolicy);assert.equal(next.settings.monthlyCap,before.monthlyCap);assert.equal(next.settings.requestCap,before.requestCap);
- assert.deepEqual(next.connections.at(-1)?.supportedFunctions,['text','ideas','review']);assert.equal(next.settings.qualifiedRates?.filter(r=>r.model==='claude-sonnet-5-5').length,3);
- const card=next.settings.qualifiedRates!.find(r=>r.function==='text')!;
- const j={kind:'text',reserved:16,pricingSnapshot:{...card,inputBytes:10000,quoteVersion:'v1'}} as Job;
- assert.equal(usageCost(j,claudeUsage({input_tokens:10000,output_tokens:1000})!),3);
- assert.equal(usageCost(j,claudeUsage({input_tokens:10000,output_tokens:1000,cache_read_input_tokens:50})!),undefined);
- assert.equal(claudeUsage({input_tokens:-1,output_tokens:1}),undefined);
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { initialState, DEMO_ACTOR } from "../lib/studio/seed";
+import { saveBoundedWorkflowSetup } from "../lib/studio/bounded-workflow-setup";
+import { inspectClaudeModelBounds } from "../lib/studio/model-discovery";
+import { ideaJobInput } from "../lib/studio/idea-generation";
+import { applyCommand } from "../lib/studio/engine";
+import { quote } from "../lib/studio/pricing";
+const now = "2026-11-02T12:00:00Z";
+function fixture() {
+  const s = initialState(DEMO_ACTOR, true);
+  s.connections.push({
+    id: "writing",
+    title: "Writing",
+    provider: "anthropic",
+    function: "text",
+    model: "claude-sonnet-5-5",
+    hasKey: true,
+    status: "unverified",
+    updatedAt: "before",
+  });
+  return s;
+}
+test("tool-free setup does not require native web search and preserves founder budgets/channel overrides", async () => {
+  const s = fixture(),
+    before = structuredClone(s);
+  const cap = await inspectClaudeModelBounds(
+    "claude-sonnet-5-5",
+    "fixture",
+    async () =>
+      Response.json({
+        id: "claude-sonnet-5-5",
+        max_input_tokens: 1000000,
+        max_tokens: 128000,
+      }),
+  );
+  assert.equal(cap.webSearchSupported, false);
+  const next = saveBoundedWorkflowSetup(
+    s,
+    DEMO_ACTOR,
+    { connectionId: "writing", expectedVersion: s.version },
+    cap,
+    now,
+  );
+  assert.deepEqual(next.settings.reviewPolicy, before.settings.reviewPolicy);
+  assert.equal(next.settings.monthlyCap, before.settings.monthlyCap);
+  assert.equal(next.settings.requestCap, before.settings.requestCap);
+  assert.deepEqual(next.workflows, before.workflows);
+  assert.deepEqual(next.connections.at(-1)?.supportedFunctions, [
+    "text",
+    "ideas",
+    "review",
+  ]);
+  assert.equal(
+    next.settings.qualifiedRates?.filter((r) => r.model === "claude-sonnet-5-5")
+      .length,
+    3,
+  );
+  assert.equal(next.jobs.length, s.jobs.length);
+  for (const w of next.workflows) {
+    w.functionConnections = {};
+    w.connectionId = "";
+  }
+  const request = ideaJobInput(next, DEMO_ACTOR, {
+    channel: "LinkedIn",
+    topic: "Simple household handoff documentation",
+    audience: "Households",
+    quantity: 1,
+    research: false,
+    sourceText: "General guidance only.",
+    idempotencyKey: "bounded-idea",
+  });
+  assert.equal(request.connectionId, "writing");
+  const priced = quote(next, request);
+  assert.ok(priced.cost <= 16);
+  const enqueued = applyCommand(next, DEMO_ACTOR, request, {
+    quotedCost: priced.cost,
+    pricingSnapshot: priced.pricingSnapshot,
+    now,
+  });
+  assert.equal(enqueued.jobs[0].kind, "ideas");
+  assert.equal(enqueued.jobs[0].connectionId, "writing");
+});
+test("stale setup and unauthorized actor cannot change defaults", () => {
+  const s = fixture(),
+    cap = {
+      model: "claude-sonnet-5-5",
+      maxInputTokens: 1000000,
+      maxOutputTokens: 128000,
+    };
+  assert.throws(
+    () =>
+      saveBoundedWorkflowSetup(
+        s,
+        DEMO_ACTOR,
+        { connectionId: "writing", expectedVersion: 999 },
+        cap,
+        now,
+      ),
+    /Workspace changed/,
+  );
+  assert.throws(() =>
+    saveBoundedWorkflowSetup(
+      s,
+      { id: "outside", email: "outside@example.com" },
+      { connectionId: "writing", expectedVersion: s.version },
+      cap,
+      now,
+    ),
+  );
+  assert.equal(s.connections.at(-1)?.supportedFunctions, undefined);
+});
+
+test("explicit channel selection replaces only the requested function mappings", () => {
+  const s = fixture(),
+    next = saveBoundedWorkflowSetup(
+      s,
+      DEMO_ACTOR,
+      {
+        connectionId: "writing",
+        expectedVersion: s.version,
+        channels: ["LinkedIn", "Newsletter"],
+      },
+      {
+        model: "claude-sonnet-5-5",
+        maxInputTokens: 1000000,
+        maxOutputTokens: 128000,
+      },
+      now,
+    );
+  for (const channel of ["LinkedIn", "Newsletter"])
+    assert.equal(
+      next.workflows.find((w) => w.channel === channel && w.status === "active")
+        ?.functionConnections?.ideas,
+      "writing",
+    );
+  assert.deepEqual(
+    next.workflows.filter(
+      (w) => !["LinkedIn", "Newsletter"].includes(w.channel),
+    ),
+    s.workflows.filter((w) => !["LinkedIn", "Newsletter"].includes(w.channel)),
+  );
+});
+
+test('identity-only Models API supports explicit dated-documentation fallback for tool-free setup only',async()=>{
+ const request:typeof fetch=async()=>Response.json({id:'claude-sonnet-5-5',type:'model'});
+ await assert.rejects(()=>inspectClaudeModelBounds('claude-sonnet-5-5','fixture',request),/usable input\/output/);
+ const cap=await inspectClaudeModelBounds('claude-sonnet-5-5','fixture',request,true);assert.equal(cap.documentedBounds,true);assert.equal(cap.webSearchSupported,false);
+ const s=fixture(),next=saveBoundedWorkflowSetup(s,DEMO_ACTOR,{connectionId:'writing',expectedVersion:s.version},cap,now);assert.match(next.settings.qualifiedRates![0].qualificationEvidence!,/capacity from the supplied dated/);
+ await assert.rejects(()=>inspectClaudeModelBounds('another-model','fixture',async()=>Response.json({id:'another-model'}),true),/usable input\/output/);
 });
