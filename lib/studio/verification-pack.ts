@@ -30,7 +30,7 @@ export interface VerificationRun {
   maxPreparationCents: number;
 }
 export const VERIFICATION_QUERY =
-  "home automation usability household documentation and handoff checklist";
+  "home automation";
 const topics = [
   "A practical household technology handoff checklist",
   "Why simple controls need clear operating instructions",
@@ -59,7 +59,7 @@ function unitCeiling(
   );
   if (
     !connection ||
-    connection.provider !== "anthropic" ||
+    (kind !== "review" && connection.provider !== "anthropic") ||
     !connection.hasKey ||
     connection.status !== "validated" ||
     (connection.function !== kind &&
@@ -119,6 +119,11 @@ export function verificationPreflight(
       )
     )
       throw new StudioError(409, `Activate the ${channel} workflow first.`);
+    if(state.settings.reviewPolicy.requireIndependentReview){
+      const writer=state.connections.find(c=>c.id===resolvedConnection(state,channel,"text"));
+      const reviewer=state.connections.find(c=>c.id===resolvedConnection(state,channel,"review"));
+      if(writer?.provider===reviewer?.provider)throw new StudioError(409,"This policy requires a qualified review connection from a different provider. Shared Claude review cannot satisfy it; no sample was started.");
+    }
     const ideas = unitCeiling(state, channel, "ideas"),
       text = unitCeiling(state, channel, "text"),
       review = unitCeiling(state, channel, "review");
