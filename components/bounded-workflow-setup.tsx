@@ -43,6 +43,7 @@ export function BoundedWorkflowSetup({
       <label className="s-field">
         Writing connection
         <select
+          aria-label="Writing connection"
           value={id}
           onChange={(e) => setSelected(e.target.value)}
           disabled={busy || disabled}
