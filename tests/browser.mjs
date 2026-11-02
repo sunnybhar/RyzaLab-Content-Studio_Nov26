@@ -129,7 +129,7 @@ async function main() {
     );
     await page
       .getByLabel("Studio version", { exact: true })
-      .getByText(/v0\.3\.11/)
+      .getByText(/v0\.3\.12/)
       .waitFor();
     await page.screenshot({
       path: "/tmp/studio-v2-desktop.png",
@@ -819,6 +819,7 @@ async function main() {
     // Saving demo provider metadata discards the entered credential; checking access
     // reports that real validation is unavailable rather than marking it validated.
     await navigate("AI & budgets");
+    await page.locator('[data-budget-section="AI connections"] > summary').click();
     await page
       .getByRole("button", { name: "Add connection", exact: true })
       .click();
@@ -853,6 +854,7 @@ async function main() {
       "unverified",
     );
     await closeError();
+    await page.locator('[data-budget-section="Generation activity"] > summary').click();
     await page
       .getByRole("button", { name: "Queue request", exact: true })
       .click();

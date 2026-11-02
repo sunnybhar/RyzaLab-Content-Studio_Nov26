@@ -1,4 +1,5 @@
 "use client";
+import { resolvedConnection } from "@/lib/studio/solo-quality";
 import { useState } from "react";
 import type { StudioState } from "@/lib/studio/types";
 export function BoundedWorkflowSetup({
@@ -23,8 +24,35 @@ export function BoundedWorkflowSetup({
   const [selected, setSelected] = useState(""),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
-  const [useChannels, setUseChannels] = useState(false);
-  const id = selected || choices[0]?.id || "";
+  const [channelChoice, setChannelChoice] = useState<{
+    connectionId: string;
+    baseline: string;
+    value: boolean;
+  } | null>(null);
+  const defaultId = state.settings.defaultConnections?.text;
+  const id = choices.some((c) => c.id === selected)
+    ? selected
+    : choices.find((c) => c.id === defaultId)?.id || choices[0]?.id || "";
+  const channelBindings = ["LinkedIn", "Newsletter"].map((channel) => ({
+    active: state.workflows.some(
+      (w) => w.channel === channel && w.status === "active",
+    ),
+    ids: ["ideas", "text", "review"].map((kind) =>
+      resolvedConnection(state, channel, kind),
+    ),
+  }));
+  const savedChannels =
+    Boolean(id) &&
+    channelBindings.every(
+      (channel) => channel.active && channel.ids.every((value) => value === id),
+    );
+  const baseline = JSON.stringify(channelBindings);
+  const useChannels =
+    channelChoice?.connectionId === id && channelChoice.baseline === baseline
+      ? channelChoice.value
+      : savedChannels;
+  const unsaved = useChannels && !savedChannels;
+
   return (
     <section className="s-panel s-panel-padding">
       <h3>Bounded research and writing</h3>
@@ -46,7 +74,11 @@ export function BoundedWorkflowSetup({
         <select
           aria-label="Writing connection"
           value={id}
-          onChange={(e) => setSelected(e.target.value)}
+          onChange={(e) => {
+            setSelected(e.target.value);
+            setChannelChoice(null);
+            setMessage("");
+          }}
           disabled={busy || disabled}
         >
           {!choices.length && (
@@ -65,12 +97,30 @@ export function BoundedWorkflowSetup({
         <input
           type="checkbox"
           checked={useChannels}
-          disabled={busy || disabled}
-          onChange={(e) => setUseChannels(e.target.checked)}
+          disabled={busy || disabled || savedChannels}
+          onChange={(e) => {
+            setChannelChoice({
+              connectionId: id,
+              baseline,
+              value: e.target.checked,
+            });
+            setMessage("");
+          }}
         />{" "}
         Use this connection for LinkedIn and Newsletter ideas, writing and
         review (replace their existing mappings).
       </label>
+      {savedChannels && (
+        <p role="status">
+          Saved for LinkedIn and Newsletter ideas, writing and review.
+        </p>
+      )}
+      {unsaved && (
+        <p role="status">
+          This selection has not been saved. Click “Check model and enable
+          bounded workflow” before leaving this page.
+        </p>
+      )}
       <button
         className="s-btn"
         disabled={busy || disabled || demo || !id}
@@ -81,8 +131,10 @@ export function BoundedWorkflowSetup({
             await request({
               connectionId: id,
               expectedVersion: state.version,
-              channels: useChannels ? ["LinkedIn", "Newsletter"] : [],
+              channels:
+                useChannels && !savedChannels ? ["LinkedIn", "Newsletter"] : [],
             });
+            setChannelChoice(null);
             setMessage(
               "Model access checked. Tool-free pricing and guarded limits saved. Capacity uses provider metadata or the supplied dated Sonnet 5.5 documentation. No paid generation was run.",
             );

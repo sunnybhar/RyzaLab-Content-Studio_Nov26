@@ -16,27 +16,24 @@ export function ReleaseNotes() {
         aria-label="What changed in this build"
         style={{ maxWidth: 600, width: "calc(100% - 32px)", margin: "auto" }}
       >
-        <h2>v0.3.11 · Usage and cost visibility</h2>
+        <h2>v0.3.12 · Saved setup and clearer settings</h2>
         <p>
-          AI &amp; budgets generation activity and the sample dashboard now show
-          recorded input/output tokens, usage-priced cost, held reservations and
-          remaining post allowance.
+          AI &amp; budgets now has space between sections. Each section starts
+          collapsed; click its heading to show the settings and explanatory
+          content.
         </p>
         <p>
-          Supported uncached Claude token usage settles at qualified USD rates,
-          rounded up to cents. Missing or unsupported usage keeps its
-          reservation. These figures are not invoices. If reported usage exceeds
-          its quote envelope, the job requires reconciliation before another
-          paid attempt.
-        </p>
-        <p>
-          The five-build workflow is implemented. Live Claude and manual sample
-          acceptance still need actual testing in the deployed workspace; local
-          fixtures do not prove live success.
+          The LinkedIn and Newsletter checkbox now reflects your saved channel
+          connections when you return or reload. An unsaved selection tells you
+          to click Check model and enable bounded workflow before leaving.
         </p>
         <details>
           <summary>Changes in the earlier builds</summary>
           <ul>
+            <li>
+              <strong>v0.3.11:</strong> Token usage, recorded costs,
+              reservations and remaining post allowance.
+            </li>
             <li>
               <strong>v0.3.7:</strong> Bounded public references in Ideas and
               Create, with selectable source excerpts.

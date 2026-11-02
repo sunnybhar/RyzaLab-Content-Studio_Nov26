@@ -1,6 +1,7 @@
 "use client";
 import { AuthorizedJobProgress } from "./authorized-job-progress";
 import { JobCost } from "./job-cost";
+import {BudgetSection} from "./budget-section";
 import { ReleaseNotes } from "./release-notes";
 import { MemberAccessEditor } from "./member-access-editor";
 import { SoloPolicySettings } from "./solo-policy-settings";
@@ -1475,7 +1476,7 @@ export default function Workspace() {
             <div className="s-release-label" aria-label="Studio version">
               <strong>RyzaLab Studio</strong>
               <small>
-                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.11"} ·{" "}
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.12"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>
@@ -3722,13 +3723,14 @@ export default function Workspace() {
             </>
           )}
           {page === "AI & budgets" && (
-            <>
+            <div className="s-budget-layout">
               {!founder && admin && <section className="s-panel"><div className="s-section-heading"><div><h2>Founder access</h2><p>Grant founder access in People & access to configure review and preparation. No additional email setting or API key is required.</p></div><button className="s-btn" onClick={() => move("People")}>Open People & access</button></div></section>}
-              <SoloPolicySettings state={state} actor={actor} send={send} ready />
-              <BoundedWorkflowSetup state={state} request={body=>researchSetupRequest(body,true)} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"text"})} demo={mode==="demo"} />
-              <VerificationPack state={state} actor={actor} request={body=>researchSetupRequest(body,"verification")} refresh={refresh} openDraft={id=>{setPage("Create");setSelected(id);setChannel("All channels");setSearch("");}} disabled={!allowed("settings.manage")} demo={mode==="demo"} />
-              <details><summary>Advanced: native Claude server search (separate cost envelope)</summary><ResearchSetup state={state} request={researchSetupRequest} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"research"})} demo={mode==="demo"} /></details>
-              <PricingManager request={pricingRequest} demo={mode === "demo"} disabled={!allowed("settings.manage")} changed={refresh}/>
+              <BudgetSection title="Review and preparation"><SoloPolicySettings state={state} actor={actor} send={send} ready /></BudgetSection>
+              <BudgetSection title="Bounded research and writing"><BoundedWorkflowSetup state={state} request={body=>researchSetupRequest(body,true)} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"text"})} demo={mode==="demo"} /></BudgetSection>
+              <BudgetSection title="LinkedIn and Newsletter sample pack"><VerificationPack state={state} actor={actor} request={body=>researchSetupRequest(body,"verification")} refresh={refresh} openDraft={id=>{setPage("Create");setSelected(id);setChannel("All channels");setSearch("");}} disabled={!allowed("settings.manage")} demo={mode==="demo"} /></BudgetSection>
+              <BudgetSection title="Advanced: native Claude server search"><ResearchSetup state={state} request={researchSetupRequest} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"research"})} demo={mode==="demo"} /></BudgetSection>
+              <BudgetSection title="Verified pricing"><PricingManager request={pricingRequest} demo={mode === "demo"} disabled={!allowed("settings.manage")} changed={refresh}/></BudgetSection>
+              <BudgetSection title="Budget overview">
               <div className="s-stats s-budget-stats">
                 <Stat
                   label="Monthly budget"
@@ -3757,8 +3759,9 @@ export default function Workspace() {
                     : "Connections are unverified until a real provider check completes. Paid work is queued and respects spending limits."}
                 </span>
               </div>
-                  <section className="s-panel"><div className="s-section-heading"><div><h2>Set up by function</h2><p>Choose a provider and its account model for each type of work.</p></div></div><div className="s-actions">{FUNCTIONS.map((kind) => <ConnectionEditor key={kind} initialFunction={kind} demo={mode === "demo"} disabled={!allowed("connections.manage", {function: kind})} save={send} discover={discoverAccountModels} />)}</div></section>
-              <section className="s-panel">
+                  </BudgetSection>
+              <BudgetSection title="Set up by function"><section className="s-panel"><div className="s-section-heading"><div><h2>Set up by function</h2><p>Choose a provider and its account model for each type of work.</p></div></div><div className="s-actions">{FUNCTIONS.map((kind) => <ConnectionEditor key={kind} initialFunction={kind} demo={mode === "demo"} disabled={!allowed("connections.manage", {function: kind})} save={send} discover={discoverAccountModels} />)}</div></section></BudgetSection>
+              <BudgetSection title="AI connections"><section className="s-panel">
                 <div className="s-section-heading">
                   <div>
                     <h2>AI connections</h2>
@@ -3967,8 +3970,8 @@ export default function Workspace() {
                     works without one.
                   </Empty>
                 )}
-              </section>
-              <section className="s-panel s-recent-panel">
+              </section></BudgetSection>
+              <BudgetSection title="Spending & workspace settings"><section className="s-panel s-recent-panel">
                 <div className="s-section-heading">
                   <div>
                     <h2>Spending & workspace settings</h2>
@@ -4130,8 +4133,8 @@ export default function Workspace() {
                     </strong>
                   </div>
                 </div>
-              </section>
-              <section className="s-panel s-recent-panel">
+              </section></BudgetSection>
+              <BudgetSection title="Generation activity"><section className="s-panel s-recent-panel">
                 <div className="s-section-heading">
                   <div>
                     <h2>Generation activity</h2>
@@ -4239,8 +4242,8 @@ export default function Workspace() {
                       )}
                     </div>
                   )} />
-              </section>
-            </>
+              </section></BudgetSection>
+            </div>
           )}
           {page === "Notifications" && (
             <section className="s-panel">
