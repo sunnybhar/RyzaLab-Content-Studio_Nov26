@@ -775,6 +775,7 @@ export function applyCommand(
           period: budgetMonth(now, s.settings.timezone),
           maxCents: policy.packageCap,
           functions: [
+            "ideas",
             "text",
             "research",
             "review",
@@ -1659,6 +1660,7 @@ export function applyCommand(
           maxCents: c.maxCents,
           budgetCategory:c.budgetCategory||"custom",
           functions: [
+            "ideas",
             "text",
             "research",
             "review",

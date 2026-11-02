@@ -54,6 +54,7 @@ import {
 import { ReviewCard } from "./review-card";
 import { SoloReview } from "./solo-review";
 import { DraftAssistant } from "./draft-assistant";
+import { VerificationPack } from "./verification-pack";
 import { BoundedWorkflowSetup } from "./bounded-workflow-setup";
 import { ResearchSetup } from "./research-setup";
 import { ResearchPanel } from "./research-panel";
@@ -991,11 +992,11 @@ export default function Workspace() {
     if (!response.ok) throw new Error(result.error || "Could not load account models.");
     return result.models as string[];
   }
-  async function researchSetupRequest(body: unknown, bounded=false) {
+  async function researchSetupRequest(body: unknown, bounded: boolean | "verification"=false) {
     if(mode === "demo")throw new Error("Research account checks require live Studio.");
     const session=await supabase?.auth.getSession(),token=session?.data.session?.access_token;
     if(!token)throw new Error("Sign in to check research setup.");
-    const response=await fetch(bounded?"/api/studio/research/bounded-setup":"/api/studio/research/setup",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify(body),signal:AbortSignal.timeout(30000)});
+    const response=await fetch(bounded==="verification"?"/api/studio/verification":bounded?"/api/studio/research/bounded-setup":"/api/studio/research/setup",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify(body),signal:AbortSignal.timeout(60000)});
     const result=await response.json();if(!response.ok)throw new Error(result.error||"Research setup failed.");
     if(result.state)await refresh();return result;
   }
@@ -3714,6 +3715,7 @@ export default function Workspace() {
               {!founder && admin && <section className="s-panel"><div className="s-section-heading"><div><h2>Founder access</h2><p>Grant founder access in People & access to configure review and preparation. No additional email setting or API key is required.</p></div><button className="s-btn" onClick={() => move("People")}>Open People & access</button></div></section>}
               <SoloPolicySettings state={state} actor={actor} send={send} ready />
               <BoundedWorkflowSetup state={state} request={body=>researchSetupRequest(body,true)} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"text"})} demo={mode==="demo"} />
+              <VerificationPack state={state} actor={actor} request={body=>researchSetupRequest(body,"verification")} refresh={refresh} openDraft={id=>{setPage("Create");setSelected(id);setChannel("All channels");setSearch("");}} disabled={!allowed("settings.manage")} demo={mode==="demo"} />
               <details><summary>Advanced: native Claude server search (separate cost envelope)</summary><ResearchSetup state={state} request={researchSetupRequest} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"research"})} demo={mode==="demo"} /></details>
               <PricingManager request={pricingRequest} demo={mode === "demo"} disabled={!allowed("settings.manage")} changed={refresh}/>
               <div className="s-stats s-budget-stats">
