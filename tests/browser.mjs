@@ -1015,6 +1015,7 @@ async function main() {
       "/api/studio/connections/validate",
       "/api/studio/founder",
       "/api/studio/pricing",
+      "/api/studio/research/setup",
       "/api/studio/connections/models",
       "/api/studio/docs",
       "/api/studio/google/connect",

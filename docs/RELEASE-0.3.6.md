@@ -1,4 +1,4 @@
-#0.3.6 — Automatic research checks and explained package budgets
+# 0.3.6 — Automatic research checks and explained package budgets
 
 Research setup replaces manual Research pricing entry. Select a stored Claude Research connection, a planning category and response size; Check capability & calculate reads the fixed official Models API endpoint and checks model identity, web-search capability and token limits. Missing/unsupported/mismatched metadata blocks setup. No paid search occurs during checks.
 
@@ -19,6 +19,6 @@ Save rechecks model metadata and workspace/connection versions; it records calcu
 - Newsletter/carousel TEXT:$1.50 — longer or structured copy and revision room; media providers remain separate.
 - Custom:$0.50–$2.00, including$1.60.
 
-These are suggested total post ceilings, not charges, quality grades or promises of included request counts. Provider/model/input/output/revision choices determine cost. Monthly budget is founder-selected; an unset budget is no longer prefilled as$5. Category/cap changes require explicit saving. The$2 aggregate ceiling is checked across earlier revisions and held unknown reservations at enqueue/confirmation/worker, including legacy content jobs.
+Each draft now has a collapsed Post budget selector for choosing a lower named category or custom amount within the founder-approved ceiling; explicit authorization changes only that post. These are suggested total post ceilings, not charges, quality grades or promises of included request counts. Provider/model/input/output/revision choices determine cost. Monthly budget is founder-selected; an unset budget is no longer prefilled as$5. Category/cap changes require explicit saving. The$2 aggregate ceiling is checked across earlier revisions and held unknown reservations at enqueue/confirmation/worker, including legacy content jobs.
 
-Verification is recorded in WORK-IN-PROGRESS. All provider interactions in tests are synthetic/intercepted. No live credentials, state, budgets, roles or paid provider calls were changed or run by the build.
+207 automated tests, the optimized production build, full browser walkthrough, automatic research-setup UI fixture, founder settings fixture, research evidence flow and per-post50c/custom160c browser checks pass. The new setup endpoint rejects unauthenticated calls (401). Verification is recorded in WORK-IN-PROGRESS. All provider interactions in tests are synthetic/intercepted. No live credentials, state, budgets, roles or paid provider calls were changed or run by the build.

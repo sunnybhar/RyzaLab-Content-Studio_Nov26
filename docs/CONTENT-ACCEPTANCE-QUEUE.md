@@ -18,3 +18,7 @@ User requests web research while generating both ideas and posts, as an essentia
 ## Current acceptance status —0.3.5
 
 User authorized starting this work. Research integration and five local synthetic sample paths now pass; see RELEASE-0.3.5.md and ACCEPTANCE-SAMPLES-0.3.5.md. All3AI calls in the sample paths use intercepted fixtures; no real paid provider call occurred. Live Research connection/tool/pricing qualification and five actual workspace acceptance samples remain pending. Next live step is AI & budgets→Set up research, following WEB-RESEARCH-SETUP.md, then inspect one real LinkedIn case before continuing.
+
+## Nov2 /0.3.6 budget boundary
+
+User chose founder-controlled monthly budgeting and total post ceilings up to$2, with named Short50c/Research100c/Newsletter-carousel-text150c/Custom categories (including160c). Capability inspection and automatic research reservation setup replace guessed manual prices.207 tests/build/browser checks pass, including per-post allowance selection without monthly changes. Native1M-context Sonnet server search lacks a sufficiently small retrieved-input ceiling: the guarded envelope cannot fit$2, so live research and paid acceptance remain blocked. Bounded/fixed-cost public retrieval followed by ordinary token-bounded Claude generation, or provider-enforced per-request billing controls, must be evaluated before claiming live research works under this cap. No alternative provider or paid call has been activated.

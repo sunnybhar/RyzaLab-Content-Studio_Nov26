@@ -3,7 +3,7 @@
 The old manual Research pricing form has been replaced. Do not fill a guessed Fixed conservative reservation or tick a qualification checkbox.
 
 1. In live AI & budgets, add/select a stored Claude Research connection. Enter keys only in Studio.
-2. In Review and preparation, the founder chooses a named package category or custom$0.50–$2.00 cap and their own monthly limit. No monthly default is imposed when unset. Save only changes you intend.
+2. In Review and preparation, the founder chooses a named package category or custom$0.50–$2.00 cap and their own monthly limit. No monthly default is imposed when unset. Save only changes you intend. Inside Create → Write → Post budget, choose a lower category/custom allowance for an individual post without changing the monthly or workspace ceiling.
 3. In Research setup, select the connection, preview category and response size, then Check capability & calculate. This reads the Models API; it does not generate content or perform paid search.
 4. Inspect supported/unknown status, model token bounds and the calculated envelope. Prices are dated to the user's Oct30 documentation; source links are shown.
 5. If the calculation fits all current limits and the saved policy matches the chosen cap, Save calculated research setup records the rate and connection allowance after rechecking capability. Neither policy nor monthly budget changes there.
