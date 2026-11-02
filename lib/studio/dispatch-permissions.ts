@@ -6,6 +6,8 @@ import { canReadNewsletterSource } from "./newsletter-source";
 
 // Recheck authority before disclosure to a provider, not merely at settlement.
 export function canDispatchJob(state: StudioState, actor: Actor, job: Job) {
+  const connection=state.connections.find(c=>c.id===job.connectionId);
+  if(connection && connection.function!==job.kind && !connection.supportedFunctions?.some(kind=>kind===job.kind))return false;
   const content = job.contentId
     ? state.contents.find((item) => item.id === job.contentId)
     : undefined;

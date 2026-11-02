@@ -1,7 +1,7 @@
 import type { Connection } from "./types";
 import { StudioError } from "./permissions";
 
-export async function inspectClaudeResearchModel(
+export async function inspectClaudeModelBounds(
   model: string,
   key: string,
   request = fetch,
@@ -21,11 +21,6 @@ export async function inspectClaudeResearchModel(
     if (!response.ok) throw new Error("Model metadata unavailable");
     const body = await response.json();
     if (body.id !== model) throw new Error("Model identity mismatch");
-    if (body.capabilities?.server_tools?.web_search?.supported !== true)
-      throw new StudioError(
-        409,
-        "This model does not report web-search support. No paid request was sent.",
-      );
     if (
       !Number.isSafeInteger(body.max_input_tokens) ||
       body.max_input_tokens < 1 ||
@@ -40,7 +35,7 @@ export async function inspectClaudeResearchModel(
       );
     return {
       model,
-      webSearchSupported: true as const,
+      webSearchSupported: body.capabilities?.server_tools?.web_search?.supported === true,
       maxInputTokens: body.max_input_tokens,
       maxOutputTokens: body.max_tokens,
     };
@@ -51,6 +46,12 @@ export async function inspectClaudeResearchModel(
       "Could not verify research capability from the Models API. No paid request was sent.",
     );
   }
+}
+
+export async function inspectClaudeResearchModel(model:string,key:string,request=fetch) {
+ const result=await inspectClaudeModelBounds(model,key,request);
+ if(!result.webSearchSupported)throw new StudioError(409,"This model does not report web-search support. No paid request was sent.");
+ return {...result,webSearchSupported:true as const};
 }
 
 /** Account access only: listing does not qualify a model's capability or pricing. */

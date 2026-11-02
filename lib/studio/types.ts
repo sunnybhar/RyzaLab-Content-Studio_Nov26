@@ -308,6 +308,7 @@ export interface Schedule {
   verification?: "human_confirmed";
 }
 export interface Connection {
+  supportedFunctions?: ("text" | "ideas" | "review")[];
   researchCapability?: { model:string; webSearchSupported:true; maxInputTokens:number; maxOutputTokens:number; checkedAt:string; connectionUpdatedAt:string };
   id: string;
   title: string;
@@ -319,6 +320,8 @@ export interface Connection {
   updatedAt: string;
 }
 export interface Job {
+  providerUsage?: import("./usage-cost").ClaudeUsage;
+  costBasis?: "provider_usage";
   pricingSnapshot?: unknown;
   researchJobIds?: string[];
   researchSnapshots?: {jobId: string; raw: string}[];

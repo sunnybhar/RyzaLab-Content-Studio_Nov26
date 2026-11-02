@@ -1,3 +1,4 @@
+import {claudeUsage,type ClaudeUsage} from "./usage-cost";
 import { inspectClaudeResearchModel, discoverModels } from "./model-discovery";
 import type { Connection, Job } from "./types";
 import { researchConfigSchema, extractResearchResult, PUBLIC_RESEARCH_SYSTEM } from "./research";
@@ -41,6 +42,7 @@ export async function runProvider(
   connection: Connection,
   key: string,
 ): Promise<{
+  usage?: ClaudeUsage;
   text?: string;
   bytes?: Uint8Array;
   mime?: string;
@@ -261,6 +263,7 @@ export async function runProvider(
         ? json.status === "completed"
         : json.candidates?.[0]?.finishReason === "STOP";
   return {
+    usage: connection.provider==="anthropic"?claudeUsage(json.usage):undefined,
     completion: refusal
       ? "refused"
       : truncated || ((job.outputContract || job.kind === "ideas") && !terminal)

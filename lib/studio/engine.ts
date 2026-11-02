@@ -1879,7 +1879,7 @@ export function applyCommand(
       if (d && d.channel !== c.channel)
         bad("The selected channel does not match this content.");
       const connection = s.connections.find(
-        (x) => x.id === c.connectionId && x.function === c.kind,
+        (x) => x.id === c.connectionId && (x.function === c.kind || x.supportedFunctions?.some(kind=>kind===c.kind)),
       );
       if (!connection)
         bad("Configure an AI connection for this function first.");

@@ -1,3 +1,4 @@
+import { resolvedConnection } from "./solo-quality";
 import { researchEvidence } from "./research-link";
 import { z } from "zod";
 import { StudioError, filteredState } from "./permissions";
@@ -104,7 +105,7 @@ export function ideaJobInput(
   const workflow = visible.workflows.find(
     (w) => w.channel === c.channel && w.status === "active",
   );
-  const connectionId = workflow?.functionConnections?.ideas;
+  const connectionId = resolvedConnection(state,c.channel,"ideas");
   if (!connectionId)
     throw new StudioError(
       400,

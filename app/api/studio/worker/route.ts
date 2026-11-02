@@ -1,3 +1,4 @@
+import {usageCost,type ClaudeUsage} from "@/lib/studio/usage-cost";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { database, loadState, persist, decrypt } from "@/lib/studio/store";
@@ -162,6 +163,7 @@ export async function POST(req: NextRequest) {
     await persist(db, state, claimed);
     let outcome:
         | {
+            usage?: ClaudeUsage;
             text?: string;
             bytes?: Uint8Array;
             mime?: string;
@@ -281,6 +283,14 @@ export async function POST(req: NextRequest) {
 
         j.error ||=
           "Provider completed; cost remains conservatively reserved pending invoice reconciliation.";
+      }
+      if(outcome?.usage) {
+        j.providerUsage=outcome.usage;
+        const cost=usageCost(j,outcome.usage);
+        if(cost!==undefined) {
+          j.actual=cost;j.reserved=0;j.costBasis="provider_usage";
+          if(j.error==="Provider completed; cost remains conservatively reserved pending invoice reconciliation.")j.error=undefined;
+        }
       }
       next.version++;
       next.audit.push({
