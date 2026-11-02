@@ -210,6 +210,7 @@ export function ResearchPanel({
                         >
                           {cite.title || cite.url}
                         </a>
+                        {cite.publishedAt&&<p>Published {cite.publishedAt}</p>}
                         <p>{cite.citedText}</p>
                       </article>
                     ))}

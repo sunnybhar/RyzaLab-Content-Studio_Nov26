@@ -9,6 +9,7 @@ import {
 } from "@/lib/studio/budget-categories";
 import { can } from "@/lib/studio/permissions";
 import { ResearchPanel } from "./research-panel";
+import {PostCost} from "./job-cost";
 import { preparationFor } from "@/lib/studio/preparation-budget";
 
 const cost = (cents: number) => `$${(cents / 100).toFixed(2)}`;
@@ -195,6 +196,7 @@ export function DraftAssistant({
             {cost(Math.min(policy.packageCap, 200))}. Monthly budget stays
             unchanged.
           </p>
+          <PostCost state={state} contentId={content.id} />
           <label className="s-field">
             This post's budget category
             <select
