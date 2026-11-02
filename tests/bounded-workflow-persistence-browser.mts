@@ -3,6 +3,7 @@ import { chromium } from "playwright";
 import assert from "node:assert/strict";
 import { initialState, DEMO_ACTOR } from "../lib/studio/seed";
 const fixture = initialState(DEMO_ACTOR, true);
+fixture.settings.qualifiedRates = [];
 for (const id of ["first", "second"])
   fixture.connections.push({
     id,
