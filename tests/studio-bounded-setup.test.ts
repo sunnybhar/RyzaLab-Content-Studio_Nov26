@@ -131,7 +131,7 @@ test("explicit channel selection replaces only the requested function mappings",
   for (const channel of ["LinkedIn", "Newsletter"])
     assert.equal(
       next.workflows.find((w) => w.channel === channel && w.status === "active")
-        ?.functionConnections.ideas,
+        ?.functionConnections?.ideas,
       "writing",
     );
   assert.deepEqual(

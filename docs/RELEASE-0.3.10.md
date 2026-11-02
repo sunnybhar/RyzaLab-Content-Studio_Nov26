@@ -9,3 +9,5 @@ Authorized queued text/idea/review jobs belonging to the signed-in user can now 
 Setup includes an optional, explicit checkbox to use the selected stored Claude connection for LinkedIn/Newsletter ideas/writing/review. This replaces only those chosen mappings; other workflow references, rules and founder budgets are preserved. Without the checkbox, existing channel overrides remain.
 
 Detailed usage/cost reporting is intentionally deferred to v0.3.11. Actual live samples remain unverified by the coding agent; production network/model access cannot be inferred from local fixtures.
+
+Local validation completed: final production build/typecheck passed, all 216 domain tests passed, full browser regression and retained-source workflow passed, five-case dashboard browser test passed, and authorized review progress plus setup mapping tests passed. These used local fixtures; no live paid call or human manual sample is claimed.
