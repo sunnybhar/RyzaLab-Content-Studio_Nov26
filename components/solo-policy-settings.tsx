@@ -126,7 +126,7 @@ export function SoloPolicySettings({
       </div>
       {policy ? (
         <p>
-          Two-step review enabled · ${(policy.packageCap / 100).toFixed(2)} per
+          Two-step review enabled · {policy.budgetCategory ? `${BUDGET_CATEGORIES.find(category=>category.id===policy.budgetCategory)?.label} · ` : ""}${(policy.packageCap / 100).toFixed(2)} per
           package · $ {(state.settings.monthlyCap / 100).toFixed(2)} monthly
           {policy.requireIndependentReview
             ? " · Independent AI review required"

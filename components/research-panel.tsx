@@ -8,6 +8,7 @@ import type {
   StudioState,
 } from "@/lib/studio/types";
 import { researchEvidence } from "@/lib/studio/research-link";
+import { capabilityMatchesBudget } from "@/lib/studio/research-budget";
 import { resolvedConnection } from "@/lib/studio/solo-quality";
 
 export function ResearchPanel({
@@ -39,6 +40,7 @@ export function ResearchPanel({
   const connection = state.connections.find(
     (c) => c.id === resolvedConnection(state, channel, "research"),
   );
+  const setupMissing = Boolean(connection && state.settings.qualifiedRates !== undefined && !state.settings.qualifiedRates.some(rate=>rate.function==="research"&&rate.model===connection.model&&capabilityMatchesBudget(connection,rate)));
   const jobs = state.jobs.filter(
     (j) =>
       j.kind === "research" &&
@@ -65,6 +67,7 @@ export function ResearchPanel({
       </p>
       <details>
         <summary>Search the web</summary>
+        {setupMissing&&<p role="status">Open AI &amp; budgets → Research setup to check capability and calculate a reservation. An old manual fixed amount cannot enable paid research.</p>}
         {!connection || connection.status !== "validated" ? (
           <p role="status">
             Set up and validate Claude Research in AI &amp; budgets, then select
@@ -102,7 +105,7 @@ export function ResearchPanel({
             disabled ||
             busy ||
             Boolean(active) ||
-            !connection ||
+            !connection || setupMissing ||
             connection.status !== "validated" ||
             query.trim().length < 5
           }

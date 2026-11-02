@@ -37,6 +37,7 @@ export function ResearchSetup({
   const [category, setCategory] = useState<BudgetCategory>(
     inferBudgetCategory(packageCap),
   );
+  const [customCap,setCustomCap]=useState((packageCap/100).toFixed(2));
   const [plan, setPlan] = useState<Plan | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -137,9 +138,10 @@ export function ResearchSetup({
               min="0.50"
               max="2"
               step="0.01"
-              value={(packageCap / 100).toFixed(2)}
+              value={customCap}
               disabled={busy}
               onChange={(e) => {
+                setCustomCap(e.target.value);
                 setPackageCap(Math.round(Number(e.target.value) * 100));
                 setPlan(null);
                 setSaved(false);
