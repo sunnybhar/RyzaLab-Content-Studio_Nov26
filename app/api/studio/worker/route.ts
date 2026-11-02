@@ -42,10 +42,11 @@ export async function POST(req: NextRequest) {
         .eq("id", true)
         .single();
     if (!data) throw new StudioError(503, "Initialize Studio first.");
+    const requestedJobId=req.nextUrl.searchParams.get("jobId");
     const state = data.state as Awaited<ReturnType<typeof loadState>>,
       now = new Date().toISOString(),
       expired = state.jobs.find(
-        (j) => j.state === "running" && j.leaseUntil && j.leaseUntil < now,
+        (j) => j.state === "running" && j.leaseUntil && j.leaseUntil < now && (!requestedJobId || j.id===requestedJobId),
       );
     if (expired) {
       const next = structuredClone(state),
@@ -57,7 +58,6 @@ export async function POST(req: NextRequest) {
       await persist(db, state, next);
       return NextResponse.json({ jobId: j.id, state: "unknown" });
     }
-    const requestedJobId=req.nextUrl.searchParams.get("jobId");
     const job = state.jobs.find((j) => j.state === "queued" && (!requestedJobId || j.id===requestedJobId));
     if (!job) return NextResponse.json({ message: "No queued jobs." });
     async function blockJob(reason: string) {

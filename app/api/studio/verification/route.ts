@@ -100,7 +100,11 @@ export async function POST(req: NextRequest) {
         (j) =>
           ids.includes(j.id) &&
           j.createdBy === actor.email &&
-          j.state === "queued",
+          (j.state === "queued" ||
+            (j.state === "running" &&
+              Boolean(
+                j.leaseUntil && j.leaseUntil < new Date().toISOString(),
+              ))),
       );
       if (queued) {
         // Call the existing authenticated lease/settlement handler in-process. No secret

@@ -36,13 +36,16 @@ export async function POST(req: NextRequest) {
       assignedTo: state.contents.find((c) => c.id === job.contentId)
         ?.assignedTo,
     });
-    if (job.state !== "queued")
+    const expired =
+      job.state === "running" &&
+      Boolean(job.leaseUntil && job.leaseUntil < new Date().toISOString());
+    if (job.state !== "queued" && !expired)
       return NextResponse.json({
         state: filteredState(state, actor),
         actor,
         mode: "live",
       });
-    if (!canDispatchJob(state, actor, job))
+    if (!expired && !canDispatchJob(state, actor, job))
       throw new StudioError(
         409,
         "Job access, draft or source context changed. Inspect the saved request.",

@@ -20,10 +20,24 @@ export function AuthorizedJobProgress({
       r.cases.flatMap((c) => [c.ideaJobId, c.writingJobId]),
     ),
   );
+  const [now, setNow] = useState(Date.now());
+  const hasRunning = state.jobs.some(
+    (j) => j.createdBy === actor.email && j.state === "running",
+  );
+  useEffect(() => {
+    if (demo || !hasRunning) return;
+    const timer = setInterval(() => {
+      setNow(Date.now());
+      void refreshRef.current().catch(() => {});
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [demo, hasRunning]);
   const job = state.jobs.find(
     (j) =>
       j.createdBy === actor.email &&
-      j.state === "queued" &&
+      (j.state === "queued" ||
+        (j.state === "running" &&
+          Boolean(j.leaseUntil && Date.parse(j.leaseUntil) < now))) &&
       ["text", "ideas", "review"].includes(j.kind) &&
       !sampleIds.has(j.id),
   );
@@ -35,9 +49,10 @@ export function AuthorizedJobProgress({
     refreshRef = useRef(refresh);
   requestRef.current = request;
   refreshRef.current = refresh;
+  const attemptKey = job ? `${job.id}:${job.state}` : "";
   useEffect(() => {
-    if (demo || !job || attempted.current.has(job.id)) return;
-    attempted.current.add(job.id);
+    if (demo || !job || attempted.current.has(attemptKey)) return;
+    attempted.current.add(attemptKey);
     let live = true;
     setBusy(true);
     setError("");
@@ -56,7 +71,7 @@ export function AuthorizedJobProgress({
     return () => {
       live = false;
     };
-  }, [job?.id, demo, retry]);
+  }, [attemptKey, demo, retry]);
   if (demo || !job) return null;
   return (
     <div className="s-panel s-panel-padding" role="status">
@@ -67,7 +82,7 @@ export function AuthorizedJobProgress({
         <button
           className="s-btn"
           onClick={() => {
-            attempted.current.delete(job.id);
+            attempted.current.delete(attemptKey);
             setRetry((n) => n + 1);
           }}
         >

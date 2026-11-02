@@ -25,8 +25,19 @@ export async function inspectClaudeModelBounds(
     // The account Models API may expose identity only. The exact model's
     // user-supplied dated documentation is an explicit fallback for tool-free
     // setup only; never infer server-search support or weaken its envelope.
-    if(allowDocumentedFallback&&model==="claude-sonnet-5-5"&&body.max_input_tokens===undefined&&body.max_tokens===undefined) {
-      return {model,webSearchSupported:false,maxInputTokens:1000000,maxOutputTokens:128000,documentedBounds:true as const};
+    if (
+      allowDocumentedFallback &&
+      model === "claude-sonnet-5-5" &&
+      body.max_input_tokens === undefined &&
+      body.max_tokens === undefined
+    ) {
+      return {
+        model,
+        webSearchSupported: false,
+        maxInputTokens: 1000000,
+        maxOutputTokens: 128000,
+        documentedBounds: true as const,
+      };
     }
     if (
       !Number.isSafeInteger(body.max_input_tokens) ||
@@ -42,7 +53,8 @@ export async function inspectClaudeModelBounds(
       );
     return {
       model,
-      webSearchSupported: body.capabilities?.server_tools?.web_search?.supported === true,
+      webSearchSupported:
+        body.capabilities?.server_tools?.web_search?.supported === true,
       maxInputTokens: body.max_input_tokens,
       maxOutputTokens: body.max_tokens,
     };
@@ -55,10 +67,18 @@ export async function inspectClaudeModelBounds(
   }
 }
 
-export async function inspectClaudeResearchModel(model:string,key:string,request=fetch) {
- const result=await inspectClaudeModelBounds(model,key,request);
- if(!result.webSearchSupported)throw new StudioError(409,"This model does not report web-search support. No paid request was sent.");
- return {...result,webSearchSupported:true as const};
+export async function inspectClaudeResearchModel(
+  model: string,
+  key: string,
+  request = fetch,
+) {
+  const result = await inspectClaudeModelBounds(model, key, request);
+  if (!result.webSearchSupported)
+    throw new StudioError(
+      409,
+      "This model does not report web-search support. No paid request was sent.",
+    );
+  return { ...result, webSearchSupported: true as const };
 }
 
 /** Account access only: listing does not qualify a model's capability or pricing. */
