@@ -203,6 +203,7 @@ export interface AgentReview {
   context: "provided_references";
 }
 export interface PreparationAuthorization {
+  budgetCategory?: import("./budget-categories").BudgetCategory;
   id: string;
   contentId: string;
   channel: Channel;

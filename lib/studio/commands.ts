@@ -275,6 +275,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     expectedRuleVersion: short,
   }),
   command("preparation.authorize", {
+    budgetCategory:z.enum(["short_text","researched_text","long_text","custom"]).optional(),
     contentId: id,
     maxCents: money,
     expectedRevision: z.number().int().positive(),

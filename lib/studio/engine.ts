@@ -1619,6 +1619,7 @@ export function applyCommand(
     }
     case "preparation.authorize": {
       const d = content(c.contentId, "package.approve");
+      if(c.budgetCategory && c.budgetCategory!=="custom" && BUDGET_CATEGORIES.find(category=>category.id===c.budgetCategory)?.cents!==c.maxCents)bad("Use Custom when changing a category's suggested cap.");
       const policy = soloPolicy(s);
       if (!policy || !c.maxCents || c.maxCents > Math.min(policy.packageCap,200))
         bad("Choose an allowance within the founder-approved package cap.");
@@ -1632,6 +1633,7 @@ export function applyCommand(
         if (preparationSpend(s, current.id) > c.maxCents)
           bad("The cap cannot be reduced below existing spend/reservations.");
         current.maxCents = c.maxCents;
+        current.budgetCategory=c.budgetCategory||"custom";
       } else {
         const authorization = {
           id: id(),
@@ -1643,6 +1645,7 @@ export function applyCommand(
           at: now,
           period: budgetMonth(now, s.settings.timezone),
           maxCents: c.maxCents,
+          budgetCategory:c.budgetCategory||"custom",
           functions: [
             "text",
             "research",

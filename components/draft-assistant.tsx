@@ -2,6 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Actor, Command, Content, StudioState } from "@/lib/studio/types";
+import {
+  BUDGET_CATEGORIES,
+  inferBudgetCategory,
+  type BudgetCategory,
+} from "@/lib/studio/budget-categories";
+import { can } from "@/lib/studio/permissions";
 import { ResearchPanel } from "./research-panel";
 import { preparationFor } from "@/lib/studio/preparation-budget";
 
@@ -35,8 +41,33 @@ export function DraftAssistant({
   refresh: () => Promise<void>;
   demo?: boolean;
 }) {
+  const initialBudget =
+    state.preparations?.find((p) => p.id === content.preparationId)?.maxCents ||
+    state.settings.reviewPolicy?.packageCap ||
+    50;
+  const [budgetCategory, setBudgetCategory] = useState<BudgetCategory>(
+    inferBudgetCategory(initialBudget),
+  );
+  const [budgetAmount, setBudgetAmount] = useState(
+    (initialBudget / 100).toFixed(2),
+  );
+  const budgetCents = Math.round(Number(budgetAmount) * 100);
+  const budgetValid =
+    /^\d+(?:\.\d{1,2})?$/.test(budgetAmount) &&
+    budgetCents >= 50 &&
+    budgetCents <= Math.min(state.settings.reviewPolicy?.packageCap || 0, 200);
+  const canAuthorize = can(state, actor, "package.approve", {
+    channel: content.channel,
+    contentId: content.id,
+    account: content.account,
+    assignedTo: content.assignedTo,
+  });
   const [notes, setNotes] = useState("");
-  const [researchIds,setResearchIds] = useState<string[]>(content.researchJobIds || state.ideas.find(i=>i.id===content.ideaId)?.researchJobIds || []);
+  const [researchIds, setResearchIds] = useState<string[]>(
+    content.researchJobIds ||
+      state.ideas.find((i) => i.id === content.ideaId)?.researchJobIds ||
+      [],
+  );
   const [resolution, setResolution] = useState<Record<string, string>>({});
   const pendingKey = useRef<{ signature: string; key: string } | null>(null);
   const jobs = state.jobs.filter(
@@ -74,7 +105,12 @@ export function DraftAssistant({
   }, [active?.id, active?.state, refresh]);
 
   async function generate() {
-    const signature = JSON.stringify([content.id, content.revision, notes, researchIds]);
+    const signature = JSON.stringify([
+      content.id,
+      content.revision,
+      notes,
+      researchIds,
+    ]);
     if (!pendingKey.current || pendingKey.current.signature !== signature)
       pendingKey.current = { signature, key: crypto.randomUUID() };
     const ok = await run(
@@ -98,7 +134,24 @@ export function DraftAssistant({
       aria-label="Draft writing assistance"
     >
       <h3>Write with AI</h3>
-      <details className="s-version"><summary>Web research{researchIds.length ? ` · ${researchIds.length} selected` : ""}</summary><ResearchPanel state={state} actor={actor} channel={content.channel} content={content} selected={researchIds} onSelected={setResearchIds} run={run} refresh={refresh} disabled={readOnly||busy||dirty||Boolean(active)} demo={demo} /></details>
+      <details className="s-version">
+        <summary>
+          Web research
+          {researchIds.length ? ` · ${researchIds.length} selected` : ""}
+        </summary>
+        <ResearchPanel
+          state={state}
+          actor={actor}
+          channel={content.channel}
+          content={content}
+          selected={researchIds}
+          onSelected={setResearchIds}
+          run={run}
+          refresh={refresh}
+          disabled={readOnly || busy || dirty || Boolean(active)}
+          demo={demo}
+        />
+      </details>
       {content.initialWriting?.policyVersion === policy?.version &&
         policy?.autoDraft &&
         content.automaticWriting?.error && (
@@ -131,17 +184,122 @@ export function DraftAssistant({
           this draft.
         </p>
       )}
+      {policy && (
+        <details className="s-version">
+          <summary>
+            Post budget · {cost(preparation?.maxCents || budgetCents)}
+          </summary>
+          <p>
+            Choose the category for this post. This covers all its research,
+            writing, review and revisions. Current founder-approved ceiling:{" "}
+            {cost(Math.min(policy.packageCap, 200))}. Monthly budget stays
+            unchanged.
+          </p>
+          <label className="s-field">
+            This post's budget category
+            <select
+              aria-label="This post's budget category"
+              disabled={busy || readOnly || Boolean(active)}
+              value={budgetCategory}
+              onChange={(e) => {
+                const id = e.target.value as BudgetCategory;
+                setBudgetCategory(id);
+                if (id !== "custom")
+                  setBudgetAmount(
+                    (
+                      BUDGET_CATEGORIES.find((category) => category.id === id)!
+                        .cents / 100
+                    ).toFixed(2),
+                  );
+              }}
+            >
+              {BUDGET_CATEGORIES.map((category) => (
+                <option
+                  key={category.id}
+                  value={category.id}
+                  disabled={
+                    category.id !== "custom" &&
+                    category.cents > Math.min(policy.packageCap, 200)
+                  }
+                >
+                  {category.label}
+                  {category.id !== "custom"
+                    ? ` — ${cost(category.cents)} cap`
+                    : " — choose up to $2.00"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p>
+            {
+              BUDGET_CATEGORIES.find(
+                (category) => category.id === budgetCategory,
+              )?.description
+            }
+          </p>
+          {budgetCategory === "custom" && (
+            <label className="s-field">
+              This post's custom cap ($)
+              <input
+                aria-label="This post's custom cap ($)"
+                type="number"
+                min="0.50"
+                max={Math.min(policy.packageCap, 200) / 100}
+                step="0.01"
+                value={budgetAmount}
+                disabled={busy || readOnly || Boolean(active)}
+                onChange={(e) => setBudgetAmount(e.target.value)}
+              />
+            </label>
+          )}
+          {!budgetValid && (
+            <p>
+              Choose $0.50–$2.00 within the founder-approved ceiling, with at
+              most two decimals.
+            </p>
+          )}
+          {preparation && (
+            <button
+              className="s-btn"
+              disabled={
+                !canAuthorize ||
+                !budgetValid ||
+                dirty ||
+                busy ||
+                readOnly ||
+                Boolean(active) ||
+                preparation.maxCents === budgetCents
+              }
+              onClick={() =>
+                void run(
+                  {
+                    type: "preparation.authorize",
+                    contentId: content.id,
+                    expectedRevision: content.revision,
+                    maxCents: budgetCents,
+                    budgetCategory,
+                  },
+                  "Post allowance updated; monthly budget unchanged",
+                )
+              }
+            >
+              Update this post's allowance
+            </button>
+          )}
+        </details>
+      )}
       {policy && !preparation && (
         <button
           className="s-btn"
-          disabled={readOnly || busy || dirty}
+          disabled={readOnly || busy || dirty || !budgetValid || !canAuthorize}
           onClick={() =>
             void run(
               {
                 type: "preparation.authorize",
                 contentId: content.id,
                 expectedRevision: content.revision,
-                maxCents: policy.packageCap,
+                maxCents: budgetCents,
+                budgetCategory,
               },
               "Package allowance authorized",
             )
