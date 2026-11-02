@@ -4,4 +4,4 @@ The LinkedIn/Newsletter checkbox now reads the actual saved active channel conne
 
 AI & budgets sections now have consistent spacing and start collapsed. Click a heading to show its content, settings and actions. Closed sections do not mount setup forms or sample-progress effects. Keep the sample-pack section open while preparing its samples. All existing budget, credential and review controls remain in place.
 
-Validation pending; see WORK-IN-PROGRESS.md. No paid provider request or live account configuration was changed by this UI fix.
+Verified: production build/typecheck, all 222 domain tests, full browser regression, saved-selection navigation/reload regression, and default-collapsed/spacing/keyboard/mobile layout browser checks passed. No paid provider request or live account configuration was changed by this UI fix.
