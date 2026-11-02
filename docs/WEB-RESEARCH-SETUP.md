@@ -13,3 +13,7 @@ The legacy Claude native server-search setup remains separate and is unsuitable 
 ## v0.3.8 — Claude setup
 
 Use **AI & budgets → Bounded research and writing** with the stored Sonnet 5.5 Text key. Click **Check model and enable bounded workflow**. This checks model bounds and sets tool-free workspace defaults for Ideas/Text/Review. Explicit workflow overrides stay in place and may still need their own validated connection/pricing. Monthly and post budgets are preserved. Same-provider review does not satisfy an independent-provider policy.
+
+## Final verification workflow
+
+The full LinkedIn/Newsletter path and five-build changes are described in [LINKEDIN-NEWSLETTER-VERIFY.md](LINKEDIN-NEWSLETTER-VERIFY.md). Bounded public reference retrieval has no paid search API fee, so it can accompany a Short text allowance when all subsequent model calls fit. Categories are planning ceilings, not fixed charges. Live samples still require actual deployed API connectivity and user authorization through the preparation button.

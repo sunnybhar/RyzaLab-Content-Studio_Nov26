@@ -3,7 +3,7 @@ export const BUDGET_CATEGORIES = [
     id: "short_text",
     label: "Short text",
     cents: 50,
-    description: "Writing and review without fresh web research.",
+    description: "Writing and review using saved or bounded public references.",
   },
   {
     id: "researched_text",

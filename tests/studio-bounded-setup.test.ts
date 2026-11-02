@@ -141,3 +141,11 @@ test("explicit channel selection replaces only the requested function mappings",
     s.workflows.filter((w) => !["LinkedIn", "Newsletter"].includes(w.channel)),
   );
 });
+
+test('identity-only Models API supports explicit dated-documentation fallback for tool-free setup only',async()=>{
+ const request:typeof fetch=async()=>Response.json({id:'claude-sonnet-5-5',type:'model'});
+ await assert.rejects(()=>inspectClaudeModelBounds('claude-sonnet-5-5','fixture',request),/usable input\/output/);
+ const cap=await inspectClaudeModelBounds('claude-sonnet-5-5','fixture',request,true);assert.equal(cap.documentedBounds,true);assert.equal(cap.webSearchSupported,false);
+ const s=fixture(),next=saveBoundedWorkflowSetup(s,DEMO_ACTOR,{connectionId:'writing',expectedVersion:s.version},cap,now);assert.match(next.settings.qualifiedRates![0].qualificationEvidence!,/capacity from the supplied dated/);
+ await assert.rejects(()=>inspectClaudeModelBounds('another-model','fixture',async()=>Response.json({id:'another-model'}),true),/usable input\/output/);
+});

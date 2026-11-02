@@ -15,7 +15,7 @@ export async function POST(req:NextRequest){try{
  if(!c||c.provider!=='anthropic'||c.function!=='text'||!c.hasKey||c.status==='disconnected'||state.version!==input.expectedVersion)throw new StudioError(409,'Select a current stored Claude writing connection.');
  const {data}=await db.from('studio_secrets').select('ciphertext').eq('id',c.id).single();
  if(!data)throw new StudioError(503,'Stored writing credential unavailable.');
- const capability=await inspectClaudeModelBounds(c.model,decrypt(data.ciphertext));
+ const capability=await inspectClaudeModelBounds(c.model,decrypt(data.ciphertext),fetch,true);
  const next=saveBoundedWorkflowSetup(state,actor,input,capability,new Date().toISOString());await persist(db,state,next);
  return NextResponse.json({state:filteredState(next,actor),actor,mode:'live'},{headers:{'Cache-Control':'no-store'}});
 }catch(e){return failure(e);}}

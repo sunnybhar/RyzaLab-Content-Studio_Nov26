@@ -84,7 +84,7 @@ export function BoundedWorkflowSetup({
               channels: useChannels ? ["LinkedIn", "Newsletter"] : [],
             });
             setMessage(
-              "Model bounds checked. Tool-free pricing and workspace defaults saved. No paid generation was run.",
+              "Model access checked. Tool-free pricing and guarded limits saved. Capacity uses provider metadata or the supplied dated Sonnet 5.5 documentation. No paid generation was run.",
             );
           } catch (e) {
             setMessage(e instanceof Error ? e.message : "Setup failed.");

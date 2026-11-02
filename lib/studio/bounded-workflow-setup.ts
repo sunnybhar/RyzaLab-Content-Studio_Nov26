@@ -14,6 +14,7 @@ export function saveBoundedWorkflowSetup(
     channels?: ("LinkedIn" | "Newsletter")[];
   },
   capability: {
+    documentedBounds?:true;
     model: string;
     maxInputTokens: number;
     maxOutputTokens: number;
@@ -65,7 +66,7 @@ export function saveBoundedWorkflowSetup(
       {
         action: "save",
         expectedVersion: next.settings.pricingRegistryVersion || 0,
-        evidence: `User-supplied Claude documentation dated ${RESEARCH_PRICE.verifiedAt}; Models API bounds checked ${now}. Tool-free text adapter; no live generation test inferred.`,
+        evidence: `User-supplied Claude documentation dated ${RESEARCH_PRICE.verifiedAt}; ${capability.documentedBounds?"Models API identity checked; input/output capacity from the supplied dated Sonnet 5.5 documentation":"Models API bounds checked"} ${now}. Tool-free text adapter; no live generation test inferred.`,
         card: {
           provider: "anthropic",
           model: connection.model,
