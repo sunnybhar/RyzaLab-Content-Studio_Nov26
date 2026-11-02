@@ -144,3 +144,17 @@ export function researchJobInput(
     idempotencyKey: input.idempotencyKey,
   };
 }
+
+/** Authorization and replay checks run before any external request. */
+export function publicRetrievalTarget(state: StudioState, actor: Actor, input: {
+ channel: Channel; contentId?: string; expectedRevision?: number; query: string; idempotencyKey: string;
+}) {
+ const content=input.contentId?state.contents.find(c=>c.id===input.contentId&&!c.deletedAt):undefined;
+ if(input.contentId&&(!content||content.channel!==input.channel||content.revision!==input.expectedRevision))throw new StudioError(409,"Draft changed. Refresh before retrieving references.");
+ const scope={channel:input.channel,contentId:content?.id,account:content?.account,assignedTo:content?.assignedTo,function:"research" as const};
+ requirePermission(state,actor,"read",scope);requirePermission(state,actor,"job.create",scope);
+ if(content)requirePermission(state,actor,"content.edit",scope);
+ const existing=state.jobs.find(j=>j.createdBy===actor.email&&j.idempotencyKey===input.idempotencyKey);
+ if(existing&&(existing.connectionId!=="public-reference-retrieval"||existing.channel!==input.channel||existing.contentId!==input.contentId||existing.prompt!==input.query))throw new StudioError(409,"This request key belongs to a different operation.");
+ return {content,existing};
+}

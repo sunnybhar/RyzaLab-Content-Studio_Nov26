@@ -8,7 +8,8 @@ import {
   hash,
   encrypt,
 } from "@/lib/studio/store";
-import { researchJobInput } from "@/lib/studio/research-link";
+import { retrievePublicReferences } from "@/lib/studio/public-retrieval";
+import { publicRetrievalTarget, researchJobInput } from "@/lib/studio/research-link";
 import { generationInput } from "@/lib/studio/generation";
 import { ideaJobInput } from "@/lib/studio/idea-generation";
 import { loadChannelPreset } from "@/lib/studio/preset-store";
@@ -99,8 +100,15 @@ export async function POST(req: NextRequest) {
         : command.type === "idea.generate"
           ? quote(state, ideaJobInput(state, actor, command))
           : undefined;
+    let retrievalResult: unknown;
+    if(command.type==="research.retrieve") {
+      const {existing}=publicRetrievalTarget(state,actor,command);
+      if(existing)return NextResponse.json({state:filteredState(state,actor),actor,mode:"live"});
+      retrievalResult=await retrievePublicReferences(command.query);
+    }
     let next = applyCommand(state, actor, command, {
       hash,
+      retrievalResult,
       canonicalGeneration: parsed.type === "content.generate" || parsed.type === "research.start",
       quotedCost: priced?.cost,
       pricingSnapshot: priced?.pricingSnapshot,
