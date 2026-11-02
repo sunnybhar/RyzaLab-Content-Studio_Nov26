@@ -67,22 +67,11 @@ export function VerificationPack({
   return (
     <section
       className="s-panel s-panel-padding"
-      aria-label="LinkedIn verification"
+      aria-label="LinkedIn and Newsletter verification"
     >
-      <h3>First live LinkedIn sample</h3>
-      <p>
-        Retrieve public source excerpts, generate one idea, then write its
-        LinkedIn draft. Preparation automatically selects the first test idea.
-        Inspect the content and sources here, then open the editor to resolve
-        missing facts and submit for human review. Nothing is approved or
-        published automatically.
-      </p>
-      <p>
-        The dashboard advances only this explicitly authorized sample through
-        the existing worker’s permissions, budget checks and execution lease.
-        Keep this screen open while it runs. Uncertain or failed calls stop
-        without an automatic retry.
-      </p>
+      <h3>LinkedIn and Newsletter sample pack</h3>
+      <p>Prepare three AI idea/content samples: two LinkedIn posts, followed by a Newsletter adapted from the first post. Two blank manual exercises let you write a LinkedIn post and adapt a labelled Reddit source template into a Newsletter yourself. Nothing is approved or published automatically.</p>
+      <p>The dashboard advances only this explicitly authorized pack through existing permissions, budgets and execution leases. Keep it open during preparation. Failed or uncertain calls stop without an automatic retry. Manual exercises count as completed only after you write and review them.</p>
       {plan && (
         <p>
           Maximum preparation allowance: $
@@ -113,7 +102,7 @@ export function VerificationPack({
           }
         }}
       >
-        {busy ? "Preparing…" : "Prepare first LinkedIn sample"}
+        {busy ? "Preparing…" : "Prepare five-sample verification pack"}
       </button>
       {error && <p role="alert">{error}</p>}
       {demo && (
@@ -122,6 +111,8 @@ export function VerificationPack({
       {runs.map((run) => (
         <section key={run.id}>
           <h4>Sample · {new Date(run.createdAt).toLocaleString()}</h4>
+          {run.cases.length===1&&run.cases[0].phase==="ready"&&<button className="s-btn" disabled={busy||disabled||demo} onClick={async()=>{setBusy(true);setError("");try{await request({action:"extend",runId:run.id});}catch(e){setError(e instanceof Error?e.message:"Could not continue the saved sample.");}finally{setBusy(false);}}}>Continue remaining four samples</button>}
+
           {run.cases.map((item) => {
             const content = state.contents.find(
               (c) => c.id === item.contentId && !c.deletedAt,
@@ -157,7 +148,7 @@ export function VerificationPack({
                     {content.text ? (
                       <p style={{ whiteSpace: "pre-wrap" }}>{content.text}</p>
                     ) : (
-                      <p>Waiting for the saved AI draft.</p>
+                      <p>{item.mode==="manual"?"Write this manual sample yourself in the editor. It has not been completed by AI or by a template.":"Waiting for the saved AI draft."}</p>
                     )}
                     {blockers.length > 0 && content.text && (
                       <p>

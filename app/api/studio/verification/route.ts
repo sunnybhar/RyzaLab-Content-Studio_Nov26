@@ -10,6 +10,7 @@ import {
   verificationPreflight,
   startVerificationPack,
   advanceVerificationPacks,
+  extendVerificationPack,
   VERIFICATION_QUERY,
 } from "@/lib/studio/verification-pack";
 import { retrievePublicReferences } from "@/lib/studio/public-retrieval";
@@ -23,6 +24,7 @@ const start = z
     expectedVersion: z.number().int().nonnegative(),
   })
   .strict();
+const extend=z.object({action:z.literal("extend"),runId:z.string().uuid()}).strict();
 const advance = z
   .object({ action: z.literal("advance"), runId: z.string().uuid() })
   .strict();
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
     const { db, actor } = await authenticate(req);
     let state = await loadState(db, actor);
     const input = z
-      .discriminatedUnion("action", [start, advance])
+      .discriminatedUnion("action", [start, advance, extend])
       .parse(await req.json());
     requirePermission(state, actor, "settings.manage");
     if (process.env.STUDIO_ALLOW_PROVIDER_EXECUTION !== "true")
@@ -75,6 +77,8 @@ export async function POST(req: NextRequest) {
       );
       await persist(db, state, next);
       state = next;
+    } else if(input.action==="extend") {
+      const next=extendVerificationPack(state,actor,input.runId);await persist(db,state,next);state=next;
     } else {
       const run = state.verificationRuns?.find(
         (r) => r.id === input.runId && r.createdBy === actor.email,

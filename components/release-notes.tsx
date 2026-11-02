@@ -16,23 +16,10 @@ export function ReleaseNotes() {
         aria-label="What changed in this build"
         style={{ maxWidth: 600, width: "calc(100% - 32px)", margin: "auto" }}
       >
-        <h2>v0.3.9 · First LinkedIn sample</h2>
-        <p>
-          In AI &amp; budgets, open First live LinkedIn sample. Prepare one
-          researched idea and LinkedIn draft, then inspect its content and
-          source excerpts in one place.
-        </p>
-        <p>
-          The dashboard advances its authorized jobs while open. It reuses
-          existing permission, budget and execution-lease checks, stops after
-          uncertainty, and never approves or publishes content. Server provider
-          execution and the worker token must be configured.
-        </p>
-        <p>
-          Next: the remaining LinkedIn and Newsletter sample exercises. Detailed
-          usage and cost reporting remain last. A deployed dashboard does not
-          mean a live sample has already passed.
-        </p>
+        <h2>v0.3.10 · LinkedIn and Newsletter samples</h2>
+        <p>AI &amp; budgets now prepares three AI idea/content samples and two blank manual exercises. LinkedIn comes first, followed by Newsletter adaptations. Continue an earlier first-sample run without repeating its paid calls.</p>
+        <p>Already authorized idea, writing and review jobs can progress while Studio is open, using the existing worker lease and budget checks. The two human approvals and manual publication handoff remain required.</p>
+        <p>Manual exercises need your own writing. Real live sample completion has not been asserted by this build. Detailed token usage and cost reporting follows in the final build.</p>
         <button className="s-btn" onClick={() => dialog.current?.close()}>
           Close build notes
         </button>

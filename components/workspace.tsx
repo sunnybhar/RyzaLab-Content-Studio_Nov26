@@ -1,4 +1,5 @@
 "use client";
+import { AuthorizedJobProgress } from "./authorized-job-progress";
 import { ReleaseNotes } from "./release-notes";
 import { MemberAccessEditor } from "./member-access-editor";
 import { SoloPolicySettings } from "./solo-policy-settings";
@@ -1001,6 +1002,12 @@ export default function Workspace() {
     const result=await response.json();if(!response.ok)throw new Error(result.error||"Research setup failed.");
     if(result.state)await refresh();return result;
   }
+  async function progressAuthorizedJob(jobId:string) {
+    const session=await supabase?.auth.getSession(),token=session?.data.session?.access_token;
+    if(!token)throw new Error("Sign in to execute your queued request.");
+    const response=await fetch("/api/studio/jobs/progress",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({jobId}),signal:AbortSignal.timeout(175000)});
+    const result=await response.json();if(!response.ok)throw new Error(result.error||"Queued request needs attention.");await refresh();return result;
+  }
   async function validateAI(id: string) {
     if (mode === "demo") {
       setLocalError(
@@ -1277,6 +1284,7 @@ export default function Workspace() {
     <div
       className={`studio-v2 s-theme-${theme} ${sidebarPinned ? "s-sidebar-pinned" : "s-sidebar-unpinned"} ${sidebarExpanded ? "s-sidebar-expanded" : "s-sidebar-collapsed"}`}
     >
+      <AuthorizedJobProgress state={state} actor={actor} demo={mode==="demo"} request={progressAuthorizedJob} refresh={refresh} />
       {menuOpen && (
         <button
           className="s-navigation-backdrop"
@@ -1467,7 +1475,7 @@ export default function Workspace() {
             <div className="s-release-label" aria-label="Studio version">
               <strong>RyzaLab Studio</strong>
               <small>
-                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.9"} ·{" "}
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.10"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>
