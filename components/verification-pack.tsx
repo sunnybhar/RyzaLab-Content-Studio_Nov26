@@ -1,4 +1,5 @@
 "use client";
+import { JobCost, PostCost } from "./job-cost";
 import { useEffect, useRef, useState } from "react";
 import type { Actor, StudioState } from "@/lib/studio/types";
 import { verificationPreflight } from "@/lib/studio/verification-pack";
@@ -152,7 +153,10 @@ export function VerificationPack({
               (c) => c.id === item.contentId && !c.deletedAt,
             );
             const jobs = state.jobs.filter(
-              (j) => j.id === item.ideaJobId || j.id === item.writingJobId,
+              (j) =>
+                j.id === item.ideaJobId ||
+                j.id === item.writingJobId ||
+                Boolean(item.contentId && j.contentId === item.contentId),
             );
             let evidence;
             try {
@@ -176,6 +180,7 @@ export function VerificationPack({
                   {accepted ? "· Copy approved by a human" : ""}
                 </p>
                 {item.error && <p role="status">{item.error}</p>}
+                {content && <PostCost state={state} contentId={content.id} />}
                 {content && (
                   <>
                     <h4>{content.title}</h4>
@@ -229,6 +234,7 @@ export function VerificationPack({
                       {job.kind} · {job.state}
                     </summary>
                     {job.error && <p>{job.error}</p>}
+                    <JobCost job={job} />
                     <pre style={{ whiteSpace: "pre-wrap" }}>{job.result}</pre>
                   </details>
                 ))}

@@ -2016,6 +2016,7 @@ export function applyCommand(
       if (!["unknown", "succeeded", "failed"].includes(j.state))
         bad("Only a completed or unknown outcome can be reconciled.");
       j.actual = c.actual;
+      j.costBasis = "human_reconciled";
       j.reserved = 0;
       j.state = c.outcome;
       j.error = "Human billing/outcome reconciliation: " + c.reason;

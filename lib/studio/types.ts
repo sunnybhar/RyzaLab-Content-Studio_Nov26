@@ -320,6 +320,8 @@ export interface Connection {
   updatedAt: string;
 }
 export interface Job {
+  providerUsage?: import("./usage-cost").ClaudeUsage;
+  costBasis?: "provider_usage" | "human_reconciled";
   pricingSnapshot?: unknown;
   researchJobIds?: string[];
   researchSnapshots?: {jobId: string; raw: string}[];

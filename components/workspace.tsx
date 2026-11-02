@@ -1,5 +1,6 @@
 "use client";
 import { AuthorizedJobProgress } from "./authorized-job-progress";
+import { JobCost } from "./job-cost";
 import { ReleaseNotes } from "./release-notes";
 import { MemberAccessEditor } from "./member-access-editor";
 import { SoloPolicySettings } from "./solo-policy-settings";
@@ -1474,7 +1475,7 @@ export default function Workspace() {
             <div className="s-release-label" aria-label="Studio version">
               <strong>RyzaLab Studio</strong>
               <small>
-                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.10"} ·{" "}
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.11"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>
@@ -4154,6 +4155,7 @@ export default function Workspace() {
                         </strong>
                         <p>{stamp(j.createdAt)}</p>
                         {j.error && <p className="s-red-text">{j.error}</p>}
+                        <JobCost job={j} />
                         <details>
                           <summary>View request</summary>
                           <p>{j.prompt}</p>
@@ -4176,7 +4178,7 @@ export default function Workspace() {
                       >
                         {j.state.replaceAll("_", " ")}
                       </Badge>
-                      <span>{money(j.actual ?? (j.reserved || j.estimate))} {j.actual != null ? "actual" : j.reserved ? "reserved" : "estimated"}</span>
+                      <span>{money(j.actual ?? (j.reserved || j.estimate))} {j.actual != null ? j.costBasis==="provider_usage"?"usage-priced":"recorded" : j.reserved ? "reserved" : "estimated"}</span>
                       {j.kind === "research" &&
                         j.state === "succeeded" &&
                         j.result && (

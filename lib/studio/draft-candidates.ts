@@ -102,7 +102,7 @@ export function settleWrittenOutput(
   ) {
     job.outputStatus = "incomplete";
     job.error =
-      "Output is incomplete. The saved response and budget reservation are retained; no automatic retry or draft replacement.";
+      "Output is incomplete. The saved response is retained; no automatic retry or draft replacement.";
     return;
   }
   if (job.outputContract === "draft_v1") {
