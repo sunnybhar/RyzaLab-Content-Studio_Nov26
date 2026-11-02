@@ -1,0 +1,21 @@
+import {build} from "esbuild";
+import {chromium} from "playwright";
+import assert from "node:assert/strict";
+import {initialState,DEMO_ACTOR} from "../lib/studio/seed";
+import {applyCommand} from "../lib/studio/engine";
+const now="2026-11-02T15:00:00Z";let fixture=initialState(DEMO_ACTOR,true);
+fixture=applyCommand(fixture,DEMO_ACTOR,{type:"policy.adoptSolo",expectedRuleVersion:fixture.settings.protectedVersion,packageCap:200,budgetCategory:"custom",monthlyCap:777,requireIndependentReview:false,autoDraft:false,autoReview:false},{demo:true,now});fixture.settings.requestCap=200;fixture.settings.qualifiedRates=[];
+fixture.connections.push({id:"research",provider:"anthropic",function:"research",model:"claude-sonnet-5-5",title:"Fixture research",status:"unverified",hasKey:true,updatedAt:now});
+const script=await build({stdin:{contents:`import React from'react';import{createRoot}from'react-dom/client';import{ResearchSetup}from'./components/research-setup';import{researchSetupPlan}from'./lib/studio/research-setup';const state=${JSON.stringify(fixture)};window.calls=[];window.large=true;async function request(body){window.calls.push(body);return{plan:researchSetupPlan(state,state.connections.find(c=>c.id==='research'),{model:'claude-sonnet-5-5',webSearchSupported:true,maxInputTokens:window.large?1000000:5000,maxOutputTokens:6000},body.outputTokens,body.packageCap)}};createRoot(document.getElementById('app')).render(<ResearchSetup state={state} request={request} disabled={false} demo={false}/>);`,resolveDir:process.cwd(),loader:"tsx"},bundle:true,write:false,format:"iife",jsx:"automatic",define:{"process.env.NODE_ENV":'"production"'}});
+const browser=await chromium.launch({headless:true,executablePath:"/usr/bin/chromium",args:["--no-sandbox"]});
+try{const page=await browser.newPage();await page.route("http://research-setup.invalid/**",route=>route.fulfill({contentType:"text/html",body:'<div id="app"></div><script>'+script.outputFiles[0].text.replaceAll('</script','<\\/script')+'</script>'}));await page.goto("http://research-setup.invalid/");
+assert.equal(await page.getByRole("checkbox").count(),0);
+await page.getByLabel("Research connection",{exact:true}).selectOption("research");
+await page.getByLabel("Per-post package category").selectOption("custom");await page.getByLabel("Custom per-post cap ($)").fill("1.60");assert.equal(await page.getByLabel("Custom per-post cap ($)").inputValue(),"1.60");
+await page.getByRole("button",{name:"Check capability & calculate",exact:true}).click();await page.getByText(/Calculated guarded reservation: \$514.02/).waitFor();assert.equal(await page.getByRole("button",{name:"Save calculated research setup",exact:true}).isDisabled(),true);await page.getByRole("alert").filter({hasText:/cannot fit/}).waitFor();
+await page.getByLabel("Per-post package category").selectOption("researched_text");assert.equal(await page.getByRole("status").count(),0);
+await page.getByLabel("Per-post package category").selectOption("custom");await page.getByLabel("Custom per-post cap ($)").fill("2.00");await page.getByLabel("Research response size").selectOption("128");
+await page.evaluate(()=>{(window as any).large=false;});await page.getByRole("button",{name:"Check capability & calculate",exact:true}).click();await page.getByText(/Calculated guarded reservation: \$1.31/).waitFor();await page.getByRole("button",{name:"Save calculated research setup",exact:true}).click();await page.getByRole("button",{name:"Research setup saved",exact:true}).waitFor();
+const calls=await page.evaluate(()=>(window as any).calls);assert.deepEqual(calls.map((c:any)=>c.action),["check","check","save"]);assert.equal(calls[0].packageCap,160);assert.equal(calls[2].packageCap,200);assert.equal(calls[2].outputTokens,128);assert.ok(calls.every((c:any)=>!("fixedCents" in c)&&!("monthlyCap" in c)));
+console.log("PASS: research setup requires no price/checkbox guess, blocks large envelope, supports named/custom160c categories and explicit save; no live calls");
+}finally{await browser.close();}

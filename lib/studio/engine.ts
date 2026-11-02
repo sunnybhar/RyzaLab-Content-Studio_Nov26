@@ -139,6 +139,7 @@ export function applyCommand(
     return j;
   };
   const reserve = (j: Job) => {
+    if(j.contentId && s.jobs.filter(existing=>existing.contentId===j.contentId&&existing.id!==j.id).reduce((sum,existing)=>sum+(existing.actual??existing.reserved),0)+j.estimate>200)bad("The total per-post ceiling is $2.00, including earlier revisions and uncertain reservations. No provider request was started.");
     const connection = s.connections.find((c) => c.id === j.connectionId);
     if (
       connection?.status === "disconnected" ||

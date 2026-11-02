@@ -46,6 +46,7 @@ export function ResearchSetup({
   const fits = plan?.fitsPackage && plan.fitsRequest && plan.fitsMonthly;
   async function run(action: "check" | "save") {
     if (!connection) return;
+    if(category==="custom" && (!/^\d+(?:\.\d{1,2})?$/.test(customCap)||packageCap<50||packageCap>200)){setError("Enter a custom cap from $0.50 to $2.00 with at most two decimals.");return;}
     setBusy(true);
     setError("");
     try {
@@ -111,6 +112,7 @@ export function ResearchSetup({
             onChange={(e) => {
               const id = e.target.value as BudgetCategory;
               setCategory(id);
+              if(id === "custom")setPackageCap(Math.round(Number(customCap)*100));
               if (id !== "custom")
                 setPackageCap(
                   BUDGET_CATEGORIES.find((c) => c.id === id)!.cents,

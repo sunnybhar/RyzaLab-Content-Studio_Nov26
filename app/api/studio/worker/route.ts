@@ -118,6 +118,7 @@ export async function POST(req: NextRequest) {
       return blockJob(
         "This content operation needs a current total package authorization before dispatch.",
       );
+    if(job.contentId && state.jobs.filter(existing=>existing.contentId===job.contentId&&existing.id!==job.id).reduce((sum,existing)=>sum+(existing.actual??existing.reserved),0)+job.estimate>200)return blockJob("The total per-post ceiling is $2.00, including previous revisions and uncertain reservations.");
     if (job.preparationId) {
       const authorization = jobPreparation(state, job, now);
       if (
