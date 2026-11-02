@@ -1,3 +1,4 @@
+import {advanceVerificationPacks} from "@/lib/studio/verification-pack";
 import { orchestrateInitialWriting } from "@/lib/studio/writing-orchestration";
 import { orchestrateReviews } from "@/lib/studio/review-orchestration";
 import { NextRequest, NextResponse } from "next/server";
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
         .single();
     if (!data) throw new StudioError(503, "Initialize Studio first.");
     const previous = data.state as StudioState,
-      next = orchestrateReviews(orchestrateInitialWriting(maintenance(previous)));
+      next = orchestrateReviews(orchestrateInitialWriting(advanceVerificationPacks(maintenance(previous))));
     await persist(db, previous, next);
     const docs = await syncOneGoogleDoc(db, next);
     return NextResponse.json({

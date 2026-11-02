@@ -458,6 +458,7 @@ export interface PlanningTask {
   createdAt: string;
 }
 export interface StudioState {
+  verificationRuns?: import("./verification-pack").VerificationRun[];
   preparations?: PreparationAuthorization[];
   planningTasks?: PlanningTask[];
   version: number;

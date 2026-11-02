@@ -56,7 +56,8 @@ export async function POST(req: NextRequest) {
       await persist(db, state, next);
       return NextResponse.json({ jobId: j.id, state: "unknown" });
     }
-    const job = state.jobs.find((j) => j.state === "queued");
+    const requestedJobId=req.nextUrl.searchParams.get("jobId");
+    const job = state.jobs.find((j) => j.state === "queued" && (!requestedJobId || j.id===requestedJobId));
     if (!job) return NextResponse.json({ message: "No queued jobs." });
     async function blockJob(reason: string) {
       const next = structuredClone(state),
