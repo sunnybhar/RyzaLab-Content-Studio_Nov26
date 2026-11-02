@@ -335,3 +335,13 @@ test("named categories and custom 160 cents preserve founder monthly choice and 
     /package cap/,
   );
 });
+
+test("legacy content requests and old pending confirmations cannot bypass the $2 total with held earlier reservations",()=>{
+ const state=initialState(DEMO_ACTOR,true),c=state.contents[0];state.settings.monthlyCap=1000;state.settings.requestCap=1000;state.settings.confirmationThreshold=1000;
+ const connection:Connection={id:"legacy-writer",provider:"anthropic",function:"text",model:"fixture",title:"Legacy writer",status:"validated",hasKey:true,updatedAt:now};state.connections.push({...connection,...{maxRequestCost:20}});state.workflows.find(w=>w.channel===c.channel&&w.status==="active")!.functionConnections={text:connection.id};
+ const prior:Job={id:"held",kind:"text",channel:c.channel,account:c.account,contentId:c.id,prompt:"Earlier request",connectionId:connection.id,estimate:190,reserved:190,state:"unknown",attempt:1,idempotencyKey:"held-key",createdBy:DEMO_ACTOR.email,createdAt:now};state.jobs.push(prior);
+ assert.throws(()=>applyCommand(state,DEMO_ACTOR,{type:"job.enqueue",kind:"text",channel:c.channel,contentId:c.id,connectionId:connection.id,prompt:"Another revision",estimate:20,idempotencyKey:"another"},{demo:true,now}),/per-post ceiling/);
+ state.jobs.push({...prior,id:"pending",state:"awaiting_confirmation",estimate:20,reserved:0,idempotencyKey:"pending-key"});
+ assert.throws(()=>applyCommand(state,DEMO_ACTOR,{type:"job.confirm",id:"pending"},{demo:true,now}),/per-post ceiling/);
+ assert.equal(state.jobs[0].reserved,190);
+});
