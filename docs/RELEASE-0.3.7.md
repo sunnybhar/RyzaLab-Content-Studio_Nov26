@@ -7,3 +7,5 @@ No paid search/model endpoint is called by retrieval; hosting/network charges ar
 The header version and **What’s new** dialog identify the deployed build. A separate Claude Research connection is unnecessary for this retrieval route. Existing Claude idea/writing setup and all budget controls remain as before; simplified setup arrives in the next build. No detailed usage display or sample dashboard is included here.
 
 Validation: see the latest checkpoint in WORK-IN-PROGRESS.md. Live source connectivity and paid Claude samples require verification from the live deployment; local fixtures do not prove live success.
+
+Completed local validation: production build and TypeScript passed; 210/210 domain tests passed; full browser regression passed; retained-evidence idea/writing/review browser flow passed; bounded-source UI/build-notes browser test passed using local fixtures. No live search or paid model acceptance is inferred from these checks.
