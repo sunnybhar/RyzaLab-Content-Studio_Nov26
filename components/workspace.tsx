@@ -54,6 +54,7 @@ import {
 import { ReviewCard } from "./review-card";
 import { SoloReview } from "./solo-review";
 import { DraftAssistant } from "./draft-assistant";
+import { ResearchSetup } from "./research-setup";
 import { ResearchPanel } from "./research-panel";
 import { researchEvidence } from "@/lib/studio/research-link";
 import { PostPreview } from "./post-preview";
@@ -988,6 +989,14 @@ export default function Workspace() {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Could not load account models.");
     return result.models as string[];
+  }
+  async function researchSetupRequest(body: unknown) {
+    if(mode === "demo")throw new Error("Research account checks require live Studio.");
+    const session=await supabase?.auth.getSession(),token=session?.data.session?.access_token;
+    if(!token)throw new Error("Sign in to check research setup.");
+    const response=await fetch("/api/studio/research/setup",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify(body),signal:AbortSignal.timeout(30000)});
+    const result=await response.json();if(!response.ok)throw new Error(result.error||"Research setup failed.");
+    if(result.state)await refresh();return result;
   }
   async function validateAI(id: string) {
     if (mode === "demo") {
@@ -3703,6 +3712,7 @@ export default function Workspace() {
             <>
               {!founder && admin && <section className="s-panel"><div className="s-section-heading"><div><h2>Founder access</h2><p>Grant founder access in People & access to configure review and preparation. No additional email setting or API key is required.</p></div><button className="s-btn" onClick={() => move("People")}>Open People & access</button></div></section>}
               <SoloPolicySettings state={state} actor={actor} send={send} ready />
+              <ResearchSetup state={state} request={researchSetupRequest} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"research"})} demo={mode==="demo"} />
               <PricingManager request={pricingRequest} demo={mode === "demo"} disabled={!allowed("settings.manage")} changed={refresh}/>
               <div className="s-stats s-budget-stats">
                 <Stat

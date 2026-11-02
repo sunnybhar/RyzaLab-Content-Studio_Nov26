@@ -154,7 +154,7 @@ export function applyCommand(
         );
       if (
         preparationSpend(s, authorization.id, j.id) + j.estimate >
-        authorization.maxCents
+        Math.min(authorization.maxCents,200)
       )
         bad(
           "The total package budget is exhausted. Ask the founder to increase it; no provider request was started.",
@@ -1594,6 +1594,7 @@ export function applyCommand(
           409,
           "Protected policy changed; review it before adopting two-step review.",
         );
+      if(c.packageCap>200)bad("The maximum total package cap is $2.00 per post. Monthly limits remain founder-selected.");
       if (!c.packageCap || !c.monthlyCap)
         bad(
           "Choose positive package and monthly caps before enabling automation.",
@@ -1615,7 +1616,7 @@ export function applyCommand(
     case "preparation.authorize": {
       const d = content(c.contentId, "package.approve");
       const policy = soloPolicy(s);
-      if (!policy || !c.maxCents || c.maxCents > policy.packageCap)
+      if (!policy || !c.maxCents || c.maxCents > Math.min(policy.packageCap,200))
         bad("Choose an allowance within the founder-approved package cap.");
       if (d.deletedAt || d.revision !== c.expectedRevision)
         throw new StudioError(

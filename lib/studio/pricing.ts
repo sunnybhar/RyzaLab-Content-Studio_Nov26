@@ -2,7 +2,7 @@ import { ideaCountContract, requestedIdeaQuantity } from "./idea-generation";
 import { DRAFT_CONTRACT, REVIEW_CONTRACT } from "./output-contracts";
 import { z } from "zod";
 import { researchBudgetSchema, validResearchReservation, capabilityMatchesBudget } from "./research-budget";
-import { researchConfigSchema } from "./research";
+import { researchConfigSchema, PUBLIC_RESEARCH_SYSTEM } from "./research";
 import type { Connection, Job, StudioState } from "./types";
 import { StudioError } from "./permissions";
 export const rateSchema = z
@@ -124,7 +124,7 @@ export function quote(
   const referenceSnapshots = state.references.filter((r) =>
     workflow.references.includes(r.id),
   );
-  const system = frozenSystem({
+  const system = input.kind === "research" ? PUBLIC_RESEARCH_SYSTEM : frozenSystem({
     kind: input.kind,
     prompt: input.prompt,
     rulesSnapshot: state.settings.protectedRules,
@@ -139,6 +139,7 @@ export function quote(
   });
   // UTF-8 bytes conservatively bound tokenized text for the qualified adapter; additional protocol allowance is reserved.
   const bytes = new TextEncoder().encode(system + input.prompt).length + 2048;
+  if(input.kind==="research" && card.researchBudget && bytes>card.researchBudget.contextTokens)throw new StudioError(400,"The public query exceeds the model's guarded input limit. Shorten the query.");
   if (bytes > card.maxInputBytes)
     throw new StudioError(
       400,

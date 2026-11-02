@@ -26,7 +26,7 @@ export function SoloPolicySettings({
     ((policy?.packageCap ?? 50) / 100).toFixed(2),
   );
   const [monthlyCap, setMonthlyCap] = useState(
-    ((policy ? state.settings.monthlyCap : 500) / 100).toFixed(2),
+    state.settings.monthlyCap > 0 ? (state.settings.monthlyCap / 100).toFixed(2) : "",
   );
   const [independent, setIndependent] = useState(
     policy?.requireIndependentReview ?? false,
@@ -59,9 +59,9 @@ export function SoloPolicySettings({
     if (!ready || !founder || activeJobs || pending) return;
     const perPackage = cents(packageCap);
     const perMonth = cents(monthlyCap);
-    if (!perPackage || !perMonth) {
+    if (!perPackage || perPackage > 200 || !perMonth) {
       setError(
-        "Enter positive dollar amounts with no more than two decimal places.",
+        "Choose a package cap up to $2.00 and your own positive monthly limit, with at most two decimals.",
       );
       return;
     }
@@ -105,7 +105,7 @@ export function SoloPolicySettings({
             onClick={() => {
               setPackageCap(((policy?.packageCap ?? 50) / 100).toFixed(2));
               setMonthlyCap(
-                ((policy ? state.settings.monthlyCap : 500) / 100).toFixed(2),
+                state.settings.monthlyCap > 0 ? (state.settings.monthlyCap / 100).toFixed(2) : "",
               );
               setIndependent(policy?.requireIndependentReview ?? false);
               setAutomaticReview(policy?.autoReview ?? true);
@@ -154,13 +154,15 @@ export function SoloPolicySettings({
             final package and publishes it. Provider setup and qualified pricing
             are still required.
           </p>
+          <p>Plan $0.50–$2.00 per post. This is a ceiling for the whole package, not a fixed price or a quality tier. Choose your own monthly budget based on planned posts and revisions.</p>
+          <div className="s-actions">{["0.50","0.75","1.00","1.50","2.00"].map(value=><button type="button" className="s-btn" aria-pressed={packageCap===value} key={value} onClick={()=>setPackageCap(value)}>${value} per post</button>)}</div>
           <div className="s-form-grid">
             <label className="s-field">
               Maximum per package ($)
               <input
                 type="number"
                 min="0.01"
-                max="1000000"
+                max="2"
                 step="0.01"
                 required
                 value={packageCap}

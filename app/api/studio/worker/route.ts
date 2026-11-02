@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
       if (
         !authorization ||
         preparationSpend(state, job.preparationId, job.id) + job.estimate >
-          authorization.maxCents
+          Math.min(authorization.maxCents,200)
       )
         return blockJob(
           "Package authorization changed or its total budget is exhausted. Reauthorize without retrying uncertain work.",

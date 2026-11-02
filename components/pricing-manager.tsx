@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import { validResearchReservation } from "@/lib/studio/research-budget";
 import type { Rate } from "@/lib/studio/pricing";
 const fieldStyle = { display: "grid", gap: 6 };
 export function PricingManager({
@@ -53,7 +54,7 @@ export function PricingManager({
           <h2>Verified pricing</h2>
           <p>
             Manage conservative USD prices for writing, ideas, review and bounded web research. Budget
-            limits remain separate.
+            limits remain separate. Use Research setup above for automatic capability checks and reservations.
           </p>
         </div>
         <div className="s-actions">
@@ -107,6 +108,7 @@ export function PricingManager({
                 ? ` · Fixed reservation $${(rate.fixedCents / 100).toFixed(2)}`
                 : ""}
             </p>
+            {rate.function === "research" && !validResearchReservation(rate) && <p>Legacy research reservation — recalculate in Research setup. This amount cannot authorize a paid search.</p>}
             <p>
               Verified {rate.verifiedAt} ·{" "}
               {rate.qualifiedBy || "Server configuration"}
@@ -119,7 +121,7 @@ export function PricingManager({
               disabled={
                 busy ||
                 disabled ||
-                !["text", "ideas", "review", "research"].includes(rate.function)
+                !["text", "ideas", "review"].includes(rate.function)
               }
               onClick={() => edit(rate)}
             >
@@ -273,7 +275,7 @@ export function PricingManager({
                 disabled={!!editing}
                 defaultValue={editing?.function || "text"}
               >
-                {["text", "ideas", "review", "research"].map((value) => (
+                {["text", "ideas", "review"].map((value) => (
                   <option key={value}>{value}</option>
                 ))}
               </select>
@@ -326,9 +328,9 @@ export function PricingManager({
                 defaultValue={editing?.maxOutputTokens || 3000}
               />
             </label>
-            <p>Research supports the Claude bounded-search adapter only (one search). For Research, a fixed reservation is required and must cover the maximum input/output tokens, retrieved-search context and server-tool charges. Verify tool support for this exact account/model. Saving records your qualification; it does not prove live search succeeded.</p>
+
             <label style={fieldStyle}>
-              Fixed conservative reservation (USD; required for research)
+              Fixed conservative reservation (USD, optional)
               <input
                 name="fixed"
                 type="number"
