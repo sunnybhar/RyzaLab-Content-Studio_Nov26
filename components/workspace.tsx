@@ -1,4 +1,5 @@
 "use client";
+import { ReleaseNotes } from "./release-notes";
 import { MemberAccessEditor } from "./member-access-editor";
 import { SoloPolicySettings } from "./solo-policy-settings";
 import { PricingManager } from "./pricing-manager";
@@ -1460,10 +1461,11 @@ export default function Workspace() {
             </button>
           </div>
           <div className="s-top-actions">
+            <ReleaseNotes />
             <div className="s-release-label" aria-label="Studio version">
               <strong>RyzaLab Studio</strong>
               <small>
-                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.6"} ·{" "}
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.7"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>

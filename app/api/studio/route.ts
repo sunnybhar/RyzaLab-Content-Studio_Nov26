@@ -25,6 +25,8 @@ import { failure } from "@/lib/studio/http";
 
 import { verifyApprovalAssets } from "@/lib/studio/assets";
 
+export const maxDuration = 60;
+
 export async function GET(req: NextRequest) {
   try {
     const { db, actor } = await authenticate(req);

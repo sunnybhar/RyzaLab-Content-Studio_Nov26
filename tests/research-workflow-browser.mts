@@ -166,10 +166,10 @@ try {
     await panel.getByLabel("Use this evidence in writing").isChecked(),
     true,
   );
-  await panel.getByText("Search the web", { exact: true }).click();
+  await panel.getByText("Find public references", { exact: true }).click();
   assert.equal(
     await panel
-      .getByRole("button", { name: "Research the web", exact: true })
+      .getByRole("button", { name: "Find references", exact: true })
       .isDisabled(),
     true,
   );

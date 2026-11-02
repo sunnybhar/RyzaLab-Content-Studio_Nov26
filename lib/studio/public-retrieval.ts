@@ -107,7 +107,9 @@ export async function retrievePublicReferences(
       0,
       3,
     ) as Record<string, unknown>[];
+    const countBefore = citations.length;
     for (const page of pages) {
+      if (!page || typeof page !== "object") continue;
       const title = clean(page.title, 300),
         text = clean(page.extract, 1400);
       if (!title || text.length < 80) continue;
@@ -118,6 +120,10 @@ export async function retrievePublicReferences(
         sourceKind: "reference_extract",
       });
     }
+    if (citations.length === countBefore)
+      gaps.push(
+        "Wikipedia returned no usable introductory extracts for this question.",
+      );
   } catch {
     gaps.push(
       "Wikipedia reference retrieval was unavailable or exceeded its response limit.",
@@ -134,7 +140,9 @@ export async function retrievePublicReferences(
     const items = Array.isArray(result.value.message?.items)
       ? result.value.message.items.slice(0, 3)
       : [];
+    const countBefore = citations.length;
     for (const item of items) {
+      if (!item || typeof item !== "object") continue;
       const title = clean(item.title?.[0], 300),
         text = clean(item.abstract, 1400),
         doi = typeof item.DOI === "string" ? item.DOI : "";
@@ -164,6 +172,10 @@ export async function retrievePublicReferences(
         ...(publishedAt ? { publishedAt } : {}),
       });
     }
+    if (citations.length === countBefore)
+      gaps.push(
+        "Crossref returned no usable scholarly abstracts for this question; title-only hits were excluded.",
+      );
   } catch {
     gaps.push(
       "Crossref scholarly abstract retrieval was unavailable or exceeded its response limit.",
