@@ -7,3 +7,5 @@ While the dashboard stays open, authenticated progression dispatches only the ow
 The preparation ceiling is the qualified maximum for one idea + one writing call (32 cents with the standard bounded setup), charged to the same post allowance. This is a ceiling, not a fixed price. Detailed usage/cost display remains in the last planned build.
 
 Live paid acceptance status: **not run by the coding agent**. Local fixtures validate orchestration and UI behavior; hosted network access, credentials/model access and a real paid result must still be checked in live Studio. Next build adds the remaining two AI cases and two manual exercises.
+
+Verified locally: final production build passed; 214/214 domain tests passed; full browser regression passed; explicit sample authorization/progression/source/editor browser test passed using local fixtures. No real Claude result or paid cost has been asserted.
