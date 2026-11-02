@@ -306,6 +306,7 @@ export interface Schedule {
   verification?: "human_confirmed";
 }
 export interface Connection {
+  researchCapability?: { model:string; webSearchSupported:true; maxInputTokens:number; maxOutputTokens:number; checkedAt:string; connectionUpdatedAt:string };
   id: string;
   title: string;
   provider: "anthropic" | "openai" | "google";

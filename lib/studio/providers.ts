@@ -1,6 +1,7 @@
-import { discoverModels } from "./model-discovery";
+import { inspectClaudeResearchModel, discoverModels } from "./model-discovery";
 import type { Connection, Job } from "./types";
 import { researchConfigSchema, extractResearchResult } from "./research";
+import { validResearchReservation } from "./research-budget";
 import { frozenSystem } from "./pricing";
 import { StudioError } from "./permissions";
 export class ProviderFailure extends Error {
@@ -13,6 +14,10 @@ export class ProviderFailure extends Error {
 }
 const TIMEOUT = 90000;
 export async function validateConnection(connection: Connection, key: string) {
+  if(connection.function === "research") {
+    if(connection.provider!=="anthropic")throw new StudioError(400,"Research requires the Claude search adapter.");
+    return inspectClaudeResearchModel(connection.model,key);
+  }
   const ids = await discoverModels(connection.provider, key);
   if (!ids.includes(connection.model))
     throw new StudioError(
@@ -71,11 +76,16 @@ export async function runProvider(
     const research = researchConfigSchema.safeParse(
       (job as Job & { pricingSnapshot?: unknown }).pricingSnapshot,
     );
-    if (connection.provider !== "anthropic" || !research.success)
+    if (connection.provider !== "anthropic" || !research.success || !validResearchReservation(job.pricingSnapshot))
       throw new ProviderFailure(
         false,
         "Claude research is not qualified with bounded search costs. No provider request was sent.",
       );
+    try {
+      const capability=await inspectClaudeResearchModel(connection.model,key);
+      const budget=(job.pricingSnapshot as {researchBudget:{contextTokens:number}}).researchBudget;
+      if(capability.maxInputTokens!==budget.contextTokens || capability.maxOutputTokens<maxTokens)throw new Error("Model bounds changed");
+    }catch {throw new ProviderFailure(false,"Research capability or token limits changed/unavailable. Recalculate research setup before dispatch; no paid request was sent.");}
     url = "https://api.anthropic.com/v1/messages";
     headers["x-api-key"] = key;
     headers["anthropic-version"] = "2023-06-01";

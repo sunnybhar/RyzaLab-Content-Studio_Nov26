@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { rateSchema, type Rate } from "./pricing";
 import { requirePermission, StudioError } from "./permissions";
+import { validResearchReservation } from "./research-budget";
 import { researchConfigSchema } from "./research";
 import type { Actor, StudioState } from "./types";
 export const rateChangeSchema = z.discriminatedUnion("action", [
@@ -48,7 +49,7 @@ export function updateRates(
         400,
         "Media needs separate adapter evaluation.",
       );
-    if(input.card.function === "research" && !researchConfigSchema.safeParse(input.card).success) throw new StudioError(400,"Research needs the Claude bounded-search adapter, max one search, and a fixed reservation covering all token and search charges.");
+    if(input.card.function === "research" && (!researchConfigSchema.safeParse(input.card).success || !validResearchReservation(input.card))) throw new StudioError(400,"Research needs an automatically calculated reservation. Use Research setup instead of entering a fixed amount.");
     const verified = Date.parse(input.card.verifiedAt);
     if (!Number.isFinite(verified) || verified > Date.parse(now))
       throw new StudioError(

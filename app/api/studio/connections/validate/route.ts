@@ -28,11 +28,12 @@ export async function POST(req: NextRequest) {
       .eq("id", id)
       .single();
     if (!data) throw new StudioError(503, "Credential is unavailable.");
-    await validateConnection(connection, decrypt(data.ciphertext));
+    const capability=await validateConnection(connection, decrypt(data.ciphertext));
+    const checkedAt=new Date().toISOString();
     const next = structuredClone(state);
     Object.assign(
       next.connections.find((c) => c.id === id)!,
-      { status: "validated", updatedAt: new Date().toISOString() },
+      { status: "validated", updatedAt: checkedAt, researchCapability: capability ? {...capability,checkedAt,connectionUpdatedAt:checkedAt} : undefined },
     );
     next.version++;
     next.audit.push({
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
       actor,
       mode: "live",
       message:
-        "Model access validated. Output quality and conservative pricing allowance still require evaluation.",
+        capability ? "Models API confirms web-search support and token limits. Open Research setup to calculate the reservation; no paid search was run." : "Model access validated. Output quality and conservative pricing allowance still require evaluation.",
     });
   } catch (e) {
     return failure(e);

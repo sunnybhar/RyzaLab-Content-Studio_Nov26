@@ -1,6 +1,7 @@
 import { ideaCountContract, requestedIdeaQuantity } from "./idea-generation";
 import { DRAFT_CONTRACT, REVIEW_CONTRACT } from "./output-contracts";
 import { z } from "zod";
+import { researchBudgetSchema, validResearchReservation, capabilityMatchesBudget } from "./research-budget";
 import { researchConfigSchema } from "./research";
 import type { Connection, Job, StudioState } from "./types";
 import { StudioError } from "./permissions";
@@ -23,6 +24,7 @@ export const rateSchema = z
     maxInputBytes: z.number().int().positive().max(500000),
     maxOutputTokens: z.number().int().min(1).max(6000),
     fixedCents: z.number().int().positive().optional(),
+    researchBudget: researchBudgetSchema.optional(),
     webSearchTool: z.literal("web_search_20250305").optional(),
     maxSearchUses: z.literal(1).optional(),
     source: z.url(),
@@ -113,11 +115,11 @@ export function quote(
     );
   if (
     input.kind === "research" &&
-    !researchConfigSchema.safeParse(card).success
+    (!researchConfigSchema.safeParse(card).success || !capabilityMatchesBudget(connection,card))
   )
     throw new StudioError(
       503,
-      "Research needs a separately qualified Claude rate card with one bounded search and a fixed reservation covering all token/tool charges. No provider request was sent.",
+      "Research setup needs a current model capability check and an automatically calculated reservation. Open AI & budgets → Research setup. No paid request was sent.",
     );
   const referenceSnapshots = state.references.filter((r) =>
     workflow.references.includes(r.id),
@@ -164,7 +166,7 @@ export function quote(
     pricingSnapshot: {
       ...card,
       inputBytes: bytes,
-      quoteVersion: input.kind === "ideas" ? "ideas-v2" : "v1",
+      quoteVersion: input.kind === "ideas" ? "ideas-v2" : input.kind === "research" ? "research-envelope-v1" : "v1",
     },
   };
 }
@@ -180,6 +182,7 @@ export function pricingSnapshotIsCurrent(snapshot: unknown, rates: Rate[]) {
   if (!parsed.success) return false;
   if (parsed.data.function === "ideas" && _quoteVersion !== "ideas-v2")
     return false;
+  if(parsed.data.function === "research" && (_quoteVersion!=="research-envelope-v1" || !validResearchReservation(parsed.data)))return false;
   return rates.some(
     (current) => JSON.stringify(current) === JSON.stringify(parsed.data),
   );
