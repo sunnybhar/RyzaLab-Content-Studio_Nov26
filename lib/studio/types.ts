@@ -308,6 +308,7 @@ export interface Schedule {
   verification?: "human_confirmed";
 }
 export interface Connection {
+  supportedFunctions?: ("text" | "ideas" | "review")[];
   researchCapability?: { model:string; webSearchSupported:true; maxInputTokens:number; maxOutputTokens:number; checkedAt:string; connectionUpdatedAt:string };
   id: string;
   title: string;

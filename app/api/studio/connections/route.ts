@@ -82,6 +82,8 @@ export async function POST(req: NextRequest) {
       hasKey: true,
       status: "unverified" as const,
       updatedAt,
+      supportedFunctions: undefined,
+      researchCapability: undefined,
       maxRequestCost:
         input.maxRequestCost ??
         (existing as typeof existing & { maxRequestCost?: number })

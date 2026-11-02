@@ -16,22 +16,23 @@ export function ReleaseNotes() {
         aria-label="What changed in this build"
         style={{ maxWidth: 600, width: "calc(100% - 32px)", margin: "auto" }}
       >
-        <h2>v0.3.7 · Bounded public research</h2>
+        <h2>v0.3.8 · Simplified Claude workflow</h2>
         <p>
-          In Ideas or Create → Write, open Web research → Find public
-          references. Retrieve limited Wikipedia extracts and Crossref scholarly
-          abstracts, inspect the source links, then select evidence for ideas or
-          writing.
+          In AI &amp; budgets, open Bounded research and writing. Select your
+          stored Claude Sonnet 5.5 Text connection and click Check model and
+          enable bounded workflow. No extra Research key is needed.
         </p>
         <p>
-          This source retrieval needs no separate Research key and makes no paid
-          model call. It is limited reference coverage; it does not search
-          unrestricted news or confirm personal experience. Existing spending
-          limits remain enforced.
+          Setup checks model input/output bounds, saves tool-free
+          idea/writing/review pricing, and enables workspace defaults. It
+          preserves monthly and per-post budgets and explicit channel mappings.
+          One shared provider gives a second review pass; independent-review
+          requirements remain enforced.
         </p>
         <p>
-          Next builds: simplified Claude setup, sample verification, then
-          detailed cost reporting.
+          In Ideas or Create, retrieve public references, inspect and select
+          excerpts, then generate with Claude. Your keys stay in Studio. Next:
+          sample verification dashboard; detailed cost reporting follows last.
         </p>
         <button className="s-btn" onClick={() => dialog.current?.close()}>
           Close build notes

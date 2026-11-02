@@ -55,6 +55,7 @@ import {
 import { ReviewCard } from "./review-card";
 import { SoloReview } from "./solo-review";
 import { DraftAssistant } from "./draft-assistant";
+import { BoundedWorkflowSetup } from "./bounded-workflow-setup";
 import { ResearchSetup } from "./research-setup";
 import { ResearchPanel } from "./research-panel";
 import { researchEvidence } from "@/lib/studio/research-link";
@@ -991,11 +992,11 @@ export default function Workspace() {
     if (!response.ok) throw new Error(result.error || "Could not load account models.");
     return result.models as string[];
   }
-  async function researchSetupRequest(body: unknown) {
+  async function researchSetupRequest(body: unknown, bounded=false) {
     if(mode === "demo")throw new Error("Research account checks require live Studio.");
     const session=await supabase?.auth.getSession(),token=session?.data.session?.access_token;
     if(!token)throw new Error("Sign in to check research setup.");
-    const response=await fetch("/api/studio/research/setup",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify(body),signal:AbortSignal.timeout(30000)});
+    const response=await fetch(bounded?"/api/studio/research/bounded-setup":"/api/studio/research/setup",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify(body),signal:AbortSignal.timeout(30000)});
     const result=await response.json();if(!response.ok)throw new Error(result.error||"Research setup failed.");
     if(result.state)await refresh();return result;
   }
@@ -1465,7 +1466,7 @@ export default function Workspace() {
             <div className="s-release-label" aria-label="Studio version">
               <strong>RyzaLab Studio</strong>
               <small>
-                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.7"} ·{" "}
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.8"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>
@@ -3714,7 +3715,8 @@ export default function Workspace() {
             <>
               {!founder && admin && <section className="s-panel"><div className="s-section-heading"><div><h2>Founder access</h2><p>Grant founder access in People & access to configure review and preparation. No additional email setting or API key is required.</p></div><button className="s-btn" onClick={() => move("People")}>Open People & access</button></div></section>}
               <SoloPolicySettings state={state} actor={actor} send={send} ready />
-              <ResearchSetup state={state} request={researchSetupRequest} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"research"})} demo={mode==="demo"} />
+              <BoundedWorkflowSetup state={state} request={body=>researchSetupRequest(body,true)} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"text"})} demo={mode==="demo"} />
+              <details><summary>Advanced: native Claude server search (separate cost envelope)</summary><ResearchSetup state={state} request={researchSetupRequest} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"research"})} demo={mode==="demo"} /></details>
               <PricingManager request={pricingRequest} demo={mode === "demo"} disabled={!allowed("settings.manage")} changed={refresh}/>
               <div className="s-stats s-budget-stats">
                 <Stat
