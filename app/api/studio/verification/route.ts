@@ -24,7 +24,9 @@ const start = z
     expectedVersion: z.number().int().nonnegative(),
   })
   .strict();
-const extend=z.object({action:z.literal("extend"),runId:z.string().uuid()}).strict();
+const extend = z
+  .object({ action: z.literal("extend"), runId: z.string().uuid() })
+  .strict();
 const advance = z
   .object({ action: z.literal("advance"), runId: z.string().uuid() })
   .strict();
@@ -77,8 +79,10 @@ export async function POST(req: NextRequest) {
       );
       await persist(db, state, next);
       state = next;
-    } else if(input.action==="extend") {
-      const next=extendVerificationPack(state,actor,input.runId);await persist(db,state,next);state=next;
+    } else if (input.action === "extend") {
+      const next = extendVerificationPack(state, actor, input.runId);
+      await persist(db, state, next);
+      state = next;
     } else {
       const run = state.verificationRuns?.find(
         (r) => r.id === input.runId && r.createdBy === actor.email,

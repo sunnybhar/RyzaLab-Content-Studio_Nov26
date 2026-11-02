@@ -60,8 +60,9 @@ try {
     .filter({ hasText: /No paid generation was run/ })
     .waitFor();
   assert.deepEqual(await page.evaluate(() => (window as any).calls), [
-    { connectionId: "writing", expectedVersion: fixture.version },
+    { connectionId: "writing", expectedVersion: fixture.version, channels: [] },
   ]);
+  await page.getByRole("checkbox",{name:/Use this connection for LinkedIn and Newsletter/}).check();
   await page.evaluate(() => {
     (window as any).fail = true;
   });

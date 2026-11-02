@@ -8,7 +8,11 @@ import { RESEARCH_PRICE } from "./research-budget";
 export function saveBoundedWorkflowSetup(
   state: StudioState,
   actor: Actor,
-  input: { connectionId: string; expectedVersion: number },
+  input: {
+    connectionId: string;
+    expectedVersion: number;
+    channels?: ("LinkedIn" | "Newsletter")[];
+  },
   capability: {
     model: string;
     maxInputTokens: number;
@@ -98,6 +102,24 @@ export function saveBoundedWorkflowSetup(
     ideas: connection.id,
     review: connection.id,
   };
+  for (const channel of input.channels || []) {
+    requirePermission(state, actor, "workflow.edit", { channel });
+    const workflow = next.workflows.find(
+      (w) => w.channel === channel && w.status === "active",
+    );
+    if (!workflow)
+      throw new StudioError(
+        409,
+        `Activate the ${channel} workflow before selecting it here.`,
+      );
+    workflow.functionConnections = {
+      ...workflow.functionConnections,
+      text: connection.id,
+      ideas: connection.id,
+      review: connection.id,
+    };
+    workflow.connectionId = connection.id;
+  }
   next.audit.push({
     id: crypto.randomUUID(),
     actor: actor.email,

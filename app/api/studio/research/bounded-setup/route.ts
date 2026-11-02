@@ -5,7 +5,7 @@ import {requirePermission,StudioError,filteredState} from '@/lib/studio/permissi
 import {inspectClaudeModelBounds} from '@/lib/studio/model-discovery';
 import {saveBoundedWorkflowSetup} from '@/lib/studio/bounded-workflow-setup';
 import {failure} from '@/lib/studio/http';
-const schema=z.object({connectionId:z.string().min(1).max(150),expectedVersion:z.number().int().nonnegative()}).strict();
+const schema=z.object({connectionId:z.string().min(1).max(150),expectedVersion:z.number().int().nonnegative(),channels:z.array(z.enum(["LinkedIn","Newsletter"])).max(2).optional()}).strict();
 export async function POST(req:NextRequest){try{
  if(Number(req.headers.get('content-length')||0)>5000)throw new StudioError(413,'Setup request too large.');
  const {db,actor}=await authenticate(req),state=await loadState(db,actor),input=schema.parse(await req.json());

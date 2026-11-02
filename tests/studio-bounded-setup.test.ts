@@ -110,3 +110,34 @@ test("stale setup and unauthorized actor cannot change defaults", () => {
   );
   assert.equal(s.connections.at(-1)?.supportedFunctions, undefined);
 });
+
+test("explicit channel selection replaces only the requested function mappings", () => {
+  const s = fixture(),
+    next = saveBoundedWorkflowSetup(
+      s,
+      DEMO_ACTOR,
+      {
+        connectionId: "writing",
+        expectedVersion: s.version,
+        channels: ["LinkedIn", "Newsletter"],
+      },
+      {
+        model: "claude-sonnet-5-5",
+        maxInputTokens: 1000000,
+        maxOutputTokens: 128000,
+      },
+      now,
+    );
+  for (const channel of ["LinkedIn", "Newsletter"])
+    assert.equal(
+      next.workflows.find((w) => w.channel === channel && w.status === "active")
+        ?.functionConnections.ideas,
+      "writing",
+    );
+  assert.deepEqual(
+    next.workflows.filter(
+      (w) => !["LinkedIn", "Newsletter"].includes(w.channel),
+    ),
+    s.workflows.filter((w) => !["LinkedIn", "Newsletter"].includes(w.channel)),
+  );
+});

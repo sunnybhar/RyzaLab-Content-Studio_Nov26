@@ -23,6 +23,7 @@ export function BoundedWorkflowSetup({
   const [selected, setSelected] = useState(""),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
+  const [useChannels, setUseChannels] = useState(false);
   const id = selected || choices[0]?.id || "";
   return (
     <section className="s-panel s-panel-padding">
@@ -60,6 +61,16 @@ export function BoundedWorkflowSetup({
           ))}
         </select>
       </label>
+      <label>
+        <input
+          type="checkbox"
+          checked={useChannels}
+          disabled={busy || disabled}
+          onChange={(e) => setUseChannels(e.target.checked)}
+        />{" "}
+        Use this connection for LinkedIn and Newsletter ideas, writing and
+        review (replace their existing mappings).
+      </label>
       <button
         className="s-btn"
         disabled={busy || disabled || demo || !id}
@@ -67,7 +78,11 @@ export function BoundedWorkflowSetup({
           setBusy(true);
           setMessage("");
           try {
-            await request({ connectionId: id, expectedVersion: state.version });
+            await request({
+              connectionId: id,
+              expectedVersion: state.version,
+              channels: useChannels ? ["LinkedIn", "Newsletter"] : [],
+            });
             setMessage(
               "Model bounds checked. Tool-free pricing and workspace defaults saved. No paid generation was run.",
             );

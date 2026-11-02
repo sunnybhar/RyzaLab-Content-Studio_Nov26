@@ -29,8 +29,7 @@ export interface VerificationRun {
   cases: VerificationCase[];
   maxPreparationCents: number;
 }
-export const VERIFICATION_QUERY =
-  "home automation";
+export const VERIFICATION_QUERY = "home automation";
 const topics = [
   "A practical household technology handoff checklist",
   "Why simple controls need clear operating instructions",
@@ -42,10 +41,26 @@ const caseDefinitions: Pick<VerificationCase, "name" | "channel" | "mode">[] = [
     channel: "LinkedIn",
     mode: "ai",
   },
-  {name:"2 · AI LinkedIn: practical explainer",channel:"LinkedIn",mode:"ai"},
-  {name:"3 · AI Newsletter: adapt the LinkedIn draft",channel:"Newsletter",mode:"ai"},
-  {name:"4 · Manual LinkedIn: write from an idea",channel:"LinkedIn",mode:"manual"},
-  {name:"5 · Manual Newsletter: adapt a Reddit source",channel:"Newsletter",mode:"manual"},
+  {
+    name: "2 · AI LinkedIn: practical explainer",
+    channel: "LinkedIn",
+    mode: "ai",
+  },
+  {
+    name: "3 · AI Newsletter: adapt the LinkedIn draft",
+    channel: "Newsletter",
+    mode: "ai",
+  },
+  {
+    name: "4 · Manual LinkedIn: write from an idea",
+    channel: "LinkedIn",
+    mode: "manual",
+  },
+  {
+    name: "5 · Manual Newsletter: adapt a Reddit source",
+    channel: "Newsletter",
+    mode: "manual",
+  },
 ];
 function unitCeiling(
   state: StudioState,
@@ -123,10 +138,18 @@ export function verificationPreflight(
       )
     )
       throw new StudioError(409, `Activate the ${channel} workflow first.`);
-    if(state.settings.reviewPolicy.requireIndependentReview){
-      const writer=state.connections.find(c=>c.id===resolvedConnection(state,channel,"text"));
-      const reviewer=state.connections.find(c=>c.id===resolvedConnection(state,channel,"review"));
-      if(writer?.provider===reviewer?.provider)throw new StudioError(409,"This policy requires a qualified review connection from a different provider. Shared Claude review cannot satisfy it; no sample was started.");
+    if (state.settings.reviewPolicy.requireIndependentReview) {
+      const writer = state.connections.find(
+        (c) => c.id === resolvedConnection(state, channel, "text"),
+      );
+      const reviewer = state.connections.find(
+        (c) => c.id === resolvedConnection(state, channel, "review"),
+      );
+      if (writer?.provider === reviewer?.provider)
+        throw new StudioError(
+          409,
+          "This policy requires a qualified review connection from a different provider. Shared Claude review cannot satisfy it; no sample was started.",
+        );
     }
     const ideas = unitCeiling(state, channel, "ideas"),
       text = unitCeiling(state, channel, "text"),
@@ -227,21 +250,69 @@ export function startVerificationPack(
   return advanceVerificationPacks(state, now);
 }
 /** Continue a prior one-case release without re-running its first paid jobs. */
-export function extendVerificationPack(input:StudioState,actor:Actor,runId:string,now=new Date().toISOString()) {
- const previous=input.verificationRuns?.find(r=>r.id===runId&&r.createdBy===actor.email);
- if(!previous)throw new StudioError(404,"Your earlier sample was not found.");
- if(previous.cases.length===5)return input;
- if(previous.cases.length!==1||previous.cases[0].phase!=="ready")throw new StudioError(409,"Finish and inspect the first LinkedIn sample before continuing.");
- const limits=verificationPreflight(input,actor,now);let state=structuredClone(input);
- const first=previous.cases[0],source=state.jobs.find(j=>j.id===first.researchJobId);
- if(!source?.result)throw new StudioError(409,"The retained source evidence is unavailable.");
- const refs=publicResearchSchema.parse(JSON.parse(source.result));
- state=applyCommand(state,actor,{type:"research.retrieve",channel:"Newsletter",query:VERIFICATION_QUERY,idempotencyKey:`${previous.id}:extend:refs`},{retrievalResult:refs,now});
- const newsletterSourceId=state.jobs[0].id,run=state.verificationRuns!.find(r=>r.id===runId)!;
- run.cases.push(...caseDefinitions.slice(1).map((c,index)=>({...c,id:String(index+2),phase:c.mode==="ai"?"pending" as const:"manual_input" as const,researchJobId:c.mode==="ai"?(c.channel==="Newsletter"?newsletterSourceId:first.researchJobId):undefined})));
- run.maxPreparationCents=limits.preparationCents;state.version++;
- state.audit.push({id:crypto.randomUUID(),actor:actor.email,action:"verification.extend",target:runId,at:now});
- return advanceVerificationPacks(state,now);
+export function extendVerificationPack(
+  input: StudioState,
+  actor: Actor,
+  runId: string,
+  now = new Date().toISOString(),
+) {
+  const previous = input.verificationRuns?.find(
+    (r) => r.id === runId && r.createdBy === actor.email,
+  );
+  if (!previous)
+    throw new StudioError(404, "Your earlier sample was not found.");
+  if (previous.cases.length === 5) return input;
+  if (previous.cases.length !== 1 || previous.cases[0].phase !== "ready")
+    throw new StudioError(
+      409,
+      "Finish and inspect the first LinkedIn sample before continuing.",
+    );
+  const limits = verificationPreflight(input, actor, now);
+  let state = structuredClone(input);
+  const first = previous.cases[0],
+    source = state.jobs.find((j) => j.id === first.researchJobId);
+  if (!source?.result)
+    throw new StudioError(409, "The retained source evidence is unavailable.");
+  const refs = publicResearchSchema.parse(JSON.parse(source.result));
+  state = applyCommand(
+    state,
+    actor,
+    {
+      type: "research.retrieve",
+      channel: "Newsletter",
+      query: VERIFICATION_QUERY,
+      idempotencyKey: `${previous.id}:extend:refs`,
+    },
+    { retrievalResult: refs, now },
+  );
+  const newsletterSourceId = state.jobs[0].id,
+    run = state.verificationRuns!.find((r) => r.id === runId)!;
+  run.cases.push(
+    ...caseDefinitions
+      .slice(1)
+      .map((c, index) => ({
+        ...c,
+        id: String(index + 2),
+        phase:
+          c.mode === "ai" ? ("pending" as const) : ("manual_input" as const),
+        researchJobId:
+          c.mode === "ai"
+            ? c.channel === "Newsletter"
+              ? newsletterSourceId
+              : first.researchJobId
+            : undefined,
+      })),
+  );
+  run.maxPreparationCents = limits.preparationCents;
+  state.version++;
+  state.audit.push({
+    id: crypto.randomUUID(),
+    actor: actor.email,
+    action: "verification.extend",
+    target: runId,
+    at: now,
+  });
+  return advanceVerificationPacks(state, now);
 }
 
 /** One paid job is enqueued per pass, only from the explicit pack authorization.

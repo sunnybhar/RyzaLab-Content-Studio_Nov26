@@ -1284,7 +1284,6 @@ export default function Workspace() {
     <div
       className={`studio-v2 s-theme-${theme} ${sidebarPinned ? "s-sidebar-pinned" : "s-sidebar-unpinned"} ${sidebarExpanded ? "s-sidebar-expanded" : "s-sidebar-collapsed"}`}
     >
-      <AuthorizedJobProgress state={state} actor={actor} demo={mode==="demo"} request={progressAuthorizedJob} refresh={refresh} />
       {menuOpen && (
         <button
           className="s-navigation-backdrop"
@@ -1512,6 +1511,7 @@ export default function Workspace() {
           </div>
         </header>
         <main className="s-main-content">
+    <AuthorizedJobProgress state={state} actor={actor} demo={mode==="demo"} request={progressAuthorizedJob} refresh={refresh} />
           {(error || localError) && (
             <div className="s-alert s-error" role="alert">
               <span>{localError || error}</span>
