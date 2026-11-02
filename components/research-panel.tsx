@@ -8,8 +8,7 @@ import type {
   StudioState,
 } from "@/lib/studio/types";
 import { researchEvidence } from "@/lib/studio/research-link";
-import { capabilityMatchesBudget } from "@/lib/studio/research-budget";
-import { resolvedConnection } from "@/lib/studio/solo-quality";
+
 
 export function ResearchPanel({
   state,
@@ -37,10 +36,6 @@ export function ResearchPanel({
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const pending = useRef<{ query: string; key: string } | null>(null);
-  const connection = state.connections.find(
-    (c) => c.id === resolvedConnection(state, channel, "research"),
-  );
-  const setupMissing = Boolean(connection && state.settings.qualifiedRates !== undefined && !state.settings.qualifiedRates.some(rate=>rate.function==="research"&&rate.model===connection.model&&capabilityMatchesBudget(connection,rate)));
   const jobs = state.jobs.filter(
     (j) =>
       j.kind === "research" &&
@@ -66,21 +61,8 @@ export function ResearchPanel({
         personal experiences.
       </p>
       <details>
-        <summary>Search the web</summary>
-        {setupMissing&&<p role="status">Open AI &amp; budgets → Research setup to check capability and calculate a reservation. An old manual fixed amount cannot enable paid research.</p>}
-        {!connection || connection.status !== "validated" ? (
-          <p role="status">
-            Set up and validate Claude Research in AI &amp; budgets, then select
-            it for Research in this channel or workspace defaults. Qualified
-            search pricing and a request allowance are also required.
-          </p>
-        ) : (
-          <p>
-            {connection.title} · {connection.model}. Search and token costs
-            count toward your configured limits
-            {content ? " and this package allowance" : ""}.
-          </p>
-        )}
+        <summary>Find public references</summary>
+        <p>Retrieve Wikipedia introductory extracts and Crossref scholarly abstracts. Two public API requests, at most six excerpts and 12 KB of excerpt text. This is limited reference coverage, not unrestricted web or news search. No separate Research key or paid search charge is required.</p>
         <label className="s-field">
           Public research question
           <textarea
@@ -95,7 +77,7 @@ export function ResearchPanel({
         </label>
         <p>
           Only this question is sent to public search. Keep private details,
-          secrets and personal stories out of it. One bounded search; no
+          secrets and personal stories out of it. Two bounded source requests; no
           automatic retry.
         </p>
         <button
@@ -105,8 +87,6 @@ export function ResearchPanel({
             disabled ||
             busy ||
             Boolean(active) ||
-            !connection || setupMissing ||
-            connection.status !== "validated" ||
             query.trim().length < 5
           }
           onClick={async () => {
@@ -116,13 +96,14 @@ export function ResearchPanel({
             try {
               const ok = await run(
                 {
-                  type: "research.start",
+                  type: "research.retrieve",
                   channel,
                   contentId: content?.id,
+                  expectedRevision: content?.revision,
                   query: query.trim(),
                   idempotencyKey: pending.current.key,
                 },
-                "Web research requested — cited findings will appear here",
+                "Public references retrieved — inspect the excerpts before use",
               );
               if (ok) pending.current = null;
             } finally {
@@ -130,7 +111,7 @@ export function ResearchPanel({
             }
           }}
         >
-          {busy ? "Requesting…" : "Research the web"}
+          {busy ? "Requesting…" : "Find references"}
         </button>
         {demo && <p>Preview does not call search providers.</p>}
       </details>
@@ -254,6 +235,7 @@ export function ResearchPanel({
                       </details>
                     ) : null}
                     <p>{evidence.notice}</p>
+                    {evidence.version===2 && evidence.retrieval.gaps.map(gap=><p key={gap} role="status">{gap}</p>)}
                   </details>
                 </>
               ) : (

@@ -35,10 +35,11 @@ import { ideaJobInput } from "./idea-generation";
 import { contentWording } from "./content-wording";
 import { inputRequirements } from "./input-requirements";
 import { BUDGET_CATEGORIES } from "./budget-categories";
-import { researchJobInput, researchEvidence, researchSourcesCurrent } from "./research-link";
-import { savedResearchSchema } from "./research";
+import { publicRetrievalTarget, researchJobInput, researchEvidence, researchSourcesCurrent } from "./research-link";
+import { publicResearchSchema, savedResearchSchema } from "./research";
 import { review } from "../brand";
 export type ExecutionContext = {
+  retrievalResult?: unknown;
   now?: string;
   id?: () => string;
   demo?: boolean;
@@ -249,6 +250,17 @@ export function applyCommand(
     }
   }
   switch (c.type) {
+    case "research.retrieve": {
+      const {content:parent,existing}=publicRetrievalTarget(s,actor,c);
+      if(existing)return input;
+      if(ctx.demo)bad("Preview does not retrieve live references.");
+      const result=publicResearchSchema.safeParse(ctx.retrievalResult);
+      if(!result.success)bad("Trusted server retrieval result required.");
+      s.jobs.unshift({id:id(),kind:"research",channel:c.channel,contentId:parent?.id,account:parent?.account,
+        prompt:c.query,connectionId:"public-reference-retrieval",estimate:0,reserved:0,actual:0,state:"succeeded",attempt:1,
+        idempotencyKey:c.idempotencyKey,createdBy:actor.email,createdAt:now,result:JSON.stringify(result.data)});
+      break;
+    }
     case "research.start": return applyCommand(input,actor,researchJobInput(s,actor,c),{...ctx,canonicalGeneration:true});
     case "research.saveReference": {
       const job = jobFor(c.jobId);
