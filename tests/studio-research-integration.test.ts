@@ -22,7 +22,7 @@ export function researchFixture() {
     {
       type: "policy.adoptSolo",
       expectedRuleVersion: s.settings.protectedVersion,
-      packageCap: 50,
+      packageCap: 200,
       monthlyCap: 500,
       requireIndependentReview: false,
       autoDraft: false,
@@ -30,7 +30,7 @@ export function researchFixture() {
     },
     { demo: true, now },
   );
-  s.settings.requestCap = 50;
+  s.settings.requestCap = 200;
   s.settings.confirmationThreshold = 0;
   const c = s.contents[0];
   c.channel = "LinkedIn";
@@ -43,12 +43,25 @@ export function researchFixture() {
       id: kind,
       title: `Fixture ${kind}`,
       provider: "anthropic",
-      model: "local-qualified-model",
+      model:
+        kind === "research" ? "claude-sonnet-5-5" : "local-qualified-model",
+      ...(kind === "research"
+        ? {
+            researchCapability: {
+              model: "claude-sonnet-5-5",
+              webSearchSupported: true as const,
+              maxInputTokens: 5000,
+              maxOutputTokens: 6000,
+              checkedAt: now,
+              connectionUpdatedAt: now,
+            },
+          }
+        : {}),
       function: kind,
       hasKey: true,
       status: "validated",
       updatedAt: now,
-      ...{ maxRequestCost: 10 },
+      ...{ maxRequestCost: kind === "research" ? 200 : 10 },
     });
   }
   s.workflows.find(
@@ -201,7 +214,7 @@ test("public research contains only explicit query; canonical draft search consu
       type: "preparation.authorize",
       contentId: c.id,
       expectedRevision: c.revision,
-      maxCents: 50,
+      maxCents: 200,
     },
     { demo: true, now },
   );
@@ -209,7 +222,7 @@ test("public research contains only explicit query; canonical draft search consu
   const job = next.jobs[0];
   assert.equal(job.state, "queued");
   assert.equal(job.prompt, command.query);
-  assert.equal(job.reserved, 10);
+  assert.equal(job.reserved, 200);
   assert.ok(job.preparationId);
   assert.equal(
     applyCommand(next, DEMO_ACTOR, command, { demo: true, now }).jobs.length,
@@ -291,14 +304,20 @@ test("research pricing qualification rejects missing search bounds and unsupport
   const s = researchFixture();
   const card = {
     provider: "anthropic",
-    model: "local-qualified-model",
+    model: "claude-sonnet-5-5",
     function: "research",
     currency: "USD",
-    inputCentsPerMillion: 100,
-    outputCentsPerMillion: 500,
+    inputCentsPerMillion: 200,
+    outputCentsPerMillion: 1000,
     maxInputBytes: 50000,
-    maxOutputTokens: 1000,
-    fixedCents: 10,
+    maxOutputTokens: 128,
+    fixedCents: 131,
+    researchBudget: {
+      version: "output-envelope-v1",
+      pricePreset: "sonnet-5-5-docs-2026-10-30",
+      contextTokens: 5000,
+      modelMaxOutputTokens: 6000,
+    },
     webSearchTool: "web_search_20250305",
     maxSearchUses: 1,
     source: "https://example.com/prices",
@@ -328,7 +347,7 @@ test("research pricing qualification rejects missing search bounds and unsupport
       idempotencyKey: "rate",
     }),
   );
-  assert.equal(quoted.cost, 10);
+  assert.equal(quoted.cost, 131);
   assert.throws(
     () =>
       updateRates(
@@ -339,7 +358,7 @@ test("research pricing qualification rejects missing search bounds and unsupport
         now,
         "bad",
       ),
-    /fixed reservation/,
+    /calculated reservation/,
   );
   assert.throws(
     () =>
@@ -351,6 +370,6 @@ test("research pricing qualification rejects missing search bounds and unsupport
         now,
         "bad",
       ),
-    /bounded-search/,
+    /calculated reservation/,
   );
 });

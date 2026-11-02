@@ -1,17 +1,56 @@
 import type { Connection } from "./types";
 import { StudioError } from "./permissions";
 
-export async function inspectClaudeResearchModel(model:string,key:string,request=fetch) {
-  if(!/^[A-Za-z0-9_.-]{1,150}$/.test(model))throw new StudioError(400,"Use an exact Claude model identifier.");
-  try{
-    const response=await request(`https://api.anthropic.com/v1/models/${encodeURIComponent(model)}`,{headers:{"x-api-key":key,"anthropic-version":"2023-06-01"},redirect:"error",cache:"no-store",signal:AbortSignal.timeout(15000)});
-    if(!response.ok)throw new Error("Model metadata unavailable");
-    const body=await response.json();
-    if(body.id!==model)throw new Error("Model identity mismatch");
-    if(body.capabilities?.server_tools?.web_search?.supported!==true)throw new StudioError(409,"This model does not report web-search support. No paid request was sent.");
-    if(!Number.isSafeInteger(body.max_input_tokens)||body.max_input_tokens<1||body.max_input_tokens>10000000||!Number.isSafeInteger(body.max_tokens)||body.max_tokens<1||body.max_tokens>1000000)throw new StudioError(409,"The Models API did not provide usable input/output token bounds. Research remains blocked.");
-    return {model,webSearchSupported:true as const,maxInputTokens:body.max_input_tokens,maxOutputTokens:body.max_tokens};
-  }catch(error){if(error instanceof StudioError)throw error;throw new StudioError(502,"Could not verify research capability from the Models API. No paid request was sent.");}
+export async function inspectClaudeResearchModel(
+  model: string,
+  key: string,
+  request = fetch,
+) {
+  if (!/^[A-Za-z0-9_.-]{1,150}$/.test(model))
+    throw new StudioError(400, "Use an exact Claude model identifier.");
+  try {
+    const response = await request(
+      `https://api.anthropic.com/v1/models/${encodeURIComponent(model)}`,
+      {
+        headers: { "x-api-key": key, "anthropic-version": "2023-06-01" },
+        redirect: "error",
+        cache: "no-store",
+        signal: AbortSignal.timeout(15000),
+      },
+    );
+    if (!response.ok) throw new Error("Model metadata unavailable");
+    const body = await response.json();
+    if (body.id !== model) throw new Error("Model identity mismatch");
+    if (body.capabilities?.server_tools?.web_search?.supported !== true)
+      throw new StudioError(
+        409,
+        "This model does not report web-search support. No paid request was sent.",
+      );
+    if (
+      !Number.isSafeInteger(body.max_input_tokens) ||
+      body.max_input_tokens < 1 ||
+      body.max_input_tokens > 10000000 ||
+      !Number.isSafeInteger(body.max_tokens) ||
+      body.max_tokens < 1 ||
+      body.max_tokens > 1000000
+    )
+      throw new StudioError(
+        409,
+        "The Models API did not provide usable input/output token bounds. Research remains blocked.",
+      );
+    return {
+      model,
+      webSearchSupported: true as const,
+      maxInputTokens: body.max_input_tokens,
+      maxOutputTokens: body.max_tokens,
+    };
+  } catch (error) {
+    if (error instanceof StudioError) throw error;
+    throw new StudioError(
+      502,
+      "Could not verify research capability from the Models API. No paid request was sent.",
+    );
+  }
 }
 
 /** Account access only: listing does not qualify a model's capability or pricing. */

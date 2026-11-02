@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { BUDGET_CATEGORIES,inferBudgetCategory,type BudgetCategory } from "@/lib/studio/budget-categories";
 import { can } from "@/lib/studio/permissions";
 import type { Actor, Command, StudioState } from "@/lib/studio/types";
 
@@ -25,6 +26,7 @@ export function SoloPolicySettings({
   const [packageCap, setPackageCap] = useState(
     ((policy?.packageCap ?? 50) / 100).toFixed(2),
   );
+  const [budgetCategory,setBudgetCategory] = useState<BudgetCategory>(policy?.budgetCategory||inferBudgetCategory(policy?.packageCap||50));
   const [monthlyCap, setMonthlyCap] = useState(
     state.settings.monthlyCap > 0 ? (state.settings.monthlyCap / 100).toFixed(2) : "",
   );
@@ -73,6 +75,7 @@ export function SoloPolicySettings({
         expectedPolicyVersion: editVersion,
         expectedMonthlyCap: editMonthlyCap,
         packageCap: perPackage,
+        budgetCategory,
         monthlyCap: perMonth,
         requireIndependentReview: independent,
         autoDraft: automaticWriting,
@@ -104,6 +107,7 @@ export function SoloPolicySettings({
             className="s-btn"
             onClick={() => {
               setPackageCap(((policy?.packageCap ?? 50) / 100).toFixed(2));
+              setBudgetCategory(policy?.budgetCategory||inferBudgetCategory(policy?.packageCap||50));
               setMonthlyCap(
                 state.settings.monthlyCap > 0 ? (state.settings.monthlyCap / 100).toFixed(2) : "",
               );
@@ -155,18 +159,19 @@ export function SoloPolicySettings({
             are still required.
           </p>
           <p>Plan $0.50–$2.00 per post. This is a ceiling for the whole package, not a fixed price or a quality tier. Choose your own monthly budget based on planned posts and revisions.</p>
-          <div className="s-actions">{["0.50","0.75","1.00","1.50","2.00"].map(value=><button type="button" className="s-btn" aria-pressed={packageCap===value} key={value} onClick={()=>setPackageCap(value)}>${value} per post</button>)}</div>
+          <label className="s-field">Package category<select aria-label="Package category" value={budgetCategory} onChange={event=>{const selected=event.target.value as BudgetCategory;setBudgetCategory(selected);if(selected!=="custom")setPackageCap((BUDGET_CATEGORIES.find(category=>category.id===selected)!.cents/100).toFixed(2));}}>{BUDGET_CATEGORIES.map(category=><option key={category.id} value={category.id}>{category.label}{category.id!=="custom" ? ` — $${(category.cents/100).toFixed(2)} cap` : " — choose up to $2.00"}</option>)}</select></label><p>{BUDGET_CATEGORIES.find(category=>category.id===budgetCategory)?.description}</p>
+
           <div className="s-form-grid">
             <label className="s-field">
               Maximum per package ($)
               <input
                 type="number"
-                min="0.01"
+                min="0.50"
                 max="2"
                 step="0.01"
                 required
                 value={packageCap}
-                onChange={(event) => setPackageCap(event.target.value)}
+                onChange={(event) => {setPackageCap(event.target.value);setBudgetCategory("custom");}}
               />
             </label>
             <label className="s-field">

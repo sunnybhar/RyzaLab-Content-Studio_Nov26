@@ -216,6 +216,7 @@ export interface PreparationAuthorization {
   policyVersion: string;
 }
 export interface SoloReviewPolicy {
+  budgetCategory?: import("./budget-categories").BudgetCategory;
   mode: "two_step";
   version: string;
   adoptedBy: string;
@@ -317,6 +318,7 @@ export interface Connection {
   updatedAt: string;
 }
 export interface Job {
+  pricingSnapshot?: unknown;
   researchJobIds?: string[];
   researchSnapshots?: {jobId: string; raw: string}[];
   targetRevision?: number;

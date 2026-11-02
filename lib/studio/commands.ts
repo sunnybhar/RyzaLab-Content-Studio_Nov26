@@ -264,6 +264,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   }),
   command("policy.save", { rules: text }),
   command("policy.adoptSolo", {
+    budgetCategory: z.enum(["short_text","researched_text","long_text","custom"]).optional(),
     expectedPolicyVersion: id.optional(),
     expectedMonthlyCap: money.optional(),
     packageCap: money,

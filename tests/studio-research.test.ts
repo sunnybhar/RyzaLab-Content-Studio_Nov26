@@ -10,14 +10,20 @@ import {
 import type { Job, Connection } from "../lib/studio/types";
 const rate: Rate = {
   provider: "anthropic",
-  model: "qualified-test-model",
+  model: "claude-sonnet-5-5",
   function: "research",
   currency: "USD",
   inputCentsPerMillion: 200,
   outputCentsPerMillion: 1000,
   maxInputBytes: 5000,
   maxOutputTokens: 1000,
-  fixedCents: 100,
+  fixedCents: 1003,
+  researchBudget: {
+    version: "output-envelope-v1",
+    pricePreset: "sonnet-5-5-docs-2026-10-30",
+    contextTokens: 5000,
+    modelMaxOutputTokens: 6000,
+  },
   webSearchTool: "web_search_20250305",
   maxSearchUses: 1,
   source: "https://example.com/qualified-test-only",
@@ -88,7 +94,11 @@ test("research retains actual citation provenance and never invents cited access
 });
 test("pricing snapshot detects changed rates and optional fixed-price removal even with unchanged verification date", () => {
   const rates = readRates(JSON.stringify([rate]));
-  const snapshot = { ...rate, inputBytes: 100, quoteVersion: "v1" };
+  const snapshot = {
+    ...rate,
+    inputBytes: 100,
+    quoteVersion: "research-envelope-v1",
+  };
   assert.equal(pricingSnapshotIsCurrent(snapshot, rates), true);
   assert.equal(
     pricingSnapshotIsCurrent(snapshot, [{ ...rates[0], fixedCents: 200 }]),
@@ -102,6 +112,16 @@ test("Claude research sends a single bounded search only with qualified snapshot
   let calls = 0;
   globalThis.fetch = async (url, options) => {
     calls++;
+    if (String(url).startsWith("https://api.anthropic.com/v1/models/"))
+      return new Response(
+        JSON.stringify({
+          id: rate.model,
+          max_input_tokens: 5000,
+          max_tokens: 6000,
+          capabilities: { server_tools: { web_search: { supported: true } } },
+        }),
+        { status: 200 },
+      );
     assert.equal(url, "https://api.anthropic.com/v1/messages");
     const body = JSON.parse(String(options?.body));
     assert.deepEqual(body.tools, [
@@ -129,7 +149,7 @@ test("Claude research sends a single bounded search only with qualified snapshot
       "local-test-key-not-real",
     );
     assert.equal(JSON.parse(outcome.text!).status, "cited_research");
-    assert.equal(calls, 1);
+    assert.equal(calls, 2);
     await assert.rejects(
       () =>
         runProvider(
@@ -142,7 +162,7 @@ test("Claude research sends a single bounded search only with qualified snapshot
         ),
       /not qualified/,
     );
-    assert.equal(calls, 1);
+    assert.equal(calls, 2);
   } finally {
     globalThis.fetch = original;
   }

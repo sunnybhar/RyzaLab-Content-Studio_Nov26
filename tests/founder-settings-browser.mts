@@ -74,7 +74,8 @@ try {
     await page.getByLabel("Maximum per package ($)").inputValue(),
     "0.50",
   );
-  assert.equal(await page.getByLabel("Monthly limit ($)").inputValue(), "5.00");
+  assert.equal(await page.getByLabel("Monthly limit ($)").inputValue(), "");
+  await page.getByLabel("Monthly limit ($)").fill("5.00");
   await page
     .getByRole("button", { name: "Save review settings", exact: true })
     .click();

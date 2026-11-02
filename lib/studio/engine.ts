@@ -34,6 +34,7 @@ import { demoPreset, type ChannelPreset } from "./presets";
 import { ideaJobInput } from "./idea-generation";
 import { contentWording } from "./content-wording";
 import { inputRequirements } from "./input-requirements";
+import { BUDGET_CATEGORIES } from "./budget-categories";
 import { researchJobInput, researchEvidence, researchSourcesCurrent } from "./research-link";
 import { savedResearchSchema } from "./research";
 import { review } from "../brand";
@@ -1594,6 +1595,7 @@ export function applyCommand(
           409,
           "Protected policy changed; review it before adopting two-step review.",
         );
+      if(c.budgetCategory && c.budgetCategory!=="custom" && BUDGET_CATEGORIES.find(category=>category.id===c.budgetCategory)?.cents!==c.packageCap)bad("Use Custom when changing a category's suggested cap.");
       if(c.packageCap>200)bad("The maximum total package cap is $2.00 per post. Monthly limits remain founder-selected.");
       if (!c.packageCap || !c.monthlyCap)
         bad(
@@ -1605,6 +1607,7 @@ export function applyCommand(
         adoptedBy: actor.email,
         adoptedAt: now,
         packageCap: c.packageCap,
+        budgetCategory: c.budgetCategory || "custom",
         requireIndependentReview: c.requireIndependentReview,
         autoDraft: c.autoDraft,
         autoReview: c.autoReview,
