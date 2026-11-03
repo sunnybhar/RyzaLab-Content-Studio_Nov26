@@ -432,3 +432,6 @@ Git push failed: no usable GitHub credential; gh auth status confirms GH_TOKEN i
 
 ### v0.3.26 verified LOCAL release — push blocked
 Approved inbox+board/table implementation complete.268domain tests/build/typecheck/fullbrowser passed; focused card persistence/table sync/source/draft/mobile, automaticwriting, composer and cleanup browser tests all passed. No AI jobs/costs created by board moves; linked drafts remain idempotent. All code saved in local commits. GH_TOKEN invalid, no stored fallback auth and no connector: remote backup/push/deployment blocked. Main remains v0.3.25. Reconnect GitHub access, then push studio-rebuild and verified HEAD:main. See IDEAS-INBOX-BOARD.md and /workspace/ryzalab-v0.3.26.patch backup. User nearing limit: preserve checkpoint, no claim of remote save or rollout.
+
+### v0.3.26 deployment handoff completed
+User reconnected access and asked to check. The shell GH_TOKEN diagnostic still reports an invalid CLI token, but the actual git credential path now works: git push successfully backed up studio-rebuild and advanced main to93ce866. git ls-remote verified both branches at the release commit. Earlier authentication blocker is resolved for git operations. No rebuild or code changes were needed. Main push hands off to Vercel; hosted rollout remains unverified. Check footer0.3.26before testing the approved Inbox+Board/Table.
