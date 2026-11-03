@@ -20,7 +20,9 @@ export function IdeaComposer({
   refresh,
   close,
   openContent,
+  onSaved,
 }: {
+  onSaved?: (message: string) => void;
   mode: "generate" | "manual";
   initialChannel: Channel;
   state: StudioState;
@@ -156,6 +158,7 @@ export function IdeaComposer({
           i.channel === channel &&
           i.title === title.trim(),
       );
+      onSaved?.("Idea saved");
       if (open) {
         if (!idea)
           throw new Error(

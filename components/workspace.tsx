@@ -4195,7 +4195,7 @@ export default function Workspace() {
           </footer>
         </main>
       </div>
-      {ideaComposer&&<IdeaComposer mode={ideaComposer} initialChannel={channel==="All channels"?"LinkedIn":channel} state={state} actor={actor} demo={mode==="demo"} send={send} refresh={()=>refresh(true)} close={()=>setIdeaComposer(null)} openContent={idea=>useIdea(idea,"Text post","RyzaLab")}/>}
+      {ideaComposer&&<IdeaComposer mode={ideaComposer} initialChannel={channel==="All channels"?"LinkedIn":channel} state={state} actor={actor} demo={mode==="demo"} send={send} refresh={()=>refresh(true)} close={()=>setIdeaComposer(null)} openContent={idea=>useIdea(idea,"Text post","RyzaLab")} onSaved={setNotice}/>}
       {queueTarget && (
         <QueueRequest
           state={state}

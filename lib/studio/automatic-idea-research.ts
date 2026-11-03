@@ -62,8 +62,15 @@ export async function automaticIdeaResearch(
     pricingSnapshot: priced.pricingSnapshot,
     now,
   });
-  const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(input.idempotencyKey));
-  const researchKey="idea-research:"+Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,"0")).join("");
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(input.idempotencyKey),
+  );
+  const researchKey =
+    "idea-research:" +
+    Array.from(new Uint8Array(digest), (byte) =>
+      byte.toString(16).padStart(2, "0"),
+    ).join("");
   const result = await retrieve(input.topic, undefined, now);
   const next = applyCommand(
     state,
@@ -79,7 +86,12 @@ export async function automaticIdeaResearch(
   const command = commandSchema.parse({
     ...input,
     research: true,
-    researchJobIds: [next.jobs.find(job=>job.createdBy===actor.email&&job.idempotencyKey===researchKey)!.id],
+    researchJobIds: [
+      next.jobs.find(
+        (job) =>
+          job.createdBy === actor.email && job.idempotencyKey === researchKey,
+      )!.id,
+    ],
   }) as Input;
   return { state: next, command, existing: false };
 }

@@ -1,6 +1,6 @@
 # One final verification point — LinkedIn and Newsletter
 
-Check the header shows **v0.3.12**, then open **What’s new** to see changes across v0.3.7–v0.3.11.
+Check the header shows **v0.3.13**, then open **What’s new** to see changes across v0.3.7–v0.3.11.
 
 AI & budgets sections start collapsed. Click a section heading to open it. Keep the sample-pack section open while its samples prepare.
 
@@ -15,3 +15,12 @@ The deployment operator must configure server-only provider execution and worker
 Current coding-environment evidence: all local tests/builds/browser checks are recorded in WORK-IN-PROGRESS.md. No live Claude sample, human copy/final approval or actual social publication has been performed by the coding agent. Outbound proxy access blocked hosted rollout inspection, so confirm the visible version in the deployed app.
 
 Saved channel setup remains indicated after navigation/reload. Ticking the checkbox alone is an unsaved choice; click the setup button before leaving. An already saved selection stays checked and shows a saved status without another model request.
+
+
+## Normal idea creation — integrated research
+
+Use Ideas → Generate with agent to enter the public topic, audience and count. Generate ideas retrieves sources automatically; inspect the resulting cards, websites and excerpts together in that window. There is no separate research/evidence-selection prerequisite. Use an idea to open writing with its saved evidence. Existing automatic-draft policy and post allowance still apply.
+
+For a manually entered idea, use Add manually. Research and develop this idea works inside the same window. Your title/angle are retained until explicit AI-proposal adoption. Add idea saves it with research, or Save idea and open writing continues into the content editor.
+
+Agent Rules → Instructions and Context uploads and the RyzaLab original-content voice library are storage only. They are NOT connected to current generation. The saved setup checkbox's disabled/ticked behavior remains queued, per user instruction.
