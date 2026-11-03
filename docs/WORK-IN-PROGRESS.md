@@ -370,3 +370,6 @@ User requested export buttons immediately below generated newsletter content, no
 
 ### v0.3.21 verified release
 Typecheck/production build passed. Focused browser verifies PDF/DOCX toolbar immediately after content input, old panel absent, latest editor text exported without copy/paste, image excluded from DOCX when unchecked, text-only multi-page PDF and image-inclusive exports. Full app browser passed. No domain logic or paid provider execution changed. Main push is release handoff; hosted rollout not verified.
+
+## WIP v0.3.22: review popup exposes exact blocking work
+User cannot find review job; code shows any active/unknown content-writing job blocks review, even before a review job exists. Added inline job type/status/ID/time/error/raw response, cost confirmation, run existing queued request via existing owner-scoped progress endpoint, cancel only undispatched jobs, and settings-manager-only verified unknown outcome form (no defaults, cost/evidence required, existing audited reconcile command). Final package readiness gates unchanged, no approval/report fabricated, no provider calls by assistant. Typecheck passed before final per-job form-state adjustment; build/browser tests next.

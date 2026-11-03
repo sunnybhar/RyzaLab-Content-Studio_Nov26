@@ -2743,7 +2743,7 @@ export default function Workspace() {
                       · Protected rules {state.settings.protectedVersion}
                     </div>
                     {reviewEditing === c.id ? <p>Save and submit your changes above to continue the review.</p> : state.settings.reviewPolicy ? (
-                      <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send} refresh={() => refresh(true)} demo={mode === "demo"}
+                      <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send} refresh={() => refresh(true)} progressJob={progressAuthorizedJob} demo={mode === "demo"}
                         onApproved={(pkg, approvedState) => {
                           const draft = approvedState.contents.find((d) => d.id === pkg.contentId);
                           if (!draft || !can(approvedState, actor, "schedule.manage", {channel:pkg.channel, account:pkg.account, contentId:pkg.contentId, assignedTo:draft.assignedTo})) {

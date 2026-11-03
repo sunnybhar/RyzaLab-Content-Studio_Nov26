@@ -1,5 +1,6 @@
 "use client";
 
+import {ReviewWorkStatus} from "./review-work-status";
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import type {
   Actor,
@@ -28,6 +29,7 @@ export function SoloReview({
   refresh,
   demo,
   onApproved,
+  progressJob,
 }: {
   content: Content;
   state: StudioState;
@@ -43,6 +45,7 @@ export function SoloReview({
   refresh: () => Promise<void>;
   demo: boolean;
   onApproved?: (pkg: Package, state: StudioState) => void;
+  progressJob?: (id:string)=>Promise<unknown>;
 }) {
   const [evidence, setEvidence] = useState("");
   const [copyChecked, setCopyChecked] = useState(false);
@@ -69,13 +72,16 @@ export function SoloReview({
   );
   const accepted = readiness.acceptance;
   const reviewKey = useRef<string | undefined>(undefined);
-  const activeWork = state.jobs.some(
+  const blockingJobs = state.jobs.filter(
     (job) =>
       job.contentId === content.id &&
       ["queued", "running", "awaiting_confirmation", "unknown"].includes(
         job.state,
       ),
   );
+  const activeWork=blockingJobs.length>0;
+  const currentReview=state.jobs.find(job=>job.contentId===content.id&&job.kind==="review"&&(job.id===content.automaticReview?.jobId||job.targetRevision===content.revision));
+  const statusJobs=currentReview&&!blockingJobs.some(job=>job.id===currentReview.id)?[...blockingJobs,currentReview]:blockingJobs;
   useEffect(() => {
     if (demo || !accepted || !policy?.autoReview || readiness.agent) return;
     const timer = window.setInterval(() => {
@@ -342,13 +348,14 @@ export function SoloReview({
                 content.automaticReview.error
                   ? content.automaticReview.error
                   : activeWork
-                    ? "Review preparation is queued, in progress or needs attention. Inspect uncertain work before requesting another review."
+                    ? "Existing work is blocking review. Its exact status and available actions are shown below."
                     : policy.autoReview
                       ? "Waiting for the worker to prepare the review within this package allowance."
                       : "No AI review has been requested."}
               </p>
             )
           )}
+          {!readiness.agent && <ReviewWorkStatus jobs={statusJobs} state={state} actor={actor} demo={demo} send={send} progressJob={progressJob}/> }
           {!readiness.agent && (
             <button
               className="s-btn"
