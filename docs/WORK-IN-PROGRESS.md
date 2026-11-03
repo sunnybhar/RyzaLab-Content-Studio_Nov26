@@ -340,3 +340,6 @@ User additionally requests download of exact uploaded originals. v0.3.17 Mac met
 
 ### v0.3.18 verification checkpoint
 Original archive bytes remain exact before/after preview edits; channel-scoped access and atomic rejection tests pass. Real PostgreSQL saves both channels' originals including base64-encoded Mac binary metadata while derived context remains clean. Build/typecheck passed; full suite/focused browser exact-download checks running. Originals limited2MB workspace total, independently downloadable from edited Markdown package. No release yet, no paid/live calls.
+
+### v0.3.18 verified release
+Production build/typecheck and249tests passed. Full app browser and focused package/skill browser passed; downloaded original channel ZIP byte-for-byte equals uploaded bytes despite preview edits, while current edited ZIP remains separate. PostgreSQL round-trip retains originals for both channels with safe base64, channel permission filtering and atomic failure checks pass. Includesv317Macmetadata save fix. No live hosted database writes, paid provider calls or migration changes. Hosted rollout remains unverified; earlier previews/uploads require preserve edits, reload afterv318 and re-upload/save to retain original ZIPs.
