@@ -42,6 +42,7 @@ export function DraftAssistant({
   refresh: () => Promise<void>;
   demo?: boolean;
 }) {
+  const [clock,setClock]=useState(Date.now());
   const initialBudget =
     state.preparations?.find((p) => p.id === content.preparationId)?.maxCents ||
     state.settings.reviewPolicy?.packageCap ||
@@ -78,6 +79,7 @@ export function DraftAssistant({
       job.outputContract === "draft_v1",
   );
   const active = jobs.find((job) => activeStates.has(job.state));
+  useEffect(()=>{if(!active)return;const timer=setInterval(()=>setClock(Date.now()),1000);return()=>clearInterval(timer);},[active?.id]);
   const suggested = jobs.find((job) => job.candidate && !job.appliedAt);
   const recoverable = jobs.find(
     (job) =>
@@ -134,7 +136,9 @@ export function DraftAssistant({
       className="s-inline-writing-assistant"
       aria-label="Draft writing assistance"
     >
-      <h3>Write with AI</h3>
+      <h3>Write {content.channel==="Newsletter"?"newsletter":"content"} with AI</h3>
+      {active&&<section className="s-idea-run-progress" aria-label="Writing progress"><h3 role="status" aria-live="polite">{active.state==="running"?`AI is writing your ${content.channel==="Newsletter"?"newsletter":"post"}`:active.state==="awaiting_confirmation"?"Waiting for your allowance confirmation":active.state==="unknown"?"Writing outcome needs attention":"Writing request queued — waiting for the worker"}</h3>{["queued","running"].includes(active.state)&&<progress aria-label="Writing in progress"/>}<p>Elapsed: {Math.max(0,Math.floor((clock-Date.parse(active.createdAt))/1000))} seconds. Completed writing appears in the editor below. The provider does not report a percentage.</p>{active.state==="awaiting_confirmation"&&<button className="s-btn" disabled={busy} onClick={()=>void run({type:"job.confirm",id:active.id})}>Confirm writing allowance · {cost(active.estimate)}</button>}<button className="s-btn" onClick={()=>void refresh()}>Check writing status — no new AI request</button>{active.error&&<p>{active.error}</p>}</section>}
+      {["Newsletter","Hub"].includes(content.channel)&&<p>Newsletter/article target: 1,200–1,600 words, with background, evidence, reasoning, practical guidance and sources. Add a relevant image below and export PDF or DOCX. Page count depends on layout.</p>}
       <details className="s-version">
         <summary>
           Web research

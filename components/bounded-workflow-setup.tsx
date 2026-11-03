@@ -65,7 +65,7 @@ export function BoundedWorkflowSetup({
       <p>
         Setup uses your supplied Sonnet 5.5 prices: $2/M input and $10/M output
         tokens. Each tool-free call is limited to 65,536 input bytes including
-        allowance and 2,048 output tokens (at most $0.16 rounded up). Your
+        allowance. Writing allows 4,096 output tokens for long newsletters; ideas/review allow 2,048 (at most $0.18 per call rounded up). Your
         monthly, request and total package caps still apply. Explicit channel
         mappings remain in place.
       </p>

@@ -41,7 +41,7 @@ export function saveBoundedWorkflowSetup(
       409,
       "Select a stored Claude Sonnet 5.5 writing connection.",
     );
-  if (capability.maxInputTokens < 65536 || capability.maxOutputTokens < 2048)
+  if (capability.maxInputTokens < 65536 || capability.maxOutputTokens < 4096)
     throw new StudioError(
       409,
       "Model token bounds do not support this bounded setup.",
@@ -76,7 +76,7 @@ export function saveBoundedWorkflowSetup(
           inputCentsPerMillion: RESEARCH_PRICE.inputCentsPerMillion,
           outputCentsPerMillion: RESEARCH_PRICE.outputCentsPerMillion,
           maxInputBytes: 65536,
-          maxOutputTokens: 2048,
+          maxOutputTokens: fn === "text" ? 4096 : 2048,
           source: RESEARCH_PRICE.tokenSource,
           verifiedAt: RESEARCH_PRICE.verifiedAt,
           qualified: true,
@@ -92,7 +92,7 @@ export function saveBoundedWorkflowSetup(
     Math.max(
       (target as typeof target & { maxRequestCost?: number }).maxRequestCost ||
         0,
-      16,
+      18,
     );
   next.boundedChannelSelection={connectionId:connection.id,value:input.applyChannels ?? Boolean(input.channels?.length)};
   target.supportedFunctions = ["text", "ideas", "review"];

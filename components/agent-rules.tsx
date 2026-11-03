@@ -1,4 +1,5 @@
 "use client";
+import {readAgentPackage} from "@/lib/studio/agent-package";
 import { AgentVoiceLibrary } from "./agent-voice-library";
 import { useState } from "react";
 import {
@@ -22,6 +23,7 @@ export function AgentRules({
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
+  const [packageDraft,setPackageDraft]=useState<{instructions:string;context:string;files:string[];ignored:string[]}|null>(null);
   const allowed = can(state, actor, "workflow.edit", { channel });
   async function upload(slot: "instructions" | "context", file: File) {
     setBusy(true);
@@ -88,6 +90,7 @@ export function AgentRules({
           disabled={busy}
           onChange={(event) => {
             setChannel(event.target.value as Channel);
+            setPackageDraft(null);
             setError("");
             setMessage("");
           }}
@@ -97,6 +100,17 @@ export function AgentRules({
           ))}
         </select>
       </label>
+      <section className="s-panel s-panel-padding" aria-label="Upload agent ZIP package">
+        <h3>Upload or edit a channel package</h3>
+        <p>Upload your ZIP whenever required. Preview and edit Instructions and context before saving to {channel}. Hub packages can be used for Newsletter. Only INSTRUCTIONS.md and knowledge/*.md are imported; setup guides, nested ZIPs and scripts are skipped.</p>
+        <input aria-label="Agent Rules ZIP package" type="file" accept=".zip" disabled={busy||!allowed} onChange={async e=>{const file=e.target.files?.[0];e.target.value="";if(!file)return;setBusy(true);setError("");try{if(file.size>1048576)throw Error("Choose a ZIP up to 1 MB.");setPackageDraft(await readAgentPackage(await file.arrayBuffer()));}catch(error){setError(String(error));}finally{setBusy(false);}}}/>
+        <button className="s-btn" disabled={busy||!allowed} onClick={()=>setPackageDraft({instructions:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="instructions")?.extractedText||"",context:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="context")?.extractedText||"",files:[],ignored:[]})}>Edit saved Instructions and context</button>
+        {packageDraft&&<><label className="s-field">Instructions to save<textarea aria-label="Package Instructions" rows={10} maxLength={60000} value={packageDraft.instructions} onChange={e=>setPackageDraft({...packageDraft,instructions:e.target.value})}/></label><label className="s-field">Context to save<textarea aria-label="Package context" rows={14} maxLength={60000} value={packageDraft.context} onChange={e=>setPackageDraft({...packageDraft,context:e.target.value})}/></label><p>Context files: {packageDraft.files.join(", ")||"Edited saved text"}. Skipped: {packageDraft.ignored.join(", ")||"None"}.</p>
+          <button className="s-btn s-primary" disabled={busy||!allowed||!packageDraft.instructions.trim()||!packageDraft.context.trim()} onClick={async()=>{setBusy(true);setError("");try{
+            const file=(slot:string,text:string)=>{const bytes=new TextEncoder().encode(text);let binary="";for(const byte of bytes)binary+=String.fromCharCode(byte);return {fileName:`${channel.toLowerCase()}-${slot}.md`,byteSize:bytes.length,base64:btoa(binary)};};
+            await send({type:"agentRules.importPackage",channel,instructions:file("instructions",packageDraft.instructions),context:file("context",packageDraft.context),expectedInstructionsId:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="instructions")?.id,expectedContextId:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="context")?.id});setPackageDraft(null);setMessage(`Instructions and context saved together for ${channel}. New requests use this version.`);
+          }catch(error){setError(String(error));}finally{setBusy(false);}}}>Save package for {channel}</button><button className="s-btn" disabled={busy} onClick={()=>setPackageDraft(null)}>Cancel package edits</button></>}
+      </section>
       <div className="s-agent-rule-grid">
         {(["instructions", "context"] as const).map((slot) => {
           const label = slot === "instructions" ? "Instructions" : channel === "LinkedIn" ? "Markdown context (.md)" : "Context",

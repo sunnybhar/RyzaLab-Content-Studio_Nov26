@@ -259,6 +259,12 @@ export function applyCommand(
       const example=s.agentVoiceExamples?.find(e=>e.id===c.id);if(!example)throw new StudioError(404,"Voice example not found.");
       need("workflow.edit",{channel:example.channel==="Shared"?undefined:example.channel});s.agentVoiceExamples=s.agentVoiceExamples?.filter(e=>e.id!==c.id);break;
     }
+    case "agentRules.importPackage": {
+      const decode=(file:{base64:string})=>new TextDecoder().decode(Uint8Array.from(atob(file.base64),char=>char.charCodeAt(0)));
+      if(!/\.md$/i.test(c.instructions.fileName)||!/\.md$/i.test(c.context.fileName))bad("Package preview must be saved as Markdown.");
+      let next=saveAgentRuleFile(input,actor,{...c.instructions,channel:c.channel,slot:"instructions",extractedText:decode(c.instructions),expectedId:c.expectedInstructionsId},now,id());
+      return saveAgentRuleFile(next,actor,{...c.context,channel:c.channel,slot:"context",extractedText:decode(c.context),expectedId:c.expectedContextId},now,id());
+    }
     case "agentRules.save": return saveAgentRuleFile(input,actor,c,now,id());
     case "agentRules.remove": {
       need("workflow.edit",{channel:c.channel});

@@ -20,6 +20,7 @@ export const draftResultSchema = z
     metadata: metadataSchema.default(""),
     sources: z.array(z.string().max(2000)).max(30).default([]),
     questions: z.array(z.string().max(2000)).max(20).default([]),
+    imageBrief: z.string().max(1500).optional(),
     slides: z
       .array(
         z
@@ -58,5 +59,5 @@ export function parseOutput<T>(text: string, schema: z.ZodType<T>): T {
     ),
   );
 }
-export const DRAFT_CONTRACT = `Return ONLY a compact JSON object, no Markdown fences. Put body FIRST. Finish the entire JSON within the output token budget. Default body limits: LinkedIn text post 180–250 words; Newsletter 350–500 words unless the user requests shorter. Keep metadata at most 300 characters, sources at most 3 compact references, and questions at most 5 short questions. Prefer complete shorter copy over a truncated long answer. No research-report appendix or repeated instructions. Fields: body (the complete selected piece), metadata (caption/publication notes as one plain text string, not an object), sources (provided reference IDs or section names), questions (actual missing facts), and optional slides [{title,body}] for a carousel. No weekly content pack, calendar, hook alternatives, analysis or format instructions in body. Write only the selected piece. Never invent facts or experiences. Mark missing facts in body [Ryan to confirm: ...].`;
+export const DRAFT_CONTRACT = `Return ONLY a compact JSON object, no Markdown fences. Put body FIRST. Finish the entire JSON within the output token budget. Follow the channel-specific writing requirements below. Keep metadata at most 300 characters, sources at most 3 compact references, and questions at most 5 short questions. Finish all fields; avoid repeated or verbose metadata. No research-report appendix or repeated instructions. Fields: body (the complete selected piece), metadata (caption/publication notes as one plain text string, not an object), sources (provided reference IDs or section names), questions (actual missing facts), optional imageBrief (a relevant image suggestion, not a claim of a generated image), and optional slides [{title,body}] for a carousel. No weekly content pack, calendar, hook alternatives, analysis or format instructions in body. Write only the selected piece. Never invent facts or experiences. Mark missing facts in body [Ryan to confirm: ...].`;
 export const REVIEW_CONTRACT = `Review the provided exact candidate and source context. Return ONLY JSON {"summary":"specific findings", "issues":[{"severity":"block or warning","message":"specific issue","referenceIds":[]}]}. Use only supplied references; do not claim current web access or visual inspection. Factual uncertainty is a block, style suggestions are warnings. Do not draft a content pack. Reference IDs must come from supplied references.`;

@@ -34,6 +34,9 @@ export function applyDraftCandidate(
   content.revision++;
   content.textRevision = (content.textRevision || 1) + 1;
   content.text = result.body;
+  if(["Newsletter","Hub"].includes(content.channel)&&result.sources.length&&!/^#{0,3}\s*(Sources|References)\s*:?$/im.test(result.body))content.text+="\n\n## Sources\n"+result.sources.map(source=>`- ${source}`).join("\n");
+  if(result.imageBrief&&!content.media.imagePrompt){content.media.imagePrompt=result.imageBrief;content.mediaRevision=(content.mediaRevision||1)+1;}
+
   content.researchJobIds = job.researchJobIds;
   content.metadata = [result.metadata, ...(unresolvedQuestions ? result.questions.map(q => `[Confirm: ${q}]`) : [])].filter(Boolean).join("\n\n");
   if (result.slides?.length && !content.media.slides.length) {
