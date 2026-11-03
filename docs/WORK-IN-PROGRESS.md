@@ -364,3 +364,6 @@ Build/typecheck passed;254domain tests plus recovery/count browser fixtures pass
 
 ### v0.3.20 final verification
 254domain tests/typecheck/productionbuild passed. Complete-card recovery browser verifies raw result access,2048token diagnosis, recorded$0.07cost, explicit2of3 pending import, unchanged costs/reservations/raw and no AI calls. Count/status browser passed; fullapp/automatic/manualidea browser final checks passed. No live provider tests. User should refresh afterv320 and use recovery on the latest existing request, not regenerate it to recover existing cards.
+
+## WIP v0.3.21: direct newsletter downloads
+User requested export buttons immediately below generated newsletter content, no copy/paste or image requirement, and removal of old lower image/export section. Moved PDF/DOCX buttons directly after content input, bound to current editor text; optional include-attached-image checkbox permits text-only export even with existing image. Removed old panel and obsolete newsletter upload branch, updated writing guidance. Focused browser extension verifies placement, latest unsaved editor text in DOCX, no embedded image when excluded and text-only PDF. Build/browser checks next; no live calls.

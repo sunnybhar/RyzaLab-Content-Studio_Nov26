@@ -11,11 +11,16 @@ try{
  await page.goto((process.env.TEST_BASE_URL||'http://127.0.0.1:3061')+'/preview');
  const nav=async(name:string)=>page.locator('.s-sidebar nav').getByRole('button',{name,exact:true}).click();
  await nav('Create');await page.locator('.s-content-title').filter({hasText:c.title}).click();
+ assert.equal(await page.getByLabel('Newsletter image brief',{exact:true}).count(),0);assert.equal(await page.getByText('Newsletter image and exports',{exact:true}).count(),0);assert.ok(await page.getByRole('region',{name:'Download newsletter',exact:true}).evaluate(node=>Boolean(node.previousElementSibling?.querySelector('textarea[aria-label="Content text"]'))));
  for(const format of ['DOCX','PDF']){
   const pending=page.waitForEvent('download');await page.getByRole('button',{name:`Export newsletter ${format}`,exact:true}).click();const download=await pending;const bytes=await fs.readFile((await download.path())!);
   if(format==='DOCX'){const zip=await JSZip.loadAsync(bytes);assert.ok(Object.keys(zip.files).some(f=>f.startsWith('word/media/')&&!zip.files[f].dir));assert.match(await zip.file('word/document.xml')!.async('string'),/example.org\/research/);}
   else {const task=getDocument({data:new Uint8Array(bytes),isEvalSupported:false});try{assert.ok((await task.promise).numPages>=2,'Detailed illustrated newsletter must span multiple PDF pages');}finally{await task.destroy();}}
  }
+ await page.getByRole('checkbox',{name:'Include attached image',exact:true}).uncheck();
+ await page.getByLabel('Content text',{exact:true}).fill(c.text+'\n\nLatest editor text, automatically included in download.');
+ for(const format of ['DOCX','PDF']){const pending=page.waitForEvent('download');await page.getByRole('button',{name:`Export newsletter ${format}`,exact:true}).click();const file=await pending;const bytes=await fs.readFile((await file.path())!);if(format==='DOCX'){const zip=await JSZip.loadAsync(bytes);assert.equal(Object.keys(zip.files).filter(f=>f.startsWith('word/media/')&&!zip.files[f].dir).length,0);assert.match(await zip.file('word/document.xml')!.async('string'),/Latest editor text, automatically included/);}else{const task=getDocument({data:new Uint8Array(bytes),isEvalSupported:false});try{assert.ok((await task.promise).numPages>=2);}finally{await task.destroy();}}}
+ await page.getByLabel('Content text',{exact:true}).fill(c.text);
  await nav('Agent Rules');let zip=new JSZip();zip.file('LinkedIn/00-START-HERE-agent-instructions.md','Original user-owned instructions');zip.file('__MACOSX/LinkedIn/knowledge/._company.md','\0AppleDouble metadata');zip.file('LinkedIn/.DS_Store','\0Finder metadata');zip.file('LinkedIn/knowledge/company.md','Original company background');zip.file('LinkedIn/skill/archive.zip','skipped');
  const channelZip=await zip.generateAsync({type:'nodebuffer'});
  await page.getByLabel('Agent Rules ZIP package',{exact:true}).setInputFiles({name:'my-channel.zip',mimeType:'application/zip',buffer:channelZip});

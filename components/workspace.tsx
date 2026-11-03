@@ -1482,7 +1482,7 @@ export default function Workspace() {
             <div className="s-release-label" aria-label="Studio version">
               <strong>RyzaLab Studio</strong>
               <small>
-                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.20"} ·{" "}
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.21"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>
@@ -4655,6 +4655,7 @@ function Editor({
   const [notesOpen, setNotesOpen] = useState(false);
   const [collection, setCollection] = useState(c.collection || "");
   const [media, setMedia] = useState<MediaProject>(c.media || initialMedia());
+  const [includeNewsletterImage,setIncludeNewsletterImage]=useState(true);
   const [tab, setTab] = useState("Write");
   const [postPreview, setPostPreview] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -4768,7 +4769,7 @@ function Editor({
       );
     }
   }
-  async function uploadAsset(file: File, target: "image" | "video" | "audio" | "newsletter") {
+  async function uploadAsset(file: File, target: "image" | "video" | "audio") {
     if (mode === "demo") {
       onError(
         "Private file uploads require a live workspace and configured media storage. Use a source URL or import a media project in demo mode.",
@@ -4804,8 +4805,7 @@ function Editor({
         throw new Error(
           "Private media upload failed. Try a supported file up to 50 MB.",
         );
-      if (target === "newsletter") updateMedia({imageUrl:result.url});
-      else if (target === "image") updateSlide({ image: result.url });
+      if (target === "image") updateSlide({ image: result.url });
       else if (target === "video") updateScene({ sourceUrl: result.url });
       else updateScene({ audioUrl: result.url });
     } catch (e) {
@@ -4957,11 +4957,11 @@ function Editor({
                 value={text}
                 onChange={(e) => setText(e.target.value)}
               />
+              {isLongForm(c.channel,c.format)&&<section aria-label="Download newsletter" className="s-actions"><button className="s-btn" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export newsletter DOCX</button><button className="s-btn s-primary" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export newsletter PDF</button>{media.imageUrl&&<label><input type="checkbox" checked={includeNewsletterImage} onChange={e=>setIncludeNewsletterImage(e.target.checked)}/> Include attached image</label>}<p>Downloads use the content above automatically. No copy/paste or image is required.</p></section>}
               <div className="s-editor-wordcount">
                 {text.trim() ? text.trim().split(/\s+/).length : 0} words{" "}
                 <span>{text.length} characters</span>
               </div>
-              {isLongForm(c.channel,c.format)&&<section className="s-panel s-panel-padding" aria-label="Newsletter image and document exports"><h3>Newsletter image and exports</h3><p>Target 1,200–1,600 words for a detailed article of at least 2–3 pages. Add a relevant image, then export the current writing, sources and image together.</p><label className="s-field">Newsletter image brief<textarea aria-label="Newsletter image brief" value={media.imagePrompt} disabled={readOnly} onChange={e=>updateMedia({imagePrompt:e.target.value})}/></label><label className="s-file-button">Upload newsletter image<input aria-label="Upload newsletter image" type="file" accept="image/png,image/jpeg,image/webp" disabled={readOnly} onChange={e=>{const file=e.target.files?.[0];e.target.value="";if(file)void uploadAsset(file,"newsletter");}}/></label><label className="s-field">Newsletter image URL<input aria-label="Newsletter image URL" value={media.imageUrl||""} disabled={readOnly} onChange={e=>updateMedia({imageUrl:e.target.value||undefined})}/></label>{media.imageUrl&&<AssetMedia source={media.imageUrl}/>}<div className="s-actions"><button className="s-btn" onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{imageUrl:media.imageUrl}).catch(e=>onError(String(e)))}>Export newsletter DOCX</button><button className="s-btn" onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{imageUrl:media.imageUrl}).catch(e=>onError(String(e)))}>Export newsletter PDF</button></div></section>}
               <details className="s-version" open={notesOpen} onToggle={event => setNotesOpen(event.currentTarget.open)}><summary>Publication notes (optional)</summary>
               <label className="s-field">
                 Publication metadata / caption
