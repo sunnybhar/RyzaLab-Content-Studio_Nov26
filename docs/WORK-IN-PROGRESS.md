@@ -382,3 +382,6 @@ Corrected per-request form-state TypeScript spread declaration found during buil
 
 ### v0.3.22 verified release
 Build/typecheck,23targeted domain checks, full app browser and focused blocker/action browser passed. Review popup identifies blocking writing or review work without Recent activity hunting; existing safe actions are surfaced, final approval/report requirements preserved. No live provider calls, billing reconciliation or approval performed. Main push is deployment handoff; hosted state unverified.
+
+## WIP v0.3.23: observed60second API termination and misleading migration error
+User provided Vercel /api/studio60second runtime timeout logs (not proof of old /worker outcome) plus UI migration error. Main route explicitly had maxDuration60; now180consistentwithworker/progress. loadState previously mapped every read error to migration-required; classify actual schema/timeout/access/temporary errors without initializing/resetting data. Added safe phase timing/trace diagnostics (no content/keys) and non-JSON timeout handling without automatic retry. Old uncertain review not marked successful/failed and billing untouched. Tests/build next; worker logs around old request remain requested to diagnose its actual interruption.

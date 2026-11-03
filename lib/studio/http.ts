@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { StudioError } from "./permissions";
 import { ZodError } from "zod";
-export function failure(error: unknown) {
-  const trace = crypto.randomUUID();
+export function failure(error: unknown,trace=crypto.randomUUID()) {
   if (error instanceof ZodError)
     return NextResponse.json(
       {

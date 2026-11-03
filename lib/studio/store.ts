@@ -1,3 +1,4 @@
+import {studioDatabaseError} from "./database-errors";
 import {
   createHash,
   createCipheriv,
@@ -45,11 +46,7 @@ export async function loadState(
     .select("state")
     .eq("id", true)
     .maybeSingle();
-  if (error)
-    throw new StudioError(
-      503,
-      "Studio migration is required. Apply supabase/migrations/20261027_studio_v2.sql before using the rebuilt workspace.",
-    );
+  if (error) throw studioDatabaseError(error,"read");
   if (data) {
     const state = data.state as StudioState;
     memberFor(state, actor);
@@ -59,7 +56,7 @@ export async function loadState(
     .from("members")
     .select("*");
   if (memberError)
-    throw new StudioError(503, "Legacy membership schema is missing.");
+    throw studioDatabaseError(memberError,"membership");
   const caller = members?.find((m) => m.email === actor.email && !m.revoked_at);
   if (!caller) throw new StudioError(403, "This workspace is invite-only.");
   if (caller.role !== "admin")
@@ -124,10 +121,7 @@ export async function loadState(
       memberFor(retry.data.state, actor);
       return retry.data.state;
     }
-    throw new StudioError(
-      503,
-      "Studio initialization failed. Check migration permissions.",
-    );
+    throw studioDatabaseError(commitError,"initialize");
   }
   return state;
 }
@@ -155,10 +149,7 @@ export async function persist(
         409,
         "Workspace changed concurrently. Refresh and repeat your action. No edits or provider calls were silently repeated.",
       );
-    throw new StudioError(
-      503,
-      "Could not persist this operation. Check the Studio migration and retry after refreshing.",
-    );
+    throw studioDatabaseError(error,"save");
   }
 }
 function encryptionKey() {

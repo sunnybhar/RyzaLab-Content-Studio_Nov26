@@ -1,4 +1,5 @@
 "use client";
+import {readStudioResponse} from "./response";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { supabase, configured } from "../supabase";
@@ -53,8 +54,8 @@ export function useStudio() {
             headers: { authorization: `Bearer ${data.session.access_token}` },
             cache: "no-store",
           }),
-          result = await r.json();
-        if (!r.ok) throw new Error(result.error || "Workspace could not load.");
+          result = await readStudioResponse<StudioResponse>(r);
+
         if (
           background &&
           latest.current &&
@@ -177,10 +178,8 @@ export function useStudio() {
           body: JSON.stringify(body),
         },
       );
-      const result = (await response.json()) as StudioResponse & {
-        error?: string;
-      };
-      if (!response.ok) throw new Error(result.error || "Operation failed.");
+      const result = await readStudioResponse<StudioResponse>(response);
+
       update(result.state);
       setActor(result.actor);
       return result;

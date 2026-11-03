@@ -1,3 +1,4 @@
+import {studioRequestDiagnostics} from "@/lib/studio/request-diagnostics";
 import {readAgentPackage} from "@/lib/studio/agent-package";
 import {extractAgentFile,hydrateAgentFiles} from "@/lib/studio/agent-file-extract";
 import {automaticIdeaResearch} from "@/lib/studio/automatic-idea-research";
@@ -28,29 +29,38 @@ import { failure } from "@/lib/studio/http";
 
 import { verifyApprovalAssets } from "@/lib/studio/assets";
 
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 export async function GET(req: NextRequest) {
+  const diagnostics=studioRequestDiagnostics("GET");
   try {
+    diagnostics.stage("authenticate");
     const { db, actor } = await authenticate(req);
+    diagnostics.stage("load_state");
     const state = await loadState(db, actor);
+    diagnostics.stage("respond");
     return NextResponse.json(
       { state: filteredState(state, actor), actor, mode: "live" },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (e) {
-    return failure(e);
+    diagnostics.failed(e);
+    return failure(e,diagnostics.trace);
   }
 }
 export async function POST(req: NextRequest) {
+  const diagnostics=studioRequestDiagnostics("POST");
   try {
+    diagnostics.stage("authenticate");
     const { db, actor } = await authenticate(req);
     if (Number(req.headers.get("content-length") || 0) > 12000000)
       throw new StudioError(
         413,
         "Command is too large; upload assets separately.",
       );
+    diagnostics.stage("load_state");
     const original = await loadState(db, actor);
+    diagnostics.stage("prepare_command");
     let state=original;
     let parsed = commandSchema.parse(await req.json());
     if(parsed.type==="agentRules.importPackage"&&parsed.archives?.length){requirePermission(state,actor,"workflow.edit",{channel:parsed.channel});for(const archive of parsed.archives){const bytes=Buffer.from(archive.base64,"base64");await readAgentPackage(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),archive.kind);}}
@@ -68,6 +78,7 @@ export async function POST(req: NextRequest) {
         : parsed.type === "research.start" ? researchJobInput(state,actor,parsed) : parsed,
     );
     if(command.type==="idea.generate"&&command.automaticResearch) {
+      diagnostics.stage("research_and_prepare_ideas");
       const prepared=await automaticIdeaResearch(state,actor,command);
       if(prepared.existing)return NextResponse.json({state:filteredState(state,actor),actor,mode:"live"});
       state=prepared.state;command=prepared.command;
@@ -114,6 +125,7 @@ export async function POST(req: NextRequest) {
         );
       }
     }
+    diagnostics.stage("price_and_validate");
     const priced =
       command.type === "job.enqueue"
         ? quote(state, command)
@@ -126,6 +138,7 @@ export async function POST(req: NextRequest) {
       if(existing)return NextResponse.json({state:filteredState(state,actor),actor,mode:"live"});
       retrievalResult=await retrieveBroadReferences(command.query);
     }
+    diagnostics.stage("apply_command");
     let next = applyCommand(state, actor, command, {
       hash,
       retrievalResult,
@@ -152,13 +165,16 @@ export async function POST(req: NextRequest) {
       command.type === "connection.delete"
         ? { id: command.id, ciphertext: encrypt("") }
         : undefined;
+    diagnostics.stage("persist");
     await persist(db, original, next, secret);
+    diagnostics.stage("respond");
     return NextResponse.json({
       state: filteredState(next, actor),
       actor,
       mode: "live",
     });
   } catch (e) {
-    return failure(e);
+    diagnostics.failed(e);
+    return failure(e,diagnostics.trace);
   }
 }
