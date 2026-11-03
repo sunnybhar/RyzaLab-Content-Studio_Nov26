@@ -367,3 +367,6 @@ Build/typecheck passed;254domain tests plus recovery/count browser fixtures pass
 
 ## WIP v0.3.21: direct newsletter downloads
 User requested export buttons immediately below generated newsletter content, no copy/paste or image requirement, and removal of old lower image/export section. Moved PDF/DOCX buttons directly after content input, bound to current editor text; optional include-attached-image checkbox permits text-only export even with existing image. Removed old panel and obsolete newsletter upload branch, updated writing guidance. Focused browser extension verifies placement, latest unsaved editor text in DOCX, no embedded image when excluded and text-only PDF. Build/browser checks next; no live calls.
+
+### v0.3.21 verified release
+Typecheck/production build passed. Focused browser verifies PDF/DOCX toolbar immediately after content input, old panel absent, latest editor text exported without copy/paste, image excluded from DOCX when unchecked, text-only multi-page PDF and image-inclusive exports. Full app browser passed. No domain logic or paid provider execution changed. Main push is release handoff; hosted rollout not verified.
