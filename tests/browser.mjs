@@ -129,7 +129,7 @@ async function main() {
     );
     await page
       .getByLabel("Studio version", { exact: true })
-      .getByText(/v0\.3\.25/)
+      .getByText(/v0\.3\.26/)
       .waitFor();
     await page.screenshot({
       path: "/tmp/studio-v2-desktop.png",
@@ -343,9 +343,9 @@ async function main() {
     await page.getByRole("heading", { name: title, exact: true }).waitFor();
     await page.reload();
     await navigate("Ideas");
-    await page.getByRole("button", { name: "List", exact: true }).click();
-    assert.equal(await page.getByRole("button", { name: "List", exact: true }).getAttribute("aria-pressed"), "true");
-    const idea = page.locator(".s-idea-summary").filter({ hasText: title });
+    await page.getByRole("button", { name: "Table view", exact: true }).click();
+    assert.equal(await page.getByRole("button", { name: "Table view", exact: true }).getAttribute("aria-pressed"), "true");
+    const idea = page.locator(".s-iw-table-wrap td:first-child button").filter({ hasText: title });
     await idea.click();
     const ideaDialog = page.locator(".s-idea-detail");
     await ideaDialog.getByText("An editorial perspective grounded in the team’s own working process.").waitFor();
@@ -359,7 +359,7 @@ async function main() {
     await saveDraft();
     const linkedDraftId = (await state()).contents.find((content) => content.title === title).id;
     await navigate("Ideas");
-    await page.locator(".s-idea-summary").filter({ hasText: title }).click();
+    await page.locator(".s-iw-table-wrap td:first-child button").filter({ hasText: title }).click();
     await page.locator(".s-idea-detail").getByRole("button", { name: "Open linked draft", exact: true }).click();
     await page.getByLabel("Content text", { exact: true }).waitFor();
     assert.equal((await state()).contents.filter((content) => content.title === title).length, 1);

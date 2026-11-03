@@ -85,7 +85,7 @@ try {
       .getByRole("button", { name: "Ideas", exact: true })
       .click();
     await page
-      .locator(".s-idea-summary")
+      .locator(".s-iw-card-title")
       .filter({ hasText: "A newly selected household handoff idea" })
       .click();
     await page

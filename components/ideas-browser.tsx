@@ -1,11 +1,11 @@
 "use client";
 
-import {IdeasRequestBoard} from "./ideas-request-board";
-import type {IdeaStage} from "@/lib/studio/idea-board";
+import { IdeasRequestBoard } from "./ideas-request-board";
+import type { IdeaStage } from "@/lib/studio/idea-board";
 import { useId, useRef, useState } from "react";
-import {SourceReferences} from "./idea-evidence";
+import { SourceReferences } from "./idea-evidence";
 import { X } from "lucide-react";
-import type { Content, Idea, Schedule,Job } from "@/lib/studio/types";
+import type { Content, Idea, Schedule, Job } from "@/lib/studio/types";
 import "./ideas-browser.css";
 
 const date = (value: string) =>
@@ -41,13 +41,13 @@ export function IdeasBrowser({
   onNewsletter,
   renderResearch,
 }: {
-  renderResearch?: (idea:Idea)=>import("react").ReactNode;
+  renderResearch?: (idea: Idea) => import("react").ReactNode;
   ideas: Idea[];
   jobs?: Job[];
-  onStage?:(idea:Idea,stage:IdeaStage)=>Promise<boolean>;
-  canStage?:(idea:Idea)=>boolean;
-  renderRequestStatus?:(job:Job)=>import("react").ReactNode;
-  includeEmptyRequests?:boolean;
+  onStage?: (idea: Idea, stage: IdeaStage) => Promise<boolean>;
+  canStage?: (idea: Idea) => boolean;
+  renderRequestStatus?: (job: Job) => import("react").ReactNode;
+  includeEmptyRequests?: boolean;
   allIdeas: Idea[];
   contents: Content[];
   schedules: Schedule[];
@@ -127,7 +127,17 @@ export function IdeasBrowser({
     );
   return (
     <section className="s-ideas-browser" aria-label="Ideas">
-      <IdeasRequestBoard ideas={ideas} allIdeas={allIdeas} jobs={jobs} busy={busy} onSelect={open} onStage={onStage} canStage={canStage} renderRequestStatus={renderRequestStatus} includeEmptyRequests={includeEmptyRequests}/>
+      <IdeasRequestBoard
+        ideas={ideas}
+        allIdeas={allIdeas}
+        jobs={jobs}
+        busy={busy}
+        onSelect={open}
+        onStage={onStage}
+        canStage={canStage}
+        renderRequestStatus={renderRequestStatus}
+        includeEmptyRequests={includeEmptyRequests}
+      />
       <dialog
         ref={dialog}
         className="s-review-dialog s-idea-detail"
@@ -191,7 +201,7 @@ export function IdeasBrowser({
               {!!selected.sources?.length && (
                 <>
                   <h3>Source references</h3>
-                  <SourceReferences sources={selected.sources}/>
+                  <SourceReferences sources={selected.sources} />
                 </>
               )}
               {selected.state !== "rejected" && !linkedDraft && (
@@ -230,7 +240,17 @@ export function IdeasBrowser({
                 </div>
               )}
               <div className="s-card-actions">
-                {onNewsletter && <button className="s-btn" disabled={busy} onClick={async () => { if (await onNewsletter(selected)) close(); }}>Create newsletter from this idea</button>}
+                {onNewsletter && (
+                  <button
+                    className="s-btn"
+                    disabled={busy}
+                    onClick={async () => {
+                      if (await onNewsletter(selected)) close();
+                    }}
+                  >
+                    Create newsletter from this idea
+                  </button>
+                )}
                 {selected.state !== "rejected" && (
                   <button
                     type="button"
@@ -247,7 +267,9 @@ export function IdeasBrowser({
                   >
                     {linkedDraft
                       ? "Open linked draft"
-                      : automaticWriting ? "Use idea & prepare draft with AI" : "Use idea & open draft"}
+                      : automaticWriting
+                        ? "Use idea & prepare draft with AI"
+                        : "Use idea & open draft"}
                   </button>
                 )}
                 {selected.state === "pending" && (

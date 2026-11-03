@@ -154,7 +154,7 @@ try {
     .locator(".s-sidebar nav")
     .getByRole("button", { name: "Ideas", exact: true })
     .click();
-  await page.locator(".s-idea-summary").first().click();
+  await page.locator(".s-iw-card-title").first().click();
   await page
     .getByRole("dialog")
     .getByRole("button", {

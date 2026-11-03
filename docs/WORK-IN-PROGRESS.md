@@ -426,3 +426,6 @@ User chose a combination of options3and4 with option2as another view, explicitly
 
 ## WIP v0.3.26 — approved Inbox + Board and alternate Table
 User approved the combined preview. Replaced Tiles/List with request inbox and selected-request board; Table shows identical ideas/stages. Existing details/research/source links, approval/reuse and draft flows retained. Manual ideas and orphan historical batches get honest groups; empty/incomplete jobs retain request-specific generation actions instead of a separate giant history list. Added persistent idea.stage planning state separate from editorial approval, with channel edit permission and stale-stage guards; no paid jobs or approval side effects. Typecheck passed. Domain/browser verification next; main not updated until verified.
+
+### v0.3.26 local checkpoint — remote authentication blocked
+Git push failed: no usable GitHub credential; gh auth status confirms GH_TOKEN is invalid and no saved fallback login exists. No alternate GitHub connector is available. Preserve local commits; do not claim deployment/remote backup. 268domain tests passed; production build/typecheck passed. Approved request inbox/board/table now handles partial batches explicitly and keeps rejected feedback separate. Current work: final app browser tests, draft/reuse regression checks and screenshots. Main has not changed.
