@@ -124,9 +124,10 @@ export function ReviewWorkStatus({
               </strong>
             </p>
             <p>
-              Request {job.id} · {new Date(job.createdAt).toLocaleString()}
+              Request {job.id} · Created {new Date(job.createdAt).toLocaleString()}
               {job.createdBy && !own ? ` · Requested by ${job.createdBy}` : ""}
             </p>
+            {job.dispatchStartedAt&&<p>Dispatch started: {new Date(job.dispatchStartedAt).toLocaleString()}{job.leaseUntil?` · Lease ends: ${new Date(job.leaseUntil).toLocaleString()}`:""}</p>}
             {job.error && <p className="s-red-text">{job.error}</p>}
             {job.state === "awaiting_confirmation" && (
               <>

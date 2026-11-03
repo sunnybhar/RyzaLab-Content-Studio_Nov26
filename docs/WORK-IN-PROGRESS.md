@@ -391,3 +391,6 @@ User worker screenshot shows503after37.86s with3mmaximum andSupabaseGET; not pro
 
 ### v0.3.23 verification
 Build/typecheck256tests passed, compiled functions-config manifest confirms/api/studio,/worker,/jobs/progress all180s. Concurrent-refresh browser passed (one GET for overlapping refreshes, actionable timeout, no writes/retries). Fullapp browser final check running. User oldreviewunknown not automatically changed; worker503at37.86s screenshot is distinct from mainroute60s timeout. New diagnostics needed for exact underlying database failure. No live provider calls/database migration or billing reconciliation.
+
+### v0.3.23 verified release
+Production build/typecheck256domain tests passed; fullapp, concurrent-refresh, and exact-review-blocker browser checks passed. Compiled mainAPI limit confirmed180seconds. Added actual dispatch/lease timestamps to review card for matching logs (creation time alone is not dispatch). New code distinguishes DBschema/timeouts/access errors and logs worker phases instead of concealing read errors; no historical outcome inferred from workerHTTP200/503. Existing unknown review remains unresolved and no cost/approval/provider action performed. Hosted rollout and underlying production DB error still require live confirmation.
