@@ -9,3 +9,11 @@ A pending or uncertain writing request can prevent final approval before an AI r
 - Failed/blocked/provider-finished without report: inspect the error and saved response. Once active/uncertain work is resolved, Request textual review becomes available subject to permissions, pricing and package allowance.
 
 Final package checks are unchanged. A current review report, copy acceptance, required media checks and explicit human final approval are still required. No provider call or reconciliation was performed by the assistant during implementation. Hosted request state cannot be inspected from the screenshot alone.
+
+## v0.3.23 — distinguish route timeouts from unknown review outcomes
+
+User logs confirmed the main /api/studio route was terminated at60seconds; its configured maximum is now180seconds, matching worker/progress (verified in the Next build manifest). A separate /worker503 completed after37.86seconds below its3-minute limit, so that entry alone does not establish a worker execution timeout or whether Claude completed the old review.
+
+Database reads previously labelled every error as a missing migration. Missing-schema codes now remain distinct from timeouts, permissions and temporary failures; failed reads never reset or initialize saved state. Worker reads now retain classified database errors and log safe authentication/read/claim/provider/settlement phases. Logs contain trace IDs, phase, elapsed time and status—not request bodies, content or API credentials. A provider-outcome-received phase confirms an in-process response was received but does not substitute for a saved review report.
+
+Concurrent UI refreshes share one in-flight read to prevent overlapping polling queues. Plain-text HTTP timeout responses provide an actionable uncertain-outcome message rather than a JSON parsing failure. No automatic command/provider retry was added, and no old unknown request is marked succeeded/failed or billed from an estimate. Resolving old unknown review work still requires verified provider evidence; HTTP200 from an idle worker is not proof that a specific review completed.

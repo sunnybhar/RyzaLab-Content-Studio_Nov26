@@ -388,3 +388,6 @@ User provided Vercel /api/studio60second runtime timeout logs (not proof of old 
 
 ### v0.3.23 checkpoint: worker503 evidence and status-poll deduplication
 User worker screenshot shows503after37.86s with3mmaximum andSupabaseGET; not proof of worker runtime timeout or Claude outcome. Worker now classifies initial/credential/settlement DB errors rather than treating read errors as missing initialization, and logs safe phases/trace. Main API180sfix remains independent. Client coalesces concurrent refreshes to avoid overlapping GET backlog, keeps no-auto-retry semantics. Build/full tests and new concurrent-refresh fixture in progress. Old unknown review untouched; no live billing/approval/provider calls.
+
+### v0.3.23 verification
+Build/typecheck256tests passed, compiled functions-config manifest confirms/api/studio,/worker,/jobs/progress all180s. Concurrent-refresh browser passed (one GET for overlapping refreshes, actionable timeout, no writes/retries). Fullapp browser final check running. User oldreviewunknown not automatically changed; worker503at37.86s screenshot is distinct from mainroute60s timeout. New diagnostics needed for exact underlying database failure. No live provider calls/database migration or billing reconciliation.
