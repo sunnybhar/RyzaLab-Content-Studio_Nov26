@@ -98,7 +98,7 @@ export function AgentVoiceLibrary({
               title: title.trim(),
               contentType,
               channel: target,
-              text: source === "paste" ? text.trim() : undefined,
+              text: source === "paste" ? text : undefined,
               file: stored,
               requestKey: pending.current,
             });

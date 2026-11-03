@@ -12,7 +12,7 @@ const pasted = {
   title: "Original post",
   contentType: "post",
   channel: "Shared",
-  text: marker,
+  text: `\n  ${marker}\n`,
   requestKey: "voice-1",
 };
 test("many pasted/file examples retain original text/bytes and remain disconnected", () => {
@@ -36,6 +36,7 @@ test("many pasted/file examples retain original text/bytes and remain disconnect
     { now },
   );
   assert.equal(next.agentVoiceExamples?.length, 2);
+  assert.equal(next.agentVoiceExamples?.find(e=>e.text)?.text,pasted.text,"pasted originals keep their leading/trailing formatting");
   assert.equal(atob(next.agentVoiceExamples![0].file!.base64), marker);
   assert.deepEqual(next.workflows, original.workflows);
   assert.deepEqual(next.references, original.references);

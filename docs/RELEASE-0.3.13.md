@@ -9,3 +9,5 @@ Storage limits: 256 KB per original file, 60,000 characters per pasted example, 
 Queued only: the saved LinkedIn/Newsletter setup checkbox's checked/disabled behavior was not changed. User explicitly deferred that issue.
 
 Validation in progress. Local model/source fixtures are not live acceptance calls.
+
+Verified locally: production build/typecheck and all 231 domain tests passed. Full browser regression, automatic AI/manual idea research window, retained evidence into writing/review, original Instructions/Context upload/download, pasted/file voice library and reload persistence checks passed. Original pasted text retains boundary whitespace/line structure; files retain exact bytes. No real paid generation or live Agent Rules uploads were performed by the coding agent. Hosted rollout remains separately verifiable through the visible version.

@@ -107,7 +107,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     state: z.enum(["planned", "done", "cancelled"]).optional(),
   }),
   command("agentRules.save", {channel,slot:z.enum(["instructions","context"]),...storedAgentFileSchema.shape,expectedId:id.optional()}),
-  command("agentVoice.create", {title:short,contentType:z.enum(["article","post","newsletter"]),channel:z.enum(["Shared",...CHANNELS]),text:z.string().trim().max(60000).optional(),file:storedAgentFileSchema.optional(),requestKey:id}),
+  command("agentVoice.create", {title:short,contentType:z.enum(["article","post","newsletter"]),channel:z.enum(["Shared",...CHANNELS]),text:z.string().max(60000).optional(),file:storedAgentFileSchema.optional(),requestKey:id}),
   command("agentVoice.remove", {id}),
   command("agentRules.remove", {channel,slot:z.enum(["instructions","context"]),expectedId:id}),
   command("idea.generate", {
