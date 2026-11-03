@@ -1,7 +1,178 @@
-import {build} from 'esbuild';import {chromium} from 'playwright';import assert from 'node:assert/strict';
-import {initialState,DEMO_ACTOR} from '../lib/studio/seed';import {saveBoundedWorkflowSetup} from '../lib/studio/bounded-workflow-setup';import {retrievePublicReferences} from '../lib/studio/public-retrieval';
-let fixture=initialState(DEMO_ACTOR,true);fixture.settings.qualifiedRates=[];fixture.settings.monthlyCap=500;fixture.settings.requestCap=50;fixture.settings.confirmationThreshold=50;fixture.connections.push({id:'writing',title:'Fixture Claude',provider:'anthropic',function:'text',model:'claude-sonnet-5-5',hasKey:true,status:'validated',updatedAt:'2026-11-03T01:00:00Z'});fixture=saveBoundedWorkflowSetup(fixture,DEMO_ACTOR,{connectionId:'writing',expectedVersion:fixture.version,channels:['LinkedIn']},{model:'claude-sonnet-5-5',maxInputTokens:1000000,maxOutputTokens:128000},'2026-11-03T01:00:00Z');
-const refs=await retrievePublicReferences('home automation',async(url)=>Response.json(String(url).includes('wikipedia')?{query:{pages:{1:{title:'Home automation',extract:'Local source fixture about everyday household controls and documentation. '.repeat(4)}}}}:{message:{items:[]}}));
-const script=await build({stdin:{contents:`import React,{useState}from'react';import{createRoot}from'react-dom/client';import{IdeaComposer}from'./components/idea-composer';import{automaticIdeaResearch}from'./lib/studio/automatic-idea-research';import{applyCommand}from'./lib/studio/engine';import{commandSchema}from'./lib/studio/commands';import{ideaJobInput}from'./lib/studio/idea-generation';import{quote}from'./lib/studio/pricing';const actor=${JSON.stringify(DEMO_ACTOR)},refs=${JSON.stringify(refs)};window.commands=[];window.queries=[];function App(){const[state,setState]=useState(${JSON.stringify(fixture)}),[mode,setMode]=useState();window.savedState=state;async function send(raw){window.commands.push(raw);const c=commandSchema.parse(raw);let next;if(c.type==='idea.generate'){const p=await automaticIdeaResearch(state,actor,c,async(query)=>{window.queries.push(query);return refs;});const q=quote(p.state,ideaJobInput(p.state,actor,p.command));next=applyCommand(p.state,actor,p.command,{quotedCost:q.cost,pricingSnapshot:q.pricingSnapshot});const job=next.jobs[0];job.state='succeeded';job.result=JSON.stringify({ideas:Array.from({length:c.quantity},(_,i)=>({title:'Research-backed idea '+(i+1),brief:'AI-developed angle backed by household documentation sources.',audience:'Households',format:'Text post',sources:['https://en.wikipedia.org/wiki/Home_automation']}))});if(c.purpose!=='manual_assistance')next=applyCommand(next,actor,{type:'idea.importSavedResult',jobId:job.id});}else next=applyCommand(state,actor,c);setState(next);return {state:next};}return <><button onClick={()=>setMode('generate')}>Generate with agent</button><button onClick={()=>setMode('manual')}>Add manually</button>{mode&&<IdeaComposer mode={mode} initialChannel="LinkedIn" state={state} actor={actor} demo={false} send={send} refresh={async()=>{}} close={()=>setMode(undefined)} openContent={async(idea)=>{window.opened=idea;return true;}}/>}</>};createRoot(document.getElementById('app')).render(<App/>);`,resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'iife',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
-const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']});try{const page=await browser.newPage();const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.route('http://localhost:31343/**',route=>route.fulfill({contentType:'text/html',body:'<div id="app"></div><script>'+script.outputFiles[0].text.replaceAll('</script','<\\/script')+'</script>'}));await page.goto('http://localhost:31343/');await page.getByRole('button',{name:'Generate with agent',exact:true}).click();let dialog=page.getByRole('dialog');assert.equal(await dialog.getByRole('heading',{name:'Research-backed idea 1'}).count(),0);assert.equal(await dialog.getByLabel('Web research evidence').count(),0);await dialog.getByLabel('Topic / Brief',{exact:true}).fill('Household controls');await dialog.getByLabel('Audience',{exact:true}).fill('Households');await dialog.getByLabel('Quantity',{exact:true}).fill('2');await dialog.getByRole('button',{name:'Generate ideas',exact:true}).click();await dialog.getByRole('heading',{name:'Research-backed idea 2'}).waitFor();await dialog.getByRole('link',{name:'Home automation',exact:true}).waitFor();assert.deepEqual(await page.evaluate(()=>(window as any).queries),['Household controls']);await dialog.getByRole('button',{name:'Close idea window'}).click();
-await page.getByRole('button',{name:'Add manually',exact:true}).click();dialog=page.getByRole('dialog');await dialog.getByLabel('Idea title',{exact:true}).fill('My manual handoff idea');await dialog.getByLabel('What is the angle?',{exact:true}).fill('My private original angle.');await dialog.getByRole('button',{name:'Research and develop this idea',exact:true}).click();await dialog.getByRole('heading',{name:'AI research and development'}).waitFor();assert.equal(await dialog.getByLabel('What is the angle?',{exact:true}).inputValue(),'My private original angle.');assert.equal(await dialog.getByLabel('Idea title',{exact:true}).inputValue(),'My manual handoff idea');await dialog.getByRole('link',{name:'Home automation',exact:true}).waitFor();await dialog.getByRole('button',{name:'Use this AI development in my idea',exact:true}).click();assert.equal(await dialog.getByLabel('What is the angle?',{exact:true}).inputValue(),'AI-developed angle backed by household documentation sources.');await dialog.getByRole('button',{name:'Add idea',exact:true}).click();await dialog.waitFor({state:'hidden'});const saved=await page.evaluate(()=>(window as any).savedState);const manual=saved.ideas.find((i:any)=>i.title==='My manual handoff idea');assert.equal(manual.origin,'manual');assert.equal(manual.researchJobIds.length,1);assert.equal(saved.ideas.filter((i:any)=>i.title.startsWith('Research-backed idea')).length,2,'manual assistance must not create extra agent cards');assert.deepEqual(await page.evaluate(()=>(window as any).queries),['Household controls','My manual handoff idea']);assert.deepEqual(errors,[]);console.log('PASS: automatic researched idea cards and websites; manual in-window AI assistance, original preservation and explicit adoption/save; local source/model fixtures only');}finally{await browser.close();}
+import { build } from "esbuild";
+import { chromium } from "playwright";
+import assert from "node:assert/strict";
+import { initialState, DEMO_ACTOR } from "../lib/studio/seed";
+import { saveBoundedWorkflowSetup } from "../lib/studio/bounded-workflow-setup";
+import { retrievePublicReferences } from "../lib/studio/public-retrieval";
+let fixture = initialState(DEMO_ACTOR, true);
+fixture.settings.qualifiedRates = [];
+fixture.settings.monthlyCap = 500;
+fixture.settings.requestCap = 50;
+fixture.settings.confirmationThreshold = 50;
+fixture.connections.push({
+  id: "writing",
+  title: "Fixture Claude",
+  provider: "anthropic",
+  function: "text",
+  model: "claude-sonnet-5-5",
+  hasKey: true,
+  status: "validated",
+  updatedAt: "2026-11-03T01:00:00Z",
+});
+fixture = saveBoundedWorkflowSetup(
+  fixture,
+  DEMO_ACTOR,
+  {
+    connectionId: "writing",
+    expectedVersion: fixture.version,
+    channels: ["LinkedIn"],
+  },
+  {
+    model: "claude-sonnet-5-5",
+    maxInputTokens: 1000000,
+    maxOutputTokens: 128000,
+  },
+  "2026-11-03T01:00:00Z",
+);
+const refs = await retrievePublicReferences("home automation", async (url) =>
+  Response.json(
+    String(url).includes("wikipedia")
+      ? {
+          query: {
+            pages: {
+              1: {
+                title: "Home automation",
+                extract:
+                  "Local source fixture about everyday household controls and documentation. ".repeat(
+                    4,
+                  ),
+              },
+            },
+          },
+        }
+      : { message: { items: [] } },
+  ),
+);
+const script = await build({
+  stdin: {
+    contents: `import React,{useState}from'react';import{createRoot}from'react-dom/client';import{IdeaComposer}from'./components/idea-composer';import{automaticIdeaResearch}from'./lib/studio/automatic-idea-research';import{applyCommand}from'./lib/studio/engine';import{commandSchema}from'./lib/studio/commands';import{ideaJobInput}from'./lib/studio/idea-generation';import{quote}from'./lib/studio/pricing';const actor=${JSON.stringify(DEMO_ACTOR)},refs=${JSON.stringify(refs)};window.commands=[];window.queries=[];function App(){const[state,setState]=useState(${JSON.stringify(fixture)}),[mode,setMode]=useState();window.savedState=state;async function send(raw){window.commands.push(raw);const c=commandSchema.parse(raw);let next;if(c.type==='idea.generate'){const p=await automaticIdeaResearch(state,actor,c,async(query)=>{window.queries.push(query);return refs;});const q=quote(p.state,ideaJobInput(p.state,actor,p.command));next=applyCommand(p.state,actor,p.command,{quotedCost:q.cost,pricingSnapshot:q.pricingSnapshot});const job=next.jobs[0];job.state='succeeded';job.result=JSON.stringify({ideas:Array.from({length:c.quantity},(_,i)=>({title:'Research-backed idea '+(i+1),brief:'AI-developed angle backed by household documentation sources.',audience:'Households',format:'Text post',sources:['https://en.wikipedia.org/wiki/Home_automation']}))});if(c.purpose!=='manual_assistance')next=applyCommand(next,actor,{type:'idea.importSavedResult',jobId:job.id});}else next=applyCommand(state,actor,c);setState(next);return {state:next};}return <><button onClick={()=>setMode('generate')}>Generate with agent</button><button onClick={()=>setMode('manual')}>Add manually</button>{mode&&<IdeaComposer mode={mode} initialChannel="LinkedIn" state={state} actor={actor} demo={false} send={send} refresh={async()=>{}} close={()=>setMode(undefined)} openContent={async(idea)=>{window.opened=idea;return true;}}/>}</>};createRoot(document.getElementById('app')).render(<App/>);`,
+    resolveDir: process.cwd(),
+    loader: "tsx",
+  },
+  bundle: true,
+  write: false,
+  format: "iife",
+  jsx: "automatic",
+  define: { "process.env.NODE_ENV": '"production"' },
+});
+const browser = await chromium.launch({
+  executablePath: "/usr/bin/chromium",
+  headless: true,
+  args: ["--no-sandbox"],
+});
+try {
+  const page = await browser.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.route("http://localhost:31343/**", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body:
+        '<div id="app"></div><script>' +
+        script.outputFiles[0].text.replaceAll("</script", "<\\/script") +
+        "</script>",
+    }),
+  );
+  await page.goto("http://localhost:31343/");
+  await page
+    .getByRole("button", { name: "Generate with agent", exact: true })
+    .click();
+  let dialog = page.getByRole("dialog");
+  assert.equal(
+    await dialog
+      .getByRole("heading", { name: "Research-backed idea 1" })
+      .count(),
+    0,
+  );
+  assert.equal(await dialog.getByLabel("Web research evidence").count(), 0);
+  await dialog
+    .getByLabel("Topic / Brief", { exact: true })
+    .fill("Household controls");
+  await dialog.getByLabel("Audience", { exact: true }).fill("Households");
+  await dialog.getByLabel("Quantity", { exact: true }).fill("2");
+  await dialog
+    .getByRole("button", { name: "Generate ideas", exact: true })
+    .click();
+  await dialog
+    .getByRole("heading", { name: "Research-backed idea 2" })
+    .waitFor();
+  await dialog
+    .getByRole("link", { name: "Home automation", exact: true })
+    .waitFor();
+  assert.deepEqual(await page.evaluate(() => (window as any).queries), [
+    "Household controls",
+  ]);
+  await dialog.getByRole("button", { name: "Close idea window" }).click();
+  await page.getByRole("button", { name: "Add manually", exact: true }).click();
+  dialog = page.getByRole("dialog");
+  await dialog
+    .getByLabel("Idea title", { exact: true })
+    .fill("My manual handoff idea");
+  await dialog
+    .getByLabel("What is the angle?", { exact: true })
+    .fill("My private original angle.");
+  await dialog
+    .getByRole("button", {
+      name: "Research and develop this idea",
+      exact: true,
+    })
+    .click();
+  await dialog
+    .getByRole("heading", { name: "AI research and development" })
+    .waitFor();
+  assert.equal(
+    await dialog.getByLabel("What is the angle?", { exact: true }).inputValue(),
+    "My private original angle.",
+  );
+  assert.equal(
+    await dialog.getByLabel("Idea title", { exact: true }).inputValue(),
+    "My manual handoff idea",
+  );
+  await dialog
+    .getByRole("link", { name: "Home automation", exact: true })
+    .waitFor();
+  await dialog
+    .getByRole("button", {
+      name: "Use this AI development in my idea",
+      exact: true,
+    })
+    .click();
+  assert.equal(
+    await dialog.getByLabel("What is the angle?", { exact: true }).inputValue(),
+    "AI-developed angle backed by household documentation sources.",
+  );
+  await dialog.getByRole("button", { name: "Add idea", exact: true }).click();
+  await dialog.waitFor({ state: "hidden" });
+  const saved = await page.evaluate(() => (window as any).savedState);
+  const manual = saved.ideas.find(
+    (i: any) => i.title === "My manual handoff idea",
+  );
+  assert.equal(manual.origin, "manual");
+  assert.equal(manual.researchJobIds.length, 1);
+  assert.equal(
+    saved.ideas.filter((i: any) => i.title.startsWith("Research-backed idea"))
+      .length,
+    2,
+    "manual assistance must not create extra agent cards",
+  );
+  assert.deepEqual(await page.evaluate(() => (window as any).queries), [
+    "Household controls",
+    "My manual handoff idea",
+  ]);
+  assert.deepEqual(errors, []);
+  console.log(
+    "PASS: automatic researched idea cards and websites; manual in-window AI assistance, original preservation and explicit adoption/save; local source/model fixtures only",
+  );
+} finally {
+  await browser.close();
+}

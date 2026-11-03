@@ -1,19 +1,15 @@
-# Public research — v0.3.7
+# Integrated research — v0.3.13
 
-1. Open **Ideas**, or a saved draft in **Create → Write**.
-2. Expand **Web research → Find public references**.
-3. Enter a public question without private details; click **Find references**.
-4. Inspect the excerpts, original source links, retrieval date and coverage gaps.
-5. Select **Use this evidence in idea generation/writing**, then use the existing AI generation button. Claude still needs a validated Ideas/Writing connection and qualified token pricing. Retrieval itself needs no Research key or manual reservation.
+## Generate AI ideas
 
-Sources: Wikipedia introductory extracts and Crossref scholarly abstracts. This does not search unrestricted web/news or full papers and cannot confirm personal stories. No paid model/search endpoint runs during retrieval. The existing request, post and monthly limits apply to subsequent Claude calls. Source text is evidence, never instructions or automatic truth.
+Open Ideas → Generate with agent. Enter the public topic, audience and quantity, then Generate ideas. Research runs automatically before the configured idea model; source websites and excerpts appear in the same window with the ideas. Confirm an allowance inline if required by current settings. No separate research run or evidence dropdown is required. A failed/no-source retrieval stops before paid generation; it does not invent verification.
 
-The legacy Claude native server-search setup remains separate and is unsuitable for the $2 ceiling with the documented large model envelope. See RELEASE-0.3.6.md for that historical limitation; do not enter a guessed fixed reservation to bypass it.
+## Enter a manual idea
 
-## v0.3.8 — Claude setup
+Open Ideas → Add manually. Enter your title and angle. Save directly to keep it fully manual, or use Research and develop this idea in that window. The agent's proposal and original source links/excerpts appear there. Your entered text stays unchanged until Use this AI development in my idea. Add idea saves it with its evidence; Save idea and open writing carries the research into Create. If automatic drafting is enabled, using the idea starts its initial draft within the existing post allowance; otherwise use the editor's Write with AI button explicitly.
 
-Use **AI & budgets → Bounded research and writing** with the stored Sonnet 5.5 Text key. Click **Check model and enable bounded workflow**. This checks model bounds and sets tool-free workspace defaults for Ideas/Text/Review. Explicit workflow overrides stay in place and may still need their own validated connection/pricing. Monthly and post budgets are preserved. Same-provider review does not satisfy an independent-provider policy.
+Research sends the entered topic/title only to public reference providers. Private angle/source notes are not appended to public queries. Coverage is Wikipedia introductory extracts and Crossref scholarly abstracts; not unrestricted news/web or private-experience verification. Inspect sources and required missing-fact markers before human review.
 
-## Final verification workflow
+Existing validated model connections, qualified pricing, all permission/monthly/request/post limits and two human approvals remain in force. Source retrieval uses no paid model/search endpoint; the configured idea/writing call does use the model budget.
 
-The full LinkedIn/Newsletter path and five-build changes are described in [LINKEDIN-NEWSLETTER-VERIFY.md](LINKEDIN-NEWSLETTER-VERIFY.md). Bounded public reference retrieval has no paid search API fee, so it can accompany a Short text allowance when all subsequent model calls fit. Categories are planning ceilings, not fixed charges. Live samples still require actual deployed API connectivity and user authorization through the preparation button.
+Agent Rules is independent storage only. Neither Instructions/Context uploads nor voice examples are linked to these agents yet.

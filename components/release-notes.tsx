@@ -16,20 +16,26 @@ export function ReleaseNotes() {
         aria-label="What changed in this build"
         style={{ maxWidth: 600, width: "calc(100% - 32px)", margin: "auto" }}
       >
-        <h2>v0.3.12 · Saved setup and clearer settings</h2>
+        <h2>v0.3.13 · Researched ideas and stored Agent Rules</h2>
         <p>
-          AI &amp; budgets now has space between sections. Each section starts
-          collapsed; click its heading to show the settings and explanatory
-          content.
+          Generate ideas now retrieves public research automatically and shows
+          idea cards with source websites and excerpts in the same window. Add
+          manually includes its own research and AI-development action; applying
+          a proposal remains your choice. Saved evidence carries into writing.
         </p>
         <p>
-          The LinkedIn and Newsletter checkbox now reflects your saved channel
-          connections when you return or reload. An unsaved selection tells you
-          to click Check model and enable bounded workflow before leaving.
+          Agent Rules adds per-channel Instructions and Context file slots, plus
+          a RyzaLab original-content voice library for pasted articles, posts
+          and newsletters or uploaded files. All Agent Rules and voice examples
+          are stored only and are not connected to generation yet.
         </p>
         <details>
           <summary>Changes in the earlier builds</summary>
           <ul>
+            <li>
+              <strong>v0.3.12:</strong> Saved setup display and spaced,
+              collapsed AI &amp; budgets sections.
+            </li>
             <li>
               <strong>v0.3.11:</strong> Token usage, recorded costs,
               reservations and remaining post allowance.

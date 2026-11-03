@@ -53,9 +53,30 @@ export function IdeaEvidence({
   );
 }
 
-export function SourceReferences({sources}:{sources:string[]}) {
- return <ul>{sources.map((source,index)=>{
-   let safe=false;try{const url=new URL(source);safe=["http:","https:"].includes(url.protocol)&&!url.username&&!url.password;}catch{}
-   return <li key={index}>{safe?<a href={source} target="_blank" rel="noopener noreferrer">{source}</a>:source}</li>;
- })}</ul>;
+export function SourceReferences({ sources }: { sources: string[] }) {
+  return (
+    <ul>
+      {sources.map((source, index) => {
+        let safe = false;
+        try {
+          const url = new URL(source);
+          safe =
+            ["http:", "https:"].includes(url.protocol) &&
+            !url.username &&
+            !url.password;
+        } catch {}
+        return (
+          <li key={index}>
+            {safe ? (
+              <a href={source} target="_blank" rel="noopener noreferrer">
+                {source}
+              </a>
+            ) : (
+              source
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
 }

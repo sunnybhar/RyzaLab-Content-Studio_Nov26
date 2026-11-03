@@ -9,7 +9,7 @@ import {
   type StudioState,
 } from "@/lib/studio/types";
 import { parseGeneratedIdeas } from "@/lib/studio/idea-generation";
-import { IdeaEvidence,SourceReferences } from "./idea-evidence";
+import { IdeaEvidence, SourceReferences } from "./idea-evidence";
 export function IdeaComposer({
   mode,
   initialChannel,
@@ -123,6 +123,17 @@ export function IdeaComposer({
           ? e.message
           : "Research/generation could not complete. Check the saved request before trying again.",
       );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function openIdea(idea: Idea) {
+    setBusy(true);
+    setError("");
+    try {
+      if (await openContent(idea)) close();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not open writing.");
     } finally {
       setBusy(false);
     }
@@ -337,11 +348,35 @@ export function IdeaComposer({
           {job.error && <p>{job.error}</p>}
         </div>
       )}
+      {job?.state === "awaiting_confirmation" && (
+        <button
+          type="button"
+          className="s-btn"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setError("");
+            try {
+              await send({ type: "job.confirm", id: job.id });
+            } catch (e) {
+              setError(
+                e instanceof Error
+                  ? e.message
+                  : "Could not confirm this request.",
+              );
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Confirm AI request allowance · ${(job.estimate / 100).toFixed(2)}
+        </button>
+      )}
       {mode === "manual" && proposal && (
         <section>
           <h3>AI research and development</h3>
           <p>{proposal.brief}</p>
-          <SourceReferences sources={proposal.sources}/>
+          <SourceReferences sources={proposal.sources} />
           <button
             type="button"
             className="s-btn"
@@ -361,13 +396,12 @@ export function IdeaComposer({
           <article key={idea.id} className="s-version">
             <h3>{idea.title}</h3>
             <p>{idea.brief}</p>
-            <SourceReferences sources={idea.sources}/>
+            <SourceReferences sources={idea.sources} />
             <button
               type="button"
               className="s-btn"
-              onClick={async () => {
-                if (await openContent(idea)) close();
-              }}
+              disabled={working}
+              onClick={() => void openIdea(idea)}
             >
               Use idea and open writing
             </button>
