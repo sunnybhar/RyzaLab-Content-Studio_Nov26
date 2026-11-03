@@ -325,3 +325,6 @@ Illustrated export browser check confirmed multi-page PDF and DOCX media/source 
 
 ### v0.3.16 release candidate verified browser behavior
 New browser workflow passed ZIP preview/edit, skill ZIP import, saved-package ZIP download, image-inclusive DOCX/source preservation, multi-page PDF and visible running newsletter status. Full application browser passed. Added article/newsletter format detection as well as channel detection, so LinkedIn newsletter/article drafts also get long-form guidance, sources, output qualification and exports. Final build/test run covers this format handling. Documentation in NEWSLETTER-WORKFLOW.md explains founder setup refresh (4096 writing tokens, max18c quote), images are user-uploaded with AI briefs rather than fabricated/generated pixels, and no live provider tests or paid calls occurred.
+
+### v0.3.16 release complete
+Production build/typecheck and all245 domain tests passed. Full app browser and focused ZIP/skill editing, reusable package download, running-writing status, multi-page illustrated PDF and image/source DOCX checks passed. Both attached example ZIP formats validated, not installed. No paid provider calls. Existing users must explicitly refresh bounded workflow setup for4096 writing-output tokens; caps remain founder-controlled. Release push is not verification of hosted rollout or live samples.
