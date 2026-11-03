@@ -14,7 +14,7 @@ export const researchConfigSchema = z
   .passthrough();
 const citation = z.object({
   publishedAt: z.string().max(100).optional(),
-  sourceKind: z.enum(["reference_extract", "scholarly_abstract"]).optional(),
+  sourceKind: z.enum(["reference_extract", "scholarly_abstract", "web_search_excerpt", "news_search_excerpt"]).optional(),
   url: z.url().refine((v) => {
     const url = new URL(v);
     return /^https?:$/.test(url.protocol) && !url.username && !url.password;
@@ -123,13 +123,13 @@ export const publicResearchSchema = z
     retrieval: z
       .object({
         adapter: z.literal("public-refs-v1"),
-        requests: z.number().int().min(1).max(2),
-        responseBytes: z.number().int().min(1).max(131072),
+        requests: z.number().int().min(1).max(4),
+        responseBytes: z.number().int().min(1).max(262144),
         excerptBytes: z.number().int().min(1).max(12000),
         providers: z
-          .array(z.enum(["wikipedia", "crossref"]))
+          .array(z.enum(["wikipedia", "crossref", "bing_web", "bing_news"]))
           .min(1)
-          .max(2),
+          .max(4),
         gaps: z.array(z.string().max(300)).max(4),
         providerChargeCents: z.literal(0),
       })

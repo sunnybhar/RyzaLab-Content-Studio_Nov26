@@ -1,4 +1,4 @@
-import {extractAgentFile} from "@/lib/studio/agent-file-extract";
+import {extractAgentFile,hydrateAgentFiles} from "@/lib/studio/agent-file-extract";
 import {automaticIdeaResearch} from "@/lib/studio/automatic-idea-research";
 import { orchestrateInitialWriting } from "@/lib/studio/writing-orchestration";
 import { orchestrateReviews } from "@/lib/studio/review-orchestration";
@@ -10,7 +10,7 @@ import {
   hash,
   encrypt,
 } from "@/lib/studio/store";
-import { retrievePublicReferences } from "@/lib/studio/public-retrieval";
+import { retrieveBroadReferences } from "@/lib/studio/web-discovery";
 import { publicRetrievalTarget, researchJobInput } from "@/lib/studio/research-link";
 import { generationInput } from "@/lib/studio/generation";
 import { ideaJobInput } from "@/lib/studio/idea-generation";
@@ -58,6 +58,8 @@ export async function POST(req: NextRequest) {
       else parsed={...parsed,extractedText:parsed.file?await extractAgentFile(parsed.file):undefined};
     }
 
+    const contextChannel=parsed.type==="idea.generate"?parsed.channel:parsed.type==="content.generate"?state.contents.find(c=>c.id===parsed.contentId)?.channel:parsed.type==="idea.use"?state.ideas.find(i=>i.id===parsed.ideaId)?.channel:undefined;
+    if(contextChannel){requirePermission(state,actor,"job.create",{channel:contextChannel,function:parsed.type==="idea.generate"?"ideas":"text"});state=await hydrateAgentFiles(state,contextChannel);}
     let command = commandSchema.parse(
       parsed.type === "content.generate"
         ? generationInput(state, actor, parsed)
@@ -120,7 +122,7 @@ export async function POST(req: NextRequest) {
     if(command.type==="research.retrieve") {
       const {existing}=publicRetrievalTarget(state,actor,command);
       if(existing)return NextResponse.json({state:filteredState(state,actor),actor,mode:"live"});
-      retrievalResult=await retrievePublicReferences(command.query);
+      retrievalResult=await retrieveBroadReferences(command.query);
     }
     let next = applyCommand(state, actor, command, {
       hash,

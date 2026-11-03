@@ -13,7 +13,7 @@ import {
   extendVerificationPack,
   VERIFICATION_QUERY,
 } from "@/lib/studio/verification-pack";
-import { retrievePublicReferences } from "@/lib/studio/public-retrieval";
+import { retrieveBroadReferences } from "@/lib/studio/web-discovery";
 import { POST as executeWorker } from "../worker/route";
 import { failure } from "@/lib/studio/http";
 export const maxDuration = 180;
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
           "Workspace changed. Refresh before preparing the sample.",
         );
       verificationPreflight(state, actor);
-      const refs = await retrievePublicReferences(VERIFICATION_QUERY);
+      const refs = await retrieveBroadReferences(VERIFICATION_QUERY);
       const next = startVerificationPack(
         state,
         actor,

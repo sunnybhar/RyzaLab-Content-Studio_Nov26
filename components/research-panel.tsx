@@ -62,7 +62,7 @@ export function ResearchPanel({
       </p>
       <details>
         <summary>Find public references</summary>
-        <p>Retrieve Wikipedia introductory extracts and Crossref scholarly abstracts. Two public API requests, at most six excerpts and 12 KB of excerpt text. This is limited reference coverage, not unrestricted web or news search. No separate Research key or paid search charge is required.</p>
+        <p>Find web/news source links and excerpts alongside available Wikipedia introductions and Crossref abstracts. Up to four public requests, six excerpts and 12 KB of excerpt text. Search results are excerpts, not full-page reads; coverage and availability vary. No separate Research key or paid search charge is required.</p>
         <label className="s-field">
           Public research question
           <textarea

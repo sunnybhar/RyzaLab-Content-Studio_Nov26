@@ -301,3 +301,6 @@ Saved-incomplete editor browser regression passed: old fenced JSON recovers into
 
 ## WIP continuation: linked Agent Rules, editable setup choice, broader search
 User explicitly authorized linking rules, fixing locked checkbox, broader web search and five live samples. Added bounded PDF/DOCX/text extraction and frozen channel-scoped context with six voice examples; server upload extraction and existing-file activation still being finished. Checkbox editable/persisted preference work underway. LinkedIn keeps independent Instructions and Markdown context slots. General web/news discovery and tests next. No live calls, no release yet.
+
+### Continuation checkpoint: explicit LinkedIn split and broad search
+LinkedIn Instructions and Markdown context are separate uploads; new requests freeze both roles plus bounded matching voice examples. Existing files hydrate on new idea/writing/use-idea requests, originals preserved. General web/news RSS discovery uses only fixed Bing endpoints, never fetches result URLs; citations explicitly search excerpts, not full-page verification. Unavailable feeds report gaps and fall back to public references. Native paid research remains separate. Tests in progress; no release yet. Live samples blocked by absent credentials and outbound CONNECT403, no paid calls.

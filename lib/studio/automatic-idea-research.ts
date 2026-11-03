@@ -3,7 +3,7 @@ import type { Actor, StudioState } from "./types";
 import { commandSchema } from "./commands";
 import { applyCommand } from "./engine";
 import { requirePermission, StudioError } from "./permissions";
-import { retrievePublicReferences } from "./public-retrieval";
+import { retrieveBroadReferences } from "./web-discovery";
 import { ideaJobInput } from "./idea-generation";
 import { quote } from "./pricing";
 type Input = Extract<
@@ -16,7 +16,7 @@ export async function automaticIdeaResearch(
   state: StudioState,
   actor: Actor,
   input: Input,
-  retrieve = retrievePublicReferences,
+  retrieve = retrieveBroadReferences,
   now = new Date().toISOString(),
 ) {
   for (const action of ["read", "idea.edit"])

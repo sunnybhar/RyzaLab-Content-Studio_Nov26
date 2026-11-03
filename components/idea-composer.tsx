@@ -308,7 +308,7 @@ export function IdeaComposer({
         <p>
           {demo
             ? "Preview produces labelled examples only; no web retrieval or paid model is run."
-            : "AI research sends the topic/title above to public reference providers. Keep private details out of it. It retrieves Wikipedia introductions and Crossref abstracts, then uses your configured AI within existing spending limits. Research is evidence, not automatic fact verification."}
+            : "AI research sends the topic/title above to public reference providers. Keep private details out of it. It searches web/news excerpts and retrieves available Wikipedia introductions and Crossref abstracts, then uses your configured AI within existing spending limits. Research is evidence, not automatic fact verification."}
         </p>
         {error && <p role="alert">{error}</p>}
         {mode === "manual" ? (

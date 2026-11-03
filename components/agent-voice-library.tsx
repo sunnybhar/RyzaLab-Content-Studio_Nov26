@@ -62,8 +62,7 @@ export function AgentVoiceLibrary({
       <p>
         Collect original articles, posts and newsletters as future examples of
         voice, tone, structure and format. Add multiple examples by pasting text
-        or uploading files. These examples are stored only and are not connected
-        to any agent yet.
+        or uploading files. New AI requests use up to six latest matching channel or shared examples, up to 2,000 characters each.
       </p>
       <form
         onSubmit={async (event) => {
@@ -108,7 +107,7 @@ export function AgentVoiceLibrary({
             if (fileInput.current) fileInput.current.value = "";
             pending.current = undefined;
             setMessage(
-              "Original content example saved. Stored only; not connected to any agent.",
+              "Original content example saved. Connected to new idea and writing requests.",
             );
           } catch (e) {
             setError(
@@ -227,7 +226,7 @@ export function AgentVoiceLibrary({
           <p>
             {entry.contentType} ·{" "}
             {entry.channel === "Shared" ? "Brand-wide" : entry.channel} · Stored
-            only · Not connected
+            for new AI requests
           </p>
           {entry.text && (
             <details>

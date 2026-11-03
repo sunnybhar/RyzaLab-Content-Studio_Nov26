@@ -14,3 +14,10 @@ export async function extractAgentFile(file:StoredAgentFile){
  text=text.replace(/\u0000/g,'').trim();if(!text)throw new StudioError(400,'No readable text found. Paste the text or upload a searchable document; scanned PDFs need OCR first.');
  if(text.length>60000)throw new StudioError(400,'Document exceeds 60,000 extracted characters. Use a shorter document.');return text;
 }
+
+export async function hydrateAgentFiles(state:import('./types').StudioState,channel:import('./types').Channel){
+ const next=structuredClone(state);
+ for(const file of next.agentRuleFiles||[])if(file.channel===channel&&!file.extractedText)file.extractedText=await extractAgentFile(file);
+ for(const example of (next.agentVoiceExamples||[]).filter(e=>e.channel===channel||e.channel==='Shared').slice(0,6))if(example.file&&!example.extractedText)example.extractedText=await extractAgentFile(example.file);
+ return next;
+}

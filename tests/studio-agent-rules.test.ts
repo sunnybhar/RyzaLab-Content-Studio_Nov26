@@ -47,7 +47,7 @@ test("two separate original files per channel are stored without altering active
   );
   assert.equal(next.agentRuleFiles?.length, 1);
 });
-test("Agent Rules remain absent from idea/writing prompts and frozen system context", () => {
+test("Raw Agent Rules files are not exposed through task prompts or legacy jobs without a context snapshot", () => {
   let s = applyCommand(initialState(DEMO_ACTOR, true), DEMO_ACTOR, command(), {
     now,
   });

@@ -52,7 +52,7 @@ export function AgentRules({
         expectedId: previous?.id,
       });
       setMessage(
-        `${slot === "instructions" ? "Instructions" : channel === "LinkedIn" ? "Markdown context (.md)" : "Context"} saved for ${channel}. Stored only; not connected to any agent.`,
+        `${slot === "instructions" ? "Instructions" : channel === "LinkedIn" ? "Markdown context (.md)" : "Context"} saved for ${channel}. Connected to new idea and writing requests.`,
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save the file.");
@@ -161,7 +161,7 @@ export function AgentRules({
                 <input
                   aria-label={`Upload ${label} file`}
                   type="file"
-                  accept=".docx,.pdf,.txt,.md"
+                  accept={slot==="context"&&channel==="LinkedIn"?".md":".docx,.pdf,.txt,.md"}
                   disabled={busy || !allowed}
                   onChange={(event) => {
                     const selected = event.target.files?.[0];
@@ -176,8 +176,7 @@ export function AgentRules({
       </div>
       <p>
         DOCX, PDF, TXT and Markdown are supported, up to 256 KB per file. The
-        original file is preserved for download. No agent connection is
-        available in this section yet.
+        original file is preserved for download. New requests use extracted text; existing running requests retain their saved context. Scanned PDFs need OCR first.
       </p>
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
