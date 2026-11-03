@@ -1,3 +1,5 @@
+import {studioDatabaseError} from "@/lib/studio/database-errors";
+import {studioRequestDiagnostics} from "@/lib/studio/request-diagnostics";
 import {settleUsageCost,type ClaudeUsage} from "@/lib/studio/usage-cost";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
@@ -19,7 +21,9 @@ import {
 import { failure } from "@/lib/studio/http";
 export const maxDuration = 180;
 export async function POST(req: NextRequest) {
+  const diagnostics=studioRequestDiagnostics("POST /api/studio/worker");
   try {
+    diagnostics.stage("authenticate_worker");
     const configured = process.env.STUDIO_WORKER_TOKEN,
       provided =
         req.headers.get("authorization")?.replace(/^Bearer /i, "") || "";
@@ -35,12 +39,14 @@ export async function POST(req: NextRequest) {
         503,
         "Provider execution is disabled pending provider, pricing, and spending authorization.",
       );
+    diagnostics.stage("workspace_read");
     const db = database(),
-      { data } = await db
+      { data,error:readError } = await db
         .from("studio_workspace")
         .select("state")
         .eq("id", true)
         .single();
+    if(readError)throw studioDatabaseError(readError,"read");
     if (!data) throw new StudioError(503, "Initialize Studio first.");
     const requestedJobId=req.nextUrl.searchParams.get("jobId");
     const state = data.state as Awaited<ReturnType<typeof loadState>>,
@@ -49,6 +55,7 @@ export async function POST(req: NextRequest) {
         (j) => j.state === "running" && j.leaseUntil && j.leaseUntil < now && (!requestedJobId || j.id===requestedJobId),
       );
     if (expired) {
+      diagnostics.stage("mark_expired_request");
       const next = structuredClone(state),
         j = next.jobs.find((j) => j.id === expired.id)!;
       j.state = "unknown";
@@ -61,6 +68,7 @@ export async function POST(req: NextRequest) {
     const job = state.jobs.find((j) => j.state === "queued" && (!requestedJobId || j.id===requestedJobId));
     if (!job) return NextResponse.json({ message: "No queued jobs." });
     async function blockJob(reason: string) {
+      diagnostics.stage("block_undispatched_request");
       const next = structuredClone(state),
         j = next.jobs.find((j) => j.id === job!.id)!;
       j.state = "blocked";
@@ -144,11 +152,13 @@ export async function POST(req: NextRequest) {
       return blockJob(
         "Provider/model changed after reservation. Reauthorize before execution.",
       );
-    const { data: secret } = await db
+    diagnostics.stage("credential_read");
+    const { data: secret,error:secretError } = await db
       .from("studio_secrets")
       .select("ciphertext")
       .eq("id", connection.id)
       .single();
+    if(secretError)throw studioDatabaseError(secretError,"read");
     if (!secret) throw new StudioError(503, "Credential unavailable.");
     const claimed = structuredClone(state),
       running = claimed.jobs.find((j) => j.id === job.id)!,
@@ -161,6 +171,7 @@ export async function POST(req: NextRequest) {
       dispatchStartedAt: now,
     });
     claimed.version++;
+    diagnostics.stage("claim_persist");
     await persist(db, state, claimed);
     let outcome:
         | {
@@ -174,12 +185,15 @@ export async function POST(req: NextRequest) {
         | undefined,
       problem: ProviderFailure | undefined;
     try {
+      diagnostics.stage("provider_call");
       outcome = await runProvider(
         running,
         connection,
         decrypt(secret.ciphertext),
       );
+      diagnostics.stage("provider_outcome_received");
     } catch (e) {
+      diagnostics.stage("provider_outcome_error");
       problem =
         e instanceof ProviderFailure
           ? e
@@ -219,12 +233,14 @@ export async function POST(req: NextRequest) {
     }
     // Do not repeat the provider call if a concurrent human edit changes the workspace version.
     for (let attempt = 0; attempt < 4; attempt++) {
+      diagnostics.stage("settlement_workspace_read");
       const fresh = await db
           .from("studio_workspace")
           .select("state")
           .eq("id", true)
           .single(),
         previous = fresh.data?.state as typeof state;
+      if(fresh.error)throw studioDatabaseError(fresh.error,"read");
       if (!previous)
         throw new StudioError(
           503,
@@ -297,7 +313,9 @@ export async function POST(req: NextRequest) {
         at: new Date().toISOString(),
       });
       try {
+        diagnostics.stage("settlement_persist");
         await persist(db, previous, next);
+        diagnostics.stage("complete");
         return NextResponse.json({ jobId: j.id, state: j.state });
       } catch (e) {
         if (e instanceof StudioError && e.code === 409) continue;
@@ -309,6 +327,7 @@ export async function POST(req: NextRequest) {
       "Provider finished but settlement conflicted. Reservation retained in running job; reconcile without generating again.",
     );
   } catch (e) {
-    return failure(e);
+    diagnostics.failed(e);
+    return failure(e,diagnostics.trace);
   }
 }

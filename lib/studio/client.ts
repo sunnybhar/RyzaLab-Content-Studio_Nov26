@@ -24,12 +24,15 @@ export function useStudio() {
   const mode: "live" | "demo" =
       pathname === "/preview" || !configured ? "demo" : "live",
     latest = useRef<StudioState | null>(null);
+  const pendingRefresh=useRef<Promise<void>|null>(null);
   const update = (s: StudioState) => {
     latest.current = s;
     setState(s);
   };
   const refresh = useCallback(
     async (background = false) => {
+      if(pendingRefresh.current){try{return await pendingRefresh.current;}catch(error){if(background)throw error;setError((error as Error).message);return;}}
+      const work=(async()=>{
       try {
         if (!background) setError("");
         if (mode === "demo") {
@@ -70,6 +73,8 @@ export function useStudio() {
       } finally {
         setLoading(false);
       }
+      })();pendingRefresh.current=work;
+      try{await work;}finally{if(pendingRefresh.current===work)pendingRefresh.current=null;}
     },
     [mode],
   );
