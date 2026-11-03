@@ -1,3 +1,4 @@
+import {isActiveChannel} from "./active-channels";
 import type { StudioState } from "./types";
 import {
   soloPolicy,
@@ -20,6 +21,7 @@ export function orchestrateInitialWriting(
     changed = false,
     queued = false;
   for (const original of input.contents) {
+    if(!isActiveChannel(original.channel))continue;
     const intent = original.initialWriting;
     if (
       !intent ||

@@ -1,0 +1,63 @@
+"use client";
+import type { Content, StudioState } from "@/lib/studio/types";
+export function GenerationRulesStatus({
+  content,
+  state,
+}: {
+  content: Content;
+  state: StudioState;
+}) {
+  const job =
+    state.jobs.find((job) => job.id === content.generatedBy?.jobId) ||
+    state.jobs
+      .filter((job) => job.contentId === content.id && job.kind === "text")
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  if (!job) return null;
+  const context = job.agentContextSnapshot;
+  return (
+    <details className="s-review-policy">
+      <summary>Agent Rules used for this writing request</summary>
+      <p>
+        {content.channel} · {new Date(job.createdAt).toLocaleString()} ·{" "}
+        {job.connectionSnapshot?.model || "Saved model"}
+      </p>
+      {context?.rules.length ? (
+        <ul>
+          {context.rules.map((rule) => (
+            <li key={rule.id}>
+              <strong>
+                {rule.role === "instructions"
+                  ? "Instructions / skills"
+                  : "Context / knowledge"}
+                :
+              </strong>{" "}
+              {rule.title}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>
+          No uploaded Instructions or Context were included in this saved
+          request.
+        </p>
+      )}
+      {!!context?.voice.length && (
+        <>
+          <p>Voice examples included:</p>
+          <ul>
+            {context.voice.map((voice) => (
+              <li key={voice.id}>{voice.title}</li>
+            ))}
+          </ul>
+        </>
+      )}
+      <p>
+        {job.systemSnapshot
+          ? "The model context for this request is saved. Later Agent Rules changes do not alter this request."
+          : "This older request has saved context snapshots; no exact compiled model context was recorded."}{" "}
+        Context can use selected excerpts to fit the request limit. Inclusion
+        does not guarantee that the AI followed every instruction.
+      </p>
+    </details>
+  );
+}

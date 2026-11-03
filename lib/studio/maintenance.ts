@@ -1,3 +1,4 @@
+import {isActiveChannel} from "./active-channels";
 import { nextOccurrence } from "./time";
 import { applyCommand } from "./engine";
 import { quote } from "./pricing";
@@ -77,7 +78,7 @@ export function maintenance(
     state.members.find((m) => m.roles.includes("administrator") && !m.revoked);
   for (const r of state.recurrences.filter(
     (r) =>
-      r.state === "active" &&
+      isActiveChannel(r.channel) && r.state === "active" &&
       r.nextAt > now &&
       Date.parse(r.nextAt) - Date.parse(now) < 86400000,
   )) {
@@ -91,7 +92,7 @@ export function maintenance(
   }
   for (const schedule of state.recurrences.filter(
     (r) =>
-      r.state === "active" && r.nextAt <= now && r.lastOccurrence !== r.nextAt,
+      isActiveChannel(r.channel) && r.state === "active" && r.nextAt <= now && r.lastOccurrence !== r.nextAt,
   )) {
     const occurrence = schedule.nextAt,
       allowed =

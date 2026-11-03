@@ -1,5 +1,6 @@
 "use client";
 import {activeStudioView, ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active-channels";
+import {GenerationRulesStatus} from "./generation-rules-status";
 import {isLongForm} from "@/lib/studio/channel-writing";
 import { AuthorizedJobProgress } from "./authorized-job-progress";
 import { JobCost } from "./job-cost";
@@ -1497,7 +1498,7 @@ export default function Workspace() {
             <div className="s-release-label" aria-label="Studio version">
               <strong>{page}</strong>
               <small>
-                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.24"} ·{" "}
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.25"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>
@@ -4803,6 +4804,7 @@ function Editor({
                 value={text}
                 onChange={(e) => setText(e.target.value)}
               />
+              <GenerationRulesStatus content={c} state={state}/>
               {isLongForm(c.channel,c.format)&&<section aria-label="Download newsletter" className="s-actions"><button className="s-btn" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export newsletter DOCX</button><button className="s-btn s-primary" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export newsletter PDF</button>{media.imageUrl&&<label><input type="checkbox" checked={includeNewsletterImage} onChange={e=>setIncludeNewsletterImage(e.target.checked)}/> Include attached image</label>}<p>Downloads use the content above automatically. No copy/paste or image is required.</p></section>}
               <div className="s-editor-wordcount">
                 {text.trim() ? text.trim().split(/\s+/).length : 0} words{" "}

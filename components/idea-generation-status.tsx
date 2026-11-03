@@ -151,7 +151,7 @@ export function IdeaGenerationStatus({
                     ? `${count} of ${expected} requested ideas imported — needs attention`
                     : `${count} ideas ready for review`
                   : job.state === "succeeded"
-                    ? "Provider finished — result needs attention"
+                    ? "Generation finished — check available ideas"
                     : job.state === "unknown"
                       ? "Outcome uncertain — reconcile before retrying"
                       : job.state === "blocked"
@@ -171,7 +171,7 @@ export function IdeaGenerationStatus({
               </strong>
               <span>{job.actual!==undefined?`${money(job.actual)} recorded`:`${money(job.estimate)} estimated`}</span>
             </div>
-            <div className="s-idea-request-meta"><strong>{ideaRequestNumber(job)}</strong><time dateTime={job.createdAt}>{new Date(job.createdAt).toLocaleString()}</time><span>{job.channel}</span></div>
+            <div className="s-idea-request-meta"><strong>{ideaRequestNumber(job)}</strong><time dateTime={job.createdAt}>Requested {new Date(job.createdAt).toLocaleString()}</time><span>{job.channel}</span></div>
             <p className="s-idea-request-brief"><strong>Topic / brief: </strong>{ideaRequestBrief(job)}</p>
             {mismatch && (
               <p role="status">

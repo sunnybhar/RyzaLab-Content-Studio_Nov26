@@ -1,3 +1,4 @@
+import {isActiveChannel} from "./active-channels";
 import { copyIdentity, currentCopyAcceptance } from "./solo-quality";
 import type { Actor, Job, StudioState } from "./types";
 import { researchSourcesCurrent } from "./research-link";
@@ -6,6 +7,7 @@ import { canReadNewsletterSource } from "./newsletter-source";
 
 // Recheck authority before disclosure to a provider, not merely at settlement.
 export function canDispatchJob(state: StudioState, actor: Actor, job: Job) {
+  if(!isActiveChannel(job.channel))return false;
   const connection=state.connections.find(c=>c.id===job.connectionId);
   if(connection && connection.function!==job.kind && !connection.supportedFunctions?.some(kind=>kind===job.kind))return false;
   const content = job.contentId

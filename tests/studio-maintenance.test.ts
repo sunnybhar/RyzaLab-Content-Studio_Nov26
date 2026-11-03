@@ -38,7 +38,7 @@ test("unconfirmed recurring occurrence never silently spends and records only on
   s.recurrences.push({
     id: "r",
     title: "Weekly ideas",
-    channel: "Hub",
+    channel: "Newsletter",
     quantity: 5,
     nextAt: "2026-01-01T00:00:00Z",
     research: true,

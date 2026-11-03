@@ -129,7 +129,7 @@ async function main() {
     );
     await page
       .getByLabel("Studio version", { exact: true })
-      .getByText(/v0\.3\.24/)
+      .getByText(/v0\.3\.25/)
       .waitFor();
     await page.screenshot({
       path: "/tmp/studio-v2-desktop.png",
@@ -191,7 +191,7 @@ async function main() {
     await dismissNotice();
 
     // Account controls, theme persistence and non-publication calendar work.
-    assert.equal(await page.title(), "Content Studio RyzaLab");
+    assert.equal(await page.title(), "RyzaLab Content Studio");
     const iconHref = await page
       .locator('link[rel="icon"]')
       .first()
@@ -491,6 +491,7 @@ async function main() {
       await page.locator(".s-creative-direction").getAttribute("open"),
       null,
     );
+    await page.getByText("More options",{exact:true}).click();
     await page.locator(".s-creative-direction > summary").click();
     assert.ok(
       await page
@@ -498,6 +499,7 @@ async function main() {
         .evaluate((el) => el.clientHeight <= innerHeight * 0.46),
     );
     await page.locator(".s-creative-direction > summary").click();
+    await page.getByText("More options",{exact:true}).click();
     await navigate("Reviews");
     const approvedState = await state();
     const approved = approvedState.packages.find(

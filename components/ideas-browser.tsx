@@ -160,7 +160,7 @@ export function IdeasBrowser({
                   {idea.title}
                 </strong>
                 <span className="s-idea-summary-dates">
-                  Created {date(idea.createdAt)}
+                  {idea.origin==="agent"?"Generated":"Added"} {date(idea.createdAt)}
                   {published
                     ? ` · Publication confirmed ${date(published)}`
                     : ""}

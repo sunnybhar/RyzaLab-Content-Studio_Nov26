@@ -1,3 +1,4 @@
+import {isActiveChannel} from "./active-channels";
 import type { StudioState } from "./types";
 import {
   currentCopyAcceptance,
@@ -22,6 +23,7 @@ export function orchestrateReviews(
   let changed = false;
   let queued = false;
   for (const original of input.contents) {
+    if(!isActiveChannel(original.channel))continue;
     if (original.deletedAt || original.state !== "review") continue;
     const submission = original.reviewSubmission?.identity === copyIdentity(original,state) ? original.reviewSubmission : undefined;
     const acceptance = submission || currentCopyAcceptance(original, state);

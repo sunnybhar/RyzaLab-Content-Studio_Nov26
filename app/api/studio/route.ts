@@ -1,3 +1,4 @@
+import {assertActiveRequest} from "@/lib/studio/active-channels";
 import {studioRequestDiagnostics} from "@/lib/studio/request-diagnostics";
 import {readAgentPackage} from "@/lib/studio/agent-package";
 import {extractAgentFile,hydrateAgentFiles} from "@/lib/studio/agent-file-extract";
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
     diagnostics.stage("prepare_command");
     let state=original;
     let parsed = commandSchema.parse(await req.json());
+    assertActiveRequest(state,parsed);
     if(parsed.type==="agentRules.importPackage"&&parsed.archives?.length){requirePermission(state,actor,"workflow.edit",{channel:parsed.channel});for(const archive of parsed.archives){const bytes=Buffer.from(archive.base64,"base64");await readAgentPackage(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),archive.kind);}}
     if(parsed.type==="agentRules.save"||parsed.type==="agentVoice.create"){
       requirePermission(state,actor,"workflow.edit",{channel:parsed.channel==="Shared"?undefined:parsed.channel});
