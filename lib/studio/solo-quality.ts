@@ -128,7 +128,7 @@ export function packageReadiness(c: Content, s: StudioState, singleReview = fals
         status: acceptance ? "human_accepted" : "needs_human_review",
         detail:
           acceptance?.evidence ||
-          "Review factual claims against attached sources when approving copy.",
+          singleReview ? "Check factual claims and attached sources in your final review." : "Review factual claims against attached sources when approving copy.",
       },
       {
         label: "AI textual review",

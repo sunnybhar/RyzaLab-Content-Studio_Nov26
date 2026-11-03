@@ -300,10 +300,11 @@ for (const sample of samples)
       assert.equal(job.outputStatus, "applied");
       if (question) {
         assert.ok(copyBlockers(c).length);
-        assert.throws(
-          () => cmd(s, { type: "content.submit", id: c.id }),
-          /Needs your input/,
-        );
+        // Submission now allows reviewer inspection/explicit override; it is not approval.
+        const submitted = cmd(s, { type: "content.submit", id: c.id });
+        assert.equal(submitted.contents[0].state, "review");
+        assert.ok(copyBlockers(submitted.contents[0]).length);
+        assert.equal(submitted.packages.length, 0);
         s = cmd(s, {
           type: "content.save",
           id: c.id,

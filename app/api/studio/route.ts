@@ -70,8 +70,8 @@ export async function POST(req: NextRequest) {
       else parsed={...parsed,extractedText:parsed.file?await extractAgentFile(parsed.file):undefined};
     }
 
-    const contextChannel=parsed.type==="idea.generate"?parsed.channel:parsed.type==="content.generate"?state.contents.find(c=>c.id===parsed.contentId)?.channel:parsed.type==="idea.use"?state.ideas.find(i=>i.id===parsed.id)?.channel:undefined;
-    if(contextChannel){requirePermission(state,actor,"job.create",{channel:contextChannel,function:parsed.type==="idea.generate"?"ideas":"text"});state=await hydrateAgentFiles(state,contextChannel);}
+    const contextChannel=parsed.type==="idea.generate"?parsed.channel:parsed.type==="content.generate"?state.contents.find(c=>c.id===parsed.contentId)?.channel:parsed.type==="idea.use"?state.ideas.find(i=>i.id===parsed.id)?.channel:["content.submit","content.reviewEdit"].includes(parsed.type)?state.contents.find(c=>c.id===(parsed as {id:string}).id)?.channel:undefined;
+    if(contextChannel){if(!["content.submit","content.reviewEdit"].includes(parsed.type))requirePermission(state,actor,"job.create",{channel:contextChannel,function:parsed.type==="idea.generate"?"ideas":"text"});state=await hydrateAgentFiles(state,contextChannel);}
     let command = commandSchema.parse(
       parsed.type === "content.generate"
         ? generationInput(state, actor, parsed)

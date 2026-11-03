@@ -105,7 +105,7 @@ export function ReviewContentEditor({
             </button>
             <button
               className="s-btn s-primary"
-              disabled={busy || required.length > 0}
+              disabled={busy}
               onClick={async () => {
                 if(text === content.text && notes === content.metadata) { edit(false); return; }
                 setBusy(true);

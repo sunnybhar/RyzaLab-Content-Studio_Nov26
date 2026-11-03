@@ -397,3 +397,6 @@ Production build/typecheck256domain tests passed; fullapp, concurrent-refresh, a
 
 ## WIP v0.3.24 — simplified review and explicit override
 User superseded two human approvals/manual stages: one review decision, automatic backend checks, manual override with reason. Added submission context distinct from acceptance, single-review package approval preserving true checks and unknown reservations. Replacing normal review/checklist UI. In progress: typecheck/domain/browser verification and publication handoff simplification. No live publication/provider calls or historical outcome changes.
+
+### v0.3.24 checkpoint — domain checks and handoff
+Single-decision and override tests pass: no fake human copy acceptance; unknown job reservations unchanged; current version/permission/immutable asset guards retained; lower authorizations preserved. UI removes normal manual checklist, starts owner-authorized queued check automatically, provides reasoned override and direct copy/download handoff instead of another schedule form. Build/typecheck passed. Browser/full-suite verification and release notes next. Manual platform publication remains explicit; no external posting integration is claimed.

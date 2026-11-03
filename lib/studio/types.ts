@@ -274,6 +274,7 @@ export interface Content {
   preparationId?: string;
 }
 export interface Package {
+  format?: string;
   editorialOverride?: { actor: string; at: string; reason: string; checks: string[] };
   singleReview?: boolean;
   researchSnapshots?: {jobId:string;raw:string}[];

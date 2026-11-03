@@ -1133,7 +1133,7 @@ export function applyCommand(
         );
       const twoStep = soloPolicy(s);
       researchEvidence(s,actor,d.channel,d.researchJobIds);
-      const readiness = twoStep ? packageReadiness(d, s, Boolean(c.singleReview)) : undefined;
+      const readiness = twoStep || c.singleReview ? packageReadiness(d, s, Boolean(c.singleReview)) : undefined;
       if (twoStep) {
         if (
           c.expectedPolicyVersion !== twoStep.version ||
@@ -1158,6 +1158,7 @@ export function applyCommand(
         if (!c.handoff)
           bad("Explicitly approve this exact package and its manual handoff.");
       }
+      if (!twoStep && c.singleReview && !manualOverride && !readiness?.ready) bad(readiness?.blockers.join(" ") || "Review needs attention.");
       if (!twoStep && !c.singleReview && !stageSummary(d, s).readyForApproval)
         bad(
           "Complete all six pre-approval stages for this exact version before human approval.",
@@ -1165,7 +1166,7 @@ export function applyCommand(
       if (c.overrideReason && !c.singleReview) bad("Overrides require the single review action.");
       const bypassedChecks = [...new Set([...editorialIssues, ...(readiness?.blockers || [])])];
       const payload = {
-        ...(c.singleReview ? { singleReview:true } : {}),
+        ...(c.singleReview ? { singleReview:true, format:d.format } : {}),
         ...(manualOverride ? { editorialOverride: { actor:actor.email, at:now, reason:c.overrideReason!, checks:bypassedChecks } } : {}),
         contentId: d.id,
         channel: d.channel,

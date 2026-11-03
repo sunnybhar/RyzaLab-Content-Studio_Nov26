@@ -5,6 +5,8 @@ import type {Actor,Command,Content,Package,StudioState} from "@/lib/studio/types
 import {can} from "@/lib/studio/permissions";
 import {currentWorkflow} from "@/lib/studio/stages";
 import {copyIdentity,packageReadiness} from "@/lib/studio/solo-quality";
+import {researchEvidence} from "@/lib/studio/research-link";
+import {SlideLayerPreview} from "./slide-layers";
 import "./solo-review.css";
 
 /** One human decision. Checks and billing outcomes retain their true status. */
@@ -24,6 +26,8 @@ export function SoloReview({content,state,actor,send,renderAsset,requestChanges,
   const current=state.jobs.find(j=>j.id===content.automaticReview?.jobId);
   const issues=[...readiness.blockers];
   if(content.automaticReview?.error&&!readiness.agent)issues.push(content.automaticReview.error);
+  let sources:ReturnType<typeof researchEvidence>=[];
+  try{sources=researchEvidence(state,actor,content.channel,content.researchJobIds);}catch(e){issues.push(e instanceof Error?e.message:"Source access needs attention.");}
   const findings=[...new Set(issues)];
   // Existing review drafts enter the same submission path, without an invented approval.
   useEffect(()=>{
@@ -45,11 +49,11 @@ export function SoloReview({content,state,actor,send,renderAsset,requestChanges,
     return ()=>window.clearInterval(timer);
   },[demo,readiness.agent?.jobId,policy?.autoReview,refresh]);
   async function approve(){
-    if(!workflow||!policy)return;
+    if(!workflow)return;
     setBusy(true);setError("");
     try{
       const result=await send({type:"package.approve",contentId:content.id,expectedRevision:content.revision,
-        expectedWorkflowId:workflow.id,expectedRuleVersion:state.settings.protectedVersion,expectedPolicyVersion:policy.version,
+        expectedWorkflowId:workflow.id,expectedRuleVersion:state.settings.protectedVersion,expectedPolicyVersion:policy?.version,
         singleReview:true,handoff:true,authorizeNote:content.channel==="Notes",...(override?{overrideReason:reason.trim()}:{}),
       }) as {state?:StudioState}|undefined;
       const pkg=result?.state?.packages.find(p=>p.contentId===content.id&&p.revision===content.revision);
@@ -61,8 +65,11 @@ export function SoloReview({content,state,actor,send,renderAsset,requestChanges,
     : findings.length?"Checks need attention — edit or override to continue":policy?.autoReview?"Preparing automatic checks…":"Ready for your review";
   return <section className="s-solo-review" aria-label="Review and publish">
     {content.media.imageUrl&&<div className="s-solo-asset">{renderAsset(content.media.imageUrl)}</div>}
-    {content.media.slides.map((slide,i)=><div key={slide.id}><h4>Slide {i+1}</h4>{slide.image&&renderAsset(slide.image)}<p>{slide.title}</p><p>{slide.body}</p></div>)}
+    {content.media.slides.map((slide,i)=><div key={slide.id}><h4>Slide {i+1}</h4>{slide.image&&renderAsset(slide.image)}<p>{slide.title}</p><p>{slide.body}</p>{!!slide.layers?.length&&<div className="s-slide-preview" style={{background:slide.background,color:slide.color}}>{slide.layers.map(layer=><SlideLayerPreview key={layer.id} layer={layer} selected={false} onSelect={()=>{}} onMove={()=>{}} readOnly/>)}</div>}</div>)}
     {content.media.scenes.map((scene,i)=><div key={scene.id}><h4>Scene {i+1}</h4>{scene.sourceUrl&&renderAsset(scene.sourceUrl,"video")}<p>{scene.script}</p></div>)}
+    {content.media.narration&&<details><summary>Narration</summary><p>{content.media.narration}</p></details>}
+    {content.media.captions&&<details><summary>Captions</summary><p>{content.media.captions}</p></details>}
+    {!!sources.length&&<details><summary>Sources used in this draft</summary>{sources.flatMap(source=>source.citations).map((citation,i)=><article key={i}><a href={citation.url} target="_blank" rel="noopener noreferrer">{citation.title||citation.url}</a><p>{citation.citedText}</p></article>)}</details>}
     <p role="status"><strong>{status}</strong></p>
     {readiness.agent&&<p>{readiness.agent.summary}</p>}
     <details><summary>Check details{findings.length?` · ${findings.length} need attention`:""}</summary>

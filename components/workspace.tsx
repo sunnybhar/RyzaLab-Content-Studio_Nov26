@@ -108,6 +108,7 @@ import { IdeaGenerationStatus } from "./idea-generation-status";
 import { IdeasBrowser } from "./ideas-browser";
 import { GenerationActivity } from "./generation-activity";
 import { CalendarPackagePreview } from "./calendar-package-preview";
+import {PublicationHandoff} from "./publication-handoff";
 import { StageTracker } from "./stage-tracker";
 import { PasswordLogin } from "./password-login";
 import { configured, supabase } from "@/lib/supabase";
@@ -466,6 +467,7 @@ export default function Workspace() {
   const [libraryTab, setLibraryTab] = useState("Content");
   const [ideaTab, setIdeaTab] = useState("All ideas");
   const [calendarView, setCalendarView] = useState("Month");
+  const [readyPackage, setReadyPackage] = useState<Package | null>(null);
   const [reviewEditing, setReviewEditing] = useState<string | null>(null);
   const [calendarPreview, setCalendarPreview] = useState<string | null>(null);
   const [month, setMonth] = useState(
@@ -2705,6 +2707,7 @@ export default function Workspace() {
                 {contentRows(filtered)}
               </>
             ))}
+          {readyPackage && <PublicationHandoff pkg={readyPackage} onClose={()=>setReadyPackage(null)}/> }
           {page === "Reviews" && (
             <>
               <div className="s-info-strip">
@@ -2731,15 +2734,11 @@ export default function Workspace() {
                     </div>
                     <h2>{c.title}</h2>
                     <ReviewContentEditor content={c} canEdit={allowed("content.edit", {channel:c.channel,account:c.account,contentId:c.id,assignedTo:c.assignedTo})} send={send} onEditing={editing=>setReviewEditing(editing ? c.id : null)} openDraft={()=>openContent(c)} />
-                    {reviewEditing === c.id ? <p>Save and submit your changes above to continue the review.</p> : state.settings.reviewPolicy ? (
+                    {reviewEditing === c.id ? <p>Save and submit your changes above to continue the review.</p> : (
                       <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send} refresh={() => refresh(true)} progressJob={progressAuthorizedJob} demo={mode === "demo"}
                         onApproved={(pkg, approvedState) => {
-                          const draft = approvedState.contents.find((d) => d.id === pkg.contentId);
-                          if (!draft || !can(approvedState, actor, "schedule.manage", {channel:pkg.channel, account:pkg.account, contentId:pkg.contentId, assignedTo:draft.assignedTo})) {
-                            setNotice("Package approved. A calendar manager can plan its publication."); return;
-                          }
                           document.querySelector<HTMLDialogElement>(".s-review-dialog[open]")?.close();
-                          scheduleForm(pkg.contentId, pkg.id, pkg);
+                          setReadyPackage(pkg);
                         }}
                         renderAsset={(source, kind) => <AssetMedia source={source} kind={kind} />}
                         openDraft={() => openContent(c)}
@@ -2751,154 +2750,7 @@ export default function Workspace() {
                           (d) => ({ type: "exception.record", contentId: c.id, expectedRevision: c.revision, wording: val(d, "wording"), reason: val(d, "reason") }),
                           "This applies only to the quoted wording in this exact revision. It cannot waive misinformation or misrepresentation.",
                         )} />
-                    ) : <>
-                    <StageTracker
-                      content={c}
-                      state={state}
-                      actor={actor}
-                      send={send}
-                      onError={setLocalError}
-                    />
-                    <details className="s-review-policy">
-                      <summary>Review current workflow & brand rules</summary>
-                      <h4>Channel workflow</h4>
-                      <p>
-                        {state.workflows.find(
-                          (w) =>
-                            w.channel === c.channel && w.status === "active",
-                        )?.instructions ||
-                          "Activate a channel workflow before approving."}
-                      </p>
-                      <h4>Review checks</h4>
-                      <p>
-                        {state.workflows.find(
-                          (w) =>
-                            w.channel === c.channel && w.status === "active",
-                        )?.checks || "No review checks configured."}
-                      </p>
-                      <h4>Protected brand rules</h4>
-                      <p>{state.settings.protectedRules}</p>
-                    </details>
-                    {[
-                      c.media.imageUrl,
-                      ...c.media.slides.map((s) => s.image),
-                      ...c.media.scenes.flatMap((s) => [
-                        s.sourceUrl,
-                        s.audioUrl,
-                      ]),
-                    ]
-                      .filter(Boolean)
-                      .some(
-                        (url) =>
-                          !url!.startsWith("/api/studio/assets") &&
-                          !(mode === "demo" && url!.startsWith("data:image/")),
-                      ) && (
-                      <div className="s-info-strip">
-                        Approval requires private uploaded media. External
-                        source URLs stay editable references until their files
-                        are uploaded.
-                      </div>
                     )}
-                    <button
-                      className="s-text-button"
-                      onClick={() => openContent(c)}
-                    >
-                      Open complete draft <ArrowRight size={14} />
-                    </button>
-                    {allowed("policy.manage") &&
-                      /\bfree\b|\$\s*\d/i.test(c.text + " " + c.metadata) && (
-                        <button
-                          className="s-text-button"
-                          onClick={() =>
-                            openForm(
-                              "Scoped founder price exception",
-                              [
-                                {
-                                  name: "wording",
-                                  label: "Exact content line",
-                                  required: true,
-                                  type: "textarea",
-                                },
-                                {
-                                  name: "reason",
-                                  label: "Reason and evidence",
-                                  required: true,
-                                },
-                              ],
-                              (d) => ({
-                                type: "exception.record",
-                                contentId: c.id,
-                                expectedRevision: c.revision,
-                                wording: val(d, "wording"),
-                                reason: val(d, "reason"),
-                              }),
-                              "This applies only to the quoted wording in this exact revision. It cannot waive misinformation or misrepresentation.",
-                            )
-                          }
-                        >
-                          Record founder CTA exception
-                        </button>
-                      )}
-                    {approvalErrors[`${c.id}:${c.revision}`] && (
-                      <div
-                        className="s-alert s-error"
-                        role="alert"
-                        aria-label="Approval error"
-                      >
-                        {approvalErrors[`${c.id}:${c.revision}`]}
-                      </div>
-                    )}
-                    <div className="s-card-actions">
-                      <button
-                        disabled={
-                          busy ||
-                          !allowed("package.approve", {
-                            channel: c.channel,
-                            contentId: c.id,
-                            account: c.account,
-                            assignedTo: c.assignedTo,
-                          })
-                        }
-                        className="s-btn s-primary"
-                        onClick={() =>
-                          void execute(
-                            {
-                              type: "package.approve",
-                              contentId: c.id,
-                              expectedRevision: c.revision,
-                              expectedWorkflowId: state.workflows.find(
-                                (w) =>
-                                  w.channel === c.channel &&
-                                  w.status === "active",
-                              )?.id,
-                              expectedRuleVersion:
-                                state.settings.protectedVersion,
-                            },
-                            "Revision approved. Ready to schedule for manual publication.",
-                          )
-                        }
-                      >
-                        <Check size={15} />{" "}
-                        {busy && approvalTarget === `${c.id}:${c.revision}`
-                          ? "Approving…"
-                          : "Approve revision"}
-                      </button>
-                      <button
-                        disabled={
-                          !allowed("package.approve", {
-                            channel: c.channel,
-                            contentId: c.id,
-                            account: c.account,
-                            assignedTo: c.assignedTo,
-                          })
-                        }
-                        className="s-btn"
-                        onClick={() => reject("package.reject", c.id)}
-                      >
-                        Request changes
-                      </button>
-                    </div>
-                    </>}
                   </ReviewCard>
                 ))}
               </div>
@@ -4864,7 +4716,7 @@ function Editor({
             Save draft
           </button>
           <button
-            disabled={readOnly || busy || dirty || externalChange || requirements.length > 0}
+            disabled={readOnly || busy || dirty || externalChange || (!state.settings.reviewPolicy && requirements.length > 0)}
             className="s-btn s-primary"
             title={dirty ? "Save your changes before submitting" : ""}
             onClick={() =>
@@ -4884,7 +4736,7 @@ function Editor({
           <button className="s-btn" onClick={() => { if (window.confirm("Discard your unsaved edits and load the current saved draft?")) loadSavedDraft(); }}>Discard unsaved edits and load latest</button>
         </div>
       )}
-      {requirements.length > 0 && <section id="draft-needs-input" className="s-input-required" aria-label="Needs your input"><h3 aria-live="polite">Needs your input · {requirements.length} {requirements.length === 1 ? "item" : "items"}</h3><p>Highlighted passages need verified details or a rewrite. Saving does not resolve them. Submit for review becomes available after all markers are removed and your changes are saved.</p><ul>{requirements.map((item,i)=><li key={`${item.field}:${item.start}`}><button className="s-text-button" onClick={()=>jumpToRequirement(item)}>{item.label}: {item.text}</button></li>)}</ul></section>}
+      {requirements.length > 0 && <section id="draft-needs-input" className="s-input-required" aria-label="Needs your input"><h3 aria-live="polite">Needs your input · {requirements.length} {requirements.length === 1 ? "item" : "items"}</h3><p>Highlighted passages need verified details or a rewrite. Saving does not resolve them. Resolve the highlighted passages or submit for review to inspect the checks. A reviewer can record a manual override.</p><ul>{requirements.map((item,i)=><li key={`${item.field}:${item.start}`}><button className="s-text-button" onClick={()=>jumpToRequirement(item)}>{item.label}: {item.text}</button></li>)}</ul></section>}
       {postPreview && <PostPreview text={text} account={c.account} channel={c.channel} media={media} unsaved={dirty} AssetMedia={AssetMedia} onClose={() => setPostPreview(false)} />}
       <StageTracker
         content={c}
