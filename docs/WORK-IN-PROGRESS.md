@@ -379,3 +379,6 @@ Focused review browser passes: exact unknown writing blocker shown inline, verif
 
 ### v0.3.22 final validation
 Corrected per-request form-state TypeScript spread declaration found during build. Production build/typecheck now pass, focused blocker browser rechecks unknown writing discovery, explicit verified reconciliation without approval bypass, saved queued-review progressID and cost confirmation without duplicate generation. Existing review/solo domain checks pass. Full-page browser running. No backend readiness changes, automatic cancellations/reconciliation, or assistant provider calls.
+
+### v0.3.22 verified release
+Build/typecheck,23targeted domain checks, full app browser and focused blocker/action browser passed. Review popup identifies blocking writing or review work without Recent activity hunting; existing safe actions are surfaced, final approval/report requirements preserved. No live provider calls, billing reconciliation or approval performed. Main push is deployment handoff; hosted state unverified.
