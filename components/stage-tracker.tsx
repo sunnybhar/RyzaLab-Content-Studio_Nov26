@@ -118,7 +118,7 @@ export function StageTracker({
                   : stage.record
                     ? `${stage.record.actor === content.createdBy && state.members.find((m) => m.email === stage.record?.actor)?.roles.includes("founder") ? "Founder self-review" : "Human-recorded check"} · ${stage.record.actor}`
                     : stage.key === "human_approval"
-                      ? "Use Approve revision after all required checks pass."
+                      ? state.settings.reviewPolicy?.mode==="two_step"?"Open Reviews, approve the copy, then use Approve final package after all required checks pass.":"Use Approve revision after all required checks pass."
                       : stage.key === "publication_record"
                         ? "Recorded only after a person confirms the selected package and live URL."
                         : stage.criteria}

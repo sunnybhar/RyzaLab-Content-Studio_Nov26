@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { Actor, Command, Job, StudioState } from "@/lib/studio/types";
+import { canDispatchJob } from "@/lib/studio/dispatch-permissions";
 import { can } from "@/lib/studio/permissions";
 type Resolution = {
   outcome: "succeeded" | "failed" | "";
@@ -103,6 +104,9 @@ export function ReviewWorkStatus({
             assignedTo: state.contents.find((c) => c.id === job.contentId)
               ?.assignedTo,
           });
+        const dispatchable =
+          ["queued", "awaiting_confirmation"].includes(job.state) &&
+          canDispatchJob(state, actor, job);
         const pending = [
             "queued",
             "running",
@@ -132,7 +136,9 @@ export function ReviewWorkStatus({
                 <p>This saved request needs confirmation before it can run.</p>
                 <button
                   className="s-btn"
-                  disabled={busy || !permission || (!own && !manage)}
+                  disabled={
+                    busy || !permission || !dispatchable || (!own && !manage)
+                  }
                   onClick={() =>
                     void act(() => send({ type: "job.confirm", id: job.id }))
                   }
@@ -148,7 +154,7 @@ export function ReviewWorkStatus({
                   Waiting for the worker. Running this request uses its existing
                   authorized allowance.
                 </p>
-                {progressJob && own && (
+                {progressJob && own && dispatchable && (
                   <button
                     className="s-btn"
                     disabled={busy || demo || !permission}
@@ -161,6 +167,14 @@ export function ReviewWorkStatus({
                 )}
               </>
             )}
+            {["queued", "awaiting_confirmation"].includes(job.state) &&
+              !dispatchable && (
+                <p>
+                  This request’s draft, source or access context changed. It
+                  cannot run as saved. Cancel undispatched work before
+                  requesting a review of the current copy.
+                </p>
+              )}
             {job.state === "running" && (
               <>
                 <p>

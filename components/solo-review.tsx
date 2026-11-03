@@ -355,7 +355,7 @@ export function SoloReview({
               </p>
             )
           )}
-          {!readiness.agent && <ReviewWorkStatus jobs={statusJobs} state={state} actor={actor} demo={demo} send={send} progressJob={progressJob}/> }
+          {(!readiness.agent||blockingJobs.length>0) && <ReviewWorkStatus jobs={statusJobs} state={state} actor={actor} demo={demo} send={send} progressJob={progressJob}/> }
           {!readiness.agent && (
             <button
               className="s-btn"
