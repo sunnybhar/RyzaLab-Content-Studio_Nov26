@@ -358,3 +358,6 @@ User supplied actual saved output:2048output tokens, recorded$0.07, several comp
 
 ### v0.3.20 recovery verification checkpoint
 254tests passed. Recovery browser confirms token-limit explanation, visible raw result, no misleading full-batch import button, explicit2of3 pending recovery, unchanged$0.07cost/zero reservation and only one local recovery command (no AI). Recovered cards capped to original requested count, truncated/invalid cards never completed, refused/unknown outcomes blocked. New output-contract stage gating and300-token-per-card batch preflight leave existing caps unchanged. Build/full browser next; not released yet.
+
+### v0.3.20 build checkpoint
+Build/typecheck passed;254domain tests plus recovery/count browser fixtures pass. Latest UI displays recorded cost when known instead of only estimated ceiling. Final production browser checks next. No paid calls; user's original$0.07 response remains recoverable only by explicit button, no automatic paid retry. New model prompt stage-isolates ideas and compact fields; future live provider behavior remains unverified.

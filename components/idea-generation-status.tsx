@@ -168,7 +168,7 @@ export function IdeaGenerationStatus({
               <strong>
                 {job.channel} · {label}
               </strong>
-              <span>{money(job.estimate)} estimated</span>
+              <span>{job.actual!==undefined?`${money(job.actual)} recorded`:`${money(job.estimate)} estimated`}</span>
             </div>
             {mismatch && (
               <p role="status">
