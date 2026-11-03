@@ -42,7 +42,7 @@ export interface AgentRuleFile {
   uploadedBy: string;
   uploadedAt: string;
 }
-/** Storage-only configuration. Never add these files to prompts or workflow refs. */
+/** Preserve original files; new jobs use validated extracted context snapshots. */
 export function saveAgentRuleFile(
   input: StudioState,
   actor: Actor,

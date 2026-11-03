@@ -20,3 +20,14 @@ test('large context selects bounded labelled excerpts while newsletter and socia
  const text=Array.from({length:25},(_,i)=>`# Source file: knowledge/file${i}.md\n## ${i===24?'elder care evidence':'General guidance'}\n`+'Relevant background and careful explanation. '.repeat(150)).join('\n');const selected=contextExcerpt(text,'elder care');assert.ok(selected.text.length<=12000);assert.match(selected.text,/elder care evidence/);assert.match(selected.selection,/Omitted/);
  assert.match(channelWritingContract('Newsletter'),/1,200–1,600/);assert.match(channelWritingContract('Newsletter'),/Sources section/);assert.match(channelWritingContract('LinkedIn'),/180–250/);assert.match(channelWritingContract('LinkedIn',JSON.stringify({format:'LinkedIn newsletter'})),/1,200–1,600/);assert.match(channelWritingContract('LinkedIn'),/Do not put a Sources/);
 });
+
+test('macOS ZIP metadata never becomes knowledge; the supplied START-HERE name is accepted',async()=>{
+ for(const channel of ['LinkedIn','Newsletter']){
+ const parsed=await readAgentPackage(await archive({[`${channel}/00-START-HERE-agent-instructions.md`]:'Use the real instructions.',[`${channel}/knowledge/company.md`]:'Actual company context.',[`__MACOSX/${channel}/knowledge/._company.md`]:'\0\0AppleDouble binary metadata',[`${channel}/knowledge/._extra.md`]:'\0binary',[`${channel}/.DS_Store`]:'\0binary'}));
+ assert.equal(parsed.files.length,1);assert.doesNotMatch(parsed.context,/MACOSX|AppleDouble|\u0000/);assert.ok(parsed.ignored.includes('macOS metadata (3 files)'));assert.equal(parsed.instructions,'Use the real instructions.');
+ }
+});
+test('binary Markdown is rejected before saving, including requests from an older preview',async()=>{
+ await assert.rejects(async()=>readAgentPackage(await archive({'INSTRUCTIONS.md':'Valid instructions','knowledge/binary.md':'\0binary'})),/binary control/);
+ const s=initialState(DEMO_ACTOR,true);assert.throws(()=>applyCommand(s,DEMO_ACTOR,{type:'agentRules.importPackage',channel:'Newsletter',instructions:file('instructions.md','Original instructions'),context:file('context.md','\0AppleDouble metadata')},{demo:true}),/binary or macOS metadata/);assert.equal(s.agentRuleFiles,undefined);
+});

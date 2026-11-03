@@ -1272,7 +1272,7 @@ export default function Workspace() {
     Create: "Turn a good idea into something people remember.",
     Reviews: "A thoughtful second look before the world sees it.",
     Library: "Everything you have created, all in one place.",
-    "Agent Rules": "Instructions and context for each channel. Stored only; not connected to agents.",
+    "Agent Rules": "Instructions, knowledge and voice for new idea and writing requests in each channel.",
     "Workflow settings":
       "A shared standard. A distinct voice for every channel.",
     People: "Good work is better together.",

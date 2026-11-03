@@ -328,3 +328,6 @@ New browser workflow passed ZIP preview/edit, skill ZIP import, saved-package ZI
 
 ### v0.3.16 release complete
 Production build/typecheck and all245 domain tests passed. Full app browser and focused ZIP/skill editing, reusable package download, running-writing status, multi-page illustrated PDF and image/source DOCX checks passed. Both attached example ZIP formats validated, not installed. No paid provider calls. Existing users must explicitly refresh bounded workflow setup for4096 writing-output tokens; caps remain founder-controlled. Release push is not verification of hosted rollout or live samples.
+
+## WIP v0.3.17: macOS package save failure
+Screenshot shows __MACOSX/._ Markdown metadata imported as context; its binary NULs cannot be stored in PostgreSQL jsonb (22P05), surfaced as generic migration failure. Fix excludes metadata from instructions/knowledge and summarizes skipped metadata, validates UTF-8/text controls, rejects older dirty previews before persistence, and maps 22P05 to actionable text. Also accepts supplied 00-START-HERE-agent-instructions.md filename without renaming and corrects stale stored-only page subtitle. Real PostgreSQL round-trip test for both channels in progress; no schema/database/live provider changes.

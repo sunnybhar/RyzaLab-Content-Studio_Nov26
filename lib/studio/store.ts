@@ -149,6 +149,7 @@ export async function persist(
     p_secret: secret || null,
   });
   if (error) {
+    if(error.code === "22P05")throw new StudioError(400,"This content contains unsupported binary characters. For ZIP packages, refresh and re-upload to exclude macOS metadata files. Keep any manual edits before refreshing.");
     if (error.code === "40001")
       throw new StudioError(
         409,

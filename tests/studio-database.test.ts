@@ -266,3 +266,18 @@ test("composed policy, idea selection and automatic writing persist as one real 
     await db.close();
   }
 });
+
+test('Mac-created channel packages round-trip through the real PostgreSQL commit without binary JSON failures',async()=>{
+ const {persist}=await import('../lib/studio/store');const {applyCommand}=await import('../lib/studio/engine');const {readAgentPackage}=await import('../lib/studio/agent-package');const {default:JSZip}=await import('jszip');const db=new PGlite();
+ try{
+ await db.exec(bootstrap);await db.exec(await readFile(new URL('../supabase/migrations/20261027_studio_v2.sql',import.meta.url),'utf8'));
+ let original=initialState(DEMO_ACTOR,true);await db.query('select public.studio_commit(-1,$1::jsonb)',[JSON.stringify(original)]);
+ await assert.rejects(()=>db.query('select $1::jsonb',[JSON.stringify({context:'\u0000AppleDouble'})]),(error:unknown)=>(error as {code:string}).code==='22P05');
+ const adapter={rpc:async(_name:string,args:{p_expected_version:number;p_state:unknown;p_secret:unknown})=>{try{await db.query('select public.studio_commit($1,$2::jsonb,$3::jsonb)',[args.p_expected_version,JSON.stringify(args.p_state),args.p_secret===null?null:JSON.stringify(args.p_secret)]);return{error:null};}catch(error){return{error:error as {code:string}};}}} as unknown as Parameters<typeof persist>[0];
+ for(const channel of ['LinkedIn','Newsletter'] as const){const zip=new JSZip();zip.file(`${channel}/INSTRUCTIONS.md`,'Original instructions');zip.file(`${channel}/knowledge/company.md`,'Saved company context');zip.file(`__MACOSX/${channel}/knowledge/._company.md`,'\0AppleDouble');const parsed=await readAgentPackage(await zip.generateAsync({type:'arraybuffer'}));
+ const file=(name:string,text:string)=>({fileName:name,base64:Buffer.from(text).toString('base64'),byteSize:Buffer.byteLength(text)});
+ const next=applyCommand(original,DEMO_ACTOR,{type:'agentRules.importPackage',channel,instructions:file('instructions.md',parsed.instructions),context:file('context.md',parsed.context)},{demo:true});await persist(adapter,original,next);original=next;
+ }
+ const saved=await db.query<{state:typeof original}>('select state from studio_workspace');assert.equal(saved.rows[0].state.agentRuleFiles!.length,4);assert.equal(saved.rows[0].state.version,2);assert.doesNotMatch(JSON.stringify(saved.rows[0].state.agentRuleFiles),/AppleDouble|MACOSX|\\u0000/);
+ }finally{await db.close();}
+});
