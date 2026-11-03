@@ -105,6 +105,8 @@ export const commandSchema = z.discriminatedUnion("type", [
     at: z.iso.datetime().optional(),
     state: z.enum(["planned", "done", "cancelled"]).optional(),
   }),
+  command("agentRules.save", {channel,slot:z.enum(["instructions","context"]),fileName:z.string().min(1).max(200).regex(/\.(docx|pdf|md|txt)$/i).refine(value=>!/[\\/\x00-\x1f]/.test(value)),base64:z.string().min(4).max(349528).regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/),byteSize:z.number().int().min(1).max(262144),expectedId:id.optional()}),
+  command("agentRules.remove", {channel,slot:z.enum(["instructions","context"]),expectedId:id}),
   command("idea.generate", {
     automaticResearch: z.boolean().optional(),
     purpose: z.literal("manual_assistance").optional(),

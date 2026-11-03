@@ -115,6 +115,7 @@ export function filteredState(state: StudioState, actor: Actor): StudioState {
     ),
     ids = new Set(visible.map((c) => c.id));
   s.contents = visible;
+  s.agentRuleFiles=s.agentRuleFiles?.filter(file=>can(state,actor,"workflow.edit",{channel:file.channel}));
   s.verificationRuns=s.verificationRuns?.filter(r=>r.createdBy===actor.email&&r.cases.every(c=>!c.contentId||ids.has(c.contentId)));
   s.preparations = s.preparations?.filter((p) => ids.has(p.contentId));
   s.planningTasks = s.planningTasks?.filter((t) =>

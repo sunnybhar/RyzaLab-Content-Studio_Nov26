@@ -2,6 +2,7 @@
 import { AuthorizedJobProgress } from "./authorized-job-progress";
 import { JobCost } from "./job-cost";
 import {BudgetSection} from "./budget-section";
+import {AgentRules} from "./agent-rules";
 import { ReleaseNotes } from "./release-notes";
 import { MemberAccessEditor } from "./member-access-editor";
 import { SoloPolicySettings } from "./solo-policy-settings";
@@ -118,6 +119,7 @@ type Page =
   | "Create"
   | "Reviews"
   | "Library"
+  | "Agent Rules"
   | "Workflow settings"
   | "People"
   | "AI & budgets"
@@ -1269,6 +1271,7 @@ export default function Workspace() {
     Create: "Turn a good idea into something people remember.",
     Reviews: "A thoughtful second look before the world sees it.",
     Library: "Everything you have created, all in one place.",
+    "Agent Rules": "Instructions and context for each channel. Stored only; not connected to agents.",
     "Workflow settings":
       "A shared standard. A distinct voice for every channel.",
     People: "Good work is better together.",
@@ -1383,6 +1386,7 @@ export default function Workspace() {
             <Settings2 size={18} />
             <span>Workflow settings</span>
           </button>
+          <button aria-label="Agent Rules" title="Agent Rules" aria-current={page==="Agent Rules"?"page":undefined} className={page==="Agent Rules"?"s-active":""} onClick={()=>move("Agent Rules")}><BookOpen size={18}/><span>Agent Rules</span></button>
           <button
             aria-label="People & access"
             title="People & access"
@@ -3617,6 +3621,7 @@ export default function Workspace() {
               </div>
             </>
           )}
+          {page==="Agent Rules"&&<AgentRules state={state} actor={actor} send={send}/>}
           {page === "AI & budgets" && (
             <div className="s-budget-layout">
               {!founder && admin && <section className="s-panel"><div className="s-section-heading"><div><h2>Founder access</h2><p>Grant founder access in People & access to configure review and preparation. No additional email setting or API key is required.</p></div><button className="s-btn" onClick={() => move("People")}>Open People & access</button></div></section>}

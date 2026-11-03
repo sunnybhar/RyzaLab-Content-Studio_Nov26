@@ -181,6 +181,7 @@ async function main() {
     await dialog()
       .getByRole("button", { name: "Preview sample ideas", exact: true })
       .click();
+    await dialog().getByRole("button",{name:"Close idea window",exact:true}).click();
     await dialog().waitFor({ state: "hidden" });
     const generated = (await state()).ideas.filter(
       (idea) => idea.origin === "demo_sample",

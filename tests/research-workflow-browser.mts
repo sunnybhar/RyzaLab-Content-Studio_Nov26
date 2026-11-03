@@ -125,35 +125,12 @@ try {
       .getByRole("button", { name, exact: true })
       .click();
   await nav("Ideas");
-  await page
-    .locator("summary")
-    .filter({ hasText: /^Web research/ })
-    .first()
-    .click();
-  let panel = page.getByRole("region", { name: "Web research" });
-  await panel
-    .getByText("Findings and 1 cited sources", { exact: true })
-    .click();
-  assert.equal(
-    await panel
-      .getByRole("link", { name: "Neutral source fixture" })
-      .getAttribute("href"),
-    "https://example.com/source",
-  );
-  await panel.getByLabel("Use this evidence in idea generation").check();
-  await page
-    .getByRole("button", { name: "Generate with agent", exact: true })
-    .click();
-  let dialog = page.getByRole("dialog");
-  assert.equal(
-    await dialog
-      .getByLabel("Web research evidence", { exact: true })
-      .inputValue(),
-    "cited",
-  );
-  await dialog
-    .getByRole("button", { name: "Close dialog", exact: true })
-    .click();
+  await page.getByRole("button",{name:"Generate with agent",exact:true}).click();
+  let dialog=page.getByRole("dialog");
+  assert.equal(await dialog.getByLabel("Web research evidence",{exact:true}).count(),0);
+  await dialog.getByText(/automatically retrieve public references/).waitFor();
+  await dialog.getByRole("button",{name:"Close idea window",exact:true}).click();
+  let panel;
   await nav("Create");
   await page.locator(".s-content-title").filter({ hasText: c.title }).click();
   await page
@@ -207,7 +184,7 @@ try {
   assert.equal(calls.length, 0);
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: Ideas research selection, retained citation links/date, modal evidence selection, inherited writing context and demo no-search protection; no live calls",
+    "PASS: integrated automatic-research idea window, retained citation links/date and inherited writing context and demo no-search protection; no live calls",
   );
 } finally {
   await browser.close();

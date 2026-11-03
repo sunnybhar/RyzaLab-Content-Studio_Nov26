@@ -1,3 +1,4 @@
+import {saveAgentRuleFile} from "./agent-rule-files";
 import { parseOutput, draftResultSchema } from "./output-contracts";
 import type { Actor, Content, Job, StudioState } from "./types";
 import {
@@ -250,6 +251,14 @@ export function applyCommand(
     }
   }
   switch (c.type) {
+    case "agentRules.save": return saveAgentRuleFile(input,actor,c,now,id());
+    case "agentRules.remove": {
+      need("workflow.edit",{channel:c.channel});
+      const file=s.agentRuleFiles?.find(f=>f.channel===c.channel&&f.slot===c.slot);
+      if(!file||file.id!==c.expectedId)throw new StudioError(409,"This file changed. Refresh Agent Rules before removing it.");
+      s.agentRuleFiles=s.agentRuleFiles?.filter(f=>f.id!==file.id);break;
+    }
+
     case "research.retrieve": {
       const {content:parent,existing}=publicRetrievalTarget(s,actor,c);
       if(existing)return input;

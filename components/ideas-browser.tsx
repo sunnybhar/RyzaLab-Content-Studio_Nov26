@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+import {SourceReferences} from "./idea-evidence";
 import { X } from "lucide-react";
 import type { Content, Idea, Schedule } from "@/lib/studio/types";
 import "./ideas-browser.css";
@@ -234,11 +235,7 @@ export function IdeasBrowser({
               {!!selected.sources?.length && (
                 <>
                   <h3>Source references</h3>
-                  <ul>
-                    {selected.sources.map((source, index) => (
-                      <li key={index}>{source}</li>
-                    ))}
-                  </ul>
+                  <SourceReferences sources={selected.sources}/>
                 </>
               )}
               {selected.state !== "rejected" && !linkedDraft && (

@@ -461,6 +461,7 @@ export interface PlanningTask {
   createdAt: string;
 }
 export interface StudioState {
+  agentRuleFiles?: import("./agent-rule-files").AgentRuleFile[];
   verificationRuns?: import("./verification-pack").VerificationRun[];
   preparations?: PreparationAuthorization[];
   planningTasks?: PlanningTask[];
