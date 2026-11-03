@@ -1,5 +1,6 @@
 "use client";
-import { requestedIdeaQuantity } from "@/lib/studio/idea-generation";
+import {completeSavedIdeaCards} from "@/lib/studio/idea-recovery";
+import { parseGeneratedIdeas, requestedIdeaQuantity } from "@/lib/studio/idea-generation";
 import { useEffect, useRef, useState } from "react";
 import type { Actor, Channel, Command, StudioState } from "@/lib/studio/types";
 import { can } from "@/lib/studio/permissions";
@@ -120,6 +121,8 @@ export function IdeaGenerationStatus({
           (i) => i.generationRunId === job.id,
         ).length;
         const expected = requestedIdeaQuantity(job.prompt);
+        const recoverable=!job.ideaPurpose&&!count?completeSavedIdeaCards(job):[];
+        let importable=false;if(job.result&&!job.ideaPurpose&&job.providerCompletion!=="incomplete"&&job.providerCompletion!=="refused")try{parseGeneratedIdeas(job.result,expected);importable=true;}catch{}
         const mismatch = Boolean(expected && count && count !== expected);
         const authorized =
           can(state, actor, "job.create", {
@@ -239,7 +242,7 @@ export function IdeaGenerationStatus({
                 {job.error}
               </p>
             )}
-            {job.state === "succeeded" && !count && job.result && (
+            {job.state === "succeeded" && !count && importable && (
               <button
                 className="s-btn s-primary"
                 disabled={
@@ -257,12 +260,10 @@ export function IdeaGenerationStatus({
                 Import saved ideas — no AI call
               </button>
             )}
-            {job.state === "succeeded" && !count && (
-              <p>
-                No idea cards were imported yet. Use Import saved ideas above to
-                retry importing this response without another provider request.
-              </p>
-            )}
+            {job.state==="succeeded"&&!count&&recoverable.length>0&&<button className="s-btn s-primary" disabled={busy||!authorized||!can(state,actor,"idea.edit",{channel:job.channel})} onClick={()=>void command({type:"idea.recoverCompleteCards",jobId:job.id})}>Recover {recoverable.length} complete saved {recoverable.length===1?"idea":"ideas"} — no AI call</button>}
+            {job.state==="succeeded"&&!count&&<p>{recoverable.length?`${recoverable.length} fully written card(s) are available in the saved response. Recover them as pending ideas; unfinished cards will stay unimported.`:importable?"The complete saved result can be imported without another provider request.":"No complete importable batch is available. Inspect the saved response below; another import attempt cannot complete cut-off text. No automatic paid retry will run."}</p>}
+            {job.state==="succeeded"&&!count&&(job.providerStopReason==="max_tokens"||/^\s*\[INCOMPLETE OUTPUT/i.test(job.result||""))&&<p role="status">The output token limit was reached{job.providerUsage?` (${job.providerUsage.outputTokens.toLocaleString()} output tokens)`:""}. Requested ideas: {expected||"not recorded"}. Incomplete cards are not ready to use.</p>}
+            {job.result&&<details><summary>View saved provider response</summary><pre style={{whiteSpace:"pre-wrap",maxHeight:360,overflow:"auto"}}>{job.result}</pre></details>}
             {["unknown", "failed", "blocked"].includes(job.state) && (
               <p>
                 Check this job in AI & budgets. Do not resubmit until the

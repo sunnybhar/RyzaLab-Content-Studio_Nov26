@@ -169,6 +169,7 @@ export async function POST(req: NextRequest) {
             bytes?: Uint8Array;
             mime?: string;
             completion?: "complete" | "incomplete" | "refused";
+      stopReason?:string;
           }
         | undefined,
       problem: ProviderFailure | undefined;
@@ -250,13 +251,14 @@ export async function POST(req: NextRequest) {
       } else {
         j.state = "succeeded";
         j.result = outcome?.text || "";
+        j.providerCompletion=outcome?.completion;j.providerStopReason=outcome?.stopReason;
         if (j.outputContract)
           settleWrittenOutput(next, j, outcome || {}, new Date().toISOString());
         if (j.kind === "ideas" && outcome?.text) {
           try {
             if (outcome.completion !== "complete")
               throw new Error(
-                "Idea generation was incomplete. The raw response is retained; no incomplete batch was imported.",
+                outcome.completion==="refused"?"The provider refused this idea request. The saved response is available; no cards were imported.":outcome.stopReason==="max_tokens"||/^\[INCOMPLETE OUTPUT/i.test(outcome.text)?"Idea generation was incomplete: the provider reached its output token limit. Recover complete saved cards below where available; no automatic paid retry was made.":"Idea generation was incomplete. The raw response is retained; no incomplete batch was imported.",
               );
             const items = parseGeneratedIdeas(
               outcome.text,

@@ -47,6 +47,7 @@ export async function runProvider(
   bytes?: Uint8Array;
   mime?: string;
   completion?: "complete" | "incomplete" | "refused";
+  stopReason?:string;
 }> {
   if (
     !["text", "ideas", "review", "image", "audio", "research"].includes(
@@ -263,6 +264,7 @@ export async function runProvider(
         ? json.status === "completed"
         : json.candidates?.[0]?.finishReason === "STOP";
   return {
+    stopReason:String(json.stop_reason||json.candidates?.[0]?.finishReason||json.status||"unknown").slice(0,100),
     usage: connection.provider==="anthropic"?claudeUsage(json.usage):undefined,
     completion: refusal
       ? "refused"

@@ -1,3 +1,4 @@
+import {completeSavedIdeaCards} from "./idea-recovery";
 import {compileSystem} from "./system-context";
 import {saveAgentArchives} from "./agent-archives";
 import {agentContext} from "./agent-context";
@@ -393,6 +394,7 @@ export function applyCommand(
       }
       break;
     }
+    case "idea.recoverCompleteCards":
     case "idea.importSavedResult": {
       const job = jobFor(c.jobId);
       if (job.contentId) {
@@ -426,10 +428,10 @@ export function applyCommand(
         return structuredClone(input);
       let items: ReturnType<typeof parseGeneratedIdeas>;
       try {
-        items = parseGeneratedIdeas(
-          job.result!,
-          requestedIdeaQuantity(job.prompt),
-        );
+        if(c.type==="idea.recoverCompleteCards"){
+          if(job.ideaPurpose)bad("Open the manual idea editor to inspect this assistance result; no automatic idea cards were created.");
+          items=completeSavedIdeaCards(job);if(!items.length)bad("No complete idea cards can be recovered from this saved response. Nothing was invented or imported; no AI call was made.");
+        }else items = parseGeneratedIdeas(job.result!,requestedIdeaQuantity(job.prompt));
       } catch (error) {
         if (error instanceof StudioError) bad(error.message);
         bad(
@@ -448,8 +450,8 @@ export function applyCommand(
           createdBy: job.createdBy,
           createdAt: now,
         });
-      job.error =
-        "Saved response imported without another provider request. Budget reservation is unchanged pending billing reconciliation.";
+      if(c.type==="idea.recoverCompleteCards")job.ideaRecovery={count:items!.length,expected:requestedIdeaQuantity(job.prompt),by:actor.email,at:now};
+      job.error = c.type==="idea.recoverCompleteCards"?`Recovered ${items!.length} complete pending idea card(s) from the incomplete saved response without another AI call. Original response and usage cost retained; review before use.`:"Saved response imported without another provider request. Recorded usage, costs and reservations are unchanged.";
       break;
     }
     case "task.create": {

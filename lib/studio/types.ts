@@ -320,6 +320,9 @@ export interface Connection {
   updatedAt: string;
 }
 export interface Job {
+  providerCompletion?: "complete"|"incomplete"|"refused";
+  providerStopReason?: string;
+  ideaRecovery?: {count:number;expected?:number;by:string;at:string};
   systemSnapshot?: string;
   referenceSnapshots?: Reference[];
   agentContextSnapshot?: ReturnType<typeof import("./agent-context").agentContext>;
