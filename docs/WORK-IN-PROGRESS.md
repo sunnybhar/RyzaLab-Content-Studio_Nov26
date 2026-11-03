@@ -361,3 +361,6 @@ User supplied actual saved output:2048output tokens, recorded$0.07, several comp
 
 ### v0.3.20 build checkpoint
 Build/typecheck passed;254domain tests plus recovery/count browser fixtures pass. Latest UI displays recorded cost when known instead of only estimated ceiling. Final production browser checks next. No paid calls; user's original$0.07 response remains recoverable only by explicit button, no automatic paid retry. New model prompt stage-isolates ideas and compact fields; future live provider behavior remains unverified.
+
+### v0.3.20 final verification
+254domain tests/typecheck/productionbuild passed. Complete-card recovery browser verifies raw result access,2048token diagnosis, recorded$0.07cost, explicit2of3 pending import, unchanged costs/reservations/raw and no AI calls. Count/status browser passed; fullapp/automatic/manualidea browser final checks passed. No live provider tests. User should refresh afterv320 and use recovery on the latest existing request, not regenerate it to recover existing cards.
