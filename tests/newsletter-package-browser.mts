@@ -1,0 +1,31 @@
+import {chromium} from 'playwright';import assert from 'node:assert/strict';import fs from 'node:fs/promises';import JSZip from 'jszip';import {getDocument} from 'pdfjs-dist/legacy/build/pdf.mjs';
+import {initialState,DEMO_ACTOR} from '../lib/studio/seed';import {applyCommand} from '../lib/studio/engine';
+const browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
+try{
+ const page=await browser.newPage({acceptDownloads:true,viewport:{width:1440,height:1100}});let fixture=initialState(DEMO_ACTOR,true);
+ fixture=applyCommand(fixture,DEMO_ACTOR,{type:'policy.adoptSolo',expectedRuleVersion:fixture.settings.protectedVersion,packageCap:50,monthlyCap:500,requireIndependentReview:false,autoDraft:false,autoReview:false},{demo:true});
+ const c=fixture.contents[0];c.channel='Newsletter';c.title='Detailed newsletter browser sample';c.format='Article';c.state='draft';c.text='## Background\n\n'+'Careful household documentation helps explain the routine, its limitations and what to do when the usual controls are unavailable. '.repeat(70)+'\n\n## Sources\nhttps://example.org/research';
+ c.media.imageUrl=await page.evaluate(()=>{const canvas=document.createElement('canvas');canvas.width=600;canvas.height=300;const ctx=canvas.getContext('2d')!;ctx.fillStyle='#205958';ctx.fillRect(0,0,600,300);ctx.fillStyle='#fff';ctx.font='24px sans-serif';ctx.fillText('Relevant newsletter illustration',30,150);return canvas.toDataURL('image/png');});
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.route('**/api/studio/**',r=>r.abort());
+ await page.addInitScript(({fixture})=>{if(!localStorage.getItem('ryzalab-studio-v2'))localStorage.setItem('ryzalab-studio-v2',JSON.stringify(fixture));},{fixture});
+ await page.goto((process.env.TEST_BASE_URL||'http://127.0.0.1:3061')+'/preview');
+ const nav=async(name:string)=>page.locator('.s-sidebar nav').getByRole('button',{name,exact:true}).click();
+ await nav('Create');await page.locator('.s-content-title').filter({hasText:c.title}).click();
+ for(const format of ['DOCX','PDF']){
+  const pending=page.waitForEvent('download');await page.getByRole('button',{name:`Export newsletter ${format}`,exact:true}).click();const download=await pending;const bytes=await fs.readFile((await download.path())!);
+  if(format==='DOCX'){const zip=await JSZip.loadAsync(bytes);assert.ok(Object.keys(zip.files).some(f=>f.startsWith('word/media/')&&!zip.files[f].dir));assert.match(await zip.file('word/document.xml')!.async('string'),/example.org\/research/);}
+  else {const task=getDocument({data:new Uint8Array(bytes),isEvalSupported:false});try{assert.ok((await task.promise).numPages>=2,'Detailed illustrated newsletter must span multiple PDF pages');}finally{await task.destroy();}}
+ }
+ await nav('Agent Rules');let zip=new JSZip();zip.file('LinkedIn/INSTRUCTIONS.md','Original user-owned instructions');zip.file('LinkedIn/knowledge/company.md','Original company background');zip.file('LinkedIn/skill/archive.zip','skipped');
+ await page.getByLabel('Agent Rules ZIP package',{exact:true}).setInputFiles({name:'my-channel.zip',mimeType:'application/zip',buffer:await zip.generateAsync({type:'nodebuffer'})});
+ await page.getByLabel('Package Instructions',{exact:true}).fill('User edited these instructions before saving');assert.match(await page.getByLabel('Package context',{exact:true}).inputValue(),/Original company background/);
+ await page.getByRole('button',{name:'Save package for LinkedIn',exact:true}).click();await page.getByRole('status').filter({hasText:'Instructions and context saved together'}).waitFor();
+ zip=new JSZip();zip.file('brand/SKILL.md','Check claims and retain uncertainty');zip.file('brand/references/facts.md','Supplied brand facts');zip.file('brand/scripts/check.py','not executed');
+ await page.getByLabel('Skill ZIP package',{exact:true}).setInputFiles({name:'brand-skill.zip',mimeType:'application/zip',buffer:await zip.generateAsync({type:'nodebuffer'})});
+ assert.match(await page.getByLabel('Package Instructions',{exact:true}).inputValue(),/Check claims/);assert.match(await page.getByLabel('Package context',{exact:true}).inputValue(),/Supplied brand facts/);
+ await page.getByRole('button',{name:'Save package for LinkedIn',exact:true}).click();await page.getByRole('status').filter({hasText:'Instructions and context saved together'}).waitFor();
+ const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('ryzalab-studio-v2')!));assert.equal(state.agentRuleFiles.length,2);assert.match(state.agentRuleFiles.find((f:any)=>f.slot==='instructions').extractedText,/User edited/);assert.equal(state.jobs.length,0);
+ state.jobs.unshift({id:'writing-progress',contentId:c.id,channel:'Newsletter',kind:'text',outputContract:'draft_v1',state:'running',createdBy:DEMO_ACTOR.email,createdAt:new Date().toISOString(),prompt:'Fixture',connectionId:'fixture',estimate:18,reserved:18,attempt:1,idempotencyKey:'progress'});
+ await page.evaluate(state=>localStorage.setItem('ryzalab-studio-v2',JSON.stringify(state)),state);await page.reload();await nav('Create');await page.locator('.s-content-title').filter({hasText:c.title}).click();await page.getByRole('region',{name:'Writing progress',exact:true}).getByRole('heading',{name:'AI is writing your newsletter'}).waitFor();
+ assert.deepEqual(errors,[]);console.log('PASS: user ZIP preview/edit, skill ZIP guidance, atomic save, multi-page PDF and DOCX with embedded image/source, visible newsletter writing progress; no provider calls');
+}finally{await browser.close();}

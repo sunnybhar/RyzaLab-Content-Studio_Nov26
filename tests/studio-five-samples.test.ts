@@ -251,7 +251,7 @@ for (const sample of samples)
     assert.equal(c.channel, channel);
     const body =
       channel === "Newsletter"
-        ? "A clearer household handoff\n\nWrite down the routine, the person to call and the fallback. Review the document together before relying on it."
+        ? "A clearer household handoff\n\n"+"Write down the routine, the person to call and the fallback. Review the document together before relying on it. ".repeat(65)
         : "A useful household handoff can list the routine, who to call and what to do if the usual person is away.";
     if (sample.ai) {
       s = cmd(s, {
@@ -288,7 +288,7 @@ for (const sample of samples)
       const output = await mockProvider(job, s, {
         body: question ? body + " [Ryan to confirm: personal example]" : body,
         metadata: "",
-        sources: [],
+        sources: channel === "Newsletter" ? ["Supplied household handoff guidance — local fixture"] : [],
         questions: question ? ["Which real example supports this?"] : [],
       });
       job.state = "succeeded";

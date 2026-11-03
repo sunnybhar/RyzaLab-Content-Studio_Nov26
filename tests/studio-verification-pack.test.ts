@@ -134,6 +134,7 @@ test("LOCAL MOCK ONLY: one pack prepares sequential AI cases and two manual draf
         questions: [],
         sources: ["https://en.wikipedia.org/wiki/Home_automation"],
       };
+      if(job.channel==="Newsletter")body.body=body.body.repeat(45);
       job.result = JSON.stringify(body);
       settleWrittenOutput(
         s,
