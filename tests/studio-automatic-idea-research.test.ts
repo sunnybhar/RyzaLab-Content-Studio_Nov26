@@ -241,3 +241,19 @@ test('linked instructions are priced and frozen on a real idea job without enter
  const job=next.jobs.find(j=>j.kind==='ideas')!;assert.equal(job.agentContextSnapshot!.rules[0].text,secret);
  next.agentRuleFiles![0].extractedText='Later edit';assert.equal(job.agentContextSnapshot!.rules[0].text,secret);
 });
+
+test('large legacy references plus uploaded guidance fit the existing cap and freeze the exact priced system',async()=>{
+ const {frozenSystem}=await import('../lib/studio/pricing');const {requestBytes}=await import('../lib/studio/system-context');
+ const s=fixture(),w=s.workflows.find(w=>w.channel==='LinkedIn'&&w.status==='active')!;w.guardrails='Never claim absolute privacy or invent personal experiences.';w.checks='Human factual review is required.';
+ w.references=[];for(let n=0;n<8;n++){const id='large-reference-'+n;s.references.push({id,title:'Household privacy reference '+n,kind:'brand',channel:'LinkedIn',createdAt:now,content:('# Household privacy\nApple and Google home controls involve specific settings, data flows and limitations.\n').repeat(600)});w.references.push(id);}
+ s.agentRuleFiles=[{id:'instructions',channel:'LinkedIn',slot:'instructions',fileName:'instructions.md',base64:Buffer.from('Write carefully.').toString('base64'),byteSize:16,extractedText:'Write carefully. Never invent a brand allegation.',uploadedBy:DEMO_ACTOR.email,uploadedAt:now}];
+ const originals=structuredClone(s.references);const c=input();c.topic='How Apple and Google home automation devices affect family privacy and security';c.quantity=1;
+ const prepared=await automaticIdeaResearch(s,DEMO_ACTOR,c,async()=>refs(),now);const command=ideaJobInput(prepared.state,DEMO_ACTOR,prepared.command);const priced=quote(prepared.state,command);
+ const next=applyCommand(prepared.state,DEMO_ACTOR,command,{now,quotedCost:priced.cost,pricingSnapshot:priced.pricingSnapshot});const job=next.jobs.find(j=>j.kind==='ideas')!;
+ assert.ok(job.systemSnapshot);assert.equal(requestBytes(frozenSystem(job),job.prompt),priced.pricingSnapshot.inputBytes);assert.ok(priced.pricingSnapshot.inputBytes<=65536);assert.match(frozenSystem(job),/Never claim absolute privacy/);assert.match(frozenSystem(job),/Never invent a brand allegation/);assert.match(frozenSystem(job),/bounded-local-excerpts-v1/);assert.equal(job.referenceSnapshots!.length,8);assert.deepEqual(s.references,originals);
+ const frozen=frozenSystem(job);next.references[0].content='Later changes';assert.equal(frozenSystem(job),frozen);
+});
+test('mandatory policy and Instructions are never silently shortened to fit a request',()=>{
+ const s=fixture(),w=s.workflows.find(w=>w.channel==='LinkedIn'&&w.status==='active')!;w.instructions='Mandatory writing instructions. '.repeat(4000);
+ const command=ideaJobInput(s,DEMO_ACTOR,{...input(),research:false,researchJobIds:[]});assert.throws(()=>quote(s,command),/protected rules, Instructions and task/);assert.equal(s.jobs.length,0);
+});

@@ -346,3 +346,6 @@ Production build/typecheck and249tests passed. Full app browser and focused pack
 
 ## WIP v0.3.19: idea request input limit and hidden error
 User screenshots identify exact failure: qualified input envelope exceeded despite short topic, hidden beneath collapsed request details. Added visible top error and honest stopped-stage labels. Implementing bounded local selection of optional legacy workflow references/examples and agent knowledge/voice, preserving full protected policy, workflow instructions/guardrails/checks/output format, uploaded Instructions and original task. Quote/enqueue share compiler and new writing/idea/review jobs freeze exact compiled system; originals remain intact. Input cap/cost limits are not increased. Regression tests/build next; no paid calls or release yet.
+
+### v0.3.19 checkpoint: context compiler regression passed
+Large legacy references plus uploaded Instructions now fit65536-byte envelope in regression, protected rules/guardrails/Instructions/task intact, originals unchanged, quote bytes exactly match frozen new-job system. Oversized mandatory instructions still reject clearly rather than truncate. Error browser fixture shows visible error above stage list, no false research-running label and no automatic retry. Full checks next. No cap increase, extra paid calls or live account changes.
