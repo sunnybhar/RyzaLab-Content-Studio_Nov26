@@ -295,3 +295,6 @@ Unreleased work: visible idea stages and audience-aware public reference filteri
 
 ### v0.3.14 verification checkpoint
 Domain suite: 234 passed, plus new audience relevance regression passed. TypeScript and production build passed. Integrated automatic/manual ideas browser fixture and full app browser workflow passed. Additional saved-incomplete editor browser regression is running. New recovery preserves notes and cannot overwrite existing text; incomplete marker blocks review. No paid calls. Next: finish editor browser check, final commit/release. Agent Rules remain stored only; checkbox issue remains queued.
+
+### v0.3.14 ready for release
+Saved-incomplete editor browser regression passed: old fenced JSON recovers into Content text with real paragraphs, unfinished marker, and exactly one original job. Full app browser, integrated ideas browser, production build, typecheck, 234 domain tests plus audience relevance regression passed. All provider results were fixtures; no live generation or charges. Existing saved incomplete responses use “Recover available text into editor — no AI call”; future eligible empty drafts recover automatically. Main push is the deployment handoff; hosted rollout must be confirmed by the visible v0.3.14 label.
