@@ -83,3 +83,6 @@ Agent Rules in Manage stores Instructions/Context originals per channel and a Ry
 
 ## Latest continuation: v0.3.14
 Verified readable incomplete draft recovery (including old saved JSON) into unchanged empty editors with mandatory unfinished marker; visible idea stages/check status and audience-aware lexical source filtering. Build, typecheck, domain and browser checks passed (see WORK-IN-PROGRESS tail). No live provider calls. Agent Rules remain unlinked. Saved model checkbox issue remains queued. Check main and deployed version before reporting rollout completion.
+
+## Latest continuation: v0.3.15
+User authorized linking Agent Rules and voice context, separate LinkedIn Instructions/Markdown uploads, editable persisted setup checkbox and web/news discovery. Implemented and verified (WORK-IN-PROGRESS latest tail). No longer treat Agent Rules as stored-only. New jobs include scoped frozen extracted text; older jobs retain old snapshots. Existing uploads hydrate before new ideas/writing/use-idea requests. General web/news provides linked search excerpts through fixed search feeds; no full-page fetch or comprehensive coverage claim. Five live samples are still blocked by unavailable credentials/network, not completed. No paid calls made. Check hosted version before reporting deployment live.

@@ -230,3 +230,14 @@ test("unauthorized, unaffordable or failed source retrieval never starts a paid 
   );
   assert.equal(original.jobs.length, 0);
 });
+
+test('linked instructions are priced and frozen on a real idea job without entering its public query',async()=>{
+ const s=fixture(),secret='Distinctive private RyzaLab instruction';
+ s.agentRuleFiles=[{id:'rules',channel:'LinkedIn',slot:'instructions',fileName:'instructions.md',base64:Buffer.from(secret).toString('base64'),byteSize:Buffer.byteLength(secret),extractedText:secret,uploadedBy:DEMO_ACTOR.email,uploadedAt:now}];
+ const c=input();const p=await automaticIdeaResearch(s,DEMO_ACTOR,c,async(query)=>{assert.ok(!query.includes(secret));return refs();},now);
+ const command=ideaJobInput(p.state,DEMO_ACTOR,p.command),priced=quote(p.state,command);
+ const empty=structuredClone(p.state);empty.agentRuleFiles=[];assert.ok(priced.pricingSnapshot.inputBytes>quote(empty,command).pricingSnapshot.inputBytes);
+ const next=applyCommand(p.state,DEMO_ACTOR,command,{now,quotedCost:priced.cost,pricingSnapshot:priced.pricingSnapshot});
+ const job=next.jobs.find(j=>j.kind==='ideas')!;assert.equal(job.agentContextSnapshot!.rules[0].text,secret);
+ next.agentRuleFiles![0].extractedText='Later edit';assert.equal(job.agentContextSnapshot!.rules[0].text,secret);
+});

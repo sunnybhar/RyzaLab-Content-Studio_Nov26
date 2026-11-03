@@ -307,3 +307,6 @@ LinkedIn Instructions and Markdown context are separate uploads; new requests fr
 
 ### v0.3.15 release candidate
 Search-excerpt provenance/bounds/failure tests and Markdown/DOCX/PDF extraction tests passed. Editable checkbox persisted false through save/navigation/reload in browser fixture. Production build and typecheck passed. Full-page and Agent Rules browser checks next. Existing jobs remain unchanged; no raw base64 sent as model context. Private rules never enter public search queries. Five live samples remain blocked (no local credentials; outbound proxy CONNECT403); no live model calls or claims of live cost verification.
+
+### v0.3.15 verified release
+239-domain-test suite passed; additional linked-rule pricing/snapshot/privacy regression passed. TypeScript and production build passed. Full app browser, separate LinkedIn file upload/download/reload browser, and editable checkbox save/navigation/reload fixture passed. PDF worker explicitly included and verified in deployment trace. No paid/live provider calls. Live five-sample verification remains blocked by absent application credentials and proxy CONNECT403; hosted source availability and actual provider costs remain unverified. Main push is release handoff, not proof of hosted rollout.

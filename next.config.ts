@@ -19,7 +19,7 @@ const config: NextConfig = {
   serverExternalPackages: ["pdfjs-dist"],
   outputFileTracingIncludes: {
     "/api/generate": ["./knowledge/**/*"],
-    "/api/studio": ["./knowledge/channel-packages/**/*"],
+    "/api/studio": ["./knowledge/channel-packages/**/*", "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"],
   },
   async headers() {
     return [
