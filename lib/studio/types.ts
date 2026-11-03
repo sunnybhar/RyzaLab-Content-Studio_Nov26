@@ -320,6 +320,7 @@ export interface Connection {
   updatedAt: string;
 }
 export interface Job {
+  systemSnapshot?: string;
   agentContextSnapshot?: ReturnType<typeof import("./agent-context").agentContext>;
   ideaPurpose?: "manual_assistance";
   providerUsage?: import("./usage-cost").ClaudeUsage;

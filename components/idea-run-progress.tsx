@@ -64,7 +64,9 @@ export function IdeaRunProgress({
         ? `${sourceCount} saved research result(s)`
         : job
           ? "No linked research"
-          : "In progress",
+          : requestError
+            ? "Status unavailable — see error"
+            : "In progress",
     ],
     [
       "2. Allowance",
@@ -72,7 +74,9 @@ export function IdeaRunProgress({
         ? "Your confirmation required"
         : job
           ? "Confirmed / within configured limits"
-          : "Waiting",
+          : requestError
+            ? "Not available"
+            : "Waiting",
     ],
     [
       "3. Generate ideas",
@@ -81,7 +85,9 @@ export function IdeaRunProgress({
         : complete
           ? "Finished"
           : attention
-            ? "Stopped — inspect result"
+            ? job
+              ? "Stopped — inspect saved request"
+              : "No result — see error"
             : job?.state === "queued"
               ? "Queued"
               : "Waiting",
@@ -100,6 +106,18 @@ export function IdeaRunProgress({
       <p role="status" aria-live="polite">
         <strong>{headline}</strong>
       </p>
+      {requestError && (
+        <div className="s-alert s-error" role="alert">
+          <strong>Request error</strong>
+          <p>{requestError}</p>
+          {!job && (
+            <p>
+              No saved idea request is loaded. Check the error above before
+              retrying; this page will not retry automatically.
+            </p>
+          )}
+        </div>
+      )}
       <ol>
         {stages.map(([name, status]) => (
           <li key={name}>

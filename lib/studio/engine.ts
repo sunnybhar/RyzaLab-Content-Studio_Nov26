@@ -1,3 +1,4 @@
+import {compileSystem} from "./system-context";
 import {saveAgentArchives} from "./agent-archives";
 import {agentContext} from "./agent-context";
 import {incompleteDraftBody,applyRecoveredWorkingText} from "./incomplete-draft";
@@ -2039,6 +2040,7 @@ export function applyCommand(
             .map((r) => structuredClone(r)),
         },
       };
+      if(ctx.pricingSnapshot&&["ideas","text","review"].includes(j.kind))j.systemSnapshot=compileSystem(j,(ctx.pricingSnapshot as {maxInputBytes:number}).maxInputBytes);
       if (j.state === "queued") reserve(j);
       s.jobs.unshift(j);
       break;
