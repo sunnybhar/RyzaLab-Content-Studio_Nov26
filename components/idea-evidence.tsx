@@ -23,6 +23,7 @@ export function IdeaEvidence({
       <h3>Research and websites</h3>
       {evidence.map((item) => (
         <div key={item.jobId}>
+          <p>Public research query: {state.jobs.find(job=>job.id===item.jobId)?.prompt}</p>
           <p>
             {item.version === 2
               ? `Retrieved ${item.citations.length} source excerpts for this topic. Review the original material before relying on the AI interpretation.`

@@ -4274,3 +4274,8 @@
 @media (max-width: 700px) { .studio-v2 .s-agent-rule-grid { grid-template-columns:1fr; } }
 .studio-v2 .s-agent-voice-library { margin-top: 24px; }
 .studio-v2 .s-idea-composer a, .studio-v2 .s-idea-detail a { overflow-wrap: anywhere; }
+.studio-v2 .s-idea-run-progress { background: var(--s-raised); border: 1px solid var(--s-line); border-radius: 12px; padding: 18px; margin: 16px 0; }
+.studio-v2 .s-idea-run-progress ol { list-style: none; padding: 0; display: grid; gap: 10px; }
+.studio-v2 .s-idea-run-progress li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.studio-v2 .s-idea-request-details { margin: 16px 0; }
+.studio-v2 .s-idea-request-details > summary { cursor: pointer; padding: 12px 0; font-weight: 650; }

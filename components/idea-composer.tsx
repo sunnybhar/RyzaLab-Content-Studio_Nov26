@@ -1,4 +1,7 @@
 "use client";
+import {IdeaRunProgress} from "./idea-run-progress";
+import {relevantIdeaCitation} from "@/lib/studio/idea-research-query";
+import {researchEvidence} from "@/lib/studio/research-link";
 import { useEffect, useRef, useState } from "react";
 import {
   CHANNELS,
@@ -33,15 +36,18 @@ export function IdeaComposer({
   close: () => void;
   openContent: (idea: Idea) => Promise<boolean>;
 }) {
+  const resumed=!demo?state.jobs.find(j=>j.kind==="ideas"&&!j.contentId&&j.channel===initialChannel&&j.createdBy===actor.email&&j.ideaPurpose===(mode==="manual"?"manual_assistance":undefined)&&["queued","running","awaiting_confirmation","unknown"].includes(j.state)):undefined;
+  let resumeInput:{topic?:string;audience?:string;sourceText?:string;quantity?:number}={};try{resumeInput=resumed?JSON.parse(resumed.prompt):{};}catch{}
   const dialog = useRef<HTMLDialogElement>(null),
-    [title, setTitle] = useState(""),
-    [brief, setBrief] = useState(""),
-    [audience, setAudience] = useState(""),
-    [quantity, setQuantity] = useState(3),
+    [title, setTitle] = useState(resumeInput.topic||""),
+    [brief, setBrief] = useState(resumeInput.sourceText||""),
+    [audience, setAudience] = useState(resumeInput.audience||""),
+    [quantity, setQuantity] = useState(resumeInput.quantity||3),
     [channel, setChannel] = useState(initialChannel),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [submitted, setSubmitted] = useState<string>();
+    [submitted, setSubmitted] = useState<string|undefined>(resumed?.idempotencyKey);
+  const [startedAt,setStartedAt]=useState(resumed?Date.parse(resumed.createdAt):Date.now()),[lastChecked,setLastChecked]=useState<number>(),[syncError,setSyncError]=useState("");
   const retry = useRef<{ signature: string; key: string } | null>(null),
     refreshRef = useRef(refresh);
   refreshRef.current = refresh;
@@ -59,10 +65,11 @@ export function IdeaComposer({
     job && ["unknown", "failed", "blocked"].includes(job.state),
   );
   const working = busy || pending;
+  async function checkStatus(){try{await refreshRef.current();setLastChecked(Date.now());setSyncError("");}catch{setSyncError("Status could not be refreshed. No new AI request was made.");}}
   useEffect(() => {
     if (demo || !pending) return;
     const timer = setInterval(
-      () => void refreshRef.current().catch(() => {}),
+      () => void checkStatus(),
       4000,
     );
     return () => clearInterval(timer);
@@ -80,6 +87,9 @@ export function IdeaComposer({
       proposal = parseGeneratedIdeas(job.result, 1)[0];
     } catch {}
   const evidenceIds = job?.researchJobIds || [];
+  let relevanceWarning=false;try{relevanceWarning=Boolean(job)&&researchEvidence(state,actor,channel,evidenceIds).some(result=>result.citations.every(cite=>!relevantIdeaCitation(cite,title,audience)));}catch{}
+  async function confirmRequest(){setBusy(true);setError("");try{await send({type:"job.confirm",id:job!.id});setLastChecked(Date.now());}catch(e){setError(e instanceof Error?e.message:"Could not confirm this request.");}finally{setBusy(false);}}
+
   function editTitle(value: string) {
     setTitle(value);
     setSubmitted(undefined);
@@ -105,6 +115,7 @@ export function IdeaComposer({
     setBusy(true);
     setError("");
     setSubmitted(key);
+    setStartedAt(Date.now());setLastChecked(undefined);setSyncError("");
     try {
       await send({
         type: "idea.generate",
@@ -212,6 +223,9 @@ export function IdeaComposer({
         When automatic drafting is enabled, opening writing also starts its
         first AI draft within the founder-approved post allowance.
       </p>
+      {submitted&&<IdeaRunProgress job={job} busy={busy} startedAt={startedAt} sourceCount={evidenceIds.length} readyCount={mode==="manual"?(proposal?1:0):cards.length} targetCount={mode==="manual"?1:quantity} lastChecked={lastChecked} syncError={syncError} refresh={checkStatus} confirm={confirmRequest}/>}
+      {relevanceWarning&&<p className="s-alert s-error" role="alert">These saved references do not match the current topic/audience well. They are retained for audit; inspect the ideas before using them. This request will not be regenerated automatically.</p>}
+      <details open={!submitted} className="s-idea-request-details"><summary>Request details{mode==="generate"?` · ${channel} · ${quantity} ideas`:""}</summary>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -329,52 +343,15 @@ export function IdeaComposer({
             type="submit"
             disabled={working || stopped}
           >
-            {working
-              ? "Researching and generating…"
+            {job?.state==="awaiting_confirmation"?"Waiting for allowance confirmation":job?.state==="running"?"Generating ideas…":working
+              ? "Researching and preparing…"
               : demo
                 ? "Preview sample ideas"
                 : "Generate ideas"}
           </button>
         )}
       </form>
-      {job && (
-        <div role="status">
-          {job.state === "queued"
-            ? "Research saved. AI request is queued."
-            : job.state === "running"
-              ? "The agent is developing ideas from the research."
-              : job.state === "succeeded"
-                ? "AI response received. Review the ideas and source evidence."
-                : job.state === "awaiting_confirmation"
-                  ? "Confirm this saved request in Idea generation status to continue within its budget."
-                  : job.state}
-          {job.error && <p>{job.error}</p>}
-        </div>
-      )}
-      {job?.state === "awaiting_confirmation" && (
-        <button
-          type="button"
-          className="s-btn"
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            setError("");
-            try {
-              await send({ type: "job.confirm", id: job.id });
-            } catch (e) {
-              setError(
-                e instanceof Error
-                  ? e.message
-                  : "Could not confirm this request.",
-              );
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          Confirm AI request allowance · ${(job.estimate / 100).toFixed(2)}
-        </button>
-      )}
+      </details>
       {mode === "manual" && proposal && (
         <section>
           <h3>AI research and development</h3>

@@ -1,3 +1,4 @@
+import {incompleteDraftBody,applyRecoveredWorkingText} from "./incomplete-draft";
 import {saveAgentVoiceExample} from "./agent-voice-library";
 import {saveAgentRuleFile} from "./agent-rule-files";
 import { parseOutput, draftResultSchema } from "./output-contracts";
@@ -1774,6 +1775,14 @@ export function applyCommand(
       job.error =
         "Saved response prepared for comparison only. No draft text was replaced and no provider request was made. Resolve all factual questions and placeholders before approval.";
       break;
+    }
+    case "job.recoverIncomplete": {
+      const job=jobFor(c.jobId);if(job.kind!=="text"||job.state!=="succeeded"||job.outputStatus!=="incomplete"||!job.result||!job.contentId||job.appliedAt)bad("Choose an unapplied incomplete writing response.");
+      const d=content(job.contentId!);if(job.createdBy!==actor.email&&!can(s,actor,"users.manage"))bad("This response belongs to another creator.");
+      if(d.deletedAt||d.state!=="draft"||d.revision!==c.expectedRevision||d.text.trim()||d.metadata.trim()||!job.targetIdentity||copyIdentity(d,s)!==job.targetIdentity||currentCopyAcceptance(d,s))bad("The editor changed or already has content. Nothing was overwritten; compare the saved response manually.");
+      if(!researchSourcesCurrent(s,actor,job))bad("Research evidence or access changed. Compare the saved sources first.");
+      const body=incompleteDraftBody(job.result!);if(!body)bad("No safe body text could be recovered from this response. No new AI request was made.");
+      applyRecoveredWorkingText(d,job,body!,actor.email,now,id);break;
     }
     case "job.editDraft":
     case "job.applyDraft": {
