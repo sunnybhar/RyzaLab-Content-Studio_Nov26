@@ -95,7 +95,7 @@ export function orchestrateReviews(
           (c) => c.id === resolvedConnection(state, original.channel, "review"),
         );
         if (
-          (original.channel === "Notes" || policy.requireIndependentReview) &&
+          policy.requireIndependentReview &&
           (!original.generatedBy ||
             reviewer?.provider === original.generatedBy.provider)
         )

@@ -399,6 +399,7 @@ async function main() {
     assert.equal(saved.media.slides.length, 1);
 
     // Export actual editable source and real documents; no simulated downloads.
+    await page.getByText("More options",{exact:true}).click();
     const projectFile = await saveDownload(
       () =>
         page
@@ -1062,7 +1063,7 @@ async function main() {
       }, stateKey);
       await transition("succeeded");
       await progressPage
-        .getByText("LinkedIn · Provider finished — result needs attention", {
+        .getByText("LinkedIn · Generation finished — check available ideas", {
           exact: true,
         })
         .waitFor();
