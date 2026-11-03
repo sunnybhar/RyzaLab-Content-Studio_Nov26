@@ -25,3 +25,11 @@ ZIP limits: 1 MB compressed and expanded, 64 entries, 256 KB per expanded file. 
 Upload packages directly with either INSTRUCTIONS.md or 00-START-HERE-agent-instructions.md (exactly one instructions file). Renaming/repacking is no longer required. __MACOSX folders, ._ resource-fork copies and .DS_Store files are excluded from knowledge and summarized as skipped metadata. Only actual UTF-8 Markdown is imported. Binary or invalid text is rejected before persistence rather than reaching PostgreSQL jsonb.
 
 If a package was previewed in v0.3.16 and failed to save, preserve any manual edits, reload after v0.3.17 appears, and upload the ZIP again so the corrected importer rebuilds a clean preview. Then Save package for the appropriate channel. A migration error in the old UI could be caused by NUL characters from resource-fork metadata; that specific failure does not require a new database migration. Unrelated persistence failures still need separate diagnosis.
+
+## v0.3.18 — verify exact original ZIP uploads
+
+The package preview includes Download selected original ZIP. After Save package, Original uploaded ZIPs shows the original filename, size, channel/skill kind and upload time, with Download original uploaded ZIP. That download preserves exact uploaded bytes, including ignored metadata; only its safe extracted Markdown enters writing context. Download saved package ZIP instead contains the current edited Instructions and context and is intentionally a different file.
+
+Channel and skill originals are retained separately per channel. A newly uploaded channel package replaces that channel's previous original archives; a new skill upload replaces its skill original. Editing text without uploading a new ZIP keeps the existing original downloads. Original archives are limited to 1 MB each and 2 MB combined across workspace storage. They share Agent Rules channel permissions and are not included in prompts or public research queries.
+
+Archives uploaded before v0.3.18 were not retained, so exact originals cannot be reconstructed. Re-upload once and Save package to enable exact-original downloads. Individual uploaded Instructions/Context/voice files retain their existing download controls.

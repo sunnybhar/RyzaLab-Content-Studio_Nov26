@@ -337,3 +337,6 @@ Reproduced PostgreSQL22P05 from NUL-bearing AppleDouble text. Corrected channel/
 
 ## WIP v0.3.18: download exact original ZIPs
 User additionally requests download of exact uploaded originals. v0.3.17 Mac metadata save fix was separately pushed to main. Added optional original channel/skill archives to atomic package saves, backend validates actual ZIPs, channel-scoped filtering and exact-byte download cards/pre-save download. Edited package download remains distinct. Latest original per kind/channel retained,2MB total workspace original ZIP cap; original bytes base64 encoded, never model context. Existing uploads need one re-upload because earlier builds did not retain original archives. Tests in progress, no release yet.
+
+### v0.3.18 verification checkpoint
+Original archive bytes remain exact before/after preview edits; channel-scoped access and atomic rejection tests pass. Real PostgreSQL saves both channels' originals including base64-encoded Mac binary metadata while derived context remains clean. Build/typecheck passed; full suite/focused browser exact-download checks running. Originals limited2MB workspace total, independently downloadable from edited Markdown package. No release yet, no paid/live calls.

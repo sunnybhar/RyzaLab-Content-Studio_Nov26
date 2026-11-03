@@ -129,7 +129,7 @@ async function main() {
     );
     await page
       .getByLabel("Studio version", { exact: true })
-      .getByText(/v0\.3\.17/)
+      .getByText(/v0\.3\.18/)
       .waitFor();
     await page.screenshot({
       path: "/tmp/studio-v2-desktop.png",

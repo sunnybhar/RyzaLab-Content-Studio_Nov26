@@ -31,3 +31,11 @@ test('binary Markdown is rejected before saving, including requests from an olde
  await assert.rejects(async()=>readAgentPackage(await archive({'INSTRUCTIONS.md':'Valid instructions','knowledge/binary.md':'\0binary'})),/binary control/);
  const s=initialState(DEMO_ACTOR,true);assert.throws(()=>applyCommand(s,DEMO_ACTOR,{type:'agentRules.importPackage',channel:'Newsletter',instructions:file('instructions.md','Original instructions'),context:file('context.md','\0AppleDouble metadata')},{demo:true}),/binary or macOS metadata/);assert.equal(s.agentRuleFiles,undefined);
 });
+
+test('original ZIP bytes survive edits, are scoped to the channel, and failed archive saves remain atomic',async()=>{
+ const {filteredState}=await import('../lib/studio/permissions');const zip=await archive({'INSTRUCTIONS.md':'Original instructions','knowledge/company.md':'Original facts','__MACOSX/knowledge/._company.md':'\0binary'});const original={fileName:'uploaded-original.zip',base64:Buffer.from(zip).toString('base64'),byteSize:zip.byteLength,kind:'channel'};
+ const state=initialState(DEMO_ACTOR,true),command={type:'agentRules.importPackage',channel:'LinkedIn',instructions:file('instructions.md','Edited instructions before saving'),context:file('context.md','Edited context before saving'),archives:[original]};
+ const next=applyCommand(state,DEMO_ACTOR,command,{demo:true});assert.equal(next.agentPackageArchives!.length,1);assert.deepEqual(Buffer.from(next.agentPackageArchives![0].base64,'base64'),Buffer.from(zip));assert.equal(next.agentPackageArchives![0].fileName,'uploaded-original.zip');assert.equal(next.agentRuleFiles![0].extractedText,'Edited instructions before saving');
+ const actor={id:'scoped',email:'scoped@example.com'};next.members.push({...actor,roles:['creator'],grants:[{action:'workflow.edit',channel:'Newsletter'}],revoked:false});assert.equal(filteredState(next,actor).agentPackageArchives!.length,0);
+ assert.throws(()=>applyCommand(state,DEMO_ACTOR,{...command,archives:[{...original,byteSize:1}]},{demo:true}),/byte size/);assert.equal(state.agentPackageArchives,undefined);assert.equal(state.agentRuleFiles,undefined);
+});
