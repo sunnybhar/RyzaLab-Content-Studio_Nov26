@@ -1,3 +1,4 @@
+import {saveAgentVoiceExample} from "./agent-voice-library";
 import {saveAgentRuleFile} from "./agent-rule-files";
 import { parseOutput, draftResultSchema } from "./output-contracts";
 import type { Actor, Content, Job, StudioState } from "./types";
@@ -251,6 +252,11 @@ export function applyCommand(
     }
   }
   switch (c.type) {
+    case "agentVoice.create": {const {type:_type,...change}=c;return saveAgentVoiceExample(input,actor,change,now,id());}
+    case "agentVoice.remove": {
+      const example=s.agentVoiceExamples?.find(e=>e.id===c.id);if(!example)throw new StudioError(404,"Voice example not found.");
+      need("workflow.edit",{channel:example.channel==="Shared"?undefined:example.channel});s.agentVoiceExamples=s.agentVoiceExamples?.filter(e=>e.id!==c.id);break;
+    }
     case "agentRules.save": return saveAgentRuleFile(input,actor,c,now,id());
     case "agentRules.remove": {
       need("workflow.edit",{channel:c.channel});
