@@ -19,3 +19,9 @@ Under Instructions, add skill guidance Markdown/text files or a skill ZIP contai
 Edit saved Instructions and context lets users revise the text later. Download saved package ZIP exports the edited Instructions and combined context as a reusable Markdown package; skipped code and original setup artifacts are not included. Individual saved Markdown files remain downloadable as well.
 
 ZIP limits: 1 MB compressed and expanded, 64 entries, 256 KB per expanded file. Instructions and combined context each allow 60,000 characters. Large context is locally selected into source-labelled sections (up to 12,000 characters per request); full originals remain editable. Selected excerpts and Instructions are frozen into each job, counted in its input allowance, and never sent to public search endpoints.
+
+## v0.3.17 — Mac-created ZIPs and original filenames
+
+Upload packages directly with either INSTRUCTIONS.md or 00-START-HERE-agent-instructions.md (exactly one instructions file). Renaming/repacking is no longer required. __MACOSX folders, ._ resource-fork copies and .DS_Store files are excluded from knowledge and summarized as skipped metadata. Only actual UTF-8 Markdown is imported. Binary or invalid text is rejected before persistence rather than reaching PostgreSQL jsonb.
+
+If a package was previewed in v0.3.16 and failed to save, preserve any manual edits, reload after v0.3.17 appears, and upload the ZIP again so the corrected importer rebuilds a clean preview. Then Save package for the appropriate channel. A migration error in the old UI could be caused by NUL characters from resource-fork metadata; that specific failure does not require a new database migration. Unrelated persistence failures still need separate diagnosis.

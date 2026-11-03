@@ -117,7 +117,7 @@ export function AgentRules({
         <p>
           Upload your ZIP whenever required. Preview and edit Instructions and
           context before saving to {channel}. Hub packages can be used for
-          Newsletter. Only INSTRUCTIONS.md and knowledge/*.md are imported;
+          Newsletter. INSTRUCTIONS.md (or 00-START-HERE-agent-instructions.md) and knowledge/*.md are imported; macOS metadata is excluded.
           setup guides, nested ZIPs and scripts are skipped. Add skill ZIPs separately below Instructions. Large knowledge context is selected into source-labelled excerpts of up to 12,000 characters per request; the complete saved text remains editable.
         </p>
         <input
