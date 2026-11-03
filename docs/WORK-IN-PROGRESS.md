@@ -400,3 +400,5 @@ User superseded two human approvals/manual stages: one review decision, automati
 
 ### v0.3.24 checkpoint — domain checks and handoff
 Single-decision and override tests pass: no fake human copy acceptance; unknown job reservations unchanged; current version/permission/immutable asset guards retained; lower authorizations preserved. UI removes normal manual checklist, starts owner-authorized queued check automatically, provides reasoned override and direct copy/download handoff instead of another schedule form. Build/typecheck passed. Browser/full-suite verification and release notes next. Manual platform publication remains explicit; no external posting integration is claimed.
+
+Focused browser tests pass: one human approval opens direct copy/download handoff; no tabs or manual checklist; unknown review override requires reason and retains all billing/outcome evidence, with no extra paid request. Full domain suite passed (260 tests). Latest adjustment mounts review content only when opened, preventing hidden historical cards from triggering concurrent setup requests. Final build and release verification follow.

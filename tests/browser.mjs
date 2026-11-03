@@ -481,69 +481,11 @@ async function main() {
     await review
       .getByRole("button", { name: "Open review", exact: true })
       .click();
-    assert.equal(
-      await review.locator(".s-stage-tracker").getAttribute("open"),
-      null,
-    );
-    await page.screenshot({ path: "/tmp/studio-review-popup.png" });
-    await review.locator(".s-stage-tracker > summary").click();
-    await review.getByText(/Active workflow v1/).waitFor();
-    for (const stage of [
-      "Intake",
-      "Evidence",
-      "Creation",
-      "Independent review",
-      "Visual review",
-      "Release check",
-    ]) {
-      await review
-        .getByRole("button", { name: `Record ${stage} check`, exact: true })
-        .click();
-      const form = review.locator(".s-stage-form");
-      await form
-        .getByLabel("Reason / finding")
-        .fill("Human inspected this exact version and selected media.");
-      await form
-        .getByLabel("Evidence / reviewer reference")
-        .fill(
-          "Human review: provided sources and current content inspected; no automated reviewer is claimed.",
-        );
-      if (stage === "Intake") {
-        await page.evaluate(() =>
-          document
-            .querySelector(".studio-v2")
-            .classList.add("s-theme-daylight"),
-        );
-        const save = form.getByRole("button", {
-          name: "Save check",
-          exact: true,
-        });
-        await save.hover();
-        const colors = await save.evaluate((el) => ({
-          color: getComputedStyle(el).color,
-          background: getComputedStyle(el).backgroundColor,
-        }));
-        assert.notEqual(
-          colors.color,
-          colors.background,
-          "Daylight save-button label stays visible on hover",
-        );
-        await page.screenshot({ path: "/tmp/studio-review-daylight.png" });
-        await page.evaluate(() =>
-          document
-            .querySelector(".studio-v2")
-            .classList.remove("s-theme-daylight"),
-        );
-      }
-      await form
-        .getByRole("button", { name: "Save check", exact: true })
-        .click();
-      await form.waitFor({ state: "hidden" });
-    }
-    await review
-      .getByRole("button", { name: "Approve revision", exact: true })
-      .click();
-    await page.locator(".s-list-row").filter({ hasText: title }).waitFor();
+    assert.equal(await review.locator(".s-stage-tracker").count(),0);
+    await page.screenshot({path:"/tmp/studio-review-popup.png"});
+    await review.getByRole("button",{name:"Approve & publish",exact:true}).click();
+    await page.getByRole("dialog",{name:"Ready to publish",exact:true}).getByRole("button",{name:"Close",exact:true}).click();
+    await navigate("Create");
     await openContent(title);
     assert.equal(
       await page.locator(".s-creative-direction").getAttribute("open"),
@@ -556,24 +498,6 @@ async function main() {
         .evaluate((el) => el.clientHeight <= innerHeight * 0.46),
     );
     await page.locator(".s-creative-direction > summary").click();
-    await page.locator(".s-stage-tracker > summary").click();
-    await page
-      .getByRole("button", {
-        name: "Record Publication handoff check",
-        exact: true,
-      })
-      .click();
-    const handoffForm = page.locator(".s-stage-form");
-    await handoffForm
-      .getByLabel("Reason / finding")
-      .fill("Human prepared this exact approved package for publication.");
-    await handoffForm
-      .getByLabel("Evidence / reviewer reference")
-      .fill("Exact approved package inspected.");
-    await handoffForm
-      .getByRole("button", { name: "Save check", exact: true })
-      .click();
-    await handoffForm.waitFor({ state: "hidden" });
     await navigate("Reviews");
     const approvedState = await state();
     const approved = approvedState.packages.find(
@@ -791,20 +715,9 @@ async function main() {
     await blockedReview
       .getByRole("button", { name: "Open review", exact: true })
       .click();
-    await blockedReview
-      .getByRole("button", { name: "Approve revision", exact: true })
-      .click();
-    await page
-      .getByRole("alert", { name: "Approval error" })
-      .filter({
-        hasText:
-          "Resolve blocking factual claims and confirmation placeholders",
-      })
-      .waitFor();
-    assert.match(
-      await page.getByRole("alert", { name: "Approval error" }).innerText(),
-      /\[source: verify this claim before publishing\]/,
-    );
+    assert.equal(await blockedReview.getByRole("button",{name:"Approve & publish",exact:true}).isDisabled(),true);
+    await blockedReview.getByText(/Check details/).click();
+    await blockedReview.getByText(/Resolve \[source: verify/).waitFor();
     const blocked = (await state()).contents.find(
       (content) => content.title === "Blocked placeholder verification",
     );

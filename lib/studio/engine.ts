@@ -1158,6 +1158,10 @@ export function applyCommand(
         if (!c.handoff)
           bad("Explicitly approve this exact package and its manual handoff.");
       }
+      if (!twoStep && c.singleReview && d.channel === "Notes") {
+        need("policy.manage");
+        if (!c.authorizeNote) bad("Founder release authorization is required for this Note.");
+      }
       if (!twoStep && c.singleReview && !manualOverride && !readiness?.ready) bad(readiness?.blockers.join(" ") || "Review needs attention.");
       if (!twoStep && !c.singleReview && !stageSummary(d, s).readyForApproval)
         bad(
@@ -1218,6 +1222,7 @@ export function applyCommand(
           researchSnapshots: (d.researchJobIds || []).map(jobId=>({jobId,raw:s.jobs.find(j=>j.id===jobId)!.result!})),
         },
       };
+      if (c.singleReview && s.packages.some(p=>p.contentId===d.id && p.revision===d.revision && p.workflowId===workflow.id && p.ruleVersion===s.settings.protectedVersion)) return structuredClone(input);
       s.packages.unshift({
         ...payload,
         id: id(),
@@ -1230,7 +1235,7 @@ export function applyCommand(
           : fingerprint(payload),
       });
       if (manualOverride) s.audit.push({id:id(),actor:actor.email,action:"review.manual_override",target:s.packages[0].id,at:now});
-      if (twoStep) {
+      if (twoStep || c.singleReview) {
         const pkg = s.packages[0];
         d.stages ??= [];
         d.stages.push({
