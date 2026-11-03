@@ -262,7 +262,7 @@ export async function POST(req: NextRequest) {
               outcome.text,
               requestedIdeaQuantity(j.prompt),
             );
-            for (const item of items)
+            for (const item of j.ideaPurpose==="manual_assistance"?[]:items)
               next.ideas.unshift({
                 ...item,
                 id: crypto.randomUUID(),

@@ -1,3 +1,4 @@
+import {automaticIdeaResearch} from "@/lib/studio/automatic-idea-research";
 import { orchestrateInitialWriting } from "@/lib/studio/writing-orchestration";
 import { orchestrateReviews } from "@/lib/studio/review-orchestration";
 import { NextRequest, NextResponse } from "next/server";
@@ -47,13 +48,19 @@ export async function POST(req: NextRequest) {
         413,
         "Command is too large; upload assets separately.",
       );
-    const state = await loadState(db, actor);
+    const original = await loadState(db, actor);
+    let state=original;
     const parsed = commandSchema.parse(await req.json());
-    const command = commandSchema.parse(
+    let command = commandSchema.parse(
       parsed.type === "content.generate"
         ? generationInput(state, actor, parsed)
         : parsed.type === "research.start" ? researchJobInput(state,actor,parsed) : parsed,
     );
+    if(command.type==="idea.generate"&&command.automaticResearch) {
+      const prepared=await automaticIdeaResearch(state,actor,command);
+      if(prepared.existing)return NextResponse.json({state:filteredState(state,actor),actor,mode:"live"});
+      state=prepared.state;command=prepared.command;
+    }
     if (command.type === "idea.generate") {
       requirePermission(state, actor, "idea.edit", {
         channel: command.channel,
@@ -134,7 +141,7 @@ export async function POST(req: NextRequest) {
       command.type === "connection.delete"
         ? { id: command.id, ciphertext: encrypt("") }
         : undefined;
-    await persist(db, state, next, secret);
+    await persist(db, original, next, secret);
     return NextResponse.json({
       state: filteredState(next, actor),
       actor,

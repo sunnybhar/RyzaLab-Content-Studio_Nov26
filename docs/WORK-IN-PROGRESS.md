@@ -271,3 +271,8 @@ User reports the LinkedIn/Newsletter setup checkbox resets after navigation and 
 
 ## 0.3.12 verified release
 Production build/typecheck, 222/222 domain tests, full browser regression, saved connection/checkbox navigation-and-reload test, existing setup success/failure test, and ten-section layout/spacing/keyboard/mobile checks passed. Screenshots visually reviewed. No API/server persistence behavior or spending limits were changed; the checkbox now accurately reads saved effective mappings. Unsaved ticks explicitly require the setup/save button. All ordinary AI & budgets section content is collapsed/lazy by default. Ready for main deployment branch; actual hosted rollout remains unobserved.
+
+## 2026-11-02 — integrated idea research WIP
+User corrected the separate research-then-ideas workflow. Building automatic bounded research in idea generation and research/development inside Add manually. Server preparation checks scope/model/budgets before public retrieval, then freezes source evidence into the idea job atomically. Manual AI assistance is a retained proposal, not an automatically imported replacement; explicit manual save links research into writing. New native idea window keeps references and proposals together, with current source coverage disclosed. Typecheck passed before latest UI refinements; integration/browser verification pending. No live paid calls. Do not release this WIP until verified.
+
+Queued only, per user's explicit instruction: saved LinkedIn/Newsletter mapping checkbox is always checked/disabled; revisit its toggle semantics later. Do NOT change that checkbox as part of this work.

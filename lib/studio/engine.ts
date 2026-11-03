@@ -658,19 +658,23 @@ export function applyCommand(
       break;
     }
 
-    case "idea.create":
+    case "idea.create": {
+      const evidence=researchEvidence(s,actor,c.channel,c.researchJobIds);
       need("idea.edit", { channel: c.channel });
       s.ideas.unshift({
         id: id(),
         title: c.title,
         brief: c.brief,
+        researchJobIds:c.researchJobIds,
+        origin:"manual",
         channel: c.channel,
         state: "pending",
         createdBy: actor.email,
         createdAt: now,
-        sources: [],
+        sources:[...new Set(evidence.flatMap(item=>item.citations.map(cite=>cite.url)))],
       });
       break;
+    }
     case "idea.review": {
       const idea = s.ideas.find((i) => i.id === c.id);
       if (!idea) bad("Idea not found.");
@@ -1913,6 +1917,7 @@ export function applyCommand(
           : undefined;
       const payloadHash = fingerprint({
         outputContract,
+        ideaPurpose:c.ideaPurpose,
         kind: c.kind,
         channel: c.channel,
         contentId: c.contentId,
@@ -1954,6 +1959,7 @@ export function applyCommand(
       const j: Job = {
         id: id(),
         kind: c.kind,
+        ideaPurpose:c.ideaPurpose,
         channel: c.channel,
         contentId: c.contentId,
         prompt: c.prompt,

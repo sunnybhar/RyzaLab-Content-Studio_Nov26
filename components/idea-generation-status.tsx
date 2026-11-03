@@ -134,6 +134,7 @@ export function IdeaGenerationStatus({
           (job.createdBy === actor.email ||
             can(state, actor, "settings.manage"));
         const label =
+          job.ideaPurpose==="manual_assistance"&&job.state==="succeeded"?"Manual idea research assistance ready — saved result retained":
           job.state === "awaiting_confirmation"
             ? "Waiting for your cost confirmation"
             : job.state === "queued"

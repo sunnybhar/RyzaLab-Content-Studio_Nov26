@@ -31,7 +31,9 @@ export function IdeasBrowser({
   onReject,
   onReuse,
   onNewsletter,
+  renderResearch,
 }: {
+  renderResearch?: (idea:Idea)=>import("react").ReactNode;
   ideas: Idea[];
   allIdeas: Idea[];
   contents: Content[];
@@ -228,6 +230,7 @@ export function IdeasBrowser({
                   <p className="s-idea-detail-text">{selected.rejection}</p>
                 </>
               )}
+              {renderResearch?.(selected)}
               {!!selected.sources?.length && (
                 <>
                   <h3>Source references</h3>

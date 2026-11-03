@@ -320,6 +320,7 @@ export interface Connection {
   updatedAt: string;
 }
 export interface Job {
+  ideaPurpose?: "manual_assistance";
   providerUsage?: import("./usage-cost").ClaudeUsage;
   costBasis?: "provider_usage" | "human_reconciled";
   pricingSnapshot?: unknown;

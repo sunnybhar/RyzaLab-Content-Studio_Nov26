@@ -106,6 +106,8 @@ export const commandSchema = z.discriminatedUnion("type", [
     state: z.enum(["planned", "done", "cancelled"]).optional(),
   }),
   command("idea.generate", {
+    automaticResearch: z.boolean().optional(),
+    purpose: z.literal("manual_assistance").optional(),
     channel,
     topic: z.string().min(5).max(4000),
     audience: z.string().min(2).max(500),
@@ -139,7 +141,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   command("research.retrieve", { channel, contentId: id.optional(), expectedRevision: z.number().int().optional(), query: z.string().trim().min(5).max(2000), idempotencyKey: id }),
   command("research.start", { channel, contentId: id.optional(), query: z.string().trim().min(5).max(2000), idempotencyKey: id }),
   command("idea.importSavedResult", { jobId: id }),
-  command("idea.create", { title: short, brief: text, channel }),
+  command("idea.create", { title: short, brief: text, channel, researchJobIds:z.array(id).max(5).optional() }),
   command("idea.review", {
     id,
     decision: z.enum(["approved", "rejected"]),
@@ -317,6 +319,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     allowed: z.boolean(),
   }),
   command("job.enqueue", {
+    ideaPurpose: z.literal("manual_assistance").optional(),
     researchJobIds: z.array(id).max(5).optional(),
     kind: z.enum(FUNCTIONS),
     channel,

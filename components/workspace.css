@@ -4268,3 +4268,5 @@
   .studio-v2 .s-budget-section > summary { padding: 18px; }
   .studio-v2 .s-budget-section-body { padding: 16px; }
 }
+.studio-v2 dialog.s-idea-composer { margin: auto; max-height: 90vh; overflow-y: auto; }
+.studio-v2 dialog.s-idea-composer::backdrop { background: #0009; }

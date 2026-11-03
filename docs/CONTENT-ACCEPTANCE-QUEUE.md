@@ -26,3 +26,6 @@ User chose founder-controlled monthly budgeting and total post ceilings up to$2,
 ## Nov2 / split builds 0.3.7–0.3.9
 
 The default retrieval route is now bounded Wikipedia extracts/Crossref abstracts without a native-search key or search charge. Tool-free Claude setup reuses the stored Text key and explicit role defaults. The first-sample dashboard prepares one LinkedIn idea/draft with frozen selected evidence. Local source/model fixtures remain separate from real acceptance: no live paid sample has run from the coding environment. Manual exercises must be written by a user, and human copy/final approval remains pending. Outbound proxy CONNECT 403 prevents the coding agent from confirming the hosted rollout or testing live APIs here.
+
+## Queued only — saved mapping checkbox
+User reports the saved LinkedIn/Newsletter mapping checkbox cannot be ticked/unticked because it is always checked/disabled. User explicitly asked to queue this issue and not start it. Preserve current checkbox behavior while implementing integrated idea research.

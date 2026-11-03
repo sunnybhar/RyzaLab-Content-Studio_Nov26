@@ -61,7 +61,8 @@ import { DraftAssistant } from "./draft-assistant";
 import { VerificationPack } from "./verification-pack";
 import { BoundedWorkflowSetup } from "./bounded-workflow-setup";
 import { ResearchSetup } from "./research-setup";
-import { ResearchPanel } from "./research-panel";
+import {IdeaComposer} from "./idea-composer";
+import {IdeaEvidence} from "./idea-evidence";
 import { researchEvidence } from "@/lib/studio/research-link";
 import { PostPreview } from "./post-preview";
 import { HighlightedTextarea } from "./highlighted-textarea";
@@ -434,6 +435,7 @@ export default function Workspace() {
   );
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [ideaComposer,setIdeaComposer]=useState<"generate"|"manual"|null>(null);
   const [busy, setBusy] = useState(false);
   const [connectionChecks, setConnectionChecks] = useState<
     Record<
@@ -459,7 +461,6 @@ export default function Workspace() {
   const [approvalTarget, setApprovalTarget] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [libraryTab, setLibraryTab] = useState("Content");
-  const [ideaResearchIds, setIdeaResearchIds] = useState<string[]>([]);
   const [ideaTab, setIdeaTab] = useState("All ideas");
   const [calendarView, setCalendarView] = useState("Month");
   const [reviewEditing, setReviewEditing] = useState<string | null>(null);
@@ -1562,114 +1563,8 @@ export default function Workspace() {
                 </button>
               ) : page === "Ideas" ? (
                 <>
-                  <button
-                    disabled={readOnly}
-                    className="s-btn s-primary"
-                    onClick={() =>
-                      openForm(
-                        "Generate ideas with an agent",
-                        [
-                          {
-                            ...field("topic", "Topic / Brief", "", "textarea"),
-                            required: true,
-                          },
-                          { ...field("audience", "Audience"), required: true },
-                          {
-                            ...field("quantity", "Quantity", 3, "number"),
-                            hint: "This field controls the number of idea cards. Set it to 4 to request four ideas.",
-                            min: 1,
-                            max: 20,
-                            step: 1,
-                            required: true,
-                          },
-                          {
-                            name: "channel",
-                            label: "Channel",
-                            options: CHANNELS,
-                            value:
-                              channel === "All channels" ? "LinkedIn" : channel,
-                          },
-                          {
-                            name: "researchJobId", label: "Web research evidence", value: ideaResearchIds[0] || "",
-                            options: ["",...state.jobs.filter(job=>job.kind==="research"&&job.channel===(channel==="All channels"?"LinkedIn":channel)&&job.createdBy===actor.email).filter(job=>{try {researchEvidence(state,actor,job.channel,[job.id]);return true;}catch{return false;}}).slice(0,10).map(job=>job.id)],
-                            optionLabels: Object.fromEntries([["","Saved references only"],...state.jobs.filter(job=>job.kind==="research").map(job=>[job.id,job.prompt.slice(0,100)])]),
-                            hint: "Run research in the Ideas screen first, then select cited evidence here. Generating ideas does not start another search.",
-                          },
-                          {
-                            ...field(
-                              "sourceText",
-                              "Source references / source text",
-                              "",
-                              "textarea",
-                            ),
-                            hint: "Paste source URLs, excerpts, or reference notes.",
-                          },
-                          ...(mode === "demo"
-                            ? []
-                            : [
-                                {
-                                  name: "consent",
-                                  label:
-                                    "I authorize this AI request and its configured budget usage",
-                                  type: "checkbox",
-                                  required: true,
-                                },
-                              ]),
-                        ],
-                        (d) => ({
-                          type: "idea.generate",
-                          channel: val(d, "channel"),
-                          topic: val(d, "topic"),
-                          audience: val(d, "audience"),
-                          quantity: Number(val(d, "quantity")),
-                          research: Boolean(val(d,"researchJobId")),
-                          researchJobIds: val(d,"researchJobId") ? [val(d,"researchJobId")] : [],
-                          sourceText: val(d, "sourceText"),
-                          idempotencyKey: key(),
-                        }),
-                        mode === "demo"
-                          ? "Preview clearly labelled sample ideas. This demo does not call a paid agent."
-                          : "This request uses your active workflow and validated AI binding. Submitting explicitly queues an AI request within your configured budget; provider and model follow workspace settings.",
-                        mode === "demo"
-                          ? "Preview sample ideas"
-                          : "Generate ideas",
-                      )
-                    }
-                  >
-                    <WandSparkles size={17} /> Generate with agent
-                  </button>
-                  <button
-                    disabled={readOnly}
-                    className="s-btn"
-                    aria-label="Add idea"
-                    title="Add manually"
-                    onClick={() =>
-                      openForm(
-                        "Capture a new idea",
-                        [
-                          { ...field("title", "Idea title"), required: true },
-                          {
-                            name: "channel",
-                            label: "Channel",
-                            options: CHANNELS,
-                            value:
-                              channel === "All channels" ? "LinkedIn" : channel,
-                          },
-                          field("brief", "What is the angle?", "", "textarea"),
-                        ],
-                        (d) => ({
-                          type: "idea.create",
-                          title: val(d, "title"),
-                          brief: val(d, "brief"),
-                          channel: val(d, "channel"),
-                        }),
-                        undefined,
-                        "Add idea",
-                      )
-                    }
-                  >
-                    <Plus size={16} /> Add manually
-                  </button>
+                  <button disabled={readOnly} className="s-btn s-primary" onClick={()=>setIdeaComposer("generate")}><WandSparkles size={17}/> Generate with agent</button>
+                  <button disabled={readOnly} className="s-btn" aria-label="Add idea" title="Add manually" onClick={()=>setIdeaComposer("manual")}><Plus size={16}/> Add manually</button>
                 </>
               ) : page === "People" ? (
                 <button
@@ -1922,7 +1817,6 @@ export default function Workspace() {
           )}
           {page === "Ideas" && (
             <>
-              <details className="s-version"><summary>Web research{ideaResearchIds.length ? ` · ${ideaResearchIds.length} selected` : ""}</summary><ResearchPanel state={state} actor={actor} channel={channel === "All channels" ? "LinkedIn" : channel} selected={ideaResearchIds} onSelected={ids=>setIdeaResearchIds(ids.slice(-1))} run={execute} refresh={()=>refresh(true)} disabled={readOnly||busy} demo={mode==="demo"} /></details>
               <IdeaGenerationStatus
                 state={state}
                 actor={actor}
@@ -2057,6 +1951,7 @@ export default function Workspace() {
                 </section>
               ) : (
                 <IdeasBrowser
+                  renderResearch={idea=><IdeaEvidence state={state} actor={actor} channel={idea.channel} ids={idea.researchJobIds}/>}
                   ideas={state.ideas.filter((idea) => matches(idea) && (ideaTab === "All ideas" || idea.state.toLowerCase() === ideaTab.toLowerCase()))}
                   allIdeas={state.ideas}
                   contents={state.contents}
@@ -4295,6 +4190,7 @@ export default function Workspace() {
           </footer>
         </main>
       </div>
+      {ideaComposer&&<IdeaComposer mode={ideaComposer} initialChannel={channel==="All channels"?"LinkedIn":channel} state={state} actor={actor} demo={mode==="demo"} send={send} refresh={()=>refresh(true)} close={()=>setIdeaComposer(null)} openContent={idea=>useIdea(idea,"Text post","RyzaLab")}/>}
       {queueTarget && (
         <QueueRequest
           state={state}
