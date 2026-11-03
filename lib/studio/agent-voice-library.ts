@@ -32,8 +32,22 @@ export function saveAgentVoiceExample(
     (e) => e.createdBy === actor.email && e.requestKey === change.requestKey,
   );
   if (existing) {
-    const { id: _id, createdBy: _by, createdAt: _at, ...saved } = existing;
-    if (JSON.stringify(saved) !== JSON.stringify(change))
+    const sameFile =
+      (!existing.file && !change.file) ||
+      Boolean(
+        existing.file &&
+        change.file &&
+        existing.file.fileName === change.file.fileName &&
+        existing.file.base64 === change.file.base64 &&
+        existing.file.byteSize === change.file.byteSize,
+      );
+    if (
+      existing.title !== change.title ||
+      existing.contentType !== change.contentType ||
+      existing.channel !== change.channel ||
+      (existing.text || undefined) !== (change.text || undefined) ||
+      !sameFile
+    )
       throw new StudioError(
         409,
         "This request key belongs to a different example.",

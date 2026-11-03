@@ -65,6 +65,21 @@ test("voice uploads are idempotent and reject conflicting/empty content", () => 
     now,
   });
   assert.equal(applyCommand(s, DEMO_ACTOR, pasted, { now }), s);
+  const stored = JSON.parse(
+    JSON.stringify(s, (_key, value) =>
+      value && typeof value === "object" && !Array.isArray(value)
+        ? Object.fromEntries(
+            Object.entries(value).sort(([a], [b]) => a.localeCompare(b)),
+          )
+        : value,
+    ),
+  );
+  assert.equal(
+    applyCommand(stored, DEMO_ACTOR, pasted, { now }),
+    stored,
+    "JSONB key ordering must not break same-request replay",
+  );
+
   assert.throws(
     () =>
       applyCommand(
