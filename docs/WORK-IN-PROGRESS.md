@@ -417,3 +417,6 @@ User removes Notes/Notebook, Hub, TikTok and Facebook from all active sections. 
 
 ### v0.3.25 browser checkpoint
 Production build passed after removing an unreachable retired-channel comparison. Focused browser passed: five-channel tabs, clean product header and relocated controls, dated request/topic/ID metadata, no raw provider response, collapsed editor support tools, all four distinct interactive previews and mobile fit. AgentRules canonical context tests pass. Full browser reached its final idea-status scenarios and found an obsolete expected label, now updated to the plain-language label. Final smoke rerun next; no live calls or publishing.
+
+### v0.3.25 verified release
+265domain tests passed, final five targeted rules/channel checks passed, production build/typecheck passed, full browser workflow passed after updating obsolete display text, and focused workspace/metadata/four-layout/mobile browser passed. Four preview screenshots under /tmp/ryza-ideas-layout-1.png through4.png; live preview route /ideas-layouts. Agent Rules inclusion verified via actual canonical queued job/compiled system, not merely configuration panels; no hosted calls made. User can review v0.3.25and choose a layout. Final layout implementation awaits that choice. Main push is deployment handoff; hosted rollout unverified.
