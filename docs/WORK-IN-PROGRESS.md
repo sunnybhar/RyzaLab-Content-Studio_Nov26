@@ -376,3 +376,6 @@ User cannot find review job; code shows any active/unknown content-writing job b
 
 ### v0.3.22 verification checkpoint
 Focused review browser passes: exact unknown writing blocker shown inline, verified resolution releases only recorded reservation and never creates report/package, final approval remains disabled until actual current report, queued review progress uses existingID and confirmation creates no new job. Added local dispatch eligibility to prevent running/confirming stale saved context; cancel only undispatched states. Updated tracker wording to actual Approve final package label. Production build/full app checks next; no live calls or automatic reconciliation by assistant.
+
+### v0.3.22 final validation
+Corrected per-request form-state TypeScript spread declaration found during build. Production build/typecheck now pass, focused blocker browser rechecks unknown writing discovery, explicit verified reconciliation without approval bypass, saved queued-review progressID and cost confirmation without duplicate generation. Existing review/solo domain checks pass. Full-page browser running. No backend readiness changes, automatic cancellations/reconciliation, or assistant provider calls.

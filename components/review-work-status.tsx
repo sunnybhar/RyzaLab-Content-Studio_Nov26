@@ -83,10 +83,7 @@ export function ReviewWorkStatus({
           setResolutions((previous) => ({
             ...previous,
             [job.id]: {
-              outcome: "",
-              amount: "",
-              reason: "",
-              ...previous[job.id],
+              ...(previous[job.id]||{outcome:"",amount:"",reason:""}),
               ...change,
             },
           }));
