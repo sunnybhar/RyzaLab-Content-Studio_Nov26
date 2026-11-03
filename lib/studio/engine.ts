@@ -1192,7 +1192,7 @@ export function applyCommand(
           exceptionSnapshots: (s.exceptions || []).filter(
             (e) => e.contentId === d.id && e.revision === d.revision,
           ),
-          ...(twoStep
+          ...(twoStep || c.singleReview
             ? {
                 reviewPolicySnapshot: structuredClone(twoStep),
                 ...(readiness!.acceptance ? {copyAcceptanceSnapshot:structuredClone(readiness!.acceptance)} : {}),

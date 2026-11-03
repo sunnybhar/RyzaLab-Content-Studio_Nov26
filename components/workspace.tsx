@@ -1484,7 +1484,7 @@ export default function Workspace() {
             <div className="s-release-label" aria-label="Studio version">
               <strong>RyzaLab Studio</strong>
               <small>
-                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.23"} ·{" "}
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.24"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>
@@ -2724,6 +2724,7 @@ export default function Workspace() {
                     title={c.title}
                     channel={c.channel}
                     revision={c.revision}
+                    onClose={()=>setReviewEditing(null)}
                   >
                     <div className="s-inline s-between">
                       <span className="s-inline">

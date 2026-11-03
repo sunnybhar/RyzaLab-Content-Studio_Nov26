@@ -1,20 +1,138 @@
-import {build} from "esbuild";
-import {chromium} from "playwright";
+import { build } from "esbuild";
+import { chromium } from "playwright";
 import assert from "node:assert/strict";
-import {initialState,DEMO_ACTOR,EMPTY_MEDIA} from "../lib/studio/seed";
-import {applyCommand} from "../lib/studio/engine";
-import {copyIdentity} from "../lib/studio/solo-quality";
-let fixture=initialState(DEMO_ACTOR,true);
-fixture=applyCommand(fixture,DEMO_ACTOR,{type:"policy.adoptSolo",expectedRuleVersion:fixture.settings.protectedVersion,packageCap:50,monthlyCap:500,requireIndependentReview:false,autoDraft:false,autoReview:true},{demo:true});
-const content=fixture.contents[0];content.state="review";content.text="A household handoff can document routines and useful contacts.";content.metadata="";content.media=structuredClone(EMPTY_MEDIA);content.format="Text post";
-content.reviewSubmission={id:"submitted",actor:DEMO_ACTOR.email,identity:copyIdentity(content,fixture),at:new Date().toISOString()};
-const job={id:"old-review",kind:"review",contentId:content.id,channel:content.channel,account:content.account,connectionId:"fixture",prompt:"Existing request",estimate:14,reserved:14,state:"unknown",attempt:1,idempotencyKey:"existing",createdBy:DEMO_ACTOR.email,createdAt:new Date().toISOString(),targetRevision:content.revision};fixture.jobs=[job as any];content.automaticReview={acceptanceId:"submitted",jobId:job.id,at:new Date().toISOString()};
-const script=await build({stdin:{contents:`import React,{useState}from'react';import{createRoot}from'react-dom/client';import{SoloReview}from'./components/solo-review';import{applyCommand}from'./lib/studio/engine';const actor=${JSON.stringify(DEMO_ACTOR)};window.commands=[];window.progress=[];function App(){const[state,setState]=useState(${JSON.stringify(fixture)});window.saved=state;return <SoloReview content={state.contents[0]} state={state} actor={actor} demo={false} refresh={async()=>{}} progressJob={async id=>{window.progress.push(id)}} send={async c=>{window.commands.push(c);const next=applyCommand(state,actor,c,{demo:true});setState(next);return {state:next};}} renderAsset={()=>null} openDraft={()=>{}} recordPriceException={()=>{}} requestChanges={()=>{}}/>};createRoot(document.getElementById('app')).render(<App/>);`,resolveDir:process.cwd(),loader:"tsx"},bundle:true,write:false,loader:{".css":"empty"},format:"iife",jsx:"automatic",define:{"process.env.NODE_ENV":'"production"'}});
-const browser=await chromium.launch({executablePath:"/usr/bin/chromium",headless:true,args:["--no-sandbox"]});
-try{const page=await browser.newPage();const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));await page.route("http://localhost:31346/**",r=>r.fulfill({contentType:"text/html",body:'<div id="app"></div><script>'+script.outputFiles[0].text.replaceAll("</script","<\\/script")+'</script>'}));await page.goto("http://localhost:31346/");
-const approve=page.getByRole("button",{name:"Approve & publish",exact:true});await approve.waitFor();assert.equal(await approve.isDisabled(),true);
-assert.equal(await page.getByRole("button",{name:/Request textual review|Save verified outcome|Approve copy|Approve final package/}).count(),0);
-await page.getByText("Override checks and continue",{exact:true}).click();await page.getByLabel("Publish with manual override",{exact:true}).check();const override=page.getByRole("button",{name:"Approve & publish with override",exact:true});assert.equal(await override.isDisabled(),true);await page.getByLabel("Reason",{exact:true}).fill("I checked this version personally and accept the editorial findings.");await override.click();await page.waitForFunction(()=>(window as any).saved.packages.length===1);
-const saved=await page.evaluate(()=>(window as any).saved);assert.equal(saved.jobs[0].state,"unknown");assert.equal(saved.jobs[0].reserved,14);assert.equal(saved.contents[0].agentReview,undefined);assert.equal(saved.contents[0].copyAcceptances?.length||0,0);assert.ok(saved.packages[0].editorialOverride.checks.length);assert.deepEqual(await page.evaluate(()=>(window as any).progress),[]);assert.deepEqual((await page.evaluate(()=>(window as any).commands)).map((c:any)=>c.type),["package.approve"]);assert.deepEqual(errors,[]);
-console.log("PASS: unknown AI review can be explicitly overridden with one approval; true billing/report status retained; no extra paid request");
-}finally{await browser.close();}
+import { initialState, DEMO_ACTOR, EMPTY_MEDIA } from "../lib/studio/seed";
+import { applyCommand } from "../lib/studio/engine";
+import { copyIdentity } from "../lib/studio/solo-quality";
+let fixture = initialState(DEMO_ACTOR, true);
+fixture = applyCommand(
+  fixture,
+  DEMO_ACTOR,
+  {
+    type: "policy.adoptSolo",
+    expectedRuleVersion: fixture.settings.protectedVersion,
+    packageCap: 50,
+    monthlyCap: 500,
+    requireIndependentReview: false,
+    autoDraft: false,
+    autoReview: true,
+  },
+  { demo: true },
+);
+const content = fixture.contents[0];
+content.state = "review";
+content.text = "A household handoff can document routines and useful contacts.";
+content.metadata = "";
+content.media = structuredClone(EMPTY_MEDIA);
+content.format = "Text post";
+content.reviewSubmission = {
+  id: "submitted",
+  actor: DEMO_ACTOR.email,
+  identity: copyIdentity(content, fixture),
+  at: new Date().toISOString(),
+};
+const job = {
+  id: "old-review",
+  kind: "review",
+  contentId: content.id,
+  channel: content.channel,
+  account: content.account,
+  connectionId: "fixture",
+  prompt: "Existing request",
+  estimate: 14,
+  reserved: 14,
+  state: "unknown",
+  attempt: 1,
+  idempotencyKey: "existing",
+  createdBy: DEMO_ACTOR.email,
+  createdAt: new Date().toISOString(),
+  targetRevision: content.revision,
+};
+fixture.jobs = [job as any];
+content.automaticReview = {
+  acceptanceId: "submitted",
+  jobId: job.id,
+  at: new Date().toISOString(),
+};
+const script = await build({
+  stdin: {
+    contents: `import React,{useState}from'react';import{createRoot}from'react-dom/client';import{SoloReview}from'./components/solo-review';import{applyCommand}from'./lib/studio/engine';const actor=${JSON.stringify(DEMO_ACTOR)};window.commands=[];window.progress=[];function App(){const[state,setState]=useState(${JSON.stringify(fixture)});window.saved=state;return <SoloReview content={state.contents[0]} state={state} actor={actor} demo={false} refresh={async()=>{}} progressJob={async id=>{window.progress.push(id)}} send={async c=>{window.commands.push(c);const next=applyCommand(state,actor,c,{demo:true});setState(next);return {state:next};}} renderAsset={()=>null} openDraft={()=>{}} recordPriceException={()=>{}} requestChanges={()=>{}}/>};createRoot(document.getElementById('app')).render(<App/>);`,
+    resolveDir: process.cwd(),
+    loader: "tsx",
+  },
+  bundle: true,
+  write: false,
+  loader: { ".css": "empty" },
+  format: "iife",
+  jsx: "automatic",
+  define: { "process.env.NODE_ENV": '"production"' },
+});
+const browser = await chromium.launch({
+  executablePath: "/usr/bin/chromium",
+  headless: true,
+  args: ["--no-sandbox"],
+});
+try {
+  const page = await browser.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.route("http://localhost:31346/**", (r) =>
+    r.fulfill({
+      contentType: "text/html",
+      body:
+        '<div id="app"></div><script>' +
+        script.outputFiles[0].text.replaceAll("</script", "<\\/script") +
+        "</script>",
+    }),
+  );
+  await page.goto("http://localhost:31346/");
+  const approve = page.getByRole("button", {
+    name: "Approve & publish",
+    exact: true,
+  });
+  await approve.waitFor();
+  assert.equal(await approve.isDisabled(), true);
+  assert.equal(
+    await page
+      .getByRole("button", {
+        name: /Request textual review|Save verified outcome|Approve copy|Approve final package/,
+      })
+      .count(),
+    0,
+  );
+  await page.getByText("Override checks and continue", { exact: true }).click();
+  await page
+    .getByLabel("Publish with manual override", { exact: true })
+    .check();
+  const override = page.getByRole("button", {
+    name: "Approve & publish with override",
+    exact: true,
+  });
+  assert.equal(await override.isDisabled(), true);
+  await page
+    .getByLabel("Reason", { exact: true })
+    .fill(
+      "I checked this version personally and accept the editorial findings.",
+    );
+  await override.click();
+  await page.waitForFunction(() => (window as any).saved.packages.length === 1);
+  const saved = await page.evaluate(() => (window as any).saved);
+  assert.equal(saved.jobs[0].state, "unknown");
+  assert.equal(saved.jobs[0].reserved, 14);
+  assert.equal(saved.contents[0].agentReview, undefined);
+  assert.equal(saved.contents[0].copyAcceptances?.length || 0, 0);
+  assert.ok(saved.packages[0].editorialOverride.checks.length);
+  assert.deepEqual(await page.evaluate(() => (window as any).progress), []);
+  assert.deepEqual(
+    (await page.evaluate(() => (window as any).commands)).map(
+      (c: any) => c.type,
+    ),
+    ["package.approve"],
+  );
+  assert.deepEqual(errors, []);
+  console.log(
+    "PASS: unknown AI review can be explicitly overridden with one approval; true billing/report status retained; no extra paid request",
+  );
+} finally {
+  await browser.close();
+}
