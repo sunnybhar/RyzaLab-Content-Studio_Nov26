@@ -122,7 +122,8 @@ export function IdeaGenerationStatus({
         ).length;
         const expected = requestedIdeaQuantity(job.prompt);
         const recoverable=!job.ideaPurpose&&!count?completeSavedIdeaCards(job):[];
-        let importable=false;if(job.result&&!job.ideaPurpose&&job.providerCompletion!=="incomplete"&&job.providerCompletion!=="refused")try{parseGeneratedIdeas(job.result,expected);importable=true;}catch{}
+        let parsedSaved=false;if(job.result&&job.providerCompletion!=="incomplete"&&job.providerCompletion!=="refused")try{parseGeneratedIdeas(job.result,expected);parsedSaved=true;}catch{}
+        const importable=parsedSaved&&!job.ideaPurpose;
         const mismatch = Boolean(expected && count && count !== expected);
         const authorized =
           can(state, actor, "job.create", {
@@ -137,7 +138,7 @@ export function IdeaGenerationStatus({
           (job.createdBy === actor.email ||
             can(state, actor, "settings.manage"));
         const label =
-          job.ideaPurpose==="manual_assistance"&&job.state==="succeeded"?"Manual idea research assistance ready — saved result retained":
+          job.ideaPurpose==="manual_assistance"&&job.state==="succeeded"&&parsedSaved?"Manual idea research assistance ready — saved result retained":
           job.state === "awaiting_confirmation"
             ? "Waiting for your cost confirmation"
             : job.state === "queued"

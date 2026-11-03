@@ -162,3 +162,16 @@ test("a request for four requires all four complete cards, not one combined card
     0,
   );
 });
+
+test('explicit recovery imports only complete cards from a cut-off response and preserves the paid result',async()=>{
+ const {completeSavedIdeaCards}=await import('../lib/studio/idea-recovery');const s=fixture(),job=s.jobs[0];job.prompt=JSON.stringify({quantity:3});job.providerCompletion='incomplete';job.providerStopReason='max_tokens';job.actual=7;job.reserved=0;
+ job.result='[INCOMPLETE OUTPUT — token limit reached; not ready for approval]\n\n{"ideas":['+JSON.stringify(card)+','+JSON.stringify({...card,title:'Second complete card'})+',{ "title":"Cut off before required fields';
+ assert.equal(completeSavedIdeaCards(job).length,2);assert.throws(()=>applyCommand(s,DEMO_ACTOR,command,{demo:true}),/No partial cards/);
+ const next=applyCommand(s,DEMO_ACTOR,{type:'idea.recoverCompleteCards',jobId:job.id},{demo:true});const cards=next.ideas.filter(i=>i.generationRunId===job.id);assert.equal(cards.length,2);assert.ok(cards.every(i=>i.state==='pending'));assert.equal(next.jobs.length,1);assert.equal(next.jobs[0].actual,7);assert.equal(next.jobs[0].reserved,0);assert.equal(next.jobs[0].result,job.result);assert.equal(next.jobs[0].attempt,1);assert.equal(next.jobs[0].providerCompletion,'incomplete');assert.equal(next.jobs[0].ideaRecovery!.expected,3);
+ assert.deepEqual(applyCommand(next,DEMO_ACTOR,{type:'idea.recoverCompleteCards',jobId:job.id},{demo:true}),next);
+});
+test('recovery respects requested count, never completes malformed fields, and refuses uncertain/refused outcomes',async()=>{
+ const {completeSavedIdeaCards}=await import('../lib/studio/idea-recovery');const s=fixture(),job=s.jobs[0];job.prompt=JSON.stringify({quantity:1});job.providerCompletion='incomplete';job.result='[INCOMPLETE OUTPUT — token limit reached]\n'+JSON.stringify({ideas:[card,{...card,title:'Excess card'}]});assert.equal(completeSavedIdeaCards(job).length,1);
+ job.providerCompletion='refused';assert.equal(completeSavedIdeaCards(job).length,0);assert.throws(()=>applyCommand(s,DEMO_ACTOR,{type:'idea.recoverCompleteCards',jobId:job.id},{demo:true}),/No complete idea cards/);
+ job.providerCompletion='incomplete';job.result='[INCOMPLETE OUTPUT]\n{"ideas":[{"title":"Only a title';assert.equal(completeSavedIdeaCards(job).length,0);job.state='unknown';assert.throws(()=>applyCommand(s,DEMO_ACTOR,{type:'idea.recoverCompleteCards',jobId:job.id},{demo:true}),/completed Ideas job/);
+});

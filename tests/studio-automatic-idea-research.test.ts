@@ -257,3 +257,7 @@ test('mandatory policy and Instructions are never silently shortened to fit a re
  const s=fixture(),w=s.workflows.find(w=>w.channel==='LinkedIn'&&w.status==='active')!;w.instructions='Mandatory writing instructions. '.repeat(4000);
  const command=ideaJobInput(s,DEMO_ACTOR,{...input(),research:false,researchJobIds:[]});assert.throws(()=>quote(s,command),/protected rules, Instructions and task/);assert.equal(s.jobs.length,0);
 });
+
+test('oversized idea counts are blocked before spending instead of guaranteeing output truncation',()=>{
+ const s=fixture(),c={...input(),quantity:7,research:false,researchJobIds:[]};const command=ideaJobInput(s,DEMO_ACTOR,c);assert.throws(()=>quote(s,command),/at most 6 ideas/);assert.equal(s.jobs.length,0);
+});
