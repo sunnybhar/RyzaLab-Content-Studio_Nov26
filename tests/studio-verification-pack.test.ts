@@ -85,7 +85,7 @@ async function references() {
 test("LOCAL MOCK ONLY: one pack prepares sequential AI cases and two manual drafts, retaining actual human approvals", async () => {
   let s = setup();
   const plan = verificationPreflight(s, DEMO_ACTOR, now);
-  assert.equal(plan.preparationCents, 96);
+  assert.equal(plan.preparationCents, 102);
   assert.equal(plan.reviewCents, 48);
   s = startVerificationPack(
     s,

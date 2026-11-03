@@ -260,7 +260,7 @@ export function applyCommand(
       need("workflow.edit",{channel:example.channel==="Shared"?undefined:example.channel});s.agentVoiceExamples=s.agentVoiceExamples?.filter(e=>e.id!==c.id);break;
     }
     case "agentRules.importPackage": {
-      const decode=(file:{base64:string})=>new TextDecoder().decode(Uint8Array.from(atob(file.base64),char=>char.charCodeAt(0)));
+      const decode=(file:{base64:string})=>{const text=new TextDecoder().decode(Uint8Array.from(atob(file.base64),char=>char.charCodeAt(0)));if(!text.trim()||text.length>60000)bad("Each package section needs 1–60,000 characters.");return text;};
       if(!/\.md$/i.test(c.instructions.fileName)||!/\.md$/i.test(c.context.fileName))bad("Package preview must be saved as Markdown.");
       let next=saveAgentRuleFile(input,actor,{...c.instructions,channel:c.channel,slot:"instructions",extractedText:decode(c.instructions),expectedId:c.expectedInstructionsId},now,id());
       return saveAgentRuleFile(next,actor,{...c.context,channel:c.channel,slot:"context",extractedText:decode(c.context),expectedId:c.expectedContextId},now,id());
@@ -2011,7 +2011,7 @@ export function applyCommand(
         createdAt: now,
         account: d?.account,
         workflowId: workflow.id,
-        agentContextSnapshot: ["ideas","text","review"].includes(c.kind)?agentContext(s,c.channel):undefined,
+        agentContextSnapshot: ["ideas","text","review"].includes(c.kind)?agentContext(s,c.channel,c.prompt):undefined,
         workflowSnapshot: structuredClone(workflow),
         rulesSnapshot: s.settings.protectedRules,
         period: budgetMonth(now, s.settings.timezone),

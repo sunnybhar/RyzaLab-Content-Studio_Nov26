@@ -1,7 +1,8 @@
+import {contextExcerpt} from "./context-excerpts";
 import type { Channel, StudioState } from "./types";
 import { StudioError } from "./permissions";
 /** Channel-scoped context. Never used to construct public search queries. */
-export function agentContext(state: StudioState, channel: Channel) {
+export function agentContext(state: StudioState, channel: Channel, query="") {
   const rules = (state.agentRuleFiles || [])
     .filter((f) => f.channel === channel)
     .map((f) => {
@@ -14,7 +15,7 @@ export function agentContext(state: StudioState, channel: Channel) {
         id: f.id,
         role: f.slot,
         title: f.fileName,
-        text: f.extractedText,
+        ...(f.slot==="context"?contextExcerpt(f.extractedText,query):{text:f.extractedText,selection:"Full Instructions"}),
       };
     });
   const voice = (state.agentVoiceExamples || [])

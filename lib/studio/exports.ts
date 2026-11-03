@@ -441,14 +441,19 @@ export async function exportContentDocument(
   text: string,
   revision: number,
   format: "docx" | "pdf",
+  options?: {imageUrl?:string;imageCaption?:string},
 ): Promise<void> {
   validateDocument(title, text, revision);
   const name = `${filename(title)}-revision-${revision}`;
+  let hero:{data:Uint8Array;url:string;width:number;height:number}|undefined;
+  if(options?.imageUrl){const loaded=await loadImage(options.imageUrl);try{const canvas=document.createElement("canvas");canvas.width=1200;canvas.height=Math.min(750,Math.round(1200*loaded.image.naturalHeight/loaded.image.naturalWidth));const ctx=canvas.getContext("2d");if(!ctx)throw Error("Image rendering unavailable.");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);const scale=Math.min(canvas.width/loaded.image.naturalWidth,canvas.height/loaded.image.naturalHeight);const width=loaded.image.naturalWidth*scale,height=loaded.image.naturalHeight*scale;ctx.drawImage(loaded.image,(canvas.width-width)/2,(canvas.height-height)/2,width,height);const url=canvas.toDataURL("image/jpeg",0.9);hero={data:Uint8Array.from(atob(url.split(",")[1]),char=>char.charCodeAt(0)),url,width:560,height:Math.round(canvas.height*560/1200)};}finally{loaded.dispose();}}
+
   if (format === "docx") {
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel } =
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun } =
       await import("docx");
     const document = new Document({
       creator: "RyzaLab",
+      styles:{default:{document:{run:{font:"Arial",size:22},paragraph:{spacing:{after:140,line:280}}}}},
       title,
       description: `Revision ${revision}`,
       sections: [
@@ -460,10 +465,11 @@ export async function exportContentDocument(
                 new TextRun({ text: `Revision ${revision}`, italics: true }),
               ],
             }),
+            ...(hero?[new Paragraph({children:[new ImageRun({type:"jpg",data:hero.data,transformation:{width:hero.width,height:hero.height}})]}),...(options?.imageCaption?[new Paragraph({text:options.imageCaption})]:[])]:[]),
             ...text
               .replace(/\r\n?/g, "\n")
               .split("\n")
-              .map((line) => new Paragraph({ text: line })),
+              .map((line) => new Paragraph(/^#{1,3}\s/.test(line)?{text:line.replace(/^#{1,3}\s/,""),heading:HeadingLevel.HEADING_2}:{text:line})),
           ],
         },
       ],
@@ -511,8 +517,9 @@ export async function exportContentDocument(
   line(title, 40, 52);
   line(`Revision ${revision}`, 22, 34);
   y += 24;
+  if(hero){const height=hero.height*(canvas.width-margin*2)/hero.width;ctx.drawImage(await (async()=>{const image=new Image();image.src=hero.url;await image.decode();return image;})(),margin,y,canvas.width-margin*2,height);y+=height+24;if(options?.imageCaption)line(options.imageCaption,20,30);}
   for (const paragraph of text.replace(/\r\n?/g, "\n").split("\n"))
-    line(paragraph, 24, 38);
+    /^#{1,3}\s/.test(paragraph)?line(paragraph.replace(/^#{1,3}\s/,""),30,44):line(paragraph,24,38);
   flush();
   pdf.save(`${name}.pdf`);
 }

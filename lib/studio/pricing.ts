@@ -134,7 +134,7 @@ export function quote(
     rulesSnapshot: state.settings.protectedRules,
     workflowSnapshot: workflow,
     referenceSnapshots,
-    agentContextSnapshot: ["ideas","text","review"].includes(input.kind)?agentContext(state,workflow.channel):undefined,
+    agentContextSnapshot: ["ideas","text","review"].includes(input.kind)?agentContext(state,workflow.channel,input.prompt):undefined,
     outputContract:
       input.kind === "text"
         ? "draft_v1"

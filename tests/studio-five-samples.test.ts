@@ -85,7 +85,7 @@ function setup() {
       inputCentsPerMillion: 100,
       outputCentsPerMillion: 500,
       maxInputBytes: 500000,
-      maxOutputTokens: 1000,
+      maxOutputTokens: 4096,
       source: "https://example.com/fixture-prices",
       verifiedAt: "2026-10-29",
       qualified: true,

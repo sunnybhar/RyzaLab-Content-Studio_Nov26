@@ -86,7 +86,7 @@ function unitCeiling(
     !card ||
     card.fixedCents ||
     card.maxInputBytes > 65536 ||
-    card.maxOutputTokens > 2048
+    card.maxOutputTokens > (kind==="text"?4096:2048) || (kind==="text"&&channel==="Newsletter"&&card.maxOutputTokens<4096)
   )
     throw new StudioError(
       409,
