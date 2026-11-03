@@ -106,13 +106,17 @@ export function AgentRules({
           return (
             <article className="s-panel s-panel-padding" key={slot}>
               <h3>{label}</h3>
+              <button className="s-btn" onClick={()=>{
+                const text=slot==="instructions"?`# ${channel} agent instructions\n\n## Purpose\nDescribe the content goal.\n\n## Audience\nDescribe the reader.\n\n## Writing rules\nDescribe tone, structure, format and preferred length.\n\n## Missing facts\nAsk for confirmation; never invent experiences or claims.\n`:`# ${channel} Markdown context\n\n## RyzaLab background\nAdd accurate services and organization details.\n\n## Audience and themes\nAdd audience needs and content themes.\n\n## Source material\nAdd original facts and source links.\n`;
+                const url=URL.createObjectURL(new Blob([text],{type:"text/markdown"}));const a=document.createElement("a");a.href=url;a.download=`${channel.toLowerCase()}-${slot}.md`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+              }}>Download {label} template</button>
               <p>
                 {slot === "instructions"
                   ? "Voice, structure, writing rules and expected outputs."
                   : "Brand, audience, background, examples and source material."}
               </p>
               <p>
-                <strong>{file?.extractedText ? "Connected to new AI requests" : file ? "Re-upload to activate text extraction" : "Upload to connect"}</strong>
+                <strong>{file?.extractedText ? "Connected to new AI requests" : file ? "Connected — text extracted on next request" : "Upload to connect"}</strong>
               </p>
               {file ? (
                 <>

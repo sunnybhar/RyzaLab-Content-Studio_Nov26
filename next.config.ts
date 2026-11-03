@@ -12,11 +12,11 @@ if (commit === "local") {
 }
 const config: NextConfig = {
   env: {
-    NEXT_PUBLIC_STUDIO_VERSION: "0.3.14",
+    NEXT_PUBLIC_STUDIO_VERSION: "0.3.15",
     NEXT_PUBLIC_STUDIO_COMMIT: commit.slice(0, 7),
   },
   poweredByHeader: false,
-  serverExternalPackages: [],
+  serverExternalPackages: ["pdfjs-dist"],
   outputFileTracingIncludes: {
     "/api/generate": ["./knowledge/**/*"],
     "/api/studio": ["./knowledge/channel-packages/**/*"],

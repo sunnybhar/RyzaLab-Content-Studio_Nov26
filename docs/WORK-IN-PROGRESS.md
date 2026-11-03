@@ -304,3 +304,6 @@ User explicitly authorized linking rules, fixing locked checkbox, broader web se
 
 ### Continuation checkpoint: explicit LinkedIn split and broad search
 LinkedIn Instructions and Markdown context are separate uploads; new requests freeze both roles plus bounded matching voice examples. Existing files hydrate on new idea/writing/use-idea requests, originals preserved. General web/news RSS discovery uses only fixed Bing endpoints, never fetches result URLs; citations explicitly search excerpts, not full-page verification. Unavailable feeds report gaps and fall back to public references. Native paid research remains separate. Tests in progress; no release yet. Live samples blocked by absent credentials and outbound CONNECT403, no paid calls.
+
+### v0.3.15 release candidate
+Search-excerpt provenance/bounds/failure tests and Markdown/DOCX/PDF extraction tests passed. Editable checkbox persisted false through save/navigation/reload in browser fixture. Production build and typecheck passed. Full-page and Agent Rules browser checks next. Existing jobs remain unchanged; no raw base64 sent as model context. Private rules never enter public search queries. Five live samples remain blocked (no local credentials; outbound proxy CONNECT403); no live model calls or claims of live cost verification.

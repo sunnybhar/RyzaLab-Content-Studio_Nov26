@@ -1,3 +1,11 @@
+# v0.3.15 source discovery
+
+Ideas and Create now attempt general web/news discovery through fixed Bing RSS endpoints alongside Wikipedia and Crossref. Up to four bounded requests yield at most six source excerpts, 12 KB total excerpt text. Each saved result identifies its source kind and original website link. Search availability is not guaranteed; failures and partial coverage remain visible. This is search-excerpt evidence, not a full-page read, comprehensive news coverage or independent factual verification. The server never fetches search-result URLs. No paid search API call is made by this adapter; hosting/network costs are separate. Claude synthesis remains charged within existing limits.
+
+The workspace network proxy currently blocks live endpoint checks with CONNECT403. Fixture tests verify handling and provenance; hosted retrieval and the five live Claude samples are not verified here. Native paid Claude search setup remains a separate option.
+
+Older setup notes follow for historical context:
+
 # Integrated research — v0.3.13
 
 ## Generate AI ideas

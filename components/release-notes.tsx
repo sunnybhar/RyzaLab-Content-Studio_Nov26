@@ -16,7 +16,9 @@ export function ReleaseNotes() {
         aria-label="What changed in this build"
         style={{ maxWidth: 600, width: "calc(100% - 32px)", margin: "auto" }}
       >
-        <h2>v0.3.14 · Visible progress and editable recovered drafts</h2>
+        <h2>v0.3.15 · Connected Agent Rules and broader source discovery</h2>
+        <p>LinkedIn has separate Instructions and Markdown context uploads with downloadable templates. New idea, writing and review requests use saved channel rules and up to six voice examples. Existing jobs retain their original context. The channel setup checkbox can be edited and its saved choice persists. Research now also attempts web and news source discovery; results show search excerpts and links with coverage gaps.</p>
+        <h3>v0.3.14 · Visible progress and editable recovered drafts</h3>
         <p>Idea generation shows research, allowance, generation and results stages at the top. Public queries include the audience and exclude unrelated references. Incomplete writing can be recovered into an empty editor without another AI call; it remains marked unfinished until edited.</p>
         <h3>v0.3.13 · Researched ideas and stored Agent Rules</h3>
         <p>

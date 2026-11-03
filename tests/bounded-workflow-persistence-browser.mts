@@ -110,6 +110,14 @@ try {
     0,
     "reload must read saved mappings without setup calls",
   );
+  assert.equal(await checkbox().isDisabled(),false);
+  await checkbox().uncheck();
+  await page.getByRole("button",{name:"Check model and enable bounded workflow",exact:true}).click();
+  await page.getByText(/Model access checked/).waitFor();
+  await page.getByRole("button", { name: "Other page", exact: true }).click();
+  await page.getByRole("button", { name: "Setup page", exact: true }).click();
+  assert.equal(await checkbox().isChecked(),false);
+  await page.reload();assert.equal(await checkbox().isChecked(),false);
   assert.deepEqual(errors, []);
   console.log(
     "PASS: unsaved tick warning, saved selection/default model survives navigation and reload, no repeated model calls; local fixtures only",
