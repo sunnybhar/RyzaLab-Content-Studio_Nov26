@@ -1,6 +1,8 @@
 import type { Channel } from "./types";
-export function channelWritingContract(channel?: Channel) {
-  return channel === "Newsletter" || channel === "Hub"
+export function writingFormat(prompt?:string){try{return JSON.parse(prompt||"{}").format as string|undefined;}catch{return undefined;}}
+export function isLongForm(channel?:Channel,format?:string){return channel==="Newsletter"||channel==="Hub"||typeof format==="string"&&/newsletter|article/i.test(format);}
+export function channelWritingContract(channel?: Channel,prompt?:string) {
+  return isLongForm(channel,writingFormat(prompt))
     ? "LONG-FORM NEWSLETTER / ARTICLE: write 1,200–1,600 words of substantive prose (normally at least 2–3 document pages, depending on layout and image size). Include a title, introduction explaining the background, descriptive section headings, evidence and relevant data, reasoning, practical implications, limitations and a conclusion. Explain what the sources establish and what remains uncertain. Cite only supplied source URLs or document sections, with a readable Sources section in the body. Do not invent statistics, quotes, dates or sources. If evidence is missing, mark the specific missing input rather than filling the space. Return imageBrief describing one relevant hero image and its purpose; never claim that an image was generated or that a device shown is verified. Write one complete article, not a social post or content pack."
     : "SOCIAL POST: write one concise platform-appropriate post; for LinkedIn default to 180–250 words unless the user requests another length. Do not put a Sources bibliography or research report in the post body. Keep provenance in the separate sources field for editorial checking. No invented claims or personal experience.";
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import {isLongForm} from "@/lib/studio/channel-writing";
 import { useEffect, useRef, useState } from "react";
 import type { Actor, Command, Content, StudioState } from "@/lib/studio/types";
 import {
@@ -136,9 +137,9 @@ export function DraftAssistant({
       className="s-inline-writing-assistant"
       aria-label="Draft writing assistance"
     >
-      <h3>Write {content.channel==="Newsletter"?"newsletter":"content"} with AI</h3>
-      {active&&<section className="s-idea-run-progress" aria-label="Writing progress"><h3 aria-live="polite">{active.state==="running"?`AI is writing your ${content.channel==="Newsletter"?"newsletter":"post"}`:active.state==="awaiting_confirmation"?"Waiting for your allowance confirmation":active.state==="unknown"?"Writing outcome needs attention":"Writing request queued — waiting for the worker"}</h3>{["queued","running"].includes(active.state)&&<progress aria-label="Writing in progress"/>}<p>Elapsed: {Math.max(0,Math.floor((clock-Date.parse(active.createdAt))/1000))} seconds. Completed writing appears in the editor below. The provider does not report a percentage.</p>{active.state==="awaiting_confirmation"&&<button className="s-btn" disabled={busy} onClick={()=>void run({type:"job.confirm",id:active.id})}>Confirm writing allowance · {cost(active.estimate)}</button>}<button className="s-btn" onClick={()=>void refresh().then(()=>setStatusError("")).catch(()=>setStatusError("Status could not be refreshed. No new AI request was made."))}>Check writing status — no new AI request</button>{active.error&&<p>{active.error}</p>}{statusError&&<p role="alert">{statusError}</p>}</section>}
-      {["Newsletter","Hub"].includes(content.channel)&&<p>Newsletter/article target: 1,200–1,600 words, with background, evidence, reasoning, practical guidance and sources. Add a relevant image below and export PDF or DOCX. Page count depends on layout.</p>}
+      <h3>Write {isLongForm(content.channel,content.format)?"newsletter":"content"} with AI</h3>
+      {active&&<section className="s-idea-run-progress" aria-label="Writing progress"><h3 aria-live="polite">{active.state==="running"?`AI is writing your ${isLongForm(content.channel,content.format)?"newsletter":"post"}`:active.state==="awaiting_confirmation"?"Waiting for your allowance confirmation":active.state==="unknown"?"Writing outcome needs attention":"Writing request queued — waiting for the worker"}</h3>{["queued","running"].includes(active.state)&&<progress aria-label="Writing in progress"/>}<p>Elapsed: {Math.max(0,Math.floor((clock-Date.parse(active.createdAt))/1000))} seconds. Completed writing appears in the editor below. The provider does not report a percentage.</p>{active.state==="awaiting_confirmation"&&<button className="s-btn" disabled={busy} onClick={()=>void run({type:"job.confirm",id:active.id})}>Confirm writing allowance · {cost(active.estimate)}</button>}<button className="s-btn" onClick={()=>void refresh().then(()=>setStatusError("")).catch(()=>setStatusError("Status could not be refreshed. No new AI request was made."))}>Check writing status — no new AI request</button>{active.error&&<p>{active.error}</p>}{statusError&&<p role="alert">{statusError}</p>}</section>}
+      {isLongForm(content.channel,content.format)&&<p>Newsletter/article target: 1,200–1,600 words, with background, evidence, reasoning, practical guidance and sources. Add a relevant image below and export PDF or DOCX. Page count depends on layout.</p>}
       <details className="s-version">
         <summary>
           Web research

@@ -1,3 +1,4 @@
+import {isLongForm} from "./channel-writing";
 import {incompleteDraftBody,applyRecoveredWorkingText} from "./incomplete-draft";
 import type { Content, Job, StudioState } from "./types";
 import {
@@ -34,7 +35,7 @@ export function applyDraftCandidate(
   content.revision++;
   content.textRevision = (content.textRevision || 1) + 1;
   content.text = result.body;
-  if(["Newsletter","Hub"].includes(content.channel)&&result.sources.length&&!/^#{0,3}\s*(Sources|References)\s*:?$/im.test(result.body))content.text+="\n\n## Sources\n"+result.sources.map(source=>`- ${source}`).join("\n");
+  if(isLongForm(content.channel,content.format)&&result.sources.length&&!/^#{0,3}\s*(Sources|References)\s*:?$/im.test(result.body))content.text+="\n\n## Sources\n"+result.sources.map(source=>`- ${source}`).join("\n");
   if(result.imageBrief&&!content.media.imagePrompt){content.media.imagePrompt=result.imageBrief;content.mediaRevision=(content.mediaRevision||1)+1;}
 
   content.researchJobIds = job.researchJobIds;
@@ -121,7 +122,7 @@ export function settleWrittenOutput(
         "The result does not match the selected-piece format. Raw response retained; no copy was replaced.";
       return;
     }
-    if(["Newsletter","Hub"].includes(c.channel)){
+    if(isLongForm(c.channel,c.format)){
       if(job.candidate.body.trim().split(/\s+/).length<1200)job.candidate.questions.push("Expand this newsletter to at least 1,200 substantive words with background, evidence, reasoning and practical guidance before review.");
       if(!job.candidate.sources.length&&!/^#{0,3}\s*(Sources|References)\s*:?$/im.test(job.candidate.body))job.candidate.questions.push("Add relevant source citations and a readable Sources section for this article before review.");
     }

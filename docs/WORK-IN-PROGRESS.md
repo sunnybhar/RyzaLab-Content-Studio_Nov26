@@ -322,3 +322,6 @@ Both actual user ZIPs parsed successfully without installing them: Hub6 knowledg
 
 ### v0.3.16 final-check checkpoint
 Illustrated export browser check confirmed multi-page PDF and DOCX media/source embedding; ZIP edit/save and skill preview passed. Writing status was visually present but a browser assertion exposed its heading had role=status; corrected the heading semantics and rerunning. Added reusable download of edited package ZIP. Five synthetic sample assertions updated to include the new readable newsletter Sources body. Full tests/build rerunning; no production release yet, no paid/live calls.
+
+### v0.3.16 release candidate verified browser behavior
+New browser workflow passed ZIP preview/edit, skill ZIP import, saved-package ZIP download, image-inclusive DOCX/source preservation, multi-page PDF and visible running newsletter status. Full application browser passed. Added article/newsletter format detection as well as channel detection, so LinkedIn newsletter/article drafts also get long-form guidance, sources, output qualification and exports. Final build/test run covers this format handling. Documentation in NEWSLETTER-WORKFLOW.md explains founder setup refresh (4096 writing tokens, max18c quote), images are user-uploaded with AI briefs rather than fabricated/generated pixels, and no live provider tests or paid calls occurred.

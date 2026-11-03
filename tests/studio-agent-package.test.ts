@@ -18,5 +18,5 @@ test('package edits save atomically and stale edits cannot replace either saved 
 });
 test('large context selects bounded labelled excerpts while newsletter and social requirements differ',()=>{
  const text=Array.from({length:25},(_,i)=>`# Source file: knowledge/file${i}.md\n## ${i===24?'elder care evidence':'General guidance'}\n`+'Relevant background and careful explanation. '.repeat(150)).join('\n');const selected=contextExcerpt(text,'elder care');assert.ok(selected.text.length<=12000);assert.match(selected.text,/elder care evidence/);assert.match(selected.selection,/Omitted/);
- assert.match(channelWritingContract('Newsletter'),/1,200–1,600/);assert.match(channelWritingContract('Newsletter'),/Sources section/);assert.match(channelWritingContract('LinkedIn'),/180–250/);assert.match(channelWritingContract('LinkedIn'),/Do not put a Sources/);
+ assert.match(channelWritingContract('Newsletter'),/1,200–1,600/);assert.match(channelWritingContract('Newsletter'),/Sources section/);assert.match(channelWritingContract('LinkedIn'),/180–250/);assert.match(channelWritingContract('LinkedIn',JSON.stringify({format:'LinkedIn newsletter'})),/1,200–1,600/);assert.match(channelWritingContract('LinkedIn'),/Do not put a Sources/);
 });

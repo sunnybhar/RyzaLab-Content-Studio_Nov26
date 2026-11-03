@@ -118,7 +118,7 @@ export function AgentRules({
           Upload your ZIP whenever required. Preview and edit Instructions and
           context before saving to {channel}. Hub packages can be used for
           Newsletter. Only INSTRUCTIONS.md and knowledge/*.md are imported;
-          setup guides, nested ZIPs and scripts are skipped.
+          setup guides, nested ZIPs and scripts are skipped. Add skill ZIPs separately below Instructions. Large knowledge context is selected into source-labelled excerpts of up to 12,000 characters per request; the complete saved text remains editable.
         </p>
         <input
           aria-label="Agent Rules ZIP package"
