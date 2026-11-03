@@ -1,4 +1,5 @@
 "use client";
+import {activeStudioView, ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active-channels";
 import {isLongForm} from "@/lib/studio/channel-writing";
 import { AuthorizedJobProgress } from "./authorized-job-progress";
 import { JobCost } from "./job-cost";
@@ -10,7 +11,7 @@ import { SoloPolicySettings } from "./solo-policy-settings";
 import { PricingManager } from "./pricing-manager";
 import { ConnectionEditor } from "./connection-editor";
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowDownToLine,
   BarChart3,
@@ -73,7 +74,6 @@ import { inputRequirements } from "@/lib/studio/input-requirements";
 import { WorkflowVersions } from "./workflow-versions";
 import { useStudio } from "@/lib/studio/client";
 import {
-  CHANNELS,
   FUNCTIONS,
   ROLES,
   type Channel,
@@ -431,8 +431,9 @@ function FieldInput({ item }: { item: Field }) {
 }
 
 export default function Workspace() {
-  const { state, actor, mode, loading, error, send, refresh, signOut } =
+  const { state:storedState, actor, mode, loading, error, send, refresh, signOut } =
     useStudio();
+  const state=useMemo(()=>storedState?activeStudioView(storedState):null,[storedState]);
   const [page, setPage] = useState<Page>("Home");
   const [channel, setChannel] = useState<Channel | "All channels">(
     "All channels",
@@ -695,7 +696,7 @@ export default function Workspace() {
   const activeContent = state.contents.find(
     (c) => c.id === selected && !c.deletedAt,
   );
-  const totalSpend = state.jobs.reduce(
+  const totalSpend = storedState!.jobs.reduce(
     (a, j) => a + (j.actual || j.reserved || 0),
     0,
   );
@@ -1420,6 +1421,47 @@ export default function Workspace() {
             <ShieldCheck size={16} /> Operations
           </button>
         )}
+        <section className="s-sidebar-tools" aria-label="Workspace tools">
+          <div className="s-nav-separator"/><span className="s-nav-label">WORKSPACE TOOLS</span>
+          <div
+            className="s-layout-toggle"
+            role="group"
+            aria-label="Workspace layout"
+          >
+            <button
+              aria-pressed={layout === "command"}
+              onClick={() => {
+                setLayout("command");
+                move("Home");
+              }}
+            >
+              <House size={15} />
+              <span>Command Center</span>
+            </button>
+            <button
+              aria-pressed={layout === "board"}
+              onClick={() => {
+                setLayout("board");
+                move("Home");
+              }}
+            >
+              <Grid2X2 size={15} />
+              <span>Production Board</span>
+            </button>
+          </div>
+          <ReleaseNotes/>
+            <button
+              className="s-btn s-small-btn"
+              aria-label="Appearance and layout"
+              onClick={() => move("Account & appearance")}
+            >
+              <Palette size={16} />
+              <span>Appearance</span>
+            </button>
+            <span className="s-manual">
+              <span /> Manual publishing
+            </span>
+        </section>
         <div className="s-sidebar-bottom">
           <button
             className={`s-user ${page === "Account & appearance" ? "s-active" : ""}`}
@@ -1449,59 +1491,19 @@ export default function Workspace() {
             >
               <Menu size={20} />
             </button>
-            <span>Workspace</span>
-            <ChevronRight size={13} />
-            <strong>{page}</strong>
-          </div>
-          <div
-            className="s-layout-toggle"
-            role="group"
-            aria-label="Workspace layout"
-          >
-            <button
-              aria-pressed={layout === "command"}
-              onClick={() => {
-                setLayout("command");
-                move("Home");
-              }}
-            >
-              <House size={15} />
-              <span>Command Center</span>
-            </button>
-            <button
-              aria-pressed={layout === "board"}
-              onClick={() => {
-                setLayout("board");
-                move("Home");
-              }}
-            >
-              <Grid2X2 size={15} />
-              <span>Production Board</span>
-            </button>
+            <strong className="s-studio-heading">RyzaLab Content Studio</strong>
           </div>
           <div className="s-top-actions">
-            <ReleaseNotes />
             <div className="s-release-label" aria-label="Studio version">
-              <strong>RyzaLab Studio</strong>
+              <strong>{page}</strong>
               <small>
                 v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.24"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>
-            <button
-              className="s-btn s-small-btn"
-              aria-label="Appearance and layout"
-              onClick={() => move("Account & appearance")}
-            >
-              <Palette size={16} />
-              <span>Appearance</span>
-            </button>
             {mode === "demo" && (
               <Badge tone="amber">Demo mode · saved on this device</Badge>
             )}
-            <span className="s-manual">
-              <span /> Manual publishing
-            </span>
             <button
               className="s-icon-button s-bell"
               aria-label="Notifications"
@@ -1824,6 +1826,7 @@ export default function Workspace() {
           )}
           {page === "Ideas" && (
             <>
+              <div className="s-actions"><a className="s-btn" href="/ideas-layouts" target="_blank" rel="noopener noreferrer">Compare 4 Ideas layouts</a></div>
               <IdeaGenerationStatus
                 state={state}
                 actor={actor}
@@ -1958,6 +1961,7 @@ export default function Workspace() {
                 </section>
               ) : (
                 <IdeasBrowser
+                  jobs={state.jobs}
                   renderResearch={idea=><IdeaEvidence state={state} actor={actor} channel={idea.channel} ids={idea.researchJobIds}/>}
                   ideas={state.ideas.filter((idea) => matches(idea) && (ideaTab === "All ideas" || idea.state.toLowerCase() === ideaTab.toLowerCase()))}
                   allIdeas={state.ideas}
@@ -5665,7 +5669,7 @@ function Editor({
             </div>
           )}
         </section>
-        <aside className="s-editor-aside">
+        <details className="s-editor-aside s-editor-options"><summary>More options <ChevronDown size={17}/></summary><div className="s-editor-options-content">
           <details className="s-panel s-creative-direction">
             <summary className="s-section-heading">
               <h2>Creative direction</h2>
@@ -5825,7 +5829,7 @@ function Editor({
               </button>
             </div>
           </section>
-        </aside>
+        </div></details>
       </div>
     </>
   );

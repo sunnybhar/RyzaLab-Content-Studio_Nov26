@@ -1,10 +1,10 @@
 "use client";
+import {ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active-channels";
 import {IdeaRunProgress} from "./idea-run-progress";
 import {relevantIdeaCitation} from "@/lib/studio/idea-research-query";
 import {researchEvidence} from "@/lib/studio/research-link";
 import { useEffect, useRef, useState } from "react";
 import {
-  CHANNELS,
   type Actor,
   type Channel,
   type Command,

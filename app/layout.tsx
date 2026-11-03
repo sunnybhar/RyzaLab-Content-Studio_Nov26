@@ -8,7 +8,7 @@ import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 import "./globals.css";
 export const metadata: Metadata = {
-  title: "Content Studio RyzaLab",
+  title: "RyzaLab Content Studio",
   icons: { icon: "/studio-icon.svg", apple: "/studio-icon.svg" },
   description:
     "A thoughtful workspace for planning, creating, and reviewing RyzaLab content.",

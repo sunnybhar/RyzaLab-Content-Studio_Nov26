@@ -1,4 +1,5 @@
 "use client";
+import {ideaRequestNumber,ideaRequestBrief} from "@/lib/studio/idea-request";
 import {completeSavedIdeaCards} from "@/lib/studio/idea-recovery";
 import { parseGeneratedIdeas, requestedIdeaQuantity } from "@/lib/studio/idea-generation";
 import { useEffect, useRef, useState } from "react";
@@ -170,11 +171,12 @@ export function IdeaGenerationStatus({
               </strong>
               <span>{job.actual!==undefined?`${money(job.actual)} recorded`:`${money(job.estimate)} estimated`}</span>
             </div>
+            <div className="s-idea-request-meta"><strong>{ideaRequestNumber(job)}</strong><time dateTime={job.createdAt}>{new Date(job.createdAt).toLocaleString()}</time><span>{job.channel}</span></div>
+            <p className="s-idea-request-brief"><strong>Topic / brief: </strong>{ideaRequestBrief(job)}</p>
             {mismatch && (
               <p role="status">
                 The existing {count} imported cards are preserved, but this is
-                not a complete batch of {expected}. Inspect the saved provider
-                result before authorizing another paid request.
+                not a complete batch of {expected}. You can use the available ideas; generating more is a separate request.
               </p>
             )}
             {["queued", "running"].includes(job.state) && (
@@ -262,9 +264,9 @@ export function IdeaGenerationStatus({
               </button>
             )}
             {job.state==="succeeded"&&!count&&recoverable.length>0&&<button className="s-btn s-primary" disabled={busy||!authorized||!can(state,actor,"idea.edit",{channel:job.channel})} onClick={()=>void command({type:"idea.recoverCompleteCards",jobId:job.id})}>Recover {recoverable.length} complete saved {recoverable.length===1?"idea":"ideas"} — no AI call</button>}
-            {job.state==="succeeded"&&!count&&<p>{recoverable.length?`${recoverable.length} fully written card(s) are available in the saved response. Recover them as pending ideas; unfinished cards will stay unimported.`:importable?"The complete saved result can be imported without another provider request.":"No complete importable batch is available. Inspect the saved response below; another import attempt cannot complete cut-off text. No automatic paid retry will run."}</p>}
+            {job.state==="succeeded"&&!count&&<p>{recoverable.length?`${recoverable.length} fully written card(s) are available in the saved response. Recover them as pending ideas; unfinished cards will stay unimported.`:importable?"The complete saved result can be imported without another provider request.":"No complete importable batch is available. The response ended before a complete batch was written. No automatic paid retry will run."}</p>}
             {job.state==="succeeded"&&!count&&(job.providerStopReason==="max_tokens"||/^\s*\[INCOMPLETE OUTPUT/i.test(job.result||""))&&<p role="status">The output token limit was reached{job.providerUsage?` (${job.providerUsage.outputTokens.toLocaleString()} output tokens)`:""}. Requested ideas: {expected||"not recorded"}. Incomplete cards are not ready to use.</p>}
-            {job.result&&<details><summary>View saved provider response</summary><pre style={{whiteSpace:"pre-wrap",maxHeight:360,overflow:"auto"}}>{job.result}</pre></details>}
+
             {["unknown", "failed", "blocked"].includes(job.state) && (
               <p>
                 Check this job in AI & budgets. Do not resubmit until the

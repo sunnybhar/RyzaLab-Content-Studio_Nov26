@@ -1,9 +1,10 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+import {ideaRequestBrief,ideaRequestNumber} from "@/lib/studio/idea-request";
 import {SourceReferences} from "./idea-evidence";
 import { X } from "lucide-react";
-import type { Content, Idea, Schedule } from "@/lib/studio/types";
+import type { Content, Idea, Schedule,Job } from "@/lib/studio/types";
 import "./ideas-browser.css";
 
 const date = (value: string) =>
@@ -16,6 +17,7 @@ const date = (value: string) =>
 /** Compact idea summaries; the retained brief and sources live in the detail dialog. */
 export function IdeasBrowser({
   ideas,
+  jobs = [],
   allIdeas,
   contents,
   schedules,
@@ -36,6 +38,7 @@ export function IdeasBrowser({
 }: {
   renderResearch?: (idea:Idea)=>import("react").ReactNode;
   ideas: Idea[];
+  jobs?: Job[];
   allIdeas: Idea[];
   contents: Content[];
   schedules: Schedule[];
@@ -139,6 +142,7 @@ export function IdeasBrowser({
         <div className={`s-ideas-results s-ideas-results-${view}`}>
           {ideas.map((idea) => {
             const published = publicationDate(idea);
+            const request=jobs.find(job=>job.id===idea.generationRunId);
             return (
               <button
                 type="button"
@@ -161,6 +165,7 @@ export function IdeasBrowser({
                     ? ` · Publication confirmed ${date(published)}`
                     : ""}
                 </span>
+                {request&&<span className="s-idea-request-context"><span>{ideaRequestNumber(request)}</span><span>Topic: {ideaRequestBrief(request)}</span></span>}
                 <span className="s-idea-open">View idea →</span>
               </button>
             );

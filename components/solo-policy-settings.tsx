@@ -222,10 +222,6 @@ export function SoloPolicySettings({
             />{" "}
             Require an independent AI review for ordinary content
           </label>
-          <p>
-            Notes still require a founder’s authorization and an independent
-            review.
-          </p>
           <details>
             <summary>Current protected brand rules</summary>
             <p style={{ whiteSpace: "pre-wrap" }}>

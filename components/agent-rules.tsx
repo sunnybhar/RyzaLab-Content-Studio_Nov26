@@ -1,9 +1,9 @@
 "use client";
+import {ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active-channels";
 import { readAgentPackage } from "@/lib/studio/agent-package";
 import { AgentVoiceLibrary } from "./agent-voice-library";
 import { useState } from "react";
 import {
-  CHANNELS,
   type Actor,
   type Channel,
   type Command,
@@ -120,8 +120,7 @@ export function AgentRules({
         <h3>Upload or edit a channel package</h3>
         <p>
           Upload your ZIP whenever required. Preview and edit Instructions and
-          context before saving to {channel}. Hub packages can be used for
-          Newsletter. INSTRUCTIONS.md (or 00-START-HERE-agent-instructions.md) and knowledge/*.md are imported; macOS metadata is excluded.
+          context before saving to {channel}. INSTRUCTIONS.md (or 00-START-HERE-agent-instructions.md) and knowledge/*.md are imported; macOS metadata is excluded.
           setup guides, nested ZIPs and scripts are skipped. Add skill ZIPs separately below Instructions. Large knowledge context is selected into source-labelled excerpts of up to 12,000 characters per request; the complete saved text remains editable.
         </p>
         <input
