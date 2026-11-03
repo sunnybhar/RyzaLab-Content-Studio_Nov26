@@ -28,6 +28,7 @@ export function AgentRules({
     context: string;
     files: string[];
     ignored: string[];
+    archives?: import("@/lib/studio/agent-archives").AgentArchiveInput[];
     expectedInstructionsId?: string;
     expectedContextId?: string;
   } | null>(null);
@@ -69,7 +70,10 @@ export function AgentRules({
       setBusy(false);
     }
   }
-  function download(file: NonNullable<StudioState["agentRuleFiles"]>[number]) {
+  async function originalArchive(file:File,kind:"channel"|"skill"){
+    const bytes=new Uint8Array(await file.arrayBuffer());let binary="";for(const byte of bytes)binary+=String.fromCharCode(byte);return {fileName:file.name,base64:btoa(binary),byteSize:bytes.length,kind};
+  }
+  function download(file: {fileName:string;base64:string}) {
     const bytes = Uint8Array.from(atob(file.base64), (char) =>
         char.charCodeAt(0),
       ),
@@ -135,6 +139,7 @@ export function AgentRules({
               if (file.size > 1048576) throw Error("Choose a ZIP up to 1 MB.");
               setPackageDraft({
                 ...(await readAgentPackage(await file.arrayBuffer())),
+                archives:[await originalArchive(file,"channel")],
                 expectedInstructionsId: state.agentRuleFiles?.find(
                   (f) => f.channel === channel && f.slot === "instructions",
                 )?.id,
@@ -176,6 +181,11 @@ export function AgentRules({
           Edit saved Instructions and context
         </button>
         <button className="s-btn" disabled={busy||!state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="instructions")?.extractedText||!state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="context")?.extractedText} onClick={async()=>{try{const {default:JSZip}=await import("jszip");const zip=new JSZip();zip.file(`${channel}/INSTRUCTIONS.md`,state.agentRuleFiles!.find(f=>f.channel===channel&&f.slot==="instructions")!.extractedText!);zip.file(`${channel}/knowledge/context.md`,state.agentRuleFiles!.find(f=>f.channel===channel&&f.slot==="context")!.extractedText!);const url=URL.createObjectURL(await zip.generateAsync({type:"blob"}));const a=document.createElement("a");a.href=url;a.download=`${channel.toLowerCase()}-agent-package.zip`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(error){setError(String(error));}}}>Download saved package ZIP</button>
+        <section aria-label="Original uploaded ZIPs"><h3>Original uploaded ZIPs</h3><p>These are exact original uploads, before preview edits. Download the current saved package above for edited Instructions and context.</p>
+          {(state.agentPackageArchives||[]).filter(a=>a.channel===channel).map(archive=><div key={archive.id}><p>{archive.fileName} · {(archive.byteSize/1024).toFixed(1)} KB · {archive.kind==="skill"?"Skill":"Channel"} · Uploaded {new Date(archive.uploadedAt).toLocaleString()}</p><button className="s-btn" onClick={()=>download(archive)}>Download original uploaded ZIP · {archive.fileName}</button></div>)}
+          {!(state.agentPackageArchives||[]).some(a=>a.channel===channel)&&<p>No original ZIP retained yet. Re-upload and save once to enable exact-original downloads. Your saved Markdown files remain downloadable.</p>}
+        </section>
+        {packageDraft?.archives?.map(archive=><button key={archive.kind} className="s-btn" onClick={()=>download(archive)}>Download selected original ZIP · {archive.fileName}</button>)}
         {packageDraft && (
           <>
             <label className="s-field">
@@ -235,6 +245,7 @@ export function AgentRules({
                   };
                   await send({
                     type: "agentRules.importPackage",
+                    archives:packageDraft.archives,
                     channel,
                     instructions: file(
                       "instructions",
@@ -391,10 +402,10 @@ export function AgentRules({
               {slot==="instructions"&&<label className="s-field">Upload skill ZIP (SKILL.md and references)
                 <input aria-label="Skill ZIP package" type="file" accept=".zip" disabled={busy||!allowed} onChange={async event=>{const file=event.target.files?.[0];event.target.value="";if(!file)return;setBusy(true);setError("");try{
                   if(file.size>1048576)throw Error("Choose a skill ZIP up to 1 MB.");const skill=await readAgentPackage(await file.arrayBuffer(),"skill");
-                  const draft=packageDraft||{instructions:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="instructions")?.extractedText||"",context:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="context")?.extractedText||"",files:[],ignored:[],expectedInstructionsId:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="instructions")?.id,expectedContextId:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="context")?.id};
+                  const draft:NonNullable<typeof packageDraft>=packageDraft||{instructions:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="instructions")?.extractedText||"",context:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="context")?.extractedText||"",files:[],ignored:[],expectedInstructionsId:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="instructions")?.id,expectedContextId:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="context")?.id};
                   const instructions=draft.instructions+"\n\n# Skill guidance\n"+skill.instructions,context=draft.context+"\n\n"+skill.context;
                   if(instructions.length>60000||context.length>60000)throw Error("Combined skill and channel material exceeds 60,000 characters per section. Edit older material first.");
-                  setPackageDraft({...draft,instructions,context,files:[...draft.files,...skill.files],ignored:[...draft.ignored,...skill.ignored]});
+                  setPackageDraft({...draft,instructions,context,archives:[...(draft.archives||[]).filter(a=>a.kind!=="skill"),await originalArchive(file,"skill")],files:[...draft.files,...skill.files],ignored:[...draft.ignored,...skill.ignored]});
                 }catch(error){setError(String(error));}finally{setBusy(false);}}}/>
               </label>}
               <p>

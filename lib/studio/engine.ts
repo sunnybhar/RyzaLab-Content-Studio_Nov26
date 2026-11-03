@@ -1,3 +1,4 @@
+import {saveAgentArchives} from "./agent-archives";
 import {agentContext} from "./agent-context";
 import {incompleteDraftBody,applyRecoveredWorkingText} from "./incomplete-draft";
 import {saveAgentVoiceExample} from "./agent-voice-library";
@@ -263,7 +264,9 @@ export function applyCommand(
       const decode=(file:{base64:string})=>{let text:string;try{text=new TextDecoder("utf-8",{fatal:true}).decode(Uint8Array.from(atob(file.base64),char=>char.charCodeAt(0)));}catch{bad("Package text is not valid UTF-8 Markdown. Upload the original text files, not metadata copies.");}if(!text.trim()||text.length>60000)bad("Each package section needs 1–60,000 characters.");if(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(text))bad("Package text contains binary or macOS metadata. Re-upload the ZIP after refreshing to exclude metadata files; keep any manual edits before refreshing.");return text;};
       if(!/\.md$/i.test(c.instructions.fileName)||!/\.md$/i.test(c.context.fileName))bad("Package preview must be saved as Markdown.");
       let next=saveAgentRuleFile(input,actor,{...c.instructions,channel:c.channel,slot:"instructions",extractedText:decode(c.instructions),expectedId:c.expectedInstructionsId},now,id());
-      return saveAgentRuleFile(next,actor,{...c.context,channel:c.channel,slot:"context",extractedText:decode(c.context),expectedId:c.expectedContextId},now,id());
+      next=saveAgentRuleFile(next,actor,{...c.context,channel:c.channel,slot:"context",extractedText:decode(c.context),expectedId:c.expectedContextId},now,id());
+      if(c.archives?.length)saveAgentArchives(next,c.channel,c.archives,actor.email,now,id);
+      return next;
     }
     case "agentRules.save": return saveAgentRuleFile(input,actor,c,now,id());
     case "agentRules.remove": {

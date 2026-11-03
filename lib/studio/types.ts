@@ -464,6 +464,7 @@ export interface PlanningTask {
 export interface StudioState {
   boundedChannelSelection?: {connectionId:string;value:boolean};
   agentVoiceExamples?: import("./agent-voice-library").AgentVoiceExample[];
+  agentPackageArchives?: import("./agent-archives").AgentArchive[];
   agentRuleFiles?: import("./agent-rule-files").AgentRuleFile[];
   verificationRuns?: import("./verification-pack").VerificationRun[];
   preparations?: PreparationAuthorization[];
