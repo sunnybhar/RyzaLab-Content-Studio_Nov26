@@ -353,7 +353,8 @@ for (const sample of samples)
       handoff: true,
     });
     const pkg = s.packages[0];
-    assert.equal(pkg.text, body);
+    const expectedPublished=sample.ai&&channel==="Newsletter"?body.trim()+"\n\n## Sources\n- Supplied household handoff guidance — local fixture":body;
+    assert.equal(pkg.text, expectedPublished);
     if (researchJobIds.length)
       assert.equal(
         pkg.researchSnapshots?.[0].raw,
@@ -370,7 +371,7 @@ for (const sample of samples)
     assert.notEqual(schedule.state, "published");
     assert.equal(schedule.publicationUrl, undefined);
     const restored = JSON.parse(JSON.stringify(s)) as StudioState;
-    assert.equal(restored.packages[0].text, body);
+    assert.equal(restored.packages[0].text, expectedPublished);
     assert.ok(
       restored.contents[0].stages?.some(
         (stage) => stage.key === "handoff" && stage.status === "pass",

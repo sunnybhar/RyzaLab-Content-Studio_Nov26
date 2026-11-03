@@ -175,6 +175,7 @@ export function AgentRules({
         >
           Edit saved Instructions and context
         </button>
+        <button className="s-btn" disabled={busy||!state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="instructions")?.extractedText||!state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="context")?.extractedText} onClick={async()=>{try{const {default:JSZip}=await import("jszip");const zip=new JSZip();zip.file(`${channel}/INSTRUCTIONS.md`,state.agentRuleFiles!.find(f=>f.channel===channel&&f.slot==="instructions")!.extractedText!);zip.file(`${channel}/knowledge/context.md`,state.agentRuleFiles!.find(f=>f.channel===channel&&f.slot==="context")!.extractedText!);const url=URL.createObjectURL(await zip.generateAsync({type:"blob"}));const a=document.createElement("a");a.href=url;a.download=`${channel.toLowerCase()}-agent-package.zip`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(error){setError(String(error));}}}>Download saved package ZIP</button>
         {packageDraft && (
           <>
             <label className="s-field">

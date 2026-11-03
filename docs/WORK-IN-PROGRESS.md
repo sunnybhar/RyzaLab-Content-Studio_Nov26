@@ -319,3 +319,6 @@ Added separate skill Markdown/ZIP guidance upload under Instructions and knowled
 
 ### v0.3.16 verification checkpoint
 Both actual user ZIPs parsed successfully without installing them: Hub6 knowledgefiles/40,548context chars, LinkedIn6/40,621, instructions≈4.6k, three non-knowledge entries skipped each. Excerpts bounded12k, originals untouched. Added generated-newsletter short-output/missing-source questions to prevent an underdeveloped draft looking ready. Synthetic sample fixtures updated for new minimum and long-form qualification. Build/full tests and new illustrated-export/package/progress browser test in progress. No paid calls; no release yet.
+
+### v0.3.16 final-check checkpoint
+Illustrated export browser check confirmed multi-page PDF and DOCX media/source embedding; ZIP edit/save and skill preview passed. Writing status was visually present but a browser assertion exposed its heading had role=status; corrected the heading semantics and rerunning. Added reusable download of edited package ZIP. Five synthetic sample assertions updated to include the new readable newsletter Sources body. Full tests/build rerunning; no production release yet, no paid/live calls.

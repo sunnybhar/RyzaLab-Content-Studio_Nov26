@@ -251,3 +251,15 @@ test("saved incomplete recovery makes no new request and rejects existing text o
  assert.throws(()=>applyCommand(next,DEMO_ACTOR,command,{demo:true,now}));
  c.text='Human changes';assert.throws(()=>applyCommand(s,DEMO_ACTOR,command,{demo:true,now}));
 });
+
+test('short unsourced AI newsletter stays visibly unfinished and carries its relevant image brief',()=>{
+ const s=fixture(),c=s.contents[0],job=s.jobs[0];c.channel='Newsletter';job.channel='Newsletter';c.text='';c.media.imagePrompt='';job.targetIdentity=copyIdentity(c,s);
+ settleWrittenOutput(s,job,{completion:'complete',text:JSON.stringify({body:'An introduction without sufficient detail.',metadata:'',sources:[],questions:[],imageBrief:'A simple labelled diagram of household controls.'})},now);
+ assert.match(c.text,/An introduction/);assert.ok(copyBlockers(c).some(x=>x.includes('1,200')));assert.ok(copyBlockers(c).some(x=>/source citations/.test(x)));assert.equal(c.media.imagePrompt,'A simple labelled diagram of household controls.');assert.equal(s.packages.length,0);
+});
+test('newsletter sources enter the readable body while social post provenance stays separate',()=>{
+ for(const channel of ['Newsletter','LinkedIn'] as const){const s=fixture(),c=s.contents[0],job=s.jobs[0];c.channel=channel;job.channel=channel;c.text='';job.targetIdentity=copyIdentity(c,s);
+ settleWrittenOutput(s,job,{completion:'complete',text:JSON.stringify({body:'Detailed general household guidance. '.repeat(350),metadata:'',sources:['https://example.org/source'],questions:[]})},now);
+ assert.equal(c.text.includes('## Sources'),channel==='Newsletter');
+ }
+});
