@@ -349,3 +349,6 @@ User screenshots identify exact failure: qualified input envelope exceeded despi
 
 ### v0.3.19 checkpoint: context compiler regression passed
 Large legacy references plus uploaded Instructions now fit65536-byte envelope in regression, protected rules/guardrails/Instructions/task intact, originals unchanged, quote bytes exactly match frozen new-job system. Oversized mandatory instructions still reject clearly rather than truncate. Error browser fixture shows visible error above stage list, no false research-running label and no automatic retry. Full checks next. No cap increase, extra paid calls or live account changes.
+
+### v0.3.19 verified release
+Build/typecheck251tests passed; distinct large-reference regression confirms quote-to-job exact input bytes and frozen context within65536bytes while preserving mandatory policy/Instructions/task and full originals. Oversized mandatory rules reject rather than truncate. Full app browser, automatic/manual researched ideas fixture and visible error/stage browser passed. Added explicit Reference snapshots declaration to Job during typecheck. No input/cost caps raised, no paid calls. User should refresh afterv319 and retry same1idea with existing saved packages; hosted rollout and live generation unverified.

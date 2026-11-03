@@ -321,6 +321,7 @@ export interface Connection {
 }
 export interface Job {
   systemSnapshot?: string;
+  referenceSnapshots?: Reference[];
   agentContextSnapshot?: ReturnType<typeof import("./agent-context").agentContext>;
   ideaPurpose?: "manual_assistance";
   providerUsage?: import("./usage-cost").ClaudeUsage;
