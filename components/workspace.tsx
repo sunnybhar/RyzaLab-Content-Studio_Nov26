@@ -1,5 +1,6 @@
 "use client";
 import {activeStudioView, ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active-channels";
+import {ideaStage} from "@/lib/studio/idea-board";
 import {GenerationRulesStatus} from "./generation-rules-status";
 import {isLongForm} from "@/lib/studio/channel-writing";
 import { AuthorizedJobProgress } from "./authorized-job-progress";
@@ -1827,15 +1828,7 @@ export default function Workspace() {
           )}
           {page === "Ideas" && (
             <>
-              <div className="s-actions"><a className="s-btn" href="/ideas-layouts" target="_blank" rel="noopener noreferrer">Compare 4 Ideas layouts</a></div>
-              <IdeaGenerationStatus
-                state={state}
-                actor={actor}
-                channel={channel}
-                live={mode === "live"}
-                refresh={() => refresh(true)}
-                send={send}
-              />
+
               <div className="s-toolbar">
                 <div className="s-view-tabs">
                   {[
@@ -1962,10 +1955,14 @@ export default function Workspace() {
                 </section>
               ) : (
                 <IdeasBrowser
-                  jobs={state.jobs}
+                  jobs={state.jobs.filter(job=>channel==="All channels"||job.channel===channel)}
+                  includeEmptyRequests={ideaTab==="All ideas"&&!search}
+                  canStage={idea=>allowed("idea.edit",{channel:idea.channel})}
+                  onStage={(idea,stage)=>execute({type:"idea.stage",id:idea.id,stage,expectedStage:ideaStage(idea)})}
+                  renderRequestStatus={job=><IdeaGenerationStatus state={state} actor={actor} channel={channel} requestId={job.id} live={mode==="live"} refresh={()=>refresh(true)} send={send}/>}
                   renderResearch={idea=><IdeaEvidence state={state} actor={actor} channel={idea.channel} ids={idea.researchJobIds}/>}
                   ideas={state.ideas.filter((idea) => matches(idea) && (ideaTab === "All ideas" || idea.state.toLowerCase() === ideaTab.toLowerCase()))}
-                  allIdeas={state.ideas}
+                  allIdeas={state.ideas.filter(idea=>channel==="All channels"||idea.channel===channel)}
                   contents={state.contents}
                   schedules={state.schedules}
                   actorEmail={actor.email}

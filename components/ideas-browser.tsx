@@ -1,7 +1,8 @@
 "use client";
 
+import {IdeasRequestBoard} from "./ideas-request-board";
+import type {IdeaStage} from "@/lib/studio/idea-board";
 import { useId, useRef, useState } from "react";
-import {ideaRequestBrief,ideaRequestNumber} from "@/lib/studio/idea-request";
 import {SourceReferences} from "./idea-evidence";
 import { X } from "lucide-react";
 import type { Content, Idea, Schedule,Job } from "@/lib/studio/types";
@@ -18,6 +19,10 @@ const date = (value: string) =>
 export function IdeasBrowser({
   ideas,
   jobs = [],
+  onStage,
+  canStage,
+  renderRequestStatus,
+  includeEmptyRequests,
   allIdeas,
   contents,
   schedules,
@@ -39,6 +44,10 @@ export function IdeasBrowser({
   renderResearch?: (idea:Idea)=>import("react").ReactNode;
   ideas: Idea[];
   jobs?: Job[];
+  onStage?:(idea:Idea,stage:IdeaStage)=>Promise<boolean>;
+  canStage?:(idea:Idea)=>boolean;
+  renderRequestStatus?:(job:Job)=>import("react").ReactNode;
+  includeEmptyRequests?:boolean;
   allIdeas: Idea[];
   contents: Content[];
   schedules: Schedule[];
@@ -56,7 +65,6 @@ export function IdeasBrowser({
   onReuse: (idea: Idea, mode: "revise" | "copy") => Promise<boolean>;
   onNewsletter?: (idea: Idea) => Promise<boolean>;
 }) {
-  const [view, setView] = useState<"tiles" | "list">("tiles");
   const [selectedId, setSelectedId] = useState<string>();
   const [format, setFormat] = useState("Text post");
   const [account, setAccount] = useState("RyzaLab");
@@ -119,64 +127,7 @@ export function IdeasBrowser({
     );
   return (
     <section className="s-ideas-browser" aria-label="Ideas">
-      <div className="s-ideas-view" aria-label="Idea layout">
-        <span>View</span>
-        <button
-          type="button"
-          className={view === "tiles" ? "s-selected" : ""}
-          aria-pressed={view === "tiles"}
-          onClick={() => setView("tiles")}
-        >
-          Tiles
-        </button>
-        <button
-          type="button"
-          className={view === "list" ? "s-selected" : ""}
-          aria-pressed={view === "list"}
-          onClick={() => setView("list")}
-        >
-          List
-        </button>
-      </div>
-      {ideas.length ? (
-        <div className={`s-ideas-results s-ideas-results-${view}`}>
-          {ideas.map((idea) => {
-            const published = publicationDate(idea);
-            const request=jobs.find(job=>job.id===idea.generationRunId);
-            return (
-              <button
-                type="button"
-                className="s-idea-summary"
-                key={idea.id}
-                onClick={() => open(idea)}
-              >
-                <span className="s-idea-summary-top">
-                  <span>{idea.channel}</span>
-                  <span className={`s-idea-state s-idea-state-${idea.state}`}>
-                    {idea.state}
-                  </span>
-                </span>
-                <strong role="heading" aria-level={2}>
-                  {idea.title}
-                </strong>
-                <span className="s-idea-summary-dates">
-                  {idea.origin==="agent"?"Generated":"Added"} {date(idea.createdAt)}
-                  {published
-                    ? ` · Publication confirmed ${date(published)}`
-                    : ""}
-                </span>
-                {request&&<span className="s-idea-request-context"><span>{ideaRequestNumber(request)}</span><span>Topic: {ideaRequestBrief(request)}</span></span>}
-                <span className="s-idea-open">View idea →</span>
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="s-empty">
-          <h3>No ideas found</h3>
-          <p>Try another filter or capture a new idea.</p>
-        </div>
-      )}
+      <IdeasRequestBoard ideas={ideas} allIdeas={allIdeas} jobs={jobs} busy={busy} onSelect={open} onStage={onStage} canStage={canStage} renderRequestStatus={renderRequestStatus} includeEmptyRequests={includeEmptyRequests}/>
       <dialog
         ref={dialog}
         className="s-review-dialog s-idea-detail"

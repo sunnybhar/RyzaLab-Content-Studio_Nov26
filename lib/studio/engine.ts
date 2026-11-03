@@ -1,3 +1,4 @@
+import {ideaStage} from "./idea-board";
 import {completeSavedIdeaCards} from "./idea-recovery";
 import {compileSystem} from "./system-context";
 import {saveAgentArchives} from "./agent-archives";
@@ -704,6 +705,15 @@ export function applyCommand(
       });
       break;
     }
+    case "idea.stage": {
+      const idea=s.ideas.find(idea=>idea.id===c.id);
+      if(!idea)bad("Idea not found.");
+      need("idea.edit",{channel:idea.channel});
+      if(idea.state==="rejected")bad("Revise a rejected idea before organising it for writing.");
+      if(ideaStage(idea)!==c.expectedStage)throw new StudioError(409,"This idea moved elsewhere. Refresh before moving it again.");
+      idea.boardStage=c.stage;
+      break;
+    }
     case "idea.review": {
       const idea = s.ideas.find((i) => i.id === c.id);
       if (!idea) bad("Idea not found.");
@@ -723,6 +733,7 @@ export function applyCommand(
         ...structuredClone(idea),
         id: id(),
         title: idea.title + " — revised",
+        boardStage: undefined,
         state: "pending",
         rejection: undefined,
         sourceId: idea.id,

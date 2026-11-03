@@ -150,6 +150,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   command("idea.recoverCompleteCards", {jobId:id}),
   command("idea.importSavedResult", { jobId: id }),
   command("idea.create", { title: short, brief: text, channel, researchJobIds:z.array(id).max(5).optional() }),
+  command("idea.stage", {id,stage:z.enum(["new","shortlisted","ready"]),expectedStage:z.enum(["new","shortlisted","ready"])}),
   command("idea.review", {
     id,
     decision: z.enum(["approved", "rejected"]),

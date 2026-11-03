@@ -78,6 +78,7 @@ export interface Workflow {
   createdAt: string;
 }
 export interface Idea {
+  boardStage?: import("./idea-board").IdeaStage;
   researchJobIds?: string[];
   id: string;
   title: string;

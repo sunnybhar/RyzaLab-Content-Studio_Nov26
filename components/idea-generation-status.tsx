@@ -11,6 +11,7 @@ const money = (n: number) =>
   );
 export function IdeaGenerationStatus({
   state,
+  requestId,
   actor,
   channel,
   live,
@@ -18,6 +19,7 @@ export function IdeaGenerationStatus({
   send,
 }: {
   state: StudioState;
+  requestId?:string;
   actor: Actor;
   channel: Channel | "All channels";
   live: boolean;
@@ -33,6 +35,7 @@ export function IdeaGenerationStatus({
     .filter(
       (j) =>
         j.kind === "ideas" &&
+        (!requestId||j.id===requestId) &&
         (channel === "All channels" || j.channel === channel),
     )
     .slice()
