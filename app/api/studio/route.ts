@@ -152,7 +152,7 @@ export async function POST(req: NextRequest) {
           : undefined,
     });
     if (command.type === "idea.use") next = orchestrateInitialWriting(next);
-    if (command.type === "content.acceptCopy") next = orchestrateReviews(next);
+    if (["content.acceptCopy", "content.submit", "content.reviewEdit", "content.saveSubmit"].includes(command.type)) next = orchestrateReviews(next);
     if (Buffer.byteLength(JSON.stringify(next)) > 24000000)
       throw new StudioError(
         413,

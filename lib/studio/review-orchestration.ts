@@ -23,14 +23,15 @@ export function orchestrateReviews(
   let queued = false;
   for (const original of input.contents) {
     if (original.deletedAt || original.state !== "review") continue;
-    const acceptance = currentCopyAcceptance(original, state);
+    const submission = original.reviewSubmission?.identity === copyIdentity(original,state) ? original.reviewSubmission : undefined;
+    const acceptance = submission || currentCopyAcceptance(original, state);
     if (!acceptance) continue;
     if (
       state.packages.some(
         (p) =>
           p.contentId === original.id &&
           p.revision === original.revision &&
-          p.copyAcceptanceSnapshot?.id === acceptance.id,
+          (p.singleReview || p.copyAcceptanceSnapshot?.id === acceptance.id),
       )
     )
       continue;

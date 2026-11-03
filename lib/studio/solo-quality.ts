@@ -66,12 +66,12 @@ export function copyBlockers(c: Content) {
   if (!c.text.trim()) issues.push("Add the complete written copy.");
   return [...new Set(issues)];
 }
-export function packageReadiness(c: Content, s: StudioState) {
+export function packageReadiness(c: Content, s: StudioState, singleReview = false) {
   const policy = soloPolicy(s),
     acceptance = currentCopyAcceptance(c, s),
     identity = copyIdentity(c, s);
   const blockers = copyBlockers(c);
-  if (!acceptance) blockers.push("Review and approve the current copy first.");
+  if (!singleReview && !acceptance) blockers.push("Review and approve the current copy first.");
   if (
     s.jobs.some(
       (j) =>

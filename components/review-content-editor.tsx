@@ -61,7 +61,7 @@ export function ReviewContentEditor({
       <p>
         {editing
           ? "Edit the post below, answer the highlighted questions, then save and submit."
-          : "Read the post. Use Edit content to make changes, then approve the copy below."}
+          : "Read the content, edit if needed, then approve and publish below."}
       </p>
       {editing ? (
         <HighlightedTextarea

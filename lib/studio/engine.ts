@@ -947,10 +947,23 @@ export function applyCommand(
     }
     case "content.submit": {
       const d = content(c.id);
-      if (inputRequirements(d).length) bad("Resolve the highlighted items in Needs your input before submitting for review. Replace them with verified details or rewrite the unsupported passage.");
+      if (!soloPolicy(s) && inputRequirements(d).length) bad("Resolve the highlighted items in Needs your input before submitting for review. Replace them with verified details or rewrite the unsupported passage.");
       if (!d.text.trim() && !d.media.slides.length && !d.media.scenes.length)
         bad("Add content before submitting.");
       d.state = "review";
+      // Submission freezes automation context; it is not a human approval.
+      if (d.reviewSubmission?.identity !== copyIdentity(d, s))
+        d.reviewSubmission = { id: id(), actor: actor.email, identity: copyIdentity(d, s), at: now };
+      const policy = soloPolicy(s);
+      if (policy && !preparationFor(s, d, actor.email, now) && can(s, actor, "package.approve", { channel:d.channel, contentId:d.id, account:d.account, assignedTo:d.assignedTo })) {
+        const existing = s.preparations?.find(p => p.id === d.preparationId);
+        // Preserve a lower explicit allowance; never reset accumulated spend.
+        const authorization = { id:id(), contentId:d.id, channel:d.channel, account:d.account,
+          authorizedFor:d.assignedTo, authorizedBy:actor.email, at:now, period:budgetMonth(now,s.settings.timezone),
+          maxCents:Math.min(existing?.maxCents ?? policy.packageCap, policy.packageCap, 200),
+          functions:["review"] as import("./types").FunctionKind[], policyVersion:policy.version };
+        s.preparations ??= []; s.preparations.push(authorization); d.preparationId=authorization.id;
+      }
       const owner =
         s.members.find((m) => m.roles.includes("founder") && !m.revoked) ||
         s.members.find((m) => m.roles.includes("administrator") && !m.revoked);
@@ -1057,7 +1070,9 @@ export function applyCommand(
         placeholders.push(
           "NEEDS_SOURCE remains in the content; supply verified evidence or remove the unsupported claim.",
         );
-      if (blockers.length || placeholders.length)
+      const manualOverride = Boolean(c.singleReview && c.overrideReason);
+      const editorialIssues = [...blockers, ...placeholders];
+      if (!manualOverride && (blockers.length || placeholders.length))
         bad(
           "Resolve blocking factual claims and confirmation placeholders before approval. " +
             [...blockers, ...placeholders].slice(0, 8).join(" "),
@@ -1065,8 +1080,7 @@ export function applyCommand(
       const priceLines = all
         .split("\n")
         .filter((line) => /\bfree\b|\$\s*\d/i.test(line));
-      if (
-        priceLines.some(
+      const missingPriceException = priceLines.some(
           (line) =>
             !(s.exceptions || []).some(
               (e) =>
@@ -1075,12 +1089,13 @@ export function applyCommand(
                 e.ruleVersion === s.settings.protectedVersion &&
                 e.wording === line.trim(),
             ),
-        )
-      )
+        );
+      if (missingPriceException) editorialIssues.push("Price/free wording has no scoped founder exception.");
+      if (missingPriceException && !manualOverride)
         bad(
           "Price/free wording requires a scoped founder exception for each exact line in this revision.",
         );
-      if (d.media.scenes.length && d.media.scenes.some((x) => !x.sourceUrl))
+      if (!manualOverride && d.media.scenes.length && d.media.scenes.some((x) => !x.sourceUrl))
         bad(
           "Video approval requires completed scene media, not only a script.",
         );
@@ -1118,17 +1133,17 @@ export function applyCommand(
         );
       const twoStep = soloPolicy(s);
       researchEvidence(s,actor,d.channel,d.researchJobIds);
-      const readiness = twoStep ? packageReadiness(d, s) : undefined;
+      const readiness = twoStep ? packageReadiness(d, s, Boolean(c.singleReview)) : undefined;
       if (twoStep) {
         if (
           c.expectedPolicyVersion !== twoStep.version ||
-          c.expectedCopyAcceptanceId !== readiness?.acceptance?.id
+          (!c.singleReview && c.expectedCopyAcceptanceId !== readiness?.acceptance?.id)
         )
           throw new StudioError(
             409,
             "Copy acceptance or review policy changed. Open the latest package before approval.",
           );
-        if (!readiness?.ready)
+        if (!manualOverride && !readiness?.ready)
           bad(
             readiness?.blockers.join(" ") ||
               "Complete copy and package checks.",
@@ -1143,11 +1158,15 @@ export function applyCommand(
         if (!c.handoff)
           bad("Explicitly approve this exact package and its manual handoff.");
       }
-      if (!twoStep && !stageSummary(d, s).readyForApproval)
+      if (!twoStep && !c.singleReview && !stageSummary(d, s).readyForApproval)
         bad(
           "Complete all six pre-approval stages for this exact version before human approval.",
         );
+      if (c.overrideReason && !c.singleReview) bad("Overrides require the single review action.");
+      const bypassedChecks = [...new Set([...editorialIssues, ...(readiness?.blockers || [])])];
       const payload = {
+        ...(c.singleReview ? { singleReview:true } : {}),
+        ...(manualOverride ? { editorialOverride: { actor:actor.email, at:now, reason:c.overrideReason!, checks:bypassedChecks } } : {}),
         contentId: d.id,
         channel: d.channel,
         account: d.account,
@@ -1171,11 +1190,11 @@ export function applyCommand(
           ...(twoStep
             ? {
                 reviewPolicySnapshot: structuredClone(twoStep),
-                copyAcceptanceSnapshot: structuredClone(readiness!.acceptance),
+                ...(readiness!.acceptance ? {copyAcceptanceSnapshot:structuredClone(readiness!.acceptance)} : {}),
                 agentReviewSnapshot: readiness?.agent
                   ? structuredClone(readiness.agent)
                   : null,
-                qualityReport: packageReadiness(d, s),
+                qualityReport: packageReadiness(d, s, Boolean(c.singleReview)),
                 noteReleaseAuthorization:
                   d.channel === "Notes"
                     ? {
@@ -1209,6 +1228,7 @@ export function applyCommand(
           ? ctx.hash(JSON.stringify(payload))
           : fingerprint(payload),
       });
+      if (manualOverride) s.audit.push({id:id(),actor:actor.email,action:"review.manual_override",target:s.packages[0].id,at:now});
       if (twoStep) {
         const pkg = s.packages[0];
         d.stages ??= [];

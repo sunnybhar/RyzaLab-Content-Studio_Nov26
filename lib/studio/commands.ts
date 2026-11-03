@@ -197,6 +197,8 @@ export const commandSchema = z.discriminatedUnion("type", [
     expectedRevision: z.number().int().positive(),
     expectedWorkflowId: id,
     expectedRuleVersion: short,
+    singleReview: z.boolean().optional(),
+    overrideReason: z.string().trim().min(5).max(2000).optional(),
     expectedCopyAcceptanceId: id.optional(),
     expectedPolicyVersion: id.optional(),
     handoff: z.boolean().optional(),

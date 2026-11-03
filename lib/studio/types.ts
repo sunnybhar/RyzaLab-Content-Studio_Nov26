@@ -264,6 +264,7 @@ export interface Content {
   agentReview?: AgentReview;
   initialWriting?: {id:string; actor:string; at:string; policyVersion:string; identity:string; revision:number};
   automaticWriting?: {intentId:string; jobId?:string; error?:string; at:string};
+  reviewSubmission?: { id: string; actor: string; identity: string; at: string };
   automaticReview?: { acceptanceId: string; jobId?: string; error?: string; at: string };
   generatedBy?: {
     provider: Connection["provider"];
@@ -273,6 +274,8 @@ export interface Content {
   preparationId?: string;
 }
 export interface Package {
+  editorialOverride?: { actor: string; at: string; reason: string; checks: string[] };
+  singleReview?: boolean;
   researchSnapshots?: {jobId:string;raw:string}[];
   copyAcceptanceSnapshot?: CopyAcceptance;
   id: string;

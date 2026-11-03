@@ -394,3 +394,6 @@ Build/typecheck256tests passed, compiled functions-config manifest confirms/api/
 
 ### v0.3.23 verified release
 Production build/typecheck256domain tests passed; fullapp, concurrent-refresh, and exact-review-blocker browser checks passed. Compiled mainAPI limit confirmed180seconds. Added actual dispatch/lease timestamps to review card for matching logs (creation time alone is not dispatch). New code distinguishes DBschema/timeouts/access errors and logs worker phases instead of concealing read errors; no historical outcome inferred from workerHTTP200/503. Existing unknown review remains unresolved and no cost/approval/provider action performed. Hosted rollout and underlying production DB error still require live confirmation.
+
+## WIP v0.3.24 — simplified review and explicit override
+User superseded two human approvals/manual stages: one review decision, automatic backend checks, manual override with reason. Added submission context distinct from acceptance, single-review package approval preserving true checks and unknown reservations. Replacing normal review/checklist UI. In progress: typecheck/domain/browser verification and publication handoff simplification. No live publication/provider calls or historical outcome changes.

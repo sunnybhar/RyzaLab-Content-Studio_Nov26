@@ -2731,17 +2731,6 @@ export default function Workspace() {
                     </div>
                     <h2>{c.title}</h2>
                     <ReviewContentEditor content={c} canEdit={allowed("content.edit", {channel:c.channel,account:c.account,contentId:c.id,assignedTo:c.assignedTo})} send={send} onEditing={editing=>setReviewEditing(editing ? c.id : null)} openDraft={()=>openContent(c)} />
-                    <div className="s-review-meta">
-                      Revision {c.revision} · {c.format} ·{" "}
-                      {c.media.slides.length} slides · {c.media.scenes.length}{" "}
-                      scenes
-                      <br />
-                      Active workflow v
-                      {state.workflows.find(
-                        (w) => w.channel === c.channel && w.status === "active",
-                      )?.version || "not configured"}{" "}
-                      · Protected rules {state.settings.protectedVersion}
-                    </div>
                     {reviewEditing === c.id ? <p>Save and submit your changes above to continue the review.</p> : state.settings.reviewPolicy ? (
                       <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send} refresh={() => refresh(true)} progressJob={progressAuthorizedJob} demo={mode === "demo"}
                         onApproved={(pkg, approvedState) => {
