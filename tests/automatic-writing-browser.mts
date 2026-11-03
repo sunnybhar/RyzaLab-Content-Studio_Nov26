@@ -113,6 +113,7 @@ try {
   job.state = "succeeded";
   job.actual = job.reserved;
   job.reserved = 0;
+  const unfinishedState = structuredClone(state);
   const body =
     "A household handoff can list the daily routine and useful contacts.";
   settleWrittenOutput(
@@ -138,8 +139,18 @@ try {
   assert.equal(final.contents.length, count);
   assert.equal(final.jobs.length, 1);
   assert.equal(orchestrateInitialWriting(final, now).jobs.length, 1);
+  unfinishedState.jobs[0].outputStatus="incomplete";
+  unfinishedState.jobs[0].result='[INCOMPLETE OUTPUT — token limit reached; not ready for approval]\n```json\n{"body":"Checking on Mom\\n\\nA recovered unfinished paragraph';
+  await page.evaluate(({key,state})=>localStorage.setItem(key,JSON.stringify(state)),{key,state:unfinishedState});
+  await select();
+  await page.getByRole("button",{name:"Recover available text into editor — no AI call",exact:true}).click();
+  const recovered=await page.getByLabel("Content text").inputValue();
+  assert.match(recovered,/Checking on Mom\n\nA recovered unfinished paragraph/);
+  assert.match(recovered,/INCOMPLETE OUTPUT/);assert.doesNotMatch(recovered,/```|"body"/);
+  const afterRecovery=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)!),key);
+  assert.equal(afterRecovery.jobs.length,1);
   console.log(
-    "PASS: selected idea opens one draft, queued writing locks edits, simulated completed copy appears directly; no provider calls",
+    "PASS: selected idea opens one draft, queued writing locks edits, completed copy and recovered incomplete paragraphs appear in the editor; no provider calls",
   );
 } finally {
   await browser.close();

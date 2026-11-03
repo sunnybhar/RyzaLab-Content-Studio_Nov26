@@ -227,3 +227,27 @@ test("complete first writing appears in an unchanged empty editor with every fac
  assert.ok(copyBlockers(c).some(x=>x.includes(payload.questions[0])));
  assert.equal(job.questionsDisposition,undefined);
 });
+
+test("truncated JSON body recovers readable paragraphs without completing missing words", async () => {
+ const {incompleteDraftBody}=await import('../lib/studio/incomplete-draft');
+ assert.equal(incompleteDraftBody('```json\n{"body":"A real paragraph.\\n\\nA second \\"quote\\" and unfinished'), 'A real paragraph.\n\nA second "quote" and unfinished');
+ assert.equal(incompleteDraftBody('{"body":"Enough readable text\\u12'), 'Enough readable text');
+ assert.equal(incompleteDraftBody('{"metadata":"ignore", "body":"Do not recover nested fields"}'), undefined);
+ assert.equal(incompleteDraftBody('{"body":"Invalid escape \\x00"}'), undefined);
+});
+test("incomplete first writing enters an empty editor, preserves notes and remains blocked", () => {
+ const s=fixture(), c=s.contents[0], job=s.jobs[0];c.text='';c.metadata='Existing editorial notes';job.targetIdentity=copyIdentity(c,s);
+ const raw='```json\n{"body":"Checking on Mom\\n\\nA readable unfinished paragraph';job.result=raw;
+ settleWrittenOutput(s,job,{text:raw,completion:'incomplete'},now);
+ assert.match(c.text,/Checking on Mom\n\nA readable unfinished paragraph/);assert.doesNotMatch(c.text,/```|"body"/);
+ assert.equal(c.metadata,'Existing editorial notes');assert.equal(job.result,raw);assert.equal(job.outputStatus,'incomplete');
+ assert.ok(copyBlockers(c).some(x=>/incomplete/i.test(x)));assert.equal(s.jobs.length,1);
+});
+test("saved incomplete recovery makes no new request and rejects existing text or stale editor", () => {
+ const s=fixture(),c=s.contents[0],job=s.jobs[0]; c.text='';job.targetIdentity=copyIdentity(c,s);job.outputStatus='incomplete';job.result='{"body":"A usable saved paragraph';
+ const command={type:'job.recoverIncomplete',jobId:job.id,expectedRevision:c.revision};
+ const next=applyCommand(s,DEMO_ACTOR,command,{demo:true,now});assert.match(next.contents[0].text,/A usable saved paragraph/);
+ assert.equal(next.jobs.length,1);assert.equal(next.jobs[0].reserved,job.reserved);assert.equal(next.jobs[0].attempt,job.attempt);
+ assert.throws(()=>applyCommand(next,DEMO_ACTOR,command,{demo:true,now}));
+ c.text='Human changes';assert.throws(()=>applyCommand(s,DEMO_ACTOR,command,{demo:true,now}));
+});

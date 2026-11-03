@@ -422,7 +422,7 @@ export function DraftAssistant({
           Prepare saved draft — no AI call
         </button>
       )}
-      {jobs.find(job=>job.outputStatus==="incomplete"&&!job.appliedAt&&job.result)&&<button className="s-btn" disabled={readOnly||busy||dirty||Boolean(content.text.trim()||content.metadata.trim())} onClick={()=>void run({type:"job.recoverIncomplete",jobId:jobs.find(job=>job.outputStatus==="incomplete"&&!job.appliedAt&&job.result)!.id,expectedRevision:content.revision},"Available text recovered into the editor as unfinished — no AI call")}>Recover available text into editor — no AI call</button>}
+      {jobs.find(job=>job.outputStatus==="incomplete"&&!job.appliedAt&&job.result)&&<button className="s-btn" disabled={readOnly||busy||dirty||Boolean(content.text.trim())} onClick={()=>void run({type:"job.recoverIncomplete",jobId:jobs.find(job=>job.outputStatus==="incomplete"&&!job.appliedAt&&job.result)!.id,expectedRevision:content.revision},"Available text recovered into the editor as unfinished — no AI call")}>Recover available text into editor — no AI call</button>}
       {jobs.slice(0, 10).map((job) => (
         <details key={job.id} className="s-version">
           <summary>

@@ -12,7 +12,7 @@ if (commit === "local") {
 }
 const config: NextConfig = {
   env: {
-    NEXT_PUBLIC_STUDIO_VERSION: "0.3.13",
+    NEXT_PUBLIC_STUDIO_VERSION: "0.3.14",
     NEXT_PUBLIC_STUDIO_COMMIT: commit.slice(0, 7),
   },
   poweredByHeader: false,

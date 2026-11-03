@@ -110,7 +110,7 @@ try {
     .getByRole("link", { name: "Home automation", exact: true })
     .waitFor();
   assert.deepEqual(await page.evaluate(() => (window as any).queries), [
-    "Household controls",
+    "household controls",
   ]);
   await dialog.getByRole("button", { name: "Close idea window" }).click();
   await page.getByRole("button", { name: "Add manually", exact: true }).click();
@@ -166,8 +166,8 @@ try {
     "manual assistance must not create extra agent cards",
   );
   assert.deepEqual(await page.evaluate(() => (window as any).queries), [
-    "Household controls",
-    "My manual handoff idea",
+    "household controls",
+    "handoff",
   ]);
   assert.deepEqual(errors, []);
   console.log(

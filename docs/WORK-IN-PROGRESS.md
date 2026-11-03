@@ -292,3 +292,6 @@ Final UI checks pass: full browser regression after restoring manual-save feedba
 
 ## Current checkpoint: progress, research relevance, unfinished writing recovery
 Unreleased work: visible idea stages and audience-aware public reference filtering; decode incomplete first-body JSON into an unchanged empty editor with a blocking unfinished marker and explicit recovery for saved responses. No paid calls made. Next: regression tests, build, browser verification; do not release this checkpoint. Queued checkbox and stored-only Agent Rules remain unchanged.
+
+### v0.3.14 verification checkpoint
+Domain suite: 234 passed, plus new audience relevance regression passed. TypeScript and production build passed. Integrated automatic/manual ideas browser fixture and full app browser workflow passed. Additional saved-incomplete editor browser regression is running. New recovery preserves notes and cannot overwrite existing text; incomplete marker blocks review. No paid calls. Next: finish editor browser check, final commit/release. Agent Rules remain stored only; checkbox issue remains queued.

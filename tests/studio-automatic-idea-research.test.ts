@@ -1,3 +1,4 @@
+import {ideaResearchQuery} from "../lib/studio/idea-research-query";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { automaticIdeaResearch } from "../lib/studio/automatic-idea-research";
@@ -87,7 +88,7 @@ test("automatic idea generation retrieves public evidence and freezes it before 
   let calls = 0;
   const retrieve = async (query: string) => {
     calls++;
-    assert.equal(query, c.topic);
+    assert.equal(query, ideaResearchQuery(c.topic, c.audience));
     assert.ok(!query.includes("Private notes"));
     return refs();
   };

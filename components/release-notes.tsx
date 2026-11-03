@@ -16,7 +16,9 @@ export function ReleaseNotes() {
         aria-label="What changed in this build"
         style={{ maxWidth: 600, width: "calc(100% - 32px)", margin: "auto" }}
       >
-        <h2>v0.3.13 · Researched ideas and stored Agent Rules</h2>
+        <h2>v0.3.14 · Visible progress and editable recovered drafts</h2>
+        <p>Idea generation shows research, allowance, generation and results stages at the top. Public queries include the audience and exclude unrelated references. Incomplete writing can be recovered into an empty editor without another AI call; it remains marked unfinished until edited.</p>
+        <h3>v0.3.13 · Researched ideas and stored Agent Rules</h3>
         <p>
           Generate ideas now retrieves public research automatically and shows
           idea cards with source websites and excerpts in the same window. Add

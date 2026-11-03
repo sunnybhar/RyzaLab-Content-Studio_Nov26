@@ -101,7 +101,7 @@ export function settleWrittenOutput(
     output.completion !== "complete" ||
     /\[INCOMPLETE OUTPUT/i.test(output.text || "")
   ) {
-    if(job.outputContract==="draft_v1"&&output.completion!=="refused"&&!c.deletedAt&&c.state==="draft"&&!c.text.trim()&&!c.metadata.trim()&&c.revision===job.targetRevision&&copyIdentity(c,state)===job.targetIdentity&&!currentCopyAcceptance(c,state)&&!job.targetAccepted) {
+    if(job.outputContract==="draft_v1"&&output.completion!=="refused"&&!c.deletedAt&&c.state==="draft"&&!c.text.trim()&&c.revision===job.targetRevision&&copyIdentity(c,state)===job.targetIdentity&&!currentCopyAcceptance(c,state)&&!job.targetAccepted) {
       const body=incompleteDraftBody(output.text||"");if(body){applyRecoveredWorkingText(c,job,body,job.createdBy,now,id);return;}
     }
     job.outputStatus = "incomplete";
