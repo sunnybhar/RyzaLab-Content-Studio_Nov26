@@ -52,7 +52,7 @@ export function AgentRules({
         expectedId: previous?.id,
       });
       setMessage(
-        `${slot === "instructions" ? "Instructions" : "Context"} saved for ${channel}. Stored only; not connected to any agent.`,
+        `${slot === "instructions" ? "Instructions" : channel === "LinkedIn" ? "Markdown context (.md)" : "Context"} saved for ${channel}. Stored only; not connected to any agent.`,
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save the file.");
@@ -78,8 +78,7 @@ export function AgentRules({
       <h2>Instructions and Context</h2>
       <p>
         Store two separate files for each channel: how its agent should work,
-        and the background it will need. These files are stored only. They are
-        not parsed, executed or sent to any AI agent.
+        and the background it will need. New idea and writing requests use the saved channel files. Upload Instructions and Markdown context separately.
       </p>
       <label className="s-field">
         Social channel
@@ -100,7 +99,7 @@ export function AgentRules({
       </label>
       <div className="s-agent-rule-grid">
         {(["instructions", "context"] as const).map((slot) => {
-          const label = slot === "instructions" ? "Instructions" : "Context",
+          const label = slot === "instructions" ? "Instructions" : channel === "LinkedIn" ? "Markdown context (.md)" : "Context",
             file = state.agentRuleFiles?.find(
               (f) => f.channel === channel && f.slot === slot,
             );
@@ -113,7 +112,7 @@ export function AgentRules({
                   : "Brand, audience, background, examples and source material."}
               </p>
               <p>
-                <strong>Stored only · Not connected</strong>
+                <strong>{file?.extractedText ? "Connected to new AI requests" : file ? "Re-upload to activate text extraction" : "Upload to connect"}</strong>
               </p>
               {file ? (
                 <>

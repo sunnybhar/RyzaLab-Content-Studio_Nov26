@@ -32,6 +32,7 @@ export function validateStoredAgentFile(file: StoredAgentFile) {
   return bytes;
 }
 export interface AgentRuleFile {
+  extractedText?: string;
   id: string;
   channel: Channel;
   slot: "instructions" | "context";
@@ -51,6 +52,7 @@ export function saveAgentRuleFile(
     fileName: string;
     base64: string;
     byteSize: number;
+    extractedText?: string;
     expectedId?: string;
   },
   now: string,
@@ -77,6 +79,7 @@ export function saveAgentRuleFile(
     fileName: change.fileName,
     base64: change.base64,
     byteSize: bytes,
+    extractedText: change.extractedText,
     uploadedBy: actor.email,
     uploadedAt: now,
   });

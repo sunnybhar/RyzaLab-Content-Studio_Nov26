@@ -298,3 +298,6 @@ Domain suite: 234 passed, plus new audience relevance regression passed. TypeScr
 
 ### v0.3.14 ready for release
 Saved-incomplete editor browser regression passed: old fenced JSON recovers into Content text with real paragraphs, unfinished marker, and exactly one original job. Full app browser, integrated ideas browser, production build, typecheck, 234 domain tests plus audience relevance regression passed. All provider results were fixtures; no live generation or charges. Existing saved incomplete responses use “Recover available text into editor — no AI call”; future eligible empty drafts recover automatically. Main push is the deployment handoff; hosted rollout must be confirmed by the visible v0.3.14 label.
+
+## WIP continuation: linked Agent Rules, editable setup choice, broader search
+User explicitly authorized linking rules, fixing locked checkbox, broader web search and five live samples. Added bounded PDF/DOCX/text extraction and frozen channel-scoped context with six voice examples; server upload extraction and existing-file activation still being finished. Checkbox editable/persisted preference work underway. LinkedIn keeps independent Instructions and Markdown context slots. General web/news discovery and tests next. No live calls, no release yet.

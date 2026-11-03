@@ -1,3 +1,4 @@
+import {extractAgentFile} from "@/lib/studio/agent-file-extract";
 import {automaticIdeaResearch} from "@/lib/studio/automatic-idea-research";
 import { orchestrateInitialWriting } from "@/lib/studio/writing-orchestration";
 import { orchestrateReviews } from "@/lib/studio/review-orchestration";
@@ -50,7 +51,13 @@ export async function POST(req: NextRequest) {
       );
     const original = await loadState(db, actor);
     let state=original;
-    const parsed = commandSchema.parse(await req.json());
+    let parsed = commandSchema.parse(await req.json());
+    if(parsed.type==="agentRules.save"||parsed.type==="agentVoice.create"){
+      requirePermission(state,actor,"workflow.edit",{channel:parsed.channel==="Shared"?undefined:parsed.channel});
+      if(parsed.type==="agentRules.save")parsed={...parsed,extractedText:await extractAgentFile(parsed)};
+      else parsed={...parsed,extractedText:parsed.file?await extractAgentFile(parsed.file):undefined};
+    }
+
     let command = commandSchema.parse(
       parsed.type === "content.generate"
         ? generationInput(state, actor, parsed)

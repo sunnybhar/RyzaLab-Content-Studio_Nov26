@@ -320,6 +320,7 @@ export interface Connection {
   updatedAt: string;
 }
 export interface Job {
+  agentContextSnapshot?: ReturnType<typeof import("./agent-context").agentContext>;
   ideaPurpose?: "manual_assistance";
   providerUsage?: import("./usage-cost").ClaudeUsage;
   costBasis?: "provider_usage" | "human_reconciled";
@@ -461,6 +462,7 @@ export interface PlanningTask {
   createdAt: string;
 }
 export interface StudioState {
+  boundedChannelSelection?: {connectionId:string;value:boolean};
   agentVoiceExamples?: import("./agent-voice-library").AgentVoiceExample[];
   agentRuleFiles?: import("./agent-rule-files").AgentRuleFile[];
   verificationRuns?: import("./verification-pack").VerificationRun[];

@@ -11,6 +11,7 @@ export function saveBoundedWorkflowSetup(
   input: {
     connectionId: string;
     expectedVersion: number;
+    applyChannels?: boolean;
     channels?: ("LinkedIn" | "Newsletter")[];
   },
   capability: {
@@ -93,6 +94,7 @@ export function saveBoundedWorkflowSetup(
         0,
       16,
     );
+  next.boundedChannelSelection={connectionId:connection.id,value:input.applyChannels ?? Boolean(input.channels?.length)};
   target.supportedFunctions = ["text", "ideas", "review"];
   target.status = "validated";
   target.updatedAt = now;

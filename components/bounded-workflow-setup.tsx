@@ -50,8 +50,8 @@ export function BoundedWorkflowSetup({
   const useChannels =
     channelChoice?.connectionId === id && channelChoice.baseline === baseline
       ? channelChoice.value
-      : savedChannels;
-  const unsaved = useChannels && !savedChannels;
+      : state.boundedChannelSelection?.connectionId===id?state.boundedChannelSelection.value:savedChannels;
+  const unsaved = channelChoice!==null;
 
   return (
     <section className="s-panel s-panel-padding">
@@ -97,7 +97,7 @@ export function BoundedWorkflowSetup({
         <input
           type="checkbox"
           checked={useChannels}
-          disabled={busy || disabled || savedChannels}
+          disabled={busy || disabled}
           onChange={(e) => {
             setChannelChoice({
               connectionId: id,
@@ -110,11 +110,12 @@ export function BoundedWorkflowSetup({
         Use this connection for LinkedIn and Newsletter ideas, writing and
         review (replace their existing mappings).
       </label>
-      {savedChannels && (
+      {savedChannels && useChannels && (
         <p role="status">
           Saved for LinkedIn and Newsletter ideas, writing and review.
         </p>
       )}
+      {!useChannels && <p>Saving unchecked keeps existing channel mappings. Change individual model mappings in Workflow Settings.</p>}
       {unsaved && (
         <p role="status">
           This selection has not been saved. Click “Check model and enable
@@ -131,6 +132,7 @@ export function BoundedWorkflowSetup({
             await request({
               connectionId: id,
               expectedVersion: state.version,
+              applyChannels: useChannels,
               channels:
                 useChannels && !savedChannels ? ["LinkedIn", "Newsletter"] : [],
             });

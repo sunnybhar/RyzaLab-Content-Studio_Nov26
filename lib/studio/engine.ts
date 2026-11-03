@@ -1,3 +1,4 @@
+import {agentContext} from "./agent-context";
 import {incompleteDraftBody,applyRecoveredWorkingText} from "./incomplete-draft";
 import {saveAgentVoiceExample} from "./agent-voice-library";
 import {saveAgentRuleFile} from "./agent-rule-files";
@@ -2004,6 +2005,7 @@ export function applyCommand(
         createdAt: now,
         account: d?.account,
         workflowId: workflow.id,
+        agentContextSnapshot: ["ideas","text","review"].includes(c.kind)?agentContext(s,c.channel):undefined,
         workflowSnapshot: structuredClone(workflow),
         rulesSnapshot: s.settings.protectedRules,
         period: budgetMonth(now, s.settings.timezone),

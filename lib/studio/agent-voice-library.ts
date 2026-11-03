@@ -5,6 +5,7 @@ import {
   type StoredAgentFile,
 } from "./agent-rule-files";
 export interface AgentVoiceExample {
+  extractedText?: string;
   id: string;
   title: string;
   contentType: "article" | "post" | "newsletter";
