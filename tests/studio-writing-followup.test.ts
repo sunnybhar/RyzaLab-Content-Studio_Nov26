@@ -93,6 +93,7 @@ test("explicit new writing retains the unknown attempt/reservation and counts bo
   assert.throws(() => command(s), /uncertain/);
   let next = applyCommand(s, DEMO_ACTOR, command(s, [old.id]), ctx);
   assert.equal(next.jobs.length, 2);
+  assert.equal(applyCommand(next,DEMO_ACTOR,command(next,[old.id]),ctx).jobs.length,2);
   assert.equal(next.jobs[0].state, "queued");
   assert.equal(next.jobs[0].reserved, 14);
   assert.equal(next.jobs[1].state, "unknown");
@@ -102,7 +103,7 @@ test("explicit new writing retains the unknown attempt/reservation and counts bo
   assert.equal(preparationSpend(next, next.contents[0].preparationId!), 28);
   assert.equal(blockingUnknownJobs(next, next.contents[0].id).length, 0);
   assert.ok(hasWritingFollowup(next, next.jobs[1]));
-  assert.throws(() => command(next, [old.id]), /changed|active/);
+  assert.throws(() => command(next, [old.id],"different-new-key"), /changed|active/);
   next.jobs[0].state = "cancelled";
   next.jobs[0].reserved = 0;
   assert.equal(blockingUnknownJobs(next, next.contents[0].id).length, 1);

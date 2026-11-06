@@ -90,6 +90,7 @@ export function DraftAssistant({
     (job) => activeStates.has(job.state) && !hasWritingFollowup(state, job),
   );
   const unknowns = blockingUnknownJobs(state, content.id);
+  const busyRequest=Boolean(active&&active.state!=="unknown");
   const [recovering, setRecovering] = useState(false);
   const recoveryChecked = useRef(new Set<string>());
   async function checkSavedOutcome() {
@@ -275,7 +276,7 @@ export function DraftAssistant({
           onSelected={setResearchIds}
           run={run}
           refresh={refresh}
-          disabled={readOnly || busy || dirty || Boolean(active)}
+          disabled={readOnly || busy || dirty || busyRequest}
           demo={demo}
         />
       </details>
@@ -308,8 +309,7 @@ export function DraftAssistant({
         </p>
       ) : (
         <p>
-          Set up the two-step review policy to use the package allowance for
-          this draft.
+          Open AI &amp; budgets to configure writing and the post allowance.
         </p>
       )}
       {policy && (
@@ -328,7 +328,7 @@ export function DraftAssistant({
             This post's budget category
             <select
               aria-label="This post's budget category"
-              disabled={busy || readOnly || Boolean(active)}
+              disabled={busy || readOnly || busyRequest}
               value={budgetCategory}
               onChange={(e) => {
                 const id = e.target.value as BudgetCategory;
@@ -376,7 +376,7 @@ export function DraftAssistant({
                 max={Math.min(policy.packageCap, 200) / 100}
                 step="0.01"
                 value={budgetAmount}
-                disabled={busy || readOnly || Boolean(active)}
+                disabled={busy || readOnly || busyRequest}
                 onChange={(e) => setBudgetAmount(e.target.value)}
               />
             </label>
@@ -396,7 +396,7 @@ export function DraftAssistant({
                 dirty ||
                 busy ||
                 readOnly ||
-                Boolean(active) ||
+                busyRequest ||
                 preparation.maxCents === budgetCents
               }
               onClick={() =>
@@ -444,7 +444,7 @@ export function DraftAssistant({
           <textarea
             rows={3}
             value={notes}
-            disabled={readOnly || busy || Boolean(active)}
+            disabled={readOnly || busy || busyRequest}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="For example, make the opening shorter."
           />

@@ -38,11 +38,12 @@ export function generationInput(
   requirePermission(state, actor, "job.create", scope);
   if (input.kind === "text")
     requirePermission(state, actor, "content.edit", scope);
-  if(input.acknowledgeUnknownJobIds?.length){
+  const replay=state.jobs.some(job=>job.idempotencyKey===input.idempotencyKey&&job.createdBy===actor.email&&job.contentId===c.id&&job.kind===input.kind);
+  if(input.acknowledgeUnknownJobIds?.length&&!replay){
     if(input.kind!=="text")throw new StudioError(400,"Only writing supports an explicitly authorized new attempt.");
     validateWritingFollowup(state,c.id,input.acknowledgeUnknownJobIds);
   }
-  if((blockingUnknownJobs(state,c.id).length&&!input.acknowledgeUnknownJobIds?.length)||state.jobs.some(job=>job.contentId===c.id&&job.kind===input.kind&&["queued","running","awaiting_confirmation"].includes(job.state)))throw new StudioError(409,"A request is active or its outcome is uncertain. Check the saved result or explicitly authorize a new writing attempt; prior reservations remain retained.");
+  if(!replay&&((blockingUnknownJobs(state,c.id).length&&!input.acknowledgeUnknownJobIds?.length)||state.jobs.some(job=>job.contentId===c.id&&job.kind===input.kind&&["queued","running","awaiting_confirmation"].includes(job.state))))throw new StudioError(409,"A request is active or its outcome is uncertain. Check the saved result or explicitly authorize a new writing attempt; prior reservations remain retained.");
   const connectionId = resolvedConnection(state, c.channel, input.kind);
   if (!connectionId)
     throw new StudioError(
