@@ -4,6 +4,16 @@ Status: design prototype only. The live app and planned feature implementation a
 
 The persistent banner identifies sample data. There are no AI calls, provider costs, OAuth redirects, file uploads, API-key inputs or real posts. Choosing a file records its filename locally, without reading/parsing it. Editable sample text/settings stay in memory for this prototype session only. Publication states and research results are illustrative, never claimed as actual API outcomes.
 
+## Review files
+
+- `index.html`: clickable prototype; download and open in a browser.
+- `RyzaLab-Clickable-Preview.zip`: portable HTML plus this guide. Extract and open `index.html`.
+- `RyzaLab-Wireframes.pdf`: all 22 screens, one screen per page.
+- `layout-overview.png`: six-screen overview.
+- `screens/`: individual full-length screen captures.
+
+Use **Journey map** or **View all wireframes** to jump between screens. On Ideas, switch between Board and Table. Start with Home → Import calendar, then try Create → Newsletter and Reviews.
+
 ## User journeys to review
 
 1. **Calendar import:** Home → Import calendar → choose a sample/local filename → map columns → preview duplicates/dates/destinations → confirm sample import → Calendar → select a brief → Existing Pipeline in Create → generate ideas or write directly.
@@ -30,3 +40,7 @@ The persistent banner identifies sample data. There are no AI calls, provider co
 | IB-10: approval-controlled scheduled publishing | Review/date/time/platform/account, schedule status, edit/reapproval and failure states |
 
 Review these as proposed screens and navigation—not proof that a provider supports a capability or that a feature is already built. Native LinkedIn draft support, newsletter destinations and other-platform publication remain capability checks in the implementation plan.
+
+## Design verification
+
+`node docs/previews/improvement-wireframes/render-and-check.cjs` checks navigation, sample calendar import, post images, combined newsletter text, approval and changed-version reapproval, prepare-only handoff, and mobile overflow. It captures all 22 screens and regenerates the PDF/overview. Passed with zero browser errors and zero external requests. This validates the prototype interactions, not production feature behavior.
