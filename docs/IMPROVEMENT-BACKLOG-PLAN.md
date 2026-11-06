@@ -2,6 +2,39 @@
 
 Status: planning only. Latest user request is to add requirements to the backlog, not implement features or import operational data. This plan supersedes older manual-only publishing/design assumptions only for future work after approval. No production writes, feature implementation, paid calls, LinkedIn connection or spreadsheet import are authorized by this planning task.
 
+## Complete master backlog — both user request lists
+
+This is the master plan for **all improvement items in the earlier seven-item list and the later four-item expansion**. Earlier requirements are retained, not replaced by the calendar spreadsheet request. The earlier list's item 8 was blank; no requirement has been invented for it. The ten entries below separate combined requirements so each can be tracked and reviewed. All are **planned, not started** in this improvement programme. Existing basic capabilities, such as PDF/DOCX export, are a baseline to improve rather than proof that the requested enhancement is finished.
+
+| ID | Complete requested improvement | Origin | Proposed build | Status |
+|---|---|---|---|---|
+| IB-01 | Add an image-generation API key/connection for OpenAI or Google's supported Nano Banana/Gemini image model. Provide image generation inside **both LinkedIn post and Newsletter creation**, including content-based/custom prompts, preview, attachment/placement, replacement and optional export inclusion. | Earlier #1; earlier newsletter image requirements | 4 | Planned |
+| IB-02 | Upload, edit, download and select a **newsletter structure/format template**. Generate the final newsletter in that structure, with image slots and a matching visual PDF/DOCX layout. Preserve detailed background, evidence, reasoning, sources and the existing 1,200–1,600-word / at-least-2–3-page target, subject to the chosen template and actual export pagination. Text-only export remains available. | Earlier #2 and #6.1; expanded #4; previous newsletter requirements | 3, then image integration in 4 | Planned enhancement |
+| IB-03 | Upload an existing **Excel content calendar** and provide a downloadable XLSX template based on the supplied workbook. Preview/map columns, import dates/times/platforms, retain history and detect duplicates. Import actual entries, not empty formatted spreadsheet rows. | Earlier #3; expanded #2 | 1 | Planned |
+| IB-04 | Create **Existing Pipeline** with its own header and searchable dropdown in **both Ideas and Create**, for **LinkedIn posts and Newsletters**. Imported titles and angles become linked pipeline briefs/calendar entries. Start in three ways: imported brief, AI or manual. From a pipeline brief, either generate ideas or **write content directly**. | Earlier #3.1; expanded #2 | 1 | Planned |
+| IB-05 | Replace the apparent Wikipedia-first experience with **general web/news search and supplied website/link retrieval**. Use relevant accessible websites and other sources; retain source URLs, dates, excerpts and coverage. Wikipedia is optional supplementary background. | Earlier #4; expanded #3 | 2 | Planned |
+| IB-06 | Add separately uploadable/editable **Research Instructions and Source Preferences**. Search construction, real estate, home automation, IoT and related specialist sectors first; include baby-care/elder-care contexts where relevant; then broaden to other areas when needed. Make preferred/excluded websites, relevance and widening/fallback behavior visible. | Earlier #4, including sector examples; expanded #3 | 2 | Planned |
+| IB-07 | Obtain **Ryan's Humanizer** and upload it as distinct writing instruction/skill guidance used for content generation. Keep it identifiable, editable, versioned and scoped to the intended channels. Do not replace it with an unrelated public prompt or bury it within research settings. | Earlier #5 | 2 | Planned; Ryan's file/link needed |
+| IB-08 | Create **one multi-topic newsletter** from multiple existing/generated/old ideas, old posts or saved content, pipeline briefs, newly entered ideas, pasted text and **PDF/DOCX uploads**. Let users select/remove/reorder inputs, consolidate them coherently, preserve sources and apply IB-02's template and approved images. | Earlier #6; expanded #4 | 3, then image integration in 4 | Planned |
+| IB-09 | Provide **LinkedIn API connection/setup guidance and OAuth**. Retain a **prepare-only mode**: put/prepare the final post without submitting it if the granted API supports native drafts; otherwise use an honest Studio draft/copy/open-LinkedIn handoff. Never publish merely to simulate saving a draft. | Earlier #7 | 5 | Planned; capability verification needed |
+| IB-10 | Add **specific date/time/timezone and social platform/account scheduling**. Editor modifies/finalizes content; agent prepares the publishing package; **user approves publication of the exact package and schedule**; a supported publisher releases it at the approved time and records the actual result. Edits require reapproval; uncertain API outcomes must not produce duplicate posts. Prepare-only IB-09 remains a separate available mode. | Expanded #1; extends rather than deletes earlier #7 | 5 | Planned; provider/platform access needed |
+
+### Original-list completeness check
+
+- Earlier #1 — image key and images for posts/newsletters → **IB-01**.
+- Earlier #2 — uploaded newsletter structure/format and final images → **IB-02 + IB-01**.
+- Earlier #3 and #3.1 — uploaded calendar, dated entries, brief dropdown and AI/manual/imported starting points → **IB-03 + IB-04**.
+- Earlier #4 — broader websites/links, research instructions and sector examples → **IB-05 + IB-06**.
+- Earlier #5 — Ryan's Humanizer as writing instructions → **IB-07**, independently tracked.
+- Earlier #6 and #6.1 — combine generated/manual ideas into a templated newsletter → **IB-08 + IB-02**.
+- Earlier #7 — connect LinkedIn and prepare without submitting → **IB-09**, independently tracked.
+- Expanded #1 — editor finalization, date/time/platform, user-approved publishing → **IB-10**.
+- Expanded #2 — Excel template and Existing Pipeline in Ideas/Create → **IB-03 + IB-04**.
+- Expanded #3 — general web search, primary sectors then wider research → **IB-05 + IB-06**.
+- Expanded #4 — old posts/ideas, text, PDF and DOCX combined into one newsletter → **IB-08 + IB-02**.
+
+No earlier item is cancelled, marked completed or silently replaced by this grouping. The five builds below are delivery phases, **not the number of backlog requirements**.
+
 ## Proposed sequence
 
 | Build | Scope | Reviewable outcome |
@@ -51,7 +84,7 @@ All derivatives retain the originating Brief ID, sources and planned date. Editi
 
 Acceptance: import a mixed sample containing dated/undated ideas, existing copy, a published entry, combined destinations, blank rows and duplicate IDs. Verify calendar placement, both dropdowns, direct-to-writing, original source links, update preview and no automatic publishing/AI spending.
 
-## 2. General web research, sector priority and Humanizer
+## 2. General web research and sector priority (IB-05 / IB-06)
 
 Current code attempts web/news discovery alongside Wikipedia and Crossref; the user's observed results are not meeting the required breadth/relevance. The improvement must make general web search first-class and show provider coverage/failures instead of silently appearing Wikipedia-only.
 
@@ -66,9 +99,9 @@ Choose/evaluate a general web/news search provider based on index coverage, avai
 
 Each result retains title, domain, URL, date when available, excerpt, relevance and retrieval time. The generation step distinguishes sourced claims, interpretation and missing evidence. Conflicting sources or sensitive baby/elder health claims require appropriate evidence rather than invented certainty. Show the actual sector/wider search coverage and fallback reason.
 
-Obtain Ryan's Humanizer file or approved source link from the user; do not substitute a similarly named public prompt. Store it as versioned writing instruction/skill guidance, scoped to selected channels. It shapes language beneath factual/source rules and the active output template. Do not use it to fabricate experience or conceal uncertainty. New requests freeze the guidance actually used; existing requests retain their snapshots.
+Humanizer is a separate writing-guidance backlog item, **IB-07 / section 6**, not a research instruction.
 
-Acceptance: a construction/smart-home brief produces relevant specialist web sources without relying on Wikipedia; insufficient coverage visibly triggers wider search; a supplied public URL is traceable; inaccessible pages and missing facts are not fabricated; the Humanizer inclusion is visible in a new request's saved context.
+Acceptance: a construction/smart-home brief produces relevant specialist web sources without relying on Wikipedia; insufficient coverage visibly triggers wider search; a supplied public URL is traceable; inaccessible pages and missing facts are not fabricated.
 
 ## 3. Newsletter structure and multi-source creation
 
@@ -83,9 +116,9 @@ Newsletter input is a collection, not one item. Users can combine:
 
 Show a source basket with item title, origin/version, selected excerpts and remove/reorder controls. Preserve originals; do not rewrite them as a side effect. Distinguish a published post's URL/version from an editable draft. Scanned PDFs may require OCR; missing extraction must be reported.
 
-Before generation, propose an editable combined outline mapped into the selected template: shared theme, background, several distinct stories/sections, evidence, practical implications and conclusion. Merge repetitions, identify contradictions/gaps and retain provenance for each section. Do not simply concatenate several posts or fabricate links between unrelated topics. Allow the user to refine the theme/order or exclude an item.
+Before generation, support an optional editable combined-outline preview mapped into the selected template: shared theme, background, several distinct stories/sections, evidence, practical implications and conclusion. Merge repetitions, identify contradictions/gaps and retain provenance for each section. Do not simply concatenate several posts or fabricate links between unrelated topics. Allow the user to refine the theme/order or exclude an item.
 
-Final output follows the chosen structure, contains the selected topics/ideas, cites actual supplied/retrieved sources and includes approved images in the designated slots. Keep length configurable with the current detailed-newsletter default; verify actual page layout in export rather than promising a fixed page count from word count alone. Allow text-only generation and downloads without images. Approved image generation can follow the written draft as a separate bounded action.
+Final output follows the chosen structure, contains the selected topics/ideas, cites actual supplied/retrieved sources and includes approved images in the designated slots. Keep length configurable with the current 1,200–1,600-word detailed-newsletter default and the requested minimum 2–3-page target. Verify actual page count using the selected export layout rather than assuming a word count guarantees pagination. Include substantive background, relevant data/evidence, reasoning, implications and sources; do not pad the length with invented material. Allow text-only generation and downloads without images. Approved image generation can follow the written draft as a separate bounded action.
 
 Acceptance: combine at least two old ideas, an existing post and an uploaded source into one coherent newsletter; verify section mapping, no loss of source versions, no invented supporting data, citations, PDF/DOCX structure and optional image positions.
 
@@ -115,6 +148,24 @@ LinkedIn setup plan: create/configure a developer app, associate/verify the Page
 Preserve the earlier request to prepare content without submitting it: verify whether an unpublished native LinkedIn draft is actually supported by the granted API. If not, offer an honest Studio draft/copy/open-LinkedIn handoff; never invoke publication as a workaround for creating a draft. Support both prepare-only and user-approved scheduled publishing where permitted.
 
 Acceptance: select date/time/platform/account; edit; approve; verify one post at the intended instant, correct timezone/DST handling, paused approval after edits, revoked-token behavior, explicit cancellation/rescheduling and no duplicate post after a simulated ambiguous timeout. Imported historical approval labels never grant a new publishing authorization.
+
+## 6. Ryan's Humanizer and writing instruction management (IB-07)
+
+Obtain Ryan's Humanizer file or approved source link from the user; do not substitute a similarly named public prompt. Store it as versioned writing instruction/skill guidance, scoped to selected channels. It shapes language beneath factual/source rules and the active output template. Do not use it to fabricate experience or conceal uncertainty. New requests freeze the guidance actually used; existing requests retain their snapshots.
+
+The upload belongs under an identifiable writing-guidance/skill section within Agent Rules, alongside but distinct from channel Instructions, Context/knowledge, voice examples, research rules and newsletter templates. Users can upload/download the original, preview/edit the extracted guidance, replace it and choose its LinkedIn/Newsletter scope. Preserve existing channel files; Humanizer is an additional layer, not a replacement for the other requested uploads. Record its version in newly generated requests and show whether it was included.
+
+Ryan's file is an outstanding dependency; obtaining it is not marked done. The plan does not authorize fetching private files from Ryan or messaging him. The user can supply the file or an approved accessible source link.
+
+Acceptance: save the actual supplied Humanizer; generate a test post/newsletter with matching scope and verify its saved model context includes that version; replacing the file changes only future requests. Inspect the writing for the intended style without weakening factual checks or inventing personal experience.
+
+## Carry-forward usability and reliability requirements
+
+The requested enhancements must retain the existing simple editor/review flow. Routine checks run in the backend with visible status, not a new manual checklist. Optional outline/template previews must not become extra compulsory approval gates. Existing reasoned editorial override remains available; the final publishing authorization is a real user decision about the exact content/destination/time. Keep editable drafts, sources, image-free downloads, costs/reservations and recovery evidence intact. These are acceptance constraints, not claims that future publishing or new paid providers have already been implemented.
+
+## Other historical project backlogs
+
+This document is the complete master for the **two recent improvement lists**, not a deletion or reclassification of every historical engineering item. Older implementation/status records remain in [backlog-status.json](backlog-status.json), [BACKLOG-EXECUTION.md](BACKLOG-EXECUTION.md), and the dated continuation records in [WORK-IN-PROGRESS.md](WORK-IN-PROGRESS.md). Their older deferred-provider/manual-only assumptions must be read together with later user changes; this plan does not mark those historical live-validation tasks as passed.
 
 ## Outstanding inputs before corresponding builds
 
