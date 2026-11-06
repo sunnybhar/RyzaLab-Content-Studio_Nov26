@@ -160,7 +160,7 @@ test("provider outcomes are encrypted in private immutable storage and bound to 
           },
           download: async (path: string) => {
             assert.equal(path, key);
-            return { data: new Blob([stored!]), error: null };
+            return { data: new Blob([new Uint8Array(stored!)]), error: null };
           },
         };
       },
