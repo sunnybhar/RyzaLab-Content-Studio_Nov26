@@ -40,6 +40,7 @@ export async function automaticIdeaResearch(
       previous.contentId ||
       previous.channel !== input.channel ||
       previous.ideaPurpose !== input.purpose ||
+      old?.pipeline?.id !== input.pipelineBriefId ||
       old?.topic !== input.topic ||
       old?.audience !== input.audience ||
       old?.quantity !== input.quantity ||

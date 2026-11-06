@@ -1,3 +1,4 @@
+import {importPipeline,pipelineSnapshot} from "./pipeline";
 import {validateWritingFollowup} from "./writing-followup";
 import {ideaStage} from "./idea-board";
 import {completeSavedIdeaCards} from "./idea-recovery";
@@ -448,12 +449,23 @@ export function applyCommand(
           state: "pending",
           origin: "agent",
           generationRunId: job.id,
+          pipelineBriefId:(()=>{try{return JSON.parse(job.prompt).pipeline?.id;}catch{return undefined;}})(),
+          pipelineSnapshot:(()=>{try{return JSON.parse(job.prompt).pipeline;}catch{return undefined;}})(),
           researchJobIds: job.researchJobIds,
           createdBy: job.createdBy,
           createdAt: now,
         });
       if(c.type==="idea.recoverCompleteCards")job.ideaRecovery={count:items!.length,expected:requestedIdeaQuantity(job.prompt),by:actor.email,at:now};
       job.error = c.type==="idea.recoverCompleteCards"?`Recovered ${items!.length} complete pending idea card(s) from the incomplete saved response without another AI call. Original response and usage cost retained; review before use.`:"Saved response imported without another provider request. Recorded usage, costs and reservations are unchanged.";
+      break;
+    }
+    case "pipeline.import": return importPipeline(input,actor,c,now,id);
+    case "pipeline.draft": {
+      const brief=pipelineSnapshot(s,actor,c.briefId)!;
+      need("content.create",{channel:c.channel,account:brief.account});
+      if(s.audit.some(e=>e.action==="pipeline.draft"&&e.target===c.requestKey&&e.actor===actor.email))return structuredClone(input);
+      s.contents.unshift({id:id(),pipelineBriefId:brief.id,pipelineSnapshot:brief,channel:c.channel,account:brief.account,title:brief.title,format:c.channel==="Newsletter"?"Newsletter":brief.format||"Text post",text:brief.existingCopy,metadata:"",media:structuredClone(EMPTY_MEDIA),assignedTo:actor.email,revision:1,textRevision:1,mediaRevision:1,factsRevision:1,history:[],state:"draft",workflowId:s.workflows.find(w=>w.channel===c.channel&&w.status==="active")?.id,createdBy:actor.email,updatedAt:now});
+      s.audit.push({id:id(),actor:actor.email,action:"pipeline.draft",target:c.requestKey,at:now});
       break;
     }
     case "task.create": {
@@ -592,6 +604,7 @@ export function applyCommand(
       break;
     }
     case "idea.generate": {
+      const pipeline=pipelineSnapshot(s,actor,c.pipelineBriefId);
       need("idea.edit", { channel: c.channel });
       need("job.create", { channel: c.channel, function: "ideas" });
       if (
@@ -614,6 +627,7 @@ export function applyCommand(
             channel: c.channel,
             state: "pending",
             origin: "demo_sample",
+            pipelineBriefId:pipeline?.id,pipelineSnapshot:pipeline,
             generationRunId: "sample:" + c.idempotencyKey,
             createdBy: actor.email,
             createdAt: now,
@@ -690,12 +704,14 @@ export function applyCommand(
     }
 
     case "idea.create": {
+      const pipeline=pipelineSnapshot(s,actor,c.pipelineBriefId);
       const evidence=researchEvidence(s,actor,c.channel,c.researchJobIds);
       need("idea.edit", { channel: c.channel });
       s.ideas.unshift({
         id: id(),
         title: c.title,
         brief: c.brief,
+        pipelineBriefId:pipeline?.id,pipelineSnapshot:pipeline,
         researchJobIds:c.researchJobIds,
         origin:"manual",
         channel: c.channel,
@@ -872,6 +888,8 @@ export function applyCommand(
         metadata: "",
         media: structuredClone(EMPTY_MEDIA),
         ideaId: c.ideaId,
+        pipelineBriefId:s.ideas.find(i=>i.id===c.ideaId)?.pipelineBriefId,
+        pipelineSnapshot:s.ideas.find(i=>i.id===c.ideaId)?.pipelineSnapshot,
         assignedTo: actor.email,
         revision: 1,
         textRevision: 1,

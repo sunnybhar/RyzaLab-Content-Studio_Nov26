@@ -1,3 +1,4 @@
+import { pipelineImportSchema } from "./pipeline";
 import {agentArchiveSchema} from "./agent-archives";
 import {storedAgentFileSchema} from "./agent-rule-files";
 import { z } from "zod";
@@ -83,6 +84,8 @@ const command = <T extends string, S extends z.ZodRawShape>(
   shape: S,
 ) => z.object({ type: z.literal(type), ...shape }).strict();
 export const commandSchema = z.discriminatedUnion("type", [
+  command("pipeline.import", pipelineImportSchema),
+  command("pipeline.draft", { briefId:id, channel:z.enum(["LinkedIn","Newsletter","Instagram","YouTube","Reddit"]), requestKey:id }),
   command("connection.disconnect", {
     id,
     expectedUpdatedAt: z.string().min(1),
@@ -113,6 +116,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   command("agentVoice.remove", {id}),
   command("agentRules.remove", {channel,slot:z.enum(["instructions","context"]),expectedId:id}),
   command("idea.generate", {
+    pipelineBriefId: id.optional(),
     automaticResearch: z.boolean().optional(),
     purpose: z.literal("manual_assistance").optional(),
     channel,
@@ -149,7 +153,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   command("research.start", { channel, contentId: id.optional(), query: z.string().trim().min(5).max(2000), idempotencyKey: id }),
   command("idea.recoverCompleteCards", {jobId:id}),
   command("idea.importSavedResult", { jobId: id }),
-  command("idea.create", { title: short, brief: text, channel, researchJobIds:z.array(id).max(5).optional() }),
+  command("idea.create", { pipelineBriefId:id.optional(), title: short, brief: text, channel, researchJobIds:z.array(id).max(5).optional() }),
   command("idea.stage", {id,stage:z.enum(["new","shortlisted","ready"]),expectedStage:z.enum(["new","shortlisted","ready"])}),
   command("idea.review", {
     id,

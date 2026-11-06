@@ -41,6 +41,7 @@ export function activeStudioView(state: StudioState): StudioState {
         ),
       ),
     },
+    pipelineBriefs: state.pipelineBriefs?.filter(visible),
     contents,
     ideas: state.ideas.filter(visible),
     workflows: state.workflows.filter(visible),

@@ -78,6 +78,8 @@ export interface Workflow {
   createdAt: string;
 }
 export interface Idea {
+  pipelineBriefId?: string;
+  pipelineSnapshot?: import("./pipeline").PipelineBrief;
   boardStage?: import("./idea-board").IdeaStage;
   researchJobIds?: string[];
   id: string;
@@ -229,6 +231,8 @@ export interface SoloReviewPolicy {
   autoReview: boolean;
 }
 export interface Content {
+  pipelineBriefId?: string;
+  pipelineSnapshot?: import("./pipeline").PipelineBrief;
   researchJobIds?: string[];
   id: string;
   channel: Channel;
@@ -477,6 +481,8 @@ export interface PlanningTask {
   createdAt: string;
 }
 export interface StudioState {
+  pipelineBriefs?: import("./pipeline").PipelineBrief[];
+  pipelineImports?: import("./pipeline").PipelineImport[];
   boundedChannelSelection?: {connectionId:string;value:boolean};
   agentVoiceExamples?: import("./agent-voice-library").AgentVoiceExample[];
   agentPackageArchives?: import("./agent-archives").AgentArchive[];

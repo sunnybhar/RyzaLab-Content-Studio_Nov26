@@ -459,3 +459,6 @@ User requests layouts and navigable wireframes before feature work. Created self
 
 ### Wireframe review package ready
 All22screens rendered without browser errors. Browser journey checks passed for samplecalendarimport, pipeline-to-writing, imageattachment, newsletter pastedsource, approval, editedversion reapproval and prepare-only handoff. Four key mobile views passed overflow checks at390px; zeroexternalrequests. Added22pagePDF, individual screenPNGs, sixscreen overview and portableHTMLZIP. No production appfeatures, imports, keys, AIcalls or deployments. Design approval and implementation remain pending.
+
+## Approved build 1 — calendar and Existing Pipeline (WIP)
+User authorized implementation/deployment, then accepted first-release scope/calendar-pipeline estimate. Added bounded XLSX reader/template writer, mapped row preview, strict pipeline commands, DST validation, duplicate/update protection and provenance in idea/writing inputs. Added import and pipeline components. Integration into workspace/idea composer, browser/domain verification and release deployment remain in progress. No production data imports or AI calls. Preserve user's ongoing work through normal workspace CAS and additive optional state fields. Not ready for main.

@@ -115,6 +115,8 @@ export function filteredState(state: StudioState, actor: Actor): StudioState {
     ),
     ids = new Set(visible.map((c) => c.id));
   s.contents = visible;
+  s.pipelineBriefs=s.pipelineBriefs?.filter(b=>can(state,actor,"read",{channel:b.channel,account:b.account}));
+  s.pipelineImports=s.pipelineImports?.filter(i=>i.by===actor.email);
   s.agentVoiceExamples=s.agentVoiceExamples?.filter(example=>can(state,actor,"workflow.edit",{channel:example.channel==="Shared"?undefined:example.channel}));
   s.agentPackageArchives=s.agentPackageArchives?.filter(file=>can(state,actor,"workflow.edit",{channel:file.channel}));
   s.agentRuleFiles=s.agentRuleFiles?.filter(file=>can(state,actor,"workflow.edit",{channel:file.channel}));
