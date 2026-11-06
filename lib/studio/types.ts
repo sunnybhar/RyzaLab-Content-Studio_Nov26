@@ -325,6 +325,9 @@ export interface Connection {
   updatedAt: string;
 }
 export interface Job {
+  uncertainPredecessorIds?: string[];
+  writingFollowupId?: string;
+  leaseExpiredAt?: string;
   providerCompletion?: "complete"|"incomplete"|"refused";
   providerStopReason?: string;
   ideaRecovery?: {count:number;expected?:number;by:string;at:string};

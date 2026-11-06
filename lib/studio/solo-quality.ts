@@ -1,3 +1,4 @@
+import {hasWritingFollowup} from "./writing-followup";
 import type { Content, StudioState } from "./types";
 import { currentWorkflow, hasVisuals } from "./stages";
 import { contentWording } from "./content-wording";
@@ -75,7 +76,7 @@ export function packageReadiness(c: Content, s: StudioState, singleReview = fals
   if (
     s.jobs.some(
       (j) =>
-        j.contentId === c.id &&
+        j.contentId === c.id && !hasWritingFollowup(s,j) &&
         ["awaiting_confirmation", "queued", "running", "unknown"].includes(
           j.state,
         ),

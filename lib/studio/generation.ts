@@ -1,3 +1,4 @@
+import {blockingUnknownJobs,validateWritingFollowup} from "./writing-followup";
 import type { Actor, FunctionKind, StudioState } from "./types";
 import { resolvedConnection, currentCopyAcceptance } from "./solo-quality";
 import { requirePermission, StudioError } from "./permissions";
@@ -14,6 +15,7 @@ export function generationInput(
     notes?: string;
     researchJobIds?: string[];
     idempotencyKey: string;
+    acknowledgeUnknownJobIds?:string[];
   },
 ) {
   const c = state.contents.find(
@@ -36,22 +38,11 @@ export function generationInput(
   requirePermission(state, actor, "job.create", scope);
   if (input.kind === "text")
     requirePermission(state, actor, "content.edit", scope);
-  if (
-    state.jobs.some(
-      (job) =>
-        job.contentId === c.id &&
-        (job.state === "unknown" ||
-          (input.kind === "review" &&
-            job.kind === "review" &&
-            ["queued", "running", "awaiting_confirmation"].includes(
-              job.state,
-            ))),
-    )
-  )
-    throw new StudioError(
-      409,
-      "Resolve existing active or uncertain review work before requesting another run.",
-    );
+  if(input.acknowledgeUnknownJobIds?.length){
+    if(input.kind!=="text")throw new StudioError(400,"Only writing supports an explicitly authorized new attempt.");
+    validateWritingFollowup(state,c.id,input.acknowledgeUnknownJobIds);
+  }
+  if((blockingUnknownJobs(state,c.id).length&&!input.acknowledgeUnknownJobIds?.length)||state.jobs.some(job=>job.contentId===c.id&&job.kind===input.kind&&["queued","running","awaiting_confirmation"].includes(job.state)))throw new StudioError(409,"A request is active or its outcome is uncertain. Check the saved result or explicitly authorize a new writing attempt; prior reservations remain retained.");
   const connectionId = resolvedConnection(state, c.channel, input.kind);
   if (!connectionId)
     throw new StudioError(
@@ -104,5 +95,6 @@ export function generationInput(
     prompt,
     estimate: 0,
     idempotencyKey: input.idempotencyKey,
+    ...(input.acknowledgeUnknownJobIds?.length?{uncertainPredecessorIds:input.acknowledgeUnknownJobIds}:{}),
   };
 }

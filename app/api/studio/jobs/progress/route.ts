@@ -39,13 +39,14 @@ export async function POST(req: NextRequest) {
     const expired =
       job.state === "running" &&
       Boolean(job.leaseUntil && job.leaseUntil < new Date().toISOString());
-    if (job.state !== "queued" && !expired)
+    const recoverable=job.state==="unknown"&&Boolean(job.leaseId);
+    if (job.state !== "queued" && !expired && !recoverable)
       return NextResponse.json({
         state: filteredState(state, actor),
         actor,
         mode: "live",
       });
-    if (!expired && !canDispatchJob(state, actor, job))
+    if (!expired && !recoverable && !canDispatchJob(state, actor, job))
       throw new StudioError(
         409,
         "Job access, draft or source context changed. Inspect the saved request.",
@@ -62,8 +63,8 @@ export async function POST(req: NextRequest) {
         { method: "POST", headers: { authorization: `Bearer ${token}` } },
       ),
     );
+    const result = await outcome.json();
     if (!outcome.ok) {
-      const result = await outcome.json();
       throw new StudioError(
         outcome.status,
         result.error ||
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
     }
     const next = await loadState(db, actor);
     return NextResponse.json(
-      { state: filteredState(next, actor), actor, mode: "live" },
+      { state: filteredState(next, actor), actor, mode: "live", recovered:result.recovered, message:result.message },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (e) {

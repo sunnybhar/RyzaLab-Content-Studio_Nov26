@@ -1,3 +1,4 @@
+import {hasWritingFollowup} from "./writing-followup";
 import {isActiveChannel} from "./active-channels";
 import type { StudioState } from "./types";
 import {
@@ -60,7 +61,7 @@ export function orchestrateReviews(
     } else if (
       state.jobs.some(
         (j) =>
-          j.contentId === original.id &&
+          j.contentId === original.id && !hasWritingFollowup(state,j) &&
           ["queued", "running", "awaiting_confirmation", "unknown"].includes(
             j.state,
           ),

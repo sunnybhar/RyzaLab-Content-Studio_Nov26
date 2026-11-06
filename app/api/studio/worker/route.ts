@@ -1,19 +1,16 @@
+import {saveWorkerReceipt,readWorkerReceipt,applyWorkerReceipt,LEASE_EXPIRED_ERROR,type WorkerReceipt} from "@/lib/studio/worker-receipt";
 import {studioDatabaseError} from "@/lib/studio/database-errors";
 import {studioRequestDiagnostics} from "@/lib/studio/request-diagnostics";
-import {settleUsageCost,type ClaudeUsage} from "@/lib/studio/usage-cost";
+import {type ClaudeUsage} from "@/lib/studio/usage-cost";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { database, loadState, persist, decrypt } from "@/lib/studio/store";
 import { StudioError } from "@/lib/studio/permissions";
 import { canDispatchJob } from "@/lib/studio/dispatch-permissions";
 import { budgetMonth } from "@/lib/studio/time";
-import {
-  parseGeneratedIdeas,
-  requestedIdeaQuantity,
-} from "@/lib/studio/idea-generation";
+
 import { effectiveRates, pricingSnapshotIsCurrent } from "@/lib/studio/pricing";
 import { runProvider, ProviderFailure } from "@/lib/studio/providers";
-import { settleWrittenOutput } from "@/lib/studio/draft-candidates";
 import {
   jobPreparation,
   preparationSpend,
@@ -40,7 +37,7 @@ export async function POST(req: NextRequest) {
         "Provider execution is disabled pending provider, pricing, and spending authorization.",
       );
     diagnostics.stage("workspace_read");
-    const db = database(),
+    const db = database(12000),
       { data,error:readError } = await db
         .from("studio_workspace")
         .select("state")
@@ -54,13 +51,29 @@ export async function POST(req: NextRequest) {
       expired = state.jobs.find(
         (j) => j.state === "running" && j.leaseUntil && j.leaseUntil < now && (!requestedJobId || j.id===requestedJobId),
       );
+    const recoverable=state.jobs.find(j=>(!requestedJobId||j.id===requestedJobId)&&j.leaseId&&["running","unknown"].includes(j.state));
+    if(recoverable){
+      diagnostics.stage("saved_outcome_read");
+      const receipt=await readWorkerReceipt(db,recoverable);
+      if(receipt){
+        for(let attempt=0;attempt<4;attempt++){
+          const {data:fresh,error}=await db.from("studio_workspace").select("state").eq("id",true).single();
+          if(error)throw studioDatabaseError(error,"read");
+          const previous=fresh?.state as typeof state;if(!previous)throw new StudioError(503,"Workspace unavailable for saved outcome recovery.");
+          const next=applyWorkerReceipt(previous,receipt);
+          try{await persist(db,previous,next);return NextResponse.json({jobId:recoverable.id,state:next.jobs.find(j=>j.id===recoverable.id)!.state,recovered:true});}catch(e){if(e instanceof StudioError&&e.code===409)continue;throw e;}
+        }
+        throw new StudioError(409,"Saved outcome is retained. Refresh to recover it; no provider request was repeated.");
+      }
+      if(recoverable.state==="unknown")return NextResponse.json({jobId:recoverable.id,state:"unknown",recovered:false,message:"No saved provider outcome is available. Original reservation remains retained."});
+    }
     if (expired) {
       diagnostics.stage("mark_expired_request");
       const next = structuredClone(state),
         j = next.jobs.find((j) => j.id === expired.id)!;
       j.state = "unknown";
-      j.error =
-        "Worker lease expired after dispatch intent. Reservation retained; do not retry.";
+      j.error = LEASE_EXPIRED_ERROR;
+      j.leaseExpiredAt=now;
       next.version++;
       await persist(db, state, next);
       return NextResponse.json({ jobId: j.id, state: "unknown" });
@@ -97,7 +110,6 @@ export async function POST(req: NextRequest) {
     if (!member)
       return blockJob("Job owner is revoked. No provider request was sent.");
     const actor = { id: member.id, email: member.email };
-    await loadState(db, actor);
     if (!canDispatchJob(state, actor, job))
       return blockJob(
         "Content access or job authority changed. Cancel and reauthorize this request.",
@@ -160,6 +172,7 @@ export async function POST(req: NextRequest) {
       .single();
     if(secretError)throw studioDatabaseError(secretError,"read");
     if (!secret) throw new StudioError(503, "Credential unavailable.");
+    const credential=decrypt(secret.ciphertext);
     const claimed = structuredClone(state),
       running = claimed.jobs.find((j) => j.id === job.id)!,
       lease = crypto.randomUUID();
@@ -189,7 +202,7 @@ export async function POST(req: NextRequest) {
       outcome = await runProvider(
         running,
         connection,
-        decrypt(secret.ciphertext),
+        credential,
       );
       diagnostics.stage("provider_outcome_received");
     } catch (e) {
@@ -231,101 +244,24 @@ export async function POST(req: NextRequest) {
           "Provider returned media but durable asset settlement failed. Reservation retained; do not generate again.",
         );
     }
-    // Do not repeat the provider call if a concurrent human edit changes the workspace version.
-    for (let attempt = 0; attempt < 4; attempt++) {
+    const receipt:WorkerReceipt={version:1,jobId:job.id,leaseId:lease,receivedAt:new Date().toISOString(),
+      ...(outcome?{outcome:{text:outcome.text,usage:outcome.usage,completion:outcome.completion,stopReason:outcome.stopReason}}:{}),
+      ...(problem?{problem:{ambiguous:problem.ambiguous,message:problem.message}}:{}),
+      ...(outcome?.bytes?{mediaReturned:true}:{}),...(storedMedia?{storedMedia}:{})};
+    // Keep provider evidence independently of the large workspace CAS.
+    diagnostics.stage("saved_outcome_write");
+    try{await saveWorkerReceipt(db,receipt);}catch(e){diagnostics.stage("saved_outcome_backup_unavailable");}
+    for(let attempt=0;attempt<4;attempt++){
       diagnostics.stage("settlement_workspace_read");
-      const fresh = await db
-          .from("studio_workspace")
-          .select("state")
-          .eq("id", true)
-          .single(),
-        previous = fresh.data?.state as typeof state;
-      if(fresh.error)throw studioDatabaseError(fresh.error,"read");
-      if (!previous)
-        throw new StudioError(
-          503,
-          "Workspace unavailable after provider request. Reconcile the running job.",
-        );
-      const next = structuredClone(previous),
-        j = next.jobs.find((j) => j.id === job.id);
-      if (!j || j.leaseId !== lease || j.state !== "running")
-        throw new StudioError(
-          409,
-          "Job lease changed; provider outcome must be reconciled, not retried.",
-        );
-      if (problem) {
-        j.state = problem.ambiguous ? "unknown" : "failed";
-        j.error = problem.message;
-        if (!problem.ambiguous) j.reserved = 0;
-      } else if (outcome?.bytes) {
-        j.state = "succeeded";
-        j.result =
-          storedMedia ||
-          "Media returned without a draft attachment; reconcile the stored provider result.";
-        j.error ||=
-          "Provider completed; cost remains conservatively reserved pending invoice reconciliation.";
-      } else {
-        j.state = "succeeded";
-        j.result = outcome?.text || "";
-        j.providerCompletion=outcome?.completion;j.providerStopReason=outcome?.stopReason;
-        if (j.outputContract)
-          settleWrittenOutput(next, j, outcome || {}, new Date().toISOString());
-        if (j.kind === "ideas" && outcome?.text) {
-          try {
-            if (outcome.completion !== "complete")
-              throw new Error(
-                outcome.completion==="refused"?"The provider refused this idea request. The saved response is available; no cards were imported.":outcome.stopReason==="max_tokens"||/^\[INCOMPLETE OUTPUT/i.test(outcome.text)?"Idea generation was incomplete: the provider reached its output token limit. Recover complete saved cards below where available; no automatic paid retry was made.":"Idea generation was incomplete. The raw response is retained; no incomplete batch was imported.",
-              );
-            const items = parseGeneratedIdeas(
-              outcome.text,
-              requestedIdeaQuantity(j.prompt),
-            );
-            for (const item of j.ideaPurpose==="manual_assistance"?[]:items)
-              next.ideas.unshift({
-                ...item,
-                id: crypto.randomUUID(),
-                channel: j.channel,
-                state: "pending",
-                origin: "agent",
-                generationRunId: j.id,
-                researchJobIds: j.researchJobIds,
-                createdBy: j.createdBy,
-                createdAt: new Date().toISOString(),
-              });
-          } catch (error) {
-            j.error =
-              error instanceof Error
-                ? error.message
-                : "The provider response did not match the idea-card format. The raw result is retained; no partial cards were imported.";
-          }
-        }
-
-        j.error ||=
-          "Provider completed; cost remains conservatively reserved pending invoice reconciliation.";
-      }
-      if(outcome?.usage)settleUsageCost(j,outcome.usage);
-      next.version++;
-      next.audit.push({
-        id: crypto.randomUUID(),
-        actor: "studio-worker",
-        action: `job.${j.state}`,
-        target: j.id,
-        at: new Date().toISOString(),
-      });
-      try {
-        diagnostics.stage("settlement_persist");
-        await persist(db, previous, next);
-        diagnostics.stage("complete");
-        return NextResponse.json({ jobId: j.id, state: j.state });
-      } catch (e) {
-        if (e instanceof StudioError && e.code === 409) continue;
-        throw e;
-      }
+      const {data:fresh,error}=await db.from("studio_workspace").select("state").eq("id",true).single();
+      if(error)throw studioDatabaseError(error,"read");
+      const previous=fresh?.state as typeof state;
+      if(!previous)throw new StudioError(503,"Workspace unavailable after provider request. Check the saved outcome; do not repeat generation.");
+      const next=applyWorkerReceipt(previous,receipt);
+      try{diagnostics.stage("settlement_persist");await persist(db,previous,next);diagnostics.stage("complete");return NextResponse.json({jobId:job.id,state:next.jobs.find(j=>j.id===job.id)!.state});}
+      catch(e){if(e instanceof StudioError&&e.code===409)continue;throw e;}
     }
-    throw new StudioError(
-      409,
-      "Provider finished but settlement conflicted. Reservation retained in running job; reconcile without generating again.",
-    );
+    throw new StudioError(409,"Provider outcome retained for recovery after a workspace conflict. No provider call was repeated.");
   } catch (e) {
     diagnostics.failed(e);
     return failure(e,diagnostics.trace);

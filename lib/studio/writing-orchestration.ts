@@ -1,3 +1,4 @@
+import {hasWritingFollowup} from "./writing-followup";
 import {isActiveChannel} from "./active-channels";
 import type { StudioState } from "./types";
 import {
@@ -32,7 +33,7 @@ export function orchestrateInitialWriting(
     const key = `auto-writing:${intent.id}`;
     const existing = state.jobs.find(
       (j) =>
-        j.contentId === original.id &&
+        j.contentId === original.id && !hasWritingFollowup(state,j) &&
         (j.idempotencyKey === key || j.kind === "text"),
     );
     let jobId: string | undefined, error: string | undefined;

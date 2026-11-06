@@ -10,7 +10,7 @@ import type { NextRequest } from "next/server";
 import { StudioError, memberFor } from "./permissions";
 import { initialState, EMPTY_MEDIA } from "./seed";
 import type { StudioState, Actor, Role } from "./types";
-export function database() {
+export function database(timeoutMs?:number) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL,
     key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key)
@@ -20,6 +20,7 @@ export function database() {
     );
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
+    ...(timeoutMs?{global:{fetch:(url:RequestInfo|URL,init?:RequestInit)=>fetch(url,{...init,signal:init?.signal?AbortSignal.any([init.signal,AbortSignal.timeout(timeoutMs)]):AbortSignal.timeout(timeoutMs)})}}:{}),
   });
 }
 export async function authenticate(req: NextRequest) {

@@ -2694,6 +2694,7 @@ export default function Workspace() {
                 form={openForm}
                 onError={setLocalError}
                 refresh={() => refresh(true)}
+                progressJob={progressAuthorizedJob}
                 newsletter={allowed("content.create", {channel: "Newsletter", account: "RyzaLab"}) ? () => createNewsletter("content", activeContent.id, activeContent.revision) : undefined}
                 queue={(kind = "text") => { setQueueKind(kind); setQueueTarget(activeContent); }}
               />
@@ -4466,6 +4467,7 @@ function Editor({
   form,
   onError,
   refresh,
+  progressJob,
   queue,
   newsletter,
 }: {
@@ -4487,6 +4489,7 @@ function Editor({
   ) => void;
   onError: (e: string) => void;
   refresh: () => Promise<void>;
+  progressJob?:(jobId:string)=>Promise<unknown>;
   queue: (kind?: FunctionKind) => void;
   newsletter?: () => Promise<boolean>;
 }) {
@@ -4791,7 +4794,7 @@ function Editor({
           {tab === "Write" && (
             <div className="s-writing">
               {c.newsletterSource && <details className="s-version"><summary>Newsletter source · {c.newsletterSource.channel} · {c.newsletterSource.title}</summary><p>Saved source snapshot{c.newsletterSource.revision ? ` · revision ${c.newsletterSource.revision}` : ""}. Use this as reference for manual writing or AI adaptation.</p><div style={{whiteSpace:"pre-wrap"}}>{c.newsletterSource.text}</div><p>{c.newsletterSource.metadata}</p></details>}
-              {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} demo={mode === "demo"} />}
+              {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} recoverJob={progressJob} demo={mode === "demo"} />}
               <HighlightedTextarea
                 aria-label="Content text"
                 aria-describedby={requirements.length ? "draft-needs-input" : undefined}

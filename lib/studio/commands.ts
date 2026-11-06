@@ -164,6 +164,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     notes: text.optional(),
     researchJobIds: z.array(id).max(5).optional(),
     idempotencyKey: short,
+    acknowledgeUnknownJobIds: z.array(id).min(1).max(30).optional(),
   }),
   command("idea.reuse", { id, mode: z.enum(["copy", "revise"]) }),
   command("content.create", {
@@ -341,6 +342,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     estimate: money,
     idempotencyKey: id,
     confirmed: z.boolean().optional(),
+    uncertainPredecessorIds: z.array(id).min(1).max(30).optional(),
   }),
   command("job.confirm", { id }),
   command("job.reconcile", {

@@ -1,3 +1,4 @@
+import {validateWritingFollowup} from "./writing-followup";
 import {ideaStage} from "./idea-board";
 import {completeSavedIdeaCards} from "./idea-recovery";
 import {compileSystem} from "./system-context";
@@ -1991,6 +1992,7 @@ export function applyCommand(
           : undefined;
       const payloadHash = fingerprint({
         outputContract,
+        uncertainPredecessorIds:c.uncertainPredecessorIds,
         ideaPurpose:c.ideaPurpose,
         kind: c.kind,
         channel: c.channel,
@@ -2007,6 +2009,10 @@ export function applyCommand(
         if (existing.payloadHash !== payloadHash)
           bad("This request key was already used for different inputs.");
         return structuredClone(input);
+      }
+      if(c.uncertainPredecessorIds?.length){
+        if(!ctx.canonicalGeneration||!d||c.kind!=="text"||outputContract!=="draft_v1")bad("A new writing attempt requires the canonical writing flow.");
+        validateWritingFollowup(s,d.id,c.uncertainPredecessorIds);
       }
       const allowance = (
         connection as typeof connection & { maxRequestCost?: number }
@@ -2033,6 +2039,7 @@ export function applyCommand(
       const j: Job = {
         id: id(),
         kind: c.kind,
+        uncertainPredecessorIds:c.uncertainPredecessorIds,
         ideaPurpose:c.ideaPurpose,
         channel: c.channel,
         contentId: c.contentId,
@@ -2082,6 +2089,7 @@ export function applyCommand(
       if(ctx.pricingSnapshot&&["ideas","text","review"].includes(j.kind))j.systemSnapshot=compileSystem(j,(ctx.pricingSnapshot as {maxInputBytes:number}).maxInputBytes);
       if (j.state === "queued") reserve(j);
       s.jobs.unshift(j);
+      for(const predecessorId of c.uncertainPredecessorIds||[])s.jobs.find(old=>old.id===predecessorId)!.writingFollowupId=j.id;
       break;
     }
     case "job.confirm": {

@@ -1,5 +1,6 @@
 "use client";
 
+import {blockingUnknownJobs,hasWritingFollowup} from "@/lib/studio/writing-followup";
 import {isLongForm} from "@/lib/studio/channel-writing";
 import { useEffect, useRef, useState } from "react";
 import type { Actor, Command, Content, StudioState } from "@/lib/studio/types";
@@ -31,6 +32,7 @@ export function DraftAssistant({
   busy,
   run,
   refresh,
+  recoverJob,
   demo = false,
 }: {
   content: Content;
@@ -41,6 +43,7 @@ export function DraftAssistant({
   busy: boolean;
   run: (command: Command, message?: string) => Promise<boolean>;
   refresh: () => Promise<void>;
+  recoverJob?:(jobId:string)=>Promise<unknown>;
   demo?: boolean;
 }) {
   const [clock,setClock]=useState(Date.now()),[statusError,setStatusError]=useState("");
@@ -79,7 +82,23 @@ export function DraftAssistant({
       job.kind === "text" &&
       job.outputContract === "draft_v1",
   );
-  const active = jobs.find((job) => activeStates.has(job.state));
+  const active = jobs.find((job) => activeStates.has(job.state)&&!hasWritingFollowup(state,job));
+  const unknowns=blockingUnknownJobs(state,content.id);
+  const [recovering,setRecovering]=useState(false);
+  const recoveryChecked=useRef(new Set<string>());
+  async function checkSavedOutcome(){
+    if(!active)return;
+    setRecovering(true);setStatusError("");
+    try{
+      if(active.state==="unknown"&&recoverJob){const result=await recoverJob(active.id) as {recovered?:boolean};if(result?.recovered===false)setStatusError("No saved response is available for this older attempt. You can authorize a new writing attempt below; the original reservation remains retained.");}
+      await refresh();
+    }catch(e){setStatusError(e instanceof Error?e.message:"Saved outcome could not be checked. No new AI request was made.");}
+    finally{setRecovering(false);}
+  }
+  useEffect(()=>{
+    if(demo||active?.state!=="unknown"||!active.leaseId||!recoverJob||recoveryChecked.current.has(active.id))return;
+    recoveryChecked.current.add(active.id);void checkSavedOutcome();
+  },[demo,active?.id,active?.state,recoverJob]);
   useEffect(()=>{if(!active||active.state==="unknown")return;const timer=setInterval(()=>setClock(Date.now()),1000);return()=>clearInterval(timer);},[active?.id]);
   const suggested = jobs.find((job) => job.candidate && !job.appliedAt);
   const recoverable = jobs.find(
@@ -108,12 +127,13 @@ export function DraftAssistant({
     return () => window.clearInterval(timer);
   }, [active?.id, active?.state, refresh]);
 
-  async function generate() {
+  async function generate(newAttempt=false) {
     const signature = JSON.stringify([
       content.id,
       content.revision,
       notes,
       researchIds,
+      newAttempt?unknowns.map(job=>job.id):[],
     ]);
     if (!pendingKey.current || pendingKey.current.signature !== signature)
       pendingKey.current = { signature, key: crypto.randomUUID() };
@@ -126,6 +146,7 @@ export function DraftAssistant({
         notes,
         researchJobIds: researchIds,
         idempotencyKey: pendingKey.current.key,
+        ...(newAttempt?{acknowledgeUnknownJobIds:unknowns.map(job=>job.id)}:{}),
       },
       "Writing request started",
     );
@@ -138,7 +159,7 @@ export function DraftAssistant({
       aria-label="Draft writing assistance"
     >
       <h3>Write {isLongForm(content.channel,content.format)?"newsletter":"content"} with AI</h3>
-      {active&&<section className="s-idea-run-progress" aria-label="Writing progress"><h3 aria-live="polite">{active.state==="running"?`AI is writing your ${isLongForm(content.channel,content.format)?"newsletter":"post"}`:active.state==="awaiting_confirmation"?"Waiting for your allowance confirmation":active.state==="unknown"?"Writing outcome needs attention":"Writing request queued — waiting for the worker"}</h3>{["queued","running"].includes(active.state)&&<progress aria-label="Writing in progress"/>}<p>Elapsed: {Math.max(0,Math.floor((clock-Date.parse(active.createdAt))/1000))} seconds. Completed writing appears in the editor below. The provider does not report a percentage.</p>{active.state==="awaiting_confirmation"&&<button className="s-btn" disabled={busy} onClick={()=>void run({type:"job.confirm",id:active.id})}>Confirm writing allowance · {cost(active.estimate)}</button>}<button className="s-btn" onClick={()=>void refresh().then(()=>setStatusError("")).catch(()=>setStatusError("Status could not be refreshed. No new AI request was made."))}>Check writing status — no new AI request</button>{active.error&&<p>{active.error}</p>}{statusError&&<p role="alert">{statusError}</p>}</section>}
+      {active&&<section className="s-idea-run-progress" aria-label="Writing progress"><h3 aria-live="polite">{active.state==="running"?`AI is writing your ${isLongForm(content.channel,content.format)?"newsletter":"post"}`:active.state==="awaiting_confirmation"?"Waiting for your allowance confirmation":active.state==="unknown"?"Writing outcome needs attention":"Writing request queued — waiting for the worker"}</h3>{["queued","running"].includes(active.state)&&<progress aria-label="Writing in progress"/>}{active.state==="unknown"?<p>This writing attempt stopped without a confirmed result. Check for a saved response, or explicitly start a new attempt within your post budget.</p>:<p>Elapsed: {Math.max(0,Math.floor((clock-Date.parse(active.createdAt))/1000))} seconds. Completed writing appears in the editor below. The provider does not report a percentage.</p>}{active.state==="awaiting_confirmation"&&<button className="s-btn" disabled={busy} onClick={()=>void run({type:"job.confirm",id:active.id})}>Confirm writing allowance · {cost(active.estimate)}</button>}<button className="s-btn" disabled={recovering} onClick={()=>void checkSavedOutcome()}>{recovering?"Checking saved result…":active.state==="unknown"?"Check saved writing result — no new AI request":"Check writing status — no new AI request"}</button>{active.error&&<p>{active.error}</p>}{statusError&&<p role="alert">{statusError}</p>}</section>}
       {isLongForm(content.channel,content.format)&&<p>Newsletter/article target: 1,200–1,600 words, with background, evidence, reasoning, practical guidance and sources. Download PDF or DOCX directly below the content. Images are optional. Page count depends on layout.</p>}
       <details className="s-version">
         <summary>
@@ -345,6 +366,11 @@ export function DraftAssistant({
         </button>
         {dirty && <span>Save your changes before starting.</span>}
       </div>
+      {active?.state==="unknown"&&unknowns.length>0&&unknowns.every(job=>job.kind==="text")&&<div className="s-alert" aria-label="New writing attempt">
+        <p>The previous outcome and {cost(unknowns.reduce((sum,job)=>sum+job.reserved,0))} in reservations will stay recorded. This starts a separate paid attempt; all previous spend and reservations still count against the same post and monthly limits.</p>
+        <button className="s-btn s-primary" disabled={readOnly||busy||dirty||recovering||!preparation||!can(state,actor,"job.create",{channel:content.channel,contentId:content.id,account:content.account,assignedTo:content.assignedTo,function:"text"})} onClick={()=>void generate(true)}>Start a new writing attempt</button>
+      </div>}
+      {jobs.some(job=>hasWritingFollowup(state,job))&&<details><summary>Earlier interrupted attempts — reservations retained</summary>{jobs.filter(job=>hasWritingFollowup(state,job)).map(job=><p key={job.id}>{new Date(job.createdAt).toLocaleString()} · Outcome still unknown · {cost(job.reserved)} still reserved</p>)}</details>}
       {active && (
         <p role="status">
           {active.state === "queued"
@@ -353,7 +379,7 @@ export function DraftAssistant({
               ? "Writing is in progress."
               : active.state === "awaiting_confirmation"
                 ? "This request needs confirmation in AI & budgets."
-                : "The result is unknown and needs attention in AI & budgets before another request."}
+                : "This attempt is unresolved. Check its saved result or authorize a new writing attempt above."}
         </p>
       )}
       {active && ["queued", "awaiting_confirmation"].includes(active.state) && (
