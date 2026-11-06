@@ -328,6 +328,8 @@ export interface Job {
   uncertainPredecessorIds?: string[];
   writingFollowupId?: string;
   leaseExpiredAt?: string;
+  settledReceiptLeaseId?: string;
+  outcomeReceiptVersion?: 1;
   providerCompletion?: "complete"|"incomplete"|"refused";
   providerStopReason?: string;
   ideaRecovery?: {count:number;expected?:number;by:string;at:string};

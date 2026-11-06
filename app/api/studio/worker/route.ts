@@ -1,7 +1,13 @@
-import {saveWorkerReceipt,readWorkerReceipt,applyWorkerReceipt,LEASE_EXPIRED_ERROR,type WorkerReceipt} from "@/lib/studio/worker-receipt";
-import {studioDatabaseError} from "@/lib/studio/database-errors";
-import {studioRequestDiagnostics} from "@/lib/studio/request-diagnostics";
-import {type ClaudeUsage} from "@/lib/studio/usage-cost";
+import {
+  saveWorkerReceipt,
+  readWorkerReceipt,
+  persistWorkerReceipt,
+  LEASE_EXPIRED_ERROR,
+  type WorkerReceipt,
+} from "@/lib/studio/worker-receipt";
+import { studioDatabaseError } from "@/lib/studio/database-errors";
+import { studioRequestDiagnostics } from "@/lib/studio/request-diagnostics";
+import { type ClaudeUsage } from "@/lib/studio/usage-cost";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { database, loadState, persist, decrypt } from "@/lib/studio/store";
@@ -18,7 +24,7 @@ import {
 import { failure } from "@/lib/studio/http";
 export const maxDuration = 180;
 export async function POST(req: NextRequest) {
-  const diagnostics=studioRequestDiagnostics("POST /api/studio/worker");
+  const diagnostics = studioRequestDiagnostics("POST /api/studio/worker");
   try {
     diagnostics.stage("authenticate_worker");
     const configured = process.env.STUDIO_WORKER_TOKEN,
@@ -38,34 +44,52 @@ export async function POST(req: NextRequest) {
       );
     diagnostics.stage("workspace_read");
     const db = database(12000),
-      { data,error:readError } = await db
+      { data, error: readError } = await db
         .from("studio_workspace")
         .select("state")
         .eq("id", true)
         .single();
-    if(readError)throw studioDatabaseError(readError,"read");
+    if (readError) throw studioDatabaseError(readError, "read");
     if (!data) throw new StudioError(503, "Initialize Studio first.");
-    const requestedJobId=req.nextUrl.searchParams.get("jobId");
+    const requestedJobId = req.nextUrl.searchParams.get("jobId");
     const state = data.state as Awaited<ReturnType<typeof loadState>>,
       now = new Date().toISOString(),
       expired = state.jobs.find(
-        (j) => j.state === "running" && j.leaseUntil && j.leaseUntil < now && (!requestedJobId || j.id===requestedJobId),
+        (j) =>
+          j.state === "running" &&
+          j.leaseUntil &&
+          j.leaseUntil < now &&
+          (!requestedJobId || j.id === requestedJobId),
       );
-    const recoverable=state.jobs.find(j=>(!requestedJobId||j.id===requestedJobId)&&j.leaseId&&["running","unknown"].includes(j.state));
-    if(recoverable){
+    const recoverable = state.jobs.find(
+      (j) =>
+        (!requestedJobId || j.id === requestedJobId) &&
+        j.leaseId &&
+        ["running", "unknown"].includes(j.state) &&
+        (!j.settledReceiptLeaseId || Boolean(requestedJobId)) &&
+        (Boolean(requestedJobId) || j.outcomeReceiptVersion === 1),
+    );
+    if (recoverable) {
       diagnostics.stage("saved_outcome_read");
-      const receipt=await readWorkerReceipt(db,recoverable);
-      if(receipt){
-        for(let attempt=0;attempt<4;attempt++){
-          const {data:fresh,error}=await db.from("studio_workspace").select("state").eq("id",true).single();
-          if(error)throw studioDatabaseError(error,"read");
-          const previous=fresh?.state as typeof state;if(!previous)throw new StudioError(503,"Workspace unavailable for saved outcome recovery.");
-          const next=applyWorkerReceipt(previous,receipt);
-          try{await persist(db,previous,next);return NextResponse.json({jobId:recoverable.id,state:next.jobs.find(j=>j.id===recoverable.id)!.state,recovered:true});}catch(e){if(e instanceof StudioError&&e.code===409)continue;throw e;}
-        }
-        throw new StudioError(409,"Saved outcome is retained. Refresh to recover it; no provider request was repeated.");
+      const receipt = await readWorkerReceipt(db, recoverable);
+      if (receipt) {
+        const settled = await persistWorkerReceipt(db, receipt, (name) =>
+          diagnostics.stage(name),
+        );
+        return NextResponse.json({
+          jobId: settled.id,
+          state: settled.state,
+          recovered: true,
+        });
       }
-      if(recoverable.state==="unknown")return NextResponse.json({jobId:recoverable.id,state:"unknown",recovered:false,message:"No saved provider outcome is available. Original reservation remains retained."});
+      if (recoverable.state === "unknown" && requestedJobId)
+        return NextResponse.json({
+          jobId: recoverable.id,
+          state: "unknown",
+          recovered: false,
+          message:
+            "No saved provider outcome is available. Original reservation remains retained.",
+        });
     }
     if (expired) {
       diagnostics.stage("mark_expired_request");
@@ -73,12 +97,15 @@ export async function POST(req: NextRequest) {
         j = next.jobs.find((j) => j.id === expired.id)!;
       j.state = "unknown";
       j.error = LEASE_EXPIRED_ERROR;
-      j.leaseExpiredAt=now;
+      j.leaseExpiredAt = now;
       next.version++;
       await persist(db, state, next);
       return NextResponse.json({ jobId: j.id, state: "unknown" });
     }
-    const job = state.jobs.find((j) => j.state === "queued" && (!requestedJobId || j.id===requestedJobId));
+    const job = state.jobs.find(
+      (j) =>
+        j.state === "queued" && (!requestedJobId || j.id === requestedJobId),
+    );
     if (!job) return NextResponse.json({ message: "No queued jobs." });
     async function blockJob(reason: string) {
       diagnostics.stage("block_undispatched_request");
@@ -140,13 +167,29 @@ export async function POST(req: NextRequest) {
       return blockJob(
         "This content operation needs a current total package authorization before dispatch.",
       );
-    if(job.contentId && state.jobs.filter(existing=>existing.contentId===job.contentId&&existing.id!==job.id).reduce((sum,existing)=>sum+(existing.actual??existing.reserved),0)+job.estimate>200)return blockJob("The total per-post ceiling is $2.00, including previous revisions and uncertain reservations.");
+    if (
+      job.contentId &&
+      state.jobs
+        .filter(
+          (existing) =>
+            existing.contentId === job.contentId && existing.id !== job.id,
+        )
+        .reduce(
+          (sum, existing) => sum + (existing.actual ?? existing.reserved),
+          0,
+        ) +
+        job.estimate >
+        200
+    )
+      return blockJob(
+        "The total per-post ceiling is $2.00, including previous revisions and uncertain reservations.",
+      );
     if (job.preparationId) {
       const authorization = jobPreparation(state, job, now);
       if (
         !authorization ||
         preparationSpend(state, job.preparationId, job.id) + job.estimate >
-          Math.min(authorization.maxCents,200)
+          Math.min(authorization.maxCents, 200)
       )
         return blockJob(
           "Package authorization changed or its total budget is exhausted. Reauthorize without retrying uncertain work.",
@@ -165,14 +208,14 @@ export async function POST(req: NextRequest) {
         "Provider/model changed after reservation. Reauthorize before execution.",
       );
     diagnostics.stage("credential_read");
-    const { data: secret,error:secretError } = await db
+    const { data: secret, error: secretError } = await db
       .from("studio_secrets")
       .select("ciphertext")
       .eq("id", connection.id)
       .single();
-    if(secretError)throw studioDatabaseError(secretError,"read");
+    if (secretError) throw studioDatabaseError(secretError, "read");
     if (!secret) throw new StudioError(503, "Credential unavailable.");
-    const credential=decrypt(secret.ciphertext);
+    const credential = decrypt(secret.ciphertext);
     const claimed = structuredClone(state),
       running = claimed.jobs.find((j) => j.id === job.id)!,
       lease = crypto.randomUUID();
@@ -181,7 +224,8 @@ export async function POST(req: NextRequest) {
       attempt: running.attempt + 1,
       leaseId: lease,
       leaseUntil: new Date(Date.now() + 180000).toISOString(),
-      dispatchStartedAt: now,
+      dispatchStartedAt: new Date().toISOString(),
+      outcomeReceiptVersion: 1,
     });
     claimed.version++;
     diagnostics.stage("claim_persist");
@@ -193,17 +237,13 @@ export async function POST(req: NextRequest) {
             bytes?: Uint8Array;
             mime?: string;
             completion?: "complete" | "incomplete" | "refused";
-      stopReason?:string;
+            stopReason?: string;
           }
         | undefined,
       problem: ProviderFailure | undefined;
     try {
       diagnostics.stage("provider_call");
-      outcome = await runProvider(
-        running,
-        connection,
-        credential,
-      );
+      outcome = await runProvider(running, connection, credential);
       diagnostics.stage("provider_outcome_received");
     } catch (e) {
       diagnostics.stage("provider_outcome_error");
@@ -244,26 +284,48 @@ export async function POST(req: NextRequest) {
           "Provider returned media but durable asset settlement failed. Reservation retained; do not generate again.",
         );
     }
-    const receipt:WorkerReceipt={version:1,jobId:job.id,leaseId:lease,receivedAt:new Date().toISOString(),
-      ...(outcome?{outcome:{text:outcome.text,usage:outcome.usage,completion:outcome.completion,stopReason:outcome.stopReason}}:{}),
-      ...(problem?{problem:{ambiguous:problem.ambiguous,message:problem.message}}:{}),
-      ...(outcome?.bytes?{mediaReturned:true}:{}),...(storedMedia?{storedMedia}:{})};
+    const receipt: WorkerReceipt = {
+      version: 1,
+      jobId: job.id,
+      leaseId: lease,
+      receivedAt: new Date().toISOString(),
+      ...(outcome
+        ? {
+            outcome: {
+              text: outcome.text,
+              usage: outcome.usage,
+              completion: outcome.completion,
+              stopReason: outcome.stopReason,
+            },
+          }
+        : {}),
+      ...(problem
+        ? {
+            problem: { ambiguous: problem.ambiguous, message: problem.message },
+          }
+        : {}),
+      ...(outcome?.bytes ? { mediaReturned: true } : {}),
+      ...(storedMedia ? { storedMedia } : {}),
+    };
     // Keep provider evidence independently of the large workspace CAS.
     diagnostics.stage("saved_outcome_write");
-    try{await saveWorkerReceipt(db,receipt);}catch(e){diagnostics.stage("saved_outcome_backup_unavailable");}
-    for(let attempt=0;attempt<4;attempt++){
-      diagnostics.stage("settlement_workspace_read");
-      const {data:fresh,error}=await db.from("studio_workspace").select("state").eq("id",true).single();
-      if(error)throw studioDatabaseError(error,"read");
-      const previous=fresh?.state as typeof state;
-      if(!previous)throw new StudioError(503,"Workspace unavailable after provider request. Check the saved outcome; do not repeat generation.");
-      const next=applyWorkerReceipt(previous,receipt);
-      try{diagnostics.stage("settlement_persist");await persist(db,previous,next);diagnostics.stage("complete");return NextResponse.json({jobId:job.id,state:next.jobs.find(j=>j.id===job.id)!.state});}
-      catch(e){if(e instanceof StudioError&&e.code===409)continue;throw e;}
+    let receiptSaved=false;
+    try {
+      await saveWorkerReceipt(db, receipt);
+      receiptSaved=true;
+    } catch (e) {
+      diagnostics.stage("saved_outcome_backup_unavailable");
     }
-    throw new StudioError(409,"Provider outcome retained for recovery after a workspace conflict. No provider call was repeated.");
+    try {
+      const settled=await persistWorkerReceipt(db,receipt,name=>diagnostics.stage(name));
+      diagnostics.stage("complete");
+      return NextResponse.json({jobId:settled.id,state:settled.state});
+    }catch(e){
+      if(!receiptSaved)throw new StudioError(503,"The provider returned an outcome, but neither result backup nor workspace settlement could be confirmed. Original reservation retained; no provider request was repeated.");
+      throw e;
+    }
   } catch (e) {
     diagnostics.failed(e);
-    return failure(e,diagnostics.trace);
+    return failure(e, diagnostics.trace);
   }
 }

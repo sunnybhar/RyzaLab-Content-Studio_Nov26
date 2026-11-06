@@ -74,7 +74,7 @@ test("board moves enforce channel edit authority, and rejected ideas retain feed
 });
 test("request inbox groups generated batches once, keeps empty jobs and handles manual and orphan history", () => {
   const s = initialState(DEMO_ACTOR, true),
-    base = s.ideas[0],
+    base = {...s.ideas[0],createdAt:"2026-11-01T12:00:00Z"},
     job = {
       id: "batch-1",
       kind: "ideas",
