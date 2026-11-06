@@ -1,4 +1,8 @@
 "use client";
+import {CalendarImport} from "./calendar-import";
+import {ExistingPipeline} from "./existing-pipeline";
+import type {PipelineBrief} from "@/lib/studio/pipeline";
+
 import {activeStudioView, ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active-channels";
 import {ideaStage} from "@/lib/studio/idea-board";
 import {GenerationRulesStatus} from "./generation-rules-status";
@@ -442,6 +446,9 @@ export default function Workspace() {
   );
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [pipelineIdea,setPipelineIdea]=useState<{id:string;channel:Channel}|null>(null);
+  const [pipelineFocus,setPipelineFocus]=useState("");
+  const [calendarImportOpen,setCalendarImportOpen]=useState(false);
   const [ideaComposer,setIdeaComposer]=useState<"generate"|"manual"|null>(null);
   const [busy, setBusy] = useState(false);
   const [connectionChecks, setConnectionChecks] = useState<
@@ -785,6 +792,14 @@ export default function Workspace() {
       return false;
     } finally { setBusy(false); }
   }
+  function pipelineIdeas(brief:PipelineBrief,mode:"generate"|"manual",target:Channel){setPipelineIdea({id:brief.id,channel:target});setIdeaComposer(mode);}
+  async function pipelineWrite(brief:PipelineBrief,target:Channel){
+    setBusy(true);setLocalError("");
+    const requestKey=crypto.randomUUID();
+    try{const result=await send({type:"pipeline.draft",briefId:brief.id,channel:target,requestKey});const draft=result.state.contents.find(d=>d.pipelineRequestKey===requestKey&&d.createdBy===actor!.email);if(!draft)throw new Error("Could not open the linked draft. Refresh and check Create.");setPage("Create");setSelected(draft.id);setChannel(target);setSearch("");setNotice("Draft created from the pipeline brief. No AI request or publishing started.");}catch(e){setLocalError((e as Error).message);}finally{setBusy(false);}
+  }
+  function pipelineImport(){setPage("Calendar");setSelected(null);setCalendarImportOpen(true);}
+  function pipelineOpen(brief:PipelineBrief){setPage("Create");setSelected(null);setPipelineFocus(brief.id);setChannel(brief.channel);setSearch("");}
   async function createNewsletter(sourceKind: "idea" | "content", sourceId: string, expectedRevision?: number) {
     setBusy(true); setLocalError("");
     try {
@@ -1574,8 +1589,8 @@ export default function Workspace() {
                 </button>
               ) : page === "Ideas" ? (
                 <>
-                  <button disabled={readOnly} className="s-btn s-primary" onClick={()=>setIdeaComposer("generate")}><WandSparkles size={17}/> Generate with agent</button>
-                  <button disabled={readOnly} className="s-btn" aria-label="Add idea" title="Add manually" onClick={()=>setIdeaComposer("manual")}><Plus size={16}/> Add manually</button>
+                  <button disabled={readOnly} className="s-btn s-primary" onClick={()=>{setPipelineIdea(null);setIdeaComposer("generate");}}><WandSparkles size={17}/> Generate with agent</button>
+                  <button disabled={readOnly} className="s-btn" aria-label="Add idea" title="Add manually" onClick={()=>{setPipelineIdea(null);setIdeaComposer("manual");}}><Plus size={16}/> Add manually</button>
                 </>
               ) : page === "People" ? (
                 <button
@@ -1828,6 +1843,7 @@ export default function Workspace() {
           )}
           {page === "Ideas" && (
             <>
+              <ExistingPipeline key={`ideas:${pipelineFocus}`} initialId={pipelineFocus} state={state} channel={channel} disabled={readOnly||busy} onIdeas={pipelineIdeas} onWrite={(b,c)=>void pipelineWrite(b,c)} onImport={pipelineImport}/>
 
               <div className="s-toolbar">
                 <div className="s-view-tabs">
@@ -1984,6 +2000,9 @@ export default function Workspace() {
           )}
           {page === "Calendar" && (
             <>
+              <details className="s-panel" open={calendarImportOpen} onToggle={e=>setCalendarImportOpen(e.currentTarget.open)}><summary>Upload content calendar / download template</summary><CalendarImport state={state} actor={actor} send={send} onImported={date=>{if(date){const [y,m]=date.split("-").map(Number);setMonth(new Date(y,m-1,1));}setNotice("Calendar import saved. Find the same briefs in Existing Pipeline under Ideas and Create.");}}/></details>
+              {!!state.pipelineBriefs?.length&&<section className="s-panel"><div className="s-section-heading"><div><h2>Imported pipeline</h2><p>Planned briefs and historical records. These are not approved publication schedules.</p></div><span>{state.pipelineBriefs.filter(b=>!b.plannedDate).length} unscheduled</span></div><div className="pipeline-calendar">{state.pipelineBriefs.filter(b=>(channel==="All channels"||b.channel===channel)&&(!b.plannedDate||b.plannedDate.startsWith(`${month.getFullYear()}-${String(month.getMonth()+1).padStart(2,"0")}`))).slice(0,30).map(b=><button key={b.id} onClick={()=>pipelineOpen(b)}><small>{b.plannedDate||"Unscheduled"} {b.plannedTime} · {b.channel}{b.historical?" · Historical":""}</small><strong>{b.title}</strong><small>Open brief → Ideas or writing</small></button>)}</div></section>}
+
               <div className="s-calendar-toolbar">
                 <div className="s-inline">
                   <h2>
@@ -2127,6 +2146,7 @@ export default function Workspace() {
                           >
                             {d.getDate()} <Plus size={12} />
                           </button>
+                          {(state.pipelineBriefs||[]).filter(b=>b.plannedDate===`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`&&(channel==="All channels"||b.channel===channel)).map(b=><button className="s-calendar-event s-planning-event pipeline-calendar-event" key={b.id} onClick={()=>pipelineOpen(b)}><span>{b.plannedTime||"Date only"} · {b.channel}{b.historical?" · History":" · Brief"}</span><strong>{b.title}</strong></button>)}
                           {(state.planningTasks || [])
                             .filter(
                               (t) =>
@@ -2700,6 +2720,7 @@ export default function Workspace() {
               />
             ) : (
               <>
+                <ExistingPipeline key={`create:${pipelineFocus}`} initialId={pipelineFocus} state={state} channel={channel} disabled={readOnly||busy} onIdeas={pipelineIdeas} onWrite={(b,c)=>void pipelineWrite(b,c)} onImport={pipelineImport}/>
                 <div className="s-toolbar">
                   <div className="s-inline">
                     <h2>Your workbench</h2>
@@ -4041,7 +4062,7 @@ export default function Workspace() {
           </footer>
         </main>
       </div>
-      {ideaComposer&&<IdeaComposer mode={ideaComposer} initialChannel={channel==="All channels"?"LinkedIn":channel} state={state} actor={actor} demo={mode==="demo"} send={send} refresh={()=>refresh(true)} close={()=>setIdeaComposer(null)} openContent={idea=>useIdea(idea,"Text post","RyzaLab")} onSaved={setNotice}/>}
+      {ideaComposer&&<IdeaComposer mode={ideaComposer} initialBriefId={pipelineIdea?.id} initialChannel={pipelineIdea?.channel||(channel==="All channels"?"LinkedIn":channel)} state={state} actor={actor} demo={mode==="demo"} send={send} refresh={()=>refresh(true)} close={()=>setIdeaComposer(null)} openContent={idea=>useIdea(idea,idea.channel==="Newsletter"?"Newsletter":"Text post","RyzaLab")} onSaved={setNotice}/>}
       {queueTarget && (
         <QueueRequest
           state={state}
@@ -4804,6 +4825,7 @@ function Editor({
                 value={text}
                 onChange={(e) => setText(e.target.value)}
               />
+              {c.pipelineSnapshot&&<details className="pipeline-origin"><summary>Existing Pipeline · {c.pipelineSnapshot.externalId||c.pipelineSnapshot.title}</summary><p>{c.pipelineSnapshot.angle}</p><p>Imported from {c.pipelineSnapshot.sourceFile} · {c.pipelineSnapshot.sheet}, row {c.pipelineSnapshot.row} · brief v{c.pipelineSnapshot.version}</p><p>Planned: {c.pipelineSnapshot.plannedDate||"Unscheduled"} {c.pipelineSnapshot.plannedTime} · {c.pipelineSnapshot.timezone}. This is not a publishing approval.</p>{c.pipelineSnapshot.sourceUrls.map(url=><p key={url}>{url}</p>)}</details>}
               <GenerationRulesStatus content={c} state={state}/>
               {isLongForm(c.channel,c.format)&&<section aria-label="Download newsletter" className="s-actions"><button className="s-btn" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export newsletter DOCX</button><button className="s-btn s-primary" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export newsletter PDF</button>{media.imageUrl&&<label><input type="checkbox" checked={includeNewsletterImage} onChange={e=>setIncludeNewsletterImage(e.target.checked)}/> Include attached image</label>}<p>Downloads use the content above automatically. No copy/paste or image is required.</p></section>}
               <div className="s-editor-wordcount">

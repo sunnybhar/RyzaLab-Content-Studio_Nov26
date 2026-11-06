@@ -463,8 +463,9 @@ export function applyCommand(
     case "pipeline.draft": {
       const brief=pipelineSnapshot(s,actor,c.briefId)!;
       need("content.create",{channel:c.channel,account:brief.account});
-      if(s.audit.some(e=>e.action==="pipeline.draft"&&e.target===c.requestKey&&e.actor===actor.email))return structuredClone(input);
-      s.contents.unshift({id:id(),pipelineBriefId:brief.id,pipelineSnapshot:brief,channel:c.channel,account:brief.account,title:brief.title,format:c.channel==="Newsletter"?"Newsletter":brief.format||"Text post",text:brief.existingCopy,metadata:"",media:structuredClone(EMPTY_MEDIA),assignedTo:actor.email,revision:1,textRevision:1,mediaRevision:1,factsRevision:1,history:[],state:"draft",workflowId:s.workflows.find(w=>w.channel===c.channel&&w.status==="active")?.id,createdBy:actor.email,updatedAt:now});
+      const replay=s.contents.find(d=>d.pipelineRequestKey===c.requestKey&&d.createdBy===actor.email);
+      if(replay){if(replay.pipelineBriefId!==brief.id||replay.channel!==c.channel)throw new StudioError(409,"Request key already used for another draft.");return structuredClone(input);}
+      s.contents.unshift({id:id(),pipelineRequestKey:c.requestKey,pipelineBriefId:brief.id,pipelineSnapshot:brief,channel:c.channel,account:brief.account,title:brief.title,format:c.channel==="Newsletter"?"Newsletter":c.channel!==brief.channel?"Text post":brief.format||"Text post",text:brief.existingCopy,metadata:"",media:structuredClone(EMPTY_MEDIA),assignedTo:actor.email,revision:1,textRevision:1,mediaRevision:1,factsRevision:1,history:[],state:"draft",workflowId:s.workflows.find(w=>w.channel===c.channel&&w.status==="active")?.id,createdBy:actor.email,updatedAt:now});
       s.audit.push({id:id(),actor:actor.email,action:"pipeline.draft",target:c.requestKey,at:now});
       break;
     }
@@ -718,7 +719,7 @@ export function applyCommand(
         state: "pending",
         createdBy: actor.email,
         createdAt: now,
-        sources:[...new Set(evidence.flatMap(item=>item.citations.map(cite=>cite.url)))],
+        sources:[...new Set([...evidence.flatMap(item=>item.citations.map(cite=>cite.url)),...(pipeline?.sourceUrls||[])])],
       });
       break;
     }
@@ -791,6 +792,7 @@ export function applyCommand(
         metadata: "",
         media: structuredClone(EMPTY_MEDIA),
         ideaId: idea.id,
+        pipelineBriefId:idea.pipelineBriefId,pipelineSnapshot:idea.pipelineSnapshot,
         researchJobIds: idea.researchJobIds,
         assignedTo: actor.email,
         revision: 1,

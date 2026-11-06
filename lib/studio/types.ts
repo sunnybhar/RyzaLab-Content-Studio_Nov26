@@ -231,6 +231,7 @@ export interface SoloReviewPolicy {
   autoReview: boolean;
 }
 export interface Content {
+  pipelineRequestKey?: string;
   pipelineBriefId?: string;
   pipelineSnapshot?: import("./pipeline").PipelineBrief;
   researchJobIds?: string[];

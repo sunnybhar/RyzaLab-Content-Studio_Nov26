@@ -77,7 +77,7 @@ export function generationInput(
     format: c.format,
     title: c.title,
     newsletterSource: c.newsletterSource || null,
-    pipeline:c.pipelineSnapshot||null,
+    ...(c.pipelineSnapshot?{pipeline:c.pipelineSnapshot}:{}),
     idea: idea
       ? { title: idea.title, brief: idea.brief, sources: idea.sources }
       : null,
