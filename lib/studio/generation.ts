@@ -1,3 +1,4 @@
+import {pipelineSnapshot} from "./pipeline";
 import {blockingUnknownJobs,validateWritingFollowup} from "./writing-followup";
 import type { Actor, FunctionKind, StudioState } from "./types";
 import { resolvedConnection, currentCopyAcceptance } from "./solo-quality";
@@ -64,6 +65,7 @@ export function generationInput(
         "An independent review needs known copy provenance and a qualified reviewer from a different provider. No review request was sent.",
       );
   }
+  if(c.pipelineBriefId)pipelineSnapshot(state,actor,c.pipelineBriefId);
   const idea = state.ideas.find((i) => i.id === c.ideaId);
   const researchJobIds = input.researchJobIds ?? c.researchJobIds ?? idea?.researchJobIds ?? [];
   const webEvidence = researchEvidence(state,actor,c.channel,researchJobIds);

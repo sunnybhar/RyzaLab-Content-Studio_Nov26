@@ -38,10 +38,10 @@ export function IdeaComposer({
   close: () => void;
   openContent: (idea: Idea) => Promise<boolean>;
 }) {
-  const initialBrief=state.pipelineBriefs?.find(b=>b.id===initialBriefId);
-  const [pipelineBriefId,setPipelineBriefId]=useState(initialBriefId);
   const resumed=!demo?state.jobs.find(j=>j.kind==="ideas"&&!j.contentId&&j.channel===initialChannel&&j.createdBy===actor.email&&j.ideaPurpose===(mode==="manual"?"manual_assistance":undefined)&&["queued","running","awaiting_confirmation","unknown"].includes(j.state)):undefined;
-  let resumeInput:{topic?:string;audience?:string;sourceText?:string;quantity?:number}={};try{resumeInput=resumed?JSON.parse(resumed.prompt):{};}catch{}
+  let resumeInput:{topic?:string;audience?:string;sourceText?:string;quantity?:number;pipeline?:{id?:string}}={};try{resumeInput=resumed?JSON.parse(resumed.prompt):{};}catch{}
+  const [pipelineBriefId,setPipelineBriefId]=useState(initialBriefId||resumeInput.pipeline?.id);
+  const initialBrief=state.pipelineBriefs?.find(b=>b.id===pipelineBriefId);
   const dialog = useRef<HTMLDialogElement>(null),
     [title, setTitle] = useState(resumeInput.topic||initialBrief?.title||""),
     [brief, setBrief] = useState(resumeInput.sourceText||[initialBrief?.angle,initialBrief?.sourceUrls.join("\n")].filter(Boolean).join("\n\n")),
@@ -231,7 +231,7 @@ export function IdeaComposer({
       </p>
       {submitted&&<IdeaRunProgress job={job} busy={busy} startedAt={startedAt} sourceCount={evidenceIds.length} readyCount={mode==="manual"?(proposal?1:0):cards.length} targetCount={mode==="manual"?1:quantity} lastChecked={lastChecked} syncError={syncError} requestError={error} refresh={checkStatus} confirm={confirmRequest}/>}
       {relevanceWarning&&<p className="s-alert s-error" role="alert">These saved references do not match the current topic/audience well. They are retained for audit; inspect the ideas before using them. This request will not be regenerated automatically.</p>}
-      {!!state.pipelineBriefs?.length&&<label className="s-field">Existing Pipeline<select aria-label="Existing Pipeline" value={pipelineBriefId||""} disabled={working} onChange={e=>{const b=state.pipelineBriefs?.find(b=>b.id===e.target.value);setPipelineBriefId(b?.id);if(b){editTitle(b.title);setBrief([b.angle,b.sourceUrls.join("\n")].filter(Boolean).join("\n\n"));setAudience(b.audience);}}}><option value="">Start from a new topic</option>{state.pipelineBriefs.map(b=><option key={b.id} value={b.id}>{b.title} · {b.plannedDate||"Unscheduled"} · {b.channel}</option>)}</select></label>}
+      {!!state.pipelineBriefs?.length&&<label className="s-field">Existing Pipeline<select aria-label="Existing Pipeline" value={pipelineBriefId||""} disabled={working} onChange={e=>{const b=state.pipelineBriefs?.find(b=>b.id===e.target.value);setPipelineBriefId(b?.id);if(b){editTitle(b.title);setBrief([b.angle,b.sourceUrls.join("\n")].filter(Boolean).join("\n\n"));setAudience(b.audience);}else{editTitle("");setBrief("");setAudience("");}}}><option value="">Start from a new topic</option>{state.pipelineBriefs.map(b=><option key={b.id} value={b.id}>{b.title} · {b.plannedDate||"Unscheduled"} · {b.channel}</option>)}</select></label>}
       <details open={mode==="manual"||!submitted} className="s-idea-request-details"><summary>Request details{mode==="generate"?` · ${channel} · ${quantity} ideas`:""}</summary>
       <form
         onSubmit={(event) => {

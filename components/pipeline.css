@@ -1,1 +1,120 @@
-.existing-pipeline{background:var(--s-surface,#f1f7f3);margin-bottom:20px}.pipeline-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:16px 0}.pipeline-fields label,.pipeline-file{display:flex;flex-direction:column;gap:8px;font-size:13px;font-weight:600;min-width:0}.pipeline-fields input,.pipeline-fields select,.pipeline-file input{box-sizing:border-box;width:100%;min-width:0;border:1px solid #a8bfc1;border-radius:6px;padding:11px;background:var(--s-panel,#fff);color:inherit;font:inherit}.pipeline-file{padding:14px;border:1px dashed #a8bfc1;border-radius:8px}.pipeline-table{overflow:auto;margin:20px 0;max-height:560px}.pipeline-table table{border-collapse:collapse;min-width:850px;width:100%;font-size:13px}.pipeline-table th,.pipeline-table td{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid #c8d8d7;max-width:300px;overflow-wrap:anywhere}.pipeline-table small,.pipeline-table strong{display:block}.pipeline-table p{font-size:12px;margin:7px 0}.pipeline-notice{padding:14px;background:#e3f2e7;border:1px solid #9ac6a8;border-radius:6px}.pipeline-steps{margin:20px 0}.pipeline-calendar{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:16px 0}.pipeline-calendar button{text-align:left;padding:14px;border:1px solid #abc5c0;border-radius:8px;background:var(--s-panel,#fff);color:inherit;cursor:pointer}.pipeline-calendar strong,.pipeline-calendar small{display:block}.pipeline-origin{border:1px solid #c3d5d1;padding:12px;border-radius:6px;margin:12px 0;overflow-wrap:anywhere}.pipeline-import details{margin-top:20px}.pipeline-import .s-error{white-space:normal}.pipeline-calendar-event{border-left:3px solid #168c76!important}@media(max-width:640px){.pipeline-fields{grid-template-columns:1fr}.existing-pipeline .s-section-heading,.pipeline-import .s-section-heading{align-items:flex-start;gap:12px;flex-direction:column}}
+.existing-pipeline {
+  background: var(--s-surface, #f1f7f3);
+  margin-bottom: 20px;
+}
+.pipeline-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+.pipeline-fields label,
+.pipeline-file {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 0;
+}
+.pipeline-fields input,
+.pipeline-fields select,
+.pipeline-file input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #a8bfc1;
+  border-radius: 6px;
+  padding: 11px;
+  background: var(--s-panel, #fff);
+  color: inherit;
+  font: inherit;
+}
+.pipeline-file {
+  padding: 14px;
+  border: 1px dashed #a8bfc1;
+  border-radius: 8px;
+}
+.pipeline-table {
+  overflow: auto;
+  margin: 20px 0;
+  max-height: 560px;
+}
+.pipeline-table table {
+  border-collapse: collapse;
+  min-width: 850px;
+  width: 100%;
+  font-size: 13px;
+}
+.pipeline-table th,
+.pipeline-table td {
+  padding: 12px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #c8d8d7;
+  max-width: 300px;
+  overflow-wrap: anywhere;
+}
+.pipeline-table small,
+.pipeline-table strong {
+  display: block;
+}
+.pipeline-table p {
+  font-size: 12px;
+  margin: 7px 0;
+}
+.pipeline-notice {
+  padding: 14px;
+  background: #e3f2e7;
+  border: 1px solid #9ac6a8;
+  border-radius: 6px;
+}
+.pipeline-steps {
+  margin: 20px 0;
+}
+.pipeline-calendar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.pipeline-calendar button {
+  text-align: left;
+  padding: 14px;
+  border: 1px solid #abc5c0;
+  border-radius: 8px;
+  background: var(--s-panel, #fff);
+  color: inherit;
+  cursor: pointer;
+}
+.pipeline-calendar strong,
+.pipeline-calendar small {
+  display: block;
+}
+.pipeline-origin {
+  border: 1px solid #c3d5d1;
+  padding: 12px;
+  border-radius: 6px;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+.pipeline-import details {
+  margin-top: 20px;
+}
+.pipeline-import .s-error {
+  white-space: normal;
+}
+.pipeline-calendar-event {
+  border-left: 3px solid #168c76 !important;
+}
+@media (max-width: 640px) {
+  .pipeline-fields {
+    grid-template-columns: 1fr;
+  }
+  .existing-pipeline .s-section-heading,
+  .pipeline-import .s-section-heading {
+    align-items: flex-start;
+    gap: 12px;
+    flex-direction: column;
+  }
+}

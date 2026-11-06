@@ -766,6 +766,7 @@ export function applyCommand(
       break;
     }
     case "idea.use": {
+      const selectedIdea=s.ideas.find(i=>i.id===c.id);if(selectedIdea?.pipelineBriefId)pipelineSnapshot(s,actor,selectedIdea.pipelineBriefId);
       const idea = s.ideas.find((i) => i.id === c.id);
       if (!idea) bad("Idea not found.");
       need("read", { channel: idea.channel });
