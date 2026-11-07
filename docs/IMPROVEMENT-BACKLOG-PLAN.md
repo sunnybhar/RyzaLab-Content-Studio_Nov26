@@ -2,7 +2,7 @@
 
 Current instruction: **the user has explicitly authorized implementation of the pending backlog.** Work proceeds in tested releases, starting with save/recovery reliability and the two-person review flow. Missing provider credentials/files and actual publishing approvals remain prerequisites for their respective capabilities.
 
-Status update: the user approved building and deploying after reviewing the wireframes, then accepted the first-release scope: Calendar import/template and Existing Pipeline (Build 1). Build 1 is implemented and verified locally for v0.3.28; production rollout verification is pending. Remaining builds stay queued for subsequent releases; provider credentials, private guidance files and actual publishing approvals are still required where applicable. No operational calendar has been imported and no paid provider call has been made during development.
+Status update: the user approved building and deploying after reviewing the wireframes, then accepted the first-release scope: Calendar import/template and Existing Pipeline (Build 1). Build 1 shipped in v0.3.28. A first reliability/UX increment is verified locally for v0.3.29; full remaining execution is tracked in [CONSOLIDATED-EXECUTION.md](CONSOLIDATED-EXECUTION.md), including partially delivered capabilities and live-validation dependencies. Remaining builds stay queued for subsequent releases; provider credentials, private guidance files and actual publishing approvals are still required where applicable. No operational calendar has been imported and no paid provider call has been made during development.
 
 ## Complete master backlog — both user request lists
 
