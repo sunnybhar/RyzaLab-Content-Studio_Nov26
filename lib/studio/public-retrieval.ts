@@ -60,7 +60,7 @@ function clean(value: unknown, max: number) {
     : "";
 }
 
-/** Exactly two fixed public API hosts; never fetch a user/supplier-provided URL.
+/** One fixed public scholarly API host; never fetch a user/supplier-provided URL.
  * No paid search or model endpoint, redirects, continuation or retry. */
 export async function retrievePublicReferences(
   query: string,
@@ -82,53 +82,6 @@ export async function retrievePublicReferences(
     gaps: string[] = [],
     providers: ("wikipedia" | "crossref")[] = [];
   let responseBytes = 0;
-  const wiki = new URL("https://en.wikipedia.org/w/api.php");
-  for (const [key, value] of Object.entries({
-    action: "query",
-    format: "json",
-    generator: "search",
-    gsrsearch: query,
-    gsrnamespace: "0",
-    gsrlimit: "3",
-    prop: "extracts|info",
-    explaintext: "1",
-    exintro: "1",
-    exchars: "1400",
-    exlimit: "3",
-    inprop: "url",
-  }))
-    wiki.searchParams.set(key, value);
-  try {
-    const result = await boundedJson(wiki, request);
-    responseBytes += result.bytes;
-    providers.push("wikipedia");
-    if (result.value.error) throw new Error("Reference API error");
-    const pages = Object.values(result.value.query?.pages || {}).slice(
-      0,
-      3,
-    ) as Record<string, unknown>[];
-    const countBefore = citations.length;
-    for (const page of pages) {
-      if (!page || typeof page !== "object") continue;
-      const title = clean(page.title, 300),
-        text = clean(page.extract, 1400);
-      if (!title || text.length < 80) continue;
-      citations.push({
-        title,
-        url: `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replaceAll(" ", "_"))}`,
-        citedText: text,
-        sourceKind: "reference_extract",
-      });
-    }
-    if (citations.length === countBefore)
-      gaps.push(
-        "Wikipedia returned no usable introductory extracts for this question.",
-      );
-  } catch {
-    gaps.push(
-      "Wikipedia reference retrieval was unavailable or exceeded its response limit.",
-    );
-  }
   const crossref = new URL("https://api.crossref.org/works");
   crossref.searchParams.set("query", query);
   crossref.searchParams.set("rows", "3");
@@ -184,7 +137,7 @@ export async function retrievePublicReferences(
   if (!citations.length)
     throw new StudioError(
       503,
-      "No usable public excerpts were retrieved. No paid model was called. Try a clearer public question or use saved references; this source coverage is limited to Wikipedia and Crossref abstracts.",
+      "No usable public excerpts were retrieved. No paid model was called. Try a clearer public question or use saved references; this source coverage is limited to Crossref abstracts.",
     );
   const excerptBytes = new TextEncoder().encode(
     citations.map((c) => c.citedText).join("\n"),
@@ -203,10 +156,10 @@ export async function retrievePublicReferences(
     retrievedAt: now,
     claims: [],
     notice:
-      "Coverage: Wikipedia introductory extracts and Crossref scholarly abstracts only, not unrestricted web/news search or full paper access. Excerpts are untrusted evidence; inspect original sources, publication dates and limitations. Attribute quoted material. Provider API charge for this retrieval step is zero; hosting/network costs are separate.",
+      "Coverage: Crossref scholarly abstracts only; Wikipedia is excluded, not unrestricted web/news search or full paper access. Excerpts are untrusted evidence; inspect original sources, publication dates and limitations. Attribute quoted material. Provider API charge for this retrieval step is zero; hosting/network costs are separate.",
     retrieval: {
       adapter: "public-refs-v1",
-      requests: 2,
+      requests: 1,
       responseBytes,
       excerptBytes,
       providers: [...new Set(providers)],

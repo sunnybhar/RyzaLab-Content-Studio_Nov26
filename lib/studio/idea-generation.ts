@@ -1,3 +1,4 @@
+import {eligibleEvidence} from "./source-policy";
 import {pipelineSnapshot} from "./pipeline";
 import { resolvedConnection } from "./solo-quality";
 import { researchEvidence } from "./research-link";
@@ -103,7 +104,7 @@ export function ideaJobInput(
   },
 ) {
   if(c.purpose&&c.quantity!==1)throw new StudioError(400,"Manual assistance develops one entered idea at a time.");
-  const webEvidence=researchEvidence(state,actor,c.channel,c.researchJobIds);
+  const webEvidence=eligibleEvidence(researchEvidence(state,actor,c.channel,c.researchJobIds));
   if(c.research && !webEvidence.length)throw new StudioError(409,"Run web research above, then choose a completed cited result before generating ideas.");
   const visible = filteredState(state, actor);
   const workflow = visible.workflows.find(

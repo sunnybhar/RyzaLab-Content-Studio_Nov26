@@ -1,3 +1,4 @@
+import {excludedResearchUrl,articleCandidate} from "./source-policy";
 import { retrievePublicReferences } from "./public-retrieval";
 import { publicResearchSchema } from "./research";
 import { StudioError } from "./permissions";
@@ -90,7 +91,7 @@ export async function discoverWeb(
           source.password ||
           source.hostname.endsWith("bing.com") ||
           excerpt.length < 40 ||
-          !title
+          !title || !articleCandidate(source.href,title,excerpt,query)
         )
           continue;
         if (!citations.some((c) => c.url === source.href))
@@ -128,7 +129,7 @@ export async function retrieveBroadReferences(
         ? web.value
         : { citations: [], bytes: 0, gaps: ["Web/news search unavailable."] };
   const citations = [...found.citations, ...(original?.citations || [])]
-    .filter((c, i, a) => a.findIndex((other) => other.url === c.url) === i)
+    .filter((c, i, a) => !excludedResearchUrl(c.url)&&a.findIndex((other) => other.url === c.url) === i)
     .slice(0, 6);
   if (!citations.length)
     throw new StudioError(
@@ -144,10 +145,10 @@ export async function retrieveBroadReferences(
     retrievedAt: now,
     claims: [],
     notice:
-      "Web/news search excerpts plus available Wikipedia and Crossref references. Search results may be incomplete or unavailable. Linked pages have not been fetched or independently verified. Check the original website, date and claim. No paid search API calls; hosting/network costs are separate.",
+      "Web/news search excerpts plus available scholarly references; Wikipedia is excluded. Search results may be incomplete or unavailable. Linked pages have not been fetched or independently verified. Check the original website, date and claim. No paid search API calls; hosting/network costs are separate.",
     retrieval: {
       adapter: "public-refs-v1",
-      requests: 4,
+      requests: 3,
       responseBytes: (original?.retrieval.responseBytes || 0) + found.bytes,
       excerptBytes: new TextEncoder().encode(
         citations.map((c) => c.citedText).join("\n"),
@@ -158,7 +159,7 @@ export async function retrieveBroadReferences(
       ],
       gaps: [
         ...found.gaps,
-        ...(original?.retrieval.gaps || ["Wikipedia/Crossref unavailable."]),
+        ...(original?.retrieval.gaps || ["Scholarly references unavailable."]),
       ].slice(0, 4),
       providerChargeCents: 0,
     },
