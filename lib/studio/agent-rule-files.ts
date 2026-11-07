@@ -31,11 +31,14 @@ export function validateStoredAgentFile(file: StoredAgentFile) {
     throw new StudioError(400, "Choose a nonempty file up to 256 KB.");
   return bytes;
 }
+export const AGENT_FILE_SLOTS=["instructions","context","humanizer","research_instructions","source_preferences","newsletter_structure","newsletter_layout"] as const;
+export type AgentFileSlot=(typeof AGENT_FILE_SLOTS)[number];
 export interface AgentRuleFile {
+  history?: Omit<AgentRuleFile,"history">[];
   extractedText?: string;
   id: string;
   channel: Channel;
-  slot: "instructions" | "context";
+  slot: AgentFileSlot;
   fileName: string;
   base64: string;
   byteSize: number;
@@ -48,7 +51,7 @@ export function saveAgentRuleFile(
   actor: Actor,
   change: {
     channel: Channel;
-    slot: "instructions" | "context";
+    slot: AgentFileSlot;
     fileName: string;
     base64: string;
     byteSize: number;
@@ -73,6 +76,7 @@ export function saveAgentRuleFile(
     (f) => f.channel !== change.channel || f.slot !== change.slot,
   );
   next.agentRuleFiles.push({
+    history:previous?[...(previous.history||[]),Object.fromEntries(Object.entries(previous).filter(([key])=>key!=="history")) as Omit<AgentRuleFile,"history">].slice(-3):[],
     id,
     channel: change.channel,
     slot: change.slot,

@@ -1,3 +1,4 @@
+import {documentLayoutSchema,type DocumentLayout} from "./document-layout";
 import { z } from "zod";
 import { slideLayersSchema } from "./layers";
 import type { MediaProject, Package, Scene, Slide } from "./types";
@@ -441,23 +442,25 @@ export async function exportContentDocument(
   text: string,
   revision: number,
   format: "docx" | "pdf",
-  options?: {imageUrl?:string;imageCaption?:string},
+  options?: {imageUrl?:string;imageCaption?:string;layout?:DocumentLayout;onExported?:(result:{pages?:number;format:"pdf"|"docx"})=>void},
 ): Promise<void> {
   validateDocument(title, text, revision);
+  const layout=options?.layout?documentLayoutSchema.parse(options.layout):undefined;
   const name = `${filename(title)}-revision-${revision}`;
   let hero:{data:Uint8Array;url:string;width:number;height:number}|undefined;
   if(options?.imageUrl){const loaded=await loadImage(options.imageUrl);try{const canvas=document.createElement("canvas");canvas.width=1200;canvas.height=Math.min(750,Math.round(1200*loaded.image.naturalHeight/loaded.image.naturalWidth));const ctx=canvas.getContext("2d");if(!ctx)throw Error("Image rendering unavailable.");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);const scale=Math.min(canvas.width/loaded.image.naturalWidth,canvas.height/loaded.image.naturalHeight);const width=loaded.image.naturalWidth*scale,height=loaded.image.naturalHeight*scale;ctx.drawImage(loaded.image,(canvas.width-width)/2,(canvas.height-height)/2,width,height);const url=canvas.toDataURL("image/jpeg",0.9);hero={data:Uint8Array.from(atob(url.split(",")[1]),char=>char.charCodeAt(0)),url,width:560,height:Math.round(canvas.height*560/1200)};}finally{loaded.dispose();}}
 
   if (format === "docx") {
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun } =
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun, Header, Footer } =
       await import("docx");
     const document = new Document({
       creator: "RyzaLab",
-      styles:{default:{document:{run:{font:"Arial",size:22},paragraph:{spacing:{after:140,line:280}}}}},
+      styles:{default:{document:{run:{font:layout?.font||"Arial",size:(layout?.bodySize||11)*2},paragraph:{spacing:{after:140,line:layout?Math.round(layout.lineSpacing*240):280}}}}},
       title,
       description: `Revision ${revision}`,
       sections: [
         {
+          ...(layout?{properties:{page:{size:layout.pageSize==="A4"?{width:11906,height:16838}:{width:12240,height:15840},margin:{top:Math.round(layout.marginMm*1440/25.4),bottom:Math.round(layout.marginMm*1440/25.4),left:Math.round(layout.marginMm*1440/25.4),right:Math.round(layout.marginMm*1440/25.4)}}},headers:{default:new Header({children:[new Paragraph(layout.header)]})},footers:{default:new Footer({children:[new Paragraph(layout.footer)]})}}:{}),
           children: [
             new Paragraph({ text: title, heading: HeadingLevel.TITLE }),
             new Paragraph({
@@ -475,18 +478,19 @@ export async function exportContentDocument(
       ],
     });
     download(await Packer.toBlob(document), `${name}.docx`);
+    options?.onExported?.({format:"docx"});
     return;
   }
   await document.fonts.ready;
   const { jsPDF } = await import("jspdf");
-  const pdf = new jsPDF();
+  const pdf = new jsPDF({format:layout?.pageSize==="Letter"?"letter":"a4"});
   // Rasterize installed browser fonts so Unicode and wrapping match the editor.
   const canvas = document.createElement("canvas");
   canvas.width = 1240;
-  canvas.height = 1754;
+  canvas.height = layout?.pageSize==="Letter"?1605:1754;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("This browser cannot render document PDFs.");
-  const margin = 118;
+  const margin = layout?Math.round(layout.marginMm*canvas.width/(layout.pageSize==="Letter"?215.9:210)):118;
   let y = margin;
   let page = 0;
   const clear = () => {
@@ -494,20 +498,22 @@ export async function exportContentDocument(
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#172d30";
     ctx.textBaseline = "top";
+    if(layout){ctx.font=`400 18px ${layout.font}`;ctx.fillText(layout.header,margin,28);ctx.fillText(layout.footer,margin,canvas.height-42);}
+
   };
   const flush = () => {
     if (page++) pdf.addPage();
-    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, 210, 297);
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
   };
   const line = (value: string, size: number, height: number) => {
-    ctx.font = `400 ${size}px Inter, sans-serif`;
+    ctx.font = `400 ${size}px ${layout?.font||"Inter"}, sans-serif`;
     const rows = wrapText(ctx, value, canvas.width - margin * 2);
     for (const row of rows) {
       if (y + height > canvas.height - margin) {
         flush();
         clear();
         y = margin;
-        ctx.font = `400 ${size}px Inter, sans-serif`;
+        ctx.font = `400 ${size}px ${layout?.font||"Inter"}, sans-serif`;
       }
       ctx.fillText(row, margin, y);
       y += height;
@@ -519,9 +525,10 @@ export async function exportContentDocument(
   y += 24;
   if(hero){const height=hero.height*(canvas.width-margin*2)/hero.width;ctx.drawImage(await (async()=>{const image=new Image();image.src=hero.url;await image.decode();return image;})(),margin,y,canvas.width-margin*2,height);y+=height+24;if(options?.imageCaption)line(options.imageCaption,20,30);}
   for (const paragraph of text.replace(/\r\n?/g, "\n").split("\n"))
-    /^#{1,3}\s/.test(paragraph)?line(paragraph.replace(/^#{1,3}\s/,""),30,44):line(paragraph,24,38);
+    /^#{1,3}\s/.test(paragraph)?line(paragraph.replace(/^#{1,3}\s/,""),30,44):line(paragraph,layout?layout.bodySize*2.08:24,layout?layout.bodySize*2.08*layout.lineSpacing:38);
   flush();
   pdf.save(`${name}.pdf`);
+  options?.onExported?.({format:"pdf",pages:pdf.getNumberOfPages()});
 }
 export async function importDocx(file: File): Promise<string> {
   if (!/\.docx$/i.test(file.name)) throw new Error("Choose a DOCX file.");

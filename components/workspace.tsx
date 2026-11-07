@@ -1,4 +1,5 @@
 "use client";
+import {parseDocumentLayout} from "@/lib/studio/document-layout";
 import {ReviewHistory} from "./review-history";
 import {useDraftSave,DraftSaveStatus} from "./draft-save-controller";
 import type {DraftValues} from "@/lib/studio/draft-recovery";
@@ -4497,6 +4498,8 @@ function Editor({
   const [notesOpen, setNotesOpen] = useState(false);
   const [collection, setCollection] = useState(c.collection || "");
   const [media, setMedia] = useState<MediaProject>(c.media || initialMedia());
+  const documentLayoutFile=state.agentRuleFiles?.find(f=>f.channel===c.channel&&f.slot==="newsletter_layout");
+  const documentLayout=parseDocumentLayout(documentLayoutFile?.extractedText);
   const [includeNewsletterImage,setIncludeNewsletterImage]=useState(true);
   const [tab, setTab] = useState("Write");
   const [postPreview, setPostPreview] = useState(false);
@@ -4755,7 +4758,7 @@ function Editor({
               />
               {c.pipelineSnapshot&&<details className="pipeline-origin"><summary>Existing Pipeline · {c.pipelineSnapshot.externalId||c.pipelineSnapshot.title}</summary><p>{c.pipelineSnapshot.angle}</p><p>Imported from {c.pipelineSnapshot.sourceFile} · {c.pipelineSnapshot.sheet}, row {c.pipelineSnapshot.row} · brief v{c.pipelineSnapshot.version}</p><p>Planned: {c.pipelineSnapshot.plannedDate||"Unscheduled"} {c.pipelineSnapshot.plannedTime} · {c.pipelineSnapshot.timezone}. This is not a publishing approval.</p>{c.pipelineSnapshot.sourceUrls.map(url=><p key={url}>{url}</p>)}</details>}
               <GenerationRulesStatus content={c} state={state}/>
-              {isLongForm(c.channel,c.format)&&<section aria-label={/blog/i.test(c.format)?"Download blog":"Download newsletter"} className="s-actions"><button className="s-btn" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} DOCX</button><button className="s-btn s-primary" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} PDF</button>{media.imageUrl&&<label><input type="checkbox" checked={includeNewsletterImage} onChange={e=>setIncludeNewsletterImage(e.target.checked)}/> Include attached image</label>}<p>Downloads use the content above automatically. No copy/paste or image is required.</p></section>}
+              {isLongForm(c.channel,c.format)&&<section aria-label={/blog/i.test(c.format)?"Download blog":"Download newsletter"} className="s-actions"><button className="s-btn" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} DOCX</button><button className="s-btn s-primary" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} PDF</button>{media.imageUrl&&<label><input type="checkbox" checked={includeNewsletterImage} onChange={e=>setIncludeNewsletterImage(e.target.checked)}/> Include attached image</label>}<p>Downloads use the content above automatically. No copy/paste or image is required.</p>{documentLayoutFile&&!documentLayout&&<p>The uploaded layout is reference guidance. Export uses the default design until valid layout JSON settings are saved in Agent Rules.</p>}</section>}
               <div className="s-editor-wordcount">
                 {text.trim() ? text.trim().split(/\s+/).length : 0} words{" "}
                 <span>{text.length} characters</span>

@@ -1,10 +1,11 @@
+import {isLongForm,writingFormat} from "./channel-writing";
 import {contextExcerpt} from "./context-excerpts";
 import type { Channel, StudioState } from "./types";
 import { StudioError } from "./permissions";
 /** Channel-scoped context. Never used to construct public search queries. */
 export function agentContext(state: StudioState, channel: Channel, query="") {
   const rules = (state.agentRuleFiles || [])
-    .filter((f) => f.channel === channel)
+    .filter((f) => f.channel === channel&&! ["research_instructions","source_preferences"].includes(f.slot)&&(!["newsletter_structure","newsletter_layout"].includes(f.slot)||isLongForm(channel,writingFormat(query))))
     .map((f) => {
       if (!f.extractedText)
         throw new StudioError(

@@ -1,4 +1,5 @@
 "use client";
+import {WritingResources} from "./writing-resources";
 import {ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active-channels";
 import { readAgentPackage } from "@/lib/studio/agent-package";
 import { AgentVoiceLibrary } from "./agent-voice-library";
@@ -488,6 +489,7 @@ export function AgentRules({
       </p>
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
+      <WritingResources state={state} channel={channel} send={send} allowed={allowed}/>
       <AgentVoiceLibrary
         key={channel}
         state={state}

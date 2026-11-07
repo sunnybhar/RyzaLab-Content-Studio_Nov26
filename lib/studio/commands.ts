@@ -1,6 +1,6 @@
 import { pipelineImportSchema } from "./pipeline";
 import {agentArchiveSchema} from "./agent-archives";
-import {storedAgentFileSchema} from "./agent-rule-files";
+import {storedAgentFileSchema,AGENT_FILE_SLOTS} from "./agent-rule-files";
 import { z } from "zod";
 import { slideLayersSchema } from "./layers";
 import { CHANNELS, ROLES, FUNCTIONS } from "./types";
@@ -111,10 +111,10 @@ export const commandSchema = z.discriminatedUnion("type", [
     state: z.enum(["planned", "done", "cancelled"]).optional(),
   }),
   command("agentRules.importPackage", {channel,archives:z.array(agentArchiveSchema).max(2).optional(),instructions:storedAgentFileSchema,context:storedAgentFileSchema,expectedInstructionsId:id.optional(),expectedContextId:id.optional()}),
-  command("agentRules.save", {channel,slot:z.enum(["instructions","context"]),...storedAgentFileSchema.shape,extractedText:z.string().max(60000).optional(),expectedId:id.optional()}),
+  command("agentRules.save", {channel,slot:z.enum(AGENT_FILE_SLOTS),...storedAgentFileSchema.shape,extractedText:z.string().max(60000).optional(),expectedId:id.optional()}),
   command("agentVoice.create", {title:short,contentType:z.enum(["article","post","newsletter"]),channel:z.enum(["Shared",...CHANNELS]),text:z.string().max(60000).optional(),file:storedAgentFileSchema.optional(),extractedText:z.string().max(60000).optional(),requestKey:id}),
   command("agentVoice.remove", {id}),
-  command("agentRules.remove", {channel,slot:z.enum(["instructions","context"]),expectedId:id}),
+  command("agentRules.remove", {channel,slot:z.enum(AGENT_FILE_SLOTS),expectedId:id}),
   command("idea.generate", {
     pipelineBriefId: id.optional(),
     automaticResearch: z.boolean().optional(),
