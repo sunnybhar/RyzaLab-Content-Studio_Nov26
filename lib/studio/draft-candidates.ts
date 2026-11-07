@@ -216,6 +216,7 @@ export function settleWrittenOutput(
       at: now,
       context: "provided_references",
     };
+    if(c.reviewCycle)c.reviewCycle={...c.reviewCycle,status:report.issues.length?"needs_input":"ready",reason:undefined,at:now};
     job.outputStatus = "ready";
   }
 }

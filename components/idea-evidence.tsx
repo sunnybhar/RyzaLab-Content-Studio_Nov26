@@ -1,3 +1,4 @@
+import {eligibleEvidence,containsExcludedSource} from "@/lib/studio/source-policy";
 import type { Actor, StudioState } from "@/lib/studio/types";
 import { researchEvidence } from "@/lib/studio/research-link";
 export function IdeaEvidence({
@@ -14,13 +15,14 @@ export function IdeaEvidence({
   if (!ids?.length) return null;
   let evidence;
   try {
-    evidence = researchEvidence(state, actor, channel, ids);
+    evidence = eligibleEvidence(researchEvidence(state, actor, channel, ids));
   } catch {
     return <p role="status">Research is unavailable or needs source review.</p>;
   }
   return (
     <section aria-label="Research and websites">
       <h3>Research and websites</h3>
+      {!evidence.length&&<p>Selected historical research contains only excluded sources. Original records remain saved; retrieve allowed evidence for this idea.</p>}
       {evidence.map((item) => (
         <div key={item.jobId}>
           <p>Public research query: {state.jobs.find(job=>job.id===item.jobId)?.prompt}</p>
@@ -58,8 +60,9 @@ export function IdeaEvidence({
 
 export function SourceReferences({ sources }: { sources: string[] }) {
   return (
+    <>
     <ul>
-      {sources.map((source, index) => {
+      {sources.filter(source=>!containsExcludedSource(source)).map((source, index) => {
         let safe = false;
         try {
           const url = new URL(source);
@@ -81,5 +84,7 @@ export function SourceReferences({ sources }: { sources: string[] }) {
         );
       })}
     </ul>
+    {sources.some(containsExcludedSource)&&<details><summary>Excluded historical references — not used in new AI work</summary>{sources.filter(containsExcludedSource).map((source,i)=><p key={i}>{source}</p>)}</details>}
+    </>
   );
 }

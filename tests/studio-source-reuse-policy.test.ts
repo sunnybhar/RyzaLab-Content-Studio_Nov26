@@ -264,3 +264,58 @@ test("legacy queued supporting sources are detected without banning a human draf
     true,
   );
 });
+test("review cannot cite workflow references omitted from the actual compiled context", async () => {
+  const { suppliedReviewReferences } =
+    await import("../lib/studio/review-references");
+  const job = {
+    kind: "review",
+    prompt: "{}",
+    workflowSnapshot: { references: ["included", "omitted"] },
+    referenceSnapshots: [{ id: "included" }, { id: "omitted" }],
+    systemSnapshot:
+      "Frozen model context\nCONTEXT COVERAGE:\n" +
+      JSON.stringify({ selectedReferenceIds: ["included"] }) +
+      "\nOUTPUT CONTRACT:\nReview only supplied references.",
+  } as unknown as Job;
+  const allowed = suppliedReviewReferences(job);
+  assert.equal(allowed.has("included"), true);
+  assert.equal(allowed.has("omitted"), false);
+});
+test("article metadata preserves apostrophes and numeric entities instead of truncating source titles/authors", async () => {
+  const { htmlEvidence } = await import("../lib/studio/public-page");
+  const evidence = htmlEvidence(
+    `<meta property = "og:title" content="A builder's home automation guide"><meta name="author" content="O'Ryan"><article>Control &#38; evidence &#x2014; practical limits.</article>`,
+  );
+  assert.equal(evidence.title, "A builder's home automation guide");
+  assert.equal(evidence.author, "O'Ryan");
+  assert.equal(evidence.text, "Control & evidence — practical limits.");
+});
+test("provider adapter rejects excluded frozen evidence before making any network request", async () => {
+  const { runProvider } = await import("../lib/studio/providers");
+  const previous = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls++;
+    throw Error("Must not disclose excluded supporting material.");
+  }) as typeof fetch;
+  try {
+    await assert.rejects(
+      () =>
+        runProvider(
+          {
+            kind: "text",
+            prompt: JSON.stringify({ idea: { sources: [wiki] } }),
+          } as Job,
+          { provider: "openai", model: "fixture-writer" } as any,
+          "fixture-only",
+        ),
+      /excluded supporting sources/,
+    );
+    assert.equal(calls, 0);
+  } finally {
+    globalThis.fetch = previous;
+  }
+});
+
+test("public-query research does not disclose or unnecessarily block on unused workflow references",()=>{const reference={id:"legacy",kind:"source",content:JSON.stringify(result())};assert.equal(jobHasExcludedSupport({kind:"research",prompt:"household handoff question",referenceSnapshots:[reference]}as Job),false);assert.equal(jobHasExcludedSupport({kind:"audio",prompt:"Read the supplied narration.",referenceSnapshots:[reference]}as Job),false);});
+test('excluded historical reviews do not count as fresh and filtered readers receive status without private job data',async()=>{const {filteredState}=await import('../lib/studio/permissions');const {packageReadiness}=await import('../lib/studio/solo-quality');const s=initialState(DEMO_ACTOR,true),reader={id:'writer-source',email:'writer-source@example.com'};s.members.push({...reader,roles:['creator'],grants:[],revoked:false});const d=s.contents[0];d.assignedTo=reader.email;d.createdBy=reader.email;d.state='review';d.format='Text post';d.text='A practical handoff can document household routines.';d.metadata='';d.media={slides:[],scenes:[],imagePrompt:'',narration:'',captions:'',aspect:'1:1'};d.copyAcceptances=[];d.agentReview={jobId:'historical-review',identity:copyIdentity(d,s),provider:'openai',model:'fixture',independent:false,at:'2026-11-01T12:00:00Z',summary:'Historical findings remain readable.',issues:[],context:'provided_references'};s.jobs=[{id:'historical-review',kind:'review',channel:d.channel,contentId:d.id,createdBy:DEMO_ACTOR.email,state:'succeeded',prompt:JSON.stringify({webEvidence:[{citations:[{url:wiki}]}]})}as Job];assert.equal(packageReadiness(d,s,true).agent,undefined);const visible=filteredState(s,reader),current=visible.contents.find(c=>c.id===d.id)!;assert.ok(current);assert.equal(visible.jobs.length,0);assert.equal(current.agentReview?.sourcePolicyExcluded,true);assert.equal(packageReadiness(current,visible,true).agent,undefined);assert.equal(d.agentReview.sourcePolicyExcluded,undefined);assert.equal(d.agentReview.summary,'Historical findings remain readable.');});

@@ -194,6 +194,7 @@ export interface CopyAcceptance {
   policyVersion: string;
 }
 export interface AgentReview {
+  sourcePolicyExcluded?: boolean;
   jobId: string;
   identity: string;
   provider: Connection["provider"];

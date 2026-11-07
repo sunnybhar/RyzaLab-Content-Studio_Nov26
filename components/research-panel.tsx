@@ -7,6 +7,7 @@ import type {
   Content,
   StudioState,
 } from "@/lib/studio/types";
+import {eligibleEvidence,excludedResearchUrl} from "@/lib/studio/source-policy";
 import { researchEvidence } from "@/lib/studio/research-link";
 
 
@@ -155,8 +156,10 @@ export function ResearchPanel({
         .slice(0, 10)
         .map((job) => {
           let evidence;
+          let originalEvidence;
           try {
-            evidence = researchEvidence(state, actor, channel, [job.id])[0];
+            originalEvidence = researchEvidence(state, actor, channel, [job.id])[0];
+            evidence=eligibleEvidence([originalEvidence])[0];
           } catch {}
           return (
             <div key={job.id} className="s-version">
@@ -170,6 +173,8 @@ export function ResearchPanel({
                     : job.state}{" "}
                 · ${(job.estimate / 100).toFixed(2)} estimated
               </p>
+              {originalEvidence&&originalEvidence.citations.some(c=>excludedResearchUrl(c.url))&&<details><summary>Excluded historical sources — not used in new AI work</summary><p>The original record remains saved.</p>{originalEvidence.citations.filter(c=>excludedResearchUrl(c.url)).map((cite,i)=><article key={i}><p>{cite.title} · {cite.url}</p><p>{cite.citedText}</p></article>)}</details>}
+              {!evidence&&selected.includes(job.id)&&<button className="s-btn" disabled={disabled||busy} onClick={()=>onSelected(selected.filter(id=>id!==job.id))}>Remove excluded selection</button>}
               {evidence ? (
                 <>
                   <label>

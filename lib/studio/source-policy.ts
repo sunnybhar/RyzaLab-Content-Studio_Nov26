@@ -134,8 +134,9 @@ export function eligiblePipeline<T extends { sourceUrls: string[] }>(
 }
 /** Legacy queued payloads cannot disclose excluded supporting sources; immutable history remains readable. */
 export function jobHasExcludedSupport(job: Job) {
-  if (job.kind === "research" && containsExcludedSource(job.prompt))
-    return true;
+  // These adapters send only the explicit query/narration, never workflow refs.
+  if (job.kind === "research") return containsExcludedSource(job.prompt);
+  if (job.kind === "audio") return false;
   const references = (job.referenceSnapshots || []) as Reference[];
   const clean = eligibleReferences(references);
   if (

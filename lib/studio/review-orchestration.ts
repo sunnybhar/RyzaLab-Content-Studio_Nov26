@@ -1,3 +1,4 @@
+import {jobHasExcludedSupport} from "./source-policy";
 import {hasWritingFollowup} from "./writing-followup";
 import {isActiveChannel} from "./active-channels";
 import type { StudioState } from "./types";
@@ -39,7 +40,8 @@ export function orchestrateReviews(
     )
       continue;
     const identity = copyIdentity(original, state);
-    if (original.agentReview?.identity === identity) continue;
+    const reportJob=state.jobs.find(job=>job.id===original.agentReview?.jobId);
+    if (original.agentReview?.identity === identity&&(!reportJob||!jobHasExcludedSupport(reportJob))) continue;
     const key = `auto-review:${acceptance.id}`;
     const existing = state.jobs.find(
       (j) =>

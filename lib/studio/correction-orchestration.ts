@@ -1,3 +1,4 @@
+import {jobHasExcludedSupport} from "./source-policy";
 import type { Content, StudioState } from "./types";
 import { copyIdentity, currentCopyAcceptance } from "./solo-quality";
 import { MAX_CORRECTION_ROUNDS } from "./review-correction";
@@ -69,6 +70,8 @@ export function orchestrateCorrections(
       record(original.id, { ...base, status: "ready" });
       continue;
     }
+    const reportJob=state.jobs.find(job=>job.id===report.jobId);
+    if(reportJob&&jobHasExcludedSupport(reportJob)){record(original.id,{...base,status:"stopped",reason:"The historical report used excluded source evidence. Request a fresh review before automatic corrections; its saved findings remain retained."});continue;}
     const key = `auto-correct:${root}:${report.jobId}`;
     const existing = state.jobs.find(
       (j) => j.contentId === original.id && j.idempotencyKey === key,

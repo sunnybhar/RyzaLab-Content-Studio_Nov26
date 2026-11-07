@@ -41,9 +41,9 @@ export function htmlEvidence(html: string) {
   const meta = (name: string) => {
     const tags = html.match(/<meta\b[^>]*>/gi) || [];
     const tag = tags.find((t) =>
-      new RegExp(`(?:name|property)=["']${name}["']`, "i").test(t),
+      new RegExp(`(?:name|property)\\s*=\\s*["']${name}["']`, "i").test(t),
     );
-    return tag?.match(/content=["']([^"']*)["']/i)?.[1] || "";
+    return tag?.match(/content\s*=\s*(["'])([\s\S]*?)\1/i)?.[2] || "";
   };
   const clean = (v: string) =>
     v
@@ -52,6 +52,10 @@ export function htmlEvidence(html: string) {
         " ",
       )
       .replace(/<[^>]*>/g, " ")
+      .replace(/&#(x[0-9a-f]+|\d+);/gi, (_: string, value: string) => {
+        const code = value[0].toLowerCase() === "x" ? parseInt(value.slice(1), 16) : parseInt(value, 10);
+        return Number.isFinite(code) && code > 0 && code <= 0x10ffff && !(code >= 0xd800 && code <= 0xdfff) ? String.fromCodePoint(code) : " ";
+      })
       .replace(
         /&(amp|lt|gt|quot|apos|nbsp);/g,
         (_: string, key: string) =>

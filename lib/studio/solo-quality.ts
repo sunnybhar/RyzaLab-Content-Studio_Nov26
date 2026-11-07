@@ -1,3 +1,4 @@
+import {jobHasExcludedSupport} from "./source-policy";
 import {unplacedSectionImages} from "./document-sections";
 import {hasWritingFollowup} from "./writing-followup";
 import type { Content, StudioState } from "./types";
@@ -100,8 +101,11 @@ export function packageReadiness(c: Content, s: StudioState, singleReview = fals
     blockers.push("Prepare the carousel slides.");
   if (/image|photo|thumbnail/i.test(c.format) && !c.media.imageUrl)
     blockers.push("Prepare the final image.");
+  const reviewJob=s.jobs.find(job=>job.id===c.agentReview?.jobId);
+  const historicalExcluded=Boolean(c.agentReview?.sourcePolicyExcluded||(reviewJob&&jobHasExcludedSupport(reviewJob)));
   const agent =
-    c.agentReview?.identity === identity ? c.agentReview : undefined;
+    c.agentReview?.identity === identity&&!historicalExcluded ? c.agentReview : undefined;
+  if(historicalExcluded)blockers.push("The historical review used excluded source evidence. Request fresh checks with allowed sources or explicitly override; the original report remains saved.");
   if (policy?.autoReview && !agent)
     blockers.push("The configured automatic textual review must finish and attach a current report before final approval.");
   const needsIndependent =

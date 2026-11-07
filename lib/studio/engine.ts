@@ -715,6 +715,7 @@ export function applyCommand(
     case "idea.create": {
       const pipeline=pipelineSnapshot(s,actor,c.pipelineBriefId);
       const evidence=eligibleEvidence(researchEvidence(s,actor,c.channel,c.researchJobIds));
+      if(c.researchJobIds?.length&&!evidence.length)bad("The selected historical research contains only excluded sources. Deselect it or retrieve allowed evidence before adding the idea.");
       need("idea.edit", { channel: c.channel });
       s.ideas.unshift({
         id: id(),

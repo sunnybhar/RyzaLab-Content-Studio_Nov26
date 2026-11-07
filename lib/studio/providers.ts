@@ -1,3 +1,4 @@
+import {jobHasExcludedSupport} from "./source-policy";
 import {claudeUsage,type ClaudeUsage} from "./usage-cost";
 import { inspectClaudeResearchModel, discoverModels } from "./model-discovery";
 import type { Connection, Job } from "./types";
@@ -50,6 +51,7 @@ export async function runProvider(
   completion?: "complete" | "incomplete" | "refused";
   stopReason?:string;
 }> {
+  if(jobHasExcludedSupport(job))throw new ProviderFailure(false,"This saved request contains excluded supporting sources. No provider request was sent; retain the original and prepare allowed evidence.");
   if (
     !["text", "ideas", "review", "image", "audio", "research"].includes(
       job.kind,

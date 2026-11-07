@@ -8,6 +8,7 @@ import type {
   Package,
   StudioState,
 } from "@/lib/studio/types";
+import {eligibleEvidence,jobHasExcludedSupport} from "@/lib/studio/source-policy";
 import { can } from "@/lib/studio/permissions";
 import { currentWorkflow } from "@/lib/studio/stages";
 import { copyIdentity, packageReadiness } from "@/lib/studio/solo-quality";
@@ -69,12 +70,12 @@ export function SoloReview({
     issues.push(content.automaticReview.error);
   let sources: ReturnType<typeof researchEvidence> = [];
   try {
-    sources = researchEvidence(
+    sources = eligibleEvidence(researchEvidence(
       state,
       actor,
       content.channel,
       content.researchJobIds,
-    );
+    ));
   } catch (e) {
     issues.push(
       e instanceof Error ? e.message : "Source access needs attention.",
@@ -163,6 +164,8 @@ export function SoloReview({
       setBusy(false);
     }
   }
+  const historicalReportJob=state.jobs.find(job=>job.id===content.agentReview?.jobId);
+  const historicalExcluded=Boolean(content.agentReview?.sourcePolicyExcluded||(historicalReportJob&&jobHasExcludedSupport(historicalReportJob)));
   const correctionJob=state.jobs.find(j=>j.id===content.reviewCycle?.jobId);
   const correctionActive=content.reviewCycle?.status==="correcting"&&correctionJob&&["queued","running","awaiting_confirmation"].includes(correctionJob.state);
   const status = correctionActive ? `AI correcting draft · round ${content.reviewCycle!.rounds}/2` :
@@ -181,6 +184,7 @@ export function SoloReview({
               : "Ready for your review";
   return (
     <section className="s-solo-review" aria-label="Review and publish">
+      {historicalExcluded&&<div className="s-info-strip"><p>The historical report is retained but cannot count as a fresh allowed-source review.</p><button className="s-btn" disabled={busy||automatedWorkPending||!can(state,actor,"job.create",{channel:content.channel,contentId:content.id,account:content.account,assignedTo:content.assignedTo,function:"review"})} onClick={async()=>{setBusy(true);setError("");try{await send({type:"content.generate",contentId:content.id,kind:"review",researchJobIds:sources.map(source=>source.jobId),expectedRevision:content.revision,idempotencyKey:crypto.randomUUID()});}catch(e){setError(e instanceof Error?e.message:"Fresh review could not be queued.");}finally{setBusy(false);}}}>Request fresh review within package allowance</button></div>}
       {content.reviewCycle?.reason&&<p role="status">{content.reviewCycle.reason}</p>}
       {!isLongForm(content.channel,content.format)&&content.media.imageUrl && (
         <div className="s-solo-asset">

@@ -13,7 +13,7 @@ User authorization: combine the earlier backlog and all subsequent feedback and 
 | 5 | IB-13 allowance/cost clarity | Wording/breakdown built for 0.3.29 | Wording/breakdown first; estimate/authorization changes require separate verification |
 | 6 | IB-05 broader web research | Retrieval foundation built/tested for 0.3.30 | Qualified discovery/retrieval with provenance |
 | 7 | IB-06 research instructions/preferences | Resources/preferences built for 0.3.30; analysis guidance/version visibility built for 0.3.34; investigation planner pending | Versioned editable/uploadable rules, sector-first coverage |
-| 8 | IB-14 source diversity, no Wikipedia | New retrieval/evidence filters built for 0.3.30; complete legacy dispatch audit pending | Enforce exclusion in new search/retrieval/reuse paths; preserve historical records |
+| 8 | IB-14 source diversity, no Wikipedia | New retrieval filters built for 0.3.30; historical reuse/dispatch/output audit built for 0.3.36; live acceptance pending | Enforce exclusion in new search/retrieval/reuse paths; preserve historical records |
 | 9 | IB-15 deep investigation and reliable jobs | Pending | Evidence ledger, analysis, dossier, bounded recovery; no invented verification |
 | 10 | IB-07 Humanizer management | Resource upload/version/context integration built for 0.3.30 | Implement upload/version/use; actual Ryan file/link required for live acceptance |
 | 11 | IB-16 Blog and format selector | Core format selector/contracts built for 0.3.29 | 4–10min Blog; 8–15min Newsletter; distinct structures; no paid rewrite on selection |
