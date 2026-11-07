@@ -540,3 +540,6 @@ User requested deployment of progress so far. Production build and TypeScript pa
 
 ### OpenAI image editor WIP
 Continuing remaining backlog after v0.3.30 as authorized. Added image request controls to Write for every format, connection/mapping guidance, explicit maximum consent, existing job status, authenticated preview/download, and explicit main-image/slide application. New server command only applies a succeeded same-draft image through existing save/revision/check invalidation. TypeScript passes. Domain/browser/regression tests and final release are pending; no paid image requests or provider credentials used. Section-by-section image placement remains outside this first image increment.
+
+### v0.3.31 image increment validation
+302 domain tests pass; production build/TypeScript pass. Focused browser validates zero requests on mount, explicit maximum consent, saved result preview and separate attachment without calling a provider. Domain checks cover same-draft completed asset ownership, stale revision rejection, removed slides, authorization and preserving the package cap when enabling images. Production submit success/failure regression passes. Main and slide placement implemented; section image layouts/live provider acceptance remain pending. Release scope in RELEASE-0.3.31.md.

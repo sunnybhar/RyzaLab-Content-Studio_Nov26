@@ -298,6 +298,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     expectedRuleVersion: short,
   }),
   command("preparation.authorize", {
+    includeImages: z.boolean().optional(),
     budgetCategory:z.enum(["short_text","researched_text","long_text","custom"]).optional(),
     contentId: id,
     maxCents: money,

@@ -1757,6 +1757,7 @@ export function applyCommand(
         if (preparationSpend(s, current.id) > c.maxCents)
           bad("The cap cannot be reduced below existing spend/reservations.");
         current.maxCents = c.maxCents;
+        if(c.includeImages && !current.functions.includes("image")) current.functions.push("image");
         current.budgetCategory=c.budgetCategory||"custom";
       } else {
         const authorization = {
@@ -2063,6 +2064,7 @@ export function applyCommand(
         );
       const estimate = ctx.demo ? allowance || c.estimate : ctx.quotedCost || 0;
       if (!estimate) bad("A positive request allowance is required.");
+      if(c.kind==="image" && estimate>c.estimate)bad("Image pricing changed above your confirmed maximum. Refresh and confirm the new amount before generation.");
       const preparation = preparationFor(s, d, actor.email, now);
       if (
         d &&
