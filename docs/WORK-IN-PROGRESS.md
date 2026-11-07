@@ -504,3 +504,6 @@ User approved backlog capture of draft-saving improvements following database sa
 
 ## November 7 — review submission completion queued as IB-19
 User wants confirmed review submission to close the editor and return to Create list with an obvious under-review state. Read-only inspection confirms current handler runs content.submit/success notice but does not navigate back. Added IB-19 for pending protection, confirmed-success return/list badge/Reviews link, and preserved editor/reconciliation on errors or uncertain outcome. Submission is not completed review/publication. Standing no-build instruction retained; documentation only, no implementation/deployment.
+
+## November 7 — agentic review correction queued as IB-20
+User wants AI to resolve actionable review findings with minimum founder involvement. Added IB-20 for bounded review→correction→re-review, factual/evidence-aware fixes, consolidated genuine founder questions, preserved original/concurrent edits, current revision reports, concise change summary and one final human decision. Screenshot shows an uncertain prior review/no actual report, not completed AI findings; recovery remains prerequisite, with no blind paid retry or fabricated verification. Standing no-build instruction preserved; documentation only.

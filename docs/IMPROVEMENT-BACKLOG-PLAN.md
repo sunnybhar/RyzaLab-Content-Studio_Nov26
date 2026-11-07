@@ -33,6 +33,7 @@ This is the master plan for **all improvement items in the earlier seven-item li
 | IB-17 | Shared imported/generated/manual idea and brief library available across every active channel and Blog format, with destination-specific adaptation rather than source-channel lock-in. | High — cross-channel creation | Queued; do not build |
 | IB-18 | Reliable draft saving: preserve unsaved edits, reconcile timed-out saves, prevent duplicate submissions, synchronize versions and resolve conflicts safely; investigate database latency. | High — reliability / edit preservation | Queued; do not build |
 | IB-19 | After confirmed Submit for review, close the editor and return to the Create list with a clear Under review status and View in Reviews action. | High — workflow clarity | Queued; do not build |
+| IB-20 | AI resolves actionable review findings, rechecks the revised draft and escalates only facts/decisions it cannot resolve; founder reviews the final changes and gives final approval. | High — agentic review / minimal manual work | Queued; do not build |
 
 ### IB-11 — consistent section spacing across Studio
 
@@ -222,6 +223,35 @@ Scope when authorized:
 Acceptance when built: successful submit returns to Create with the exact item marked Under review and a working Reviews link; pending prevents repeat submissions; failure/uncertainty preserves the editor and edits; refresh retains the authoritative submission state; backend review may continue without another manual step or duplicate job.
 
 Status: queued only under the standing no-build instruction. No submission handler, navigation, content state, review request or deployment changed.
+
+### IB-20 — automatic correction and re-review with minimal founder actions
+
+User request: when AI review produces action items, AI should solve the problems itself so founder intervention is minimal. Keep the user-facing workflow simple; do not expose a mandatory manual checklist for each finding.
+
+Screenshot distinction: the supplied screen says no AI reviewer result is claimed and the previous review outcome is uncertain. Those operational blockers are not completed AI content findings. Recover/reconcile that existing request before claiming review success or starting an additional paid attempt. The new correction loop must not pretend to fix an unknown review outcome through content edits.
+
+Scope when authorized:
+
+1. **Review → correct → re-review in the backend.** From a successful current-version report, classify issues, produce a revised candidate, run the applicable checks again and attach a fresh report to that exact revision. Automate eligible iterations within a previously explicit authorized revision-loop allowance; do not introduce mandatory founder approval for each routine correction.
+2. **Resolve issues the agent can address.** Fix clarity, grammar, repetition, length, headings, channel/template compliance, citation formatting and inconsistent wording. For factual/source issues, inspect relevant evidence, retrieve stronger sources when authorized, reconcile dates/versions, correct supported mistakes or narrow/remove unsupported assertions while preserving the user's intent. Mandatory Wikipedia exclusion and source-quality rules apply to new evidence. Do not invent replacement statistics, citations, quotes, experience, clients, events or interviews.
+3. **Ask only for genuine founder inputs.** Escalate missing personal experiences, private company facts, unpublished commercial commitments, permissions/rights or material editorial decisions the agent cannot establish. Consolidate remaining questions into one concise panel, with proposed alternatives when possible. Never silently change an offer, position or central meaning merely to pass a check.
+4. **Keep verification honest.** Distinguish automatically corrected, rechecked, still disputed/unsupported, user input required and operationally blocked. A draft rewrite, another model agreeing or a manual override is not factual verification. Reviewer identity/model independence and actual evidence access remain truthful. If independent review is configured, preserve that policy rather than replacing it with writer self-approval.
+5. **Use bounded execution.** Set an explicit total package allowance and maximum iterations/time; propose an initial two correction cycles for evaluation, not an unlimited loop. Stop early when findings are resolved or when a cycle makes no meaningful improvement. If limits are reached, retain the best saved candidate, current findings and costs; show one clear continue/decision action requiring valid additional authorization where needed.
+6. **Preserve originals and concurrent work.** Save revision history, before/after text and an issue-to-change mapping. Freeze source/rule versions used. Do not overwrite founder edits that occurred during a correction run; rebase safely or present a conflict under IB-18. Relevant edits invalidate earlier approval, and reports apply only to their exact content/media revision.
+7. **Make status concise.** Show AI reviewing → fixing findings → checking revised draft → ready for founder approval, or a specific needs-input/failed/uncertain state. Provide an expandable summary of fixes, outstanding questions, sources and spending. Return-to-list behavior follows IB-19; users can inspect progress without managing individual backend stages.
+8. **Retain one real final decision.** Present the revised complete package and a concise change summary for founder approval/publication, subject to actual destination capability. Do not automatically publish, manufacture a human approval or label unchecked media as inspected. Existing reasoned manual editorial override remains available and preserves unresolved evidence/cost statuses.
+9. **Handle interruptions independently from editorial findings.** Use durable checkpoints and saved provider outcomes. Recover existing review/correction results first; do not blindly retry ambiguous paid calls or remove their reservations. Completed research, reports, candidates and founder answers survive interruption. Repeated submission must not launch duplicate loops.
+
+Acceptance when built:
+
+- A draft with fixable writing/citation/format issues completes review, correction and re-review without founder action at each stage, producing an inspectable revised candidate and current report.
+- A factual correction is supported by actual permitted evidence; unsupported claims are qualified, removed or escalated rather than fabricated.
+- Genuine missing founder information appears as a consolidated request; supplied answers resume the appropriate checks without repeating completed work unnecessarily.
+- Original text, issue history, sources and before/after changes remain available; concurrent founder edits are preserved; a stale report cannot approve a newer version.
+- Iteration/time/package limits, no-progress termination, permissions, independent-review policy and unknown-outcome protections hold. No unapproved extra paid request or publication occurs.
+- The screenshot's uncertain-review scenario shows recovery status and never falsely claims that AI reviewed/fixed the draft.
+
+Dependencies: current worker/review recovery prerequisite (IB-15), edit/timeout integrity (IB-18), clear submitted/review progress (IB-19), qualified cost authorization (IB-13), research/evidence quality (IB-05/06/14/15), channel formats/rules/templates (IB-02/07/16/17). Status: queued only. No review execution, correction request, content changes or deployment authorized by this backlog capture.
 
 ### Original-list completeness check
 
