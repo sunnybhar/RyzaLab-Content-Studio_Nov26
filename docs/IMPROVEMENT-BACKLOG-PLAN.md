@@ -1,5 +1,7 @@
 # RyzaLab Content Studio — improvement backlog and proposed build plan
 
+Current instruction (November 7, 2026): **backlog capture only. Do not implement or deploy further changes until the user explicitly says to build.** Earlier Build 1 authorization is historical, not authorization to start this new spacing work or subsequent builds.
+
 Status update: the user approved building and deploying after reviewing the wireframes, then accepted the first-release scope: Calendar import/template and Existing Pipeline (Build 1). Build 1 is implemented and verified locally for v0.3.28; production rollout verification is pending. Remaining builds stay queued for subsequent releases; provider credentials, private guidance files and actual publishing approvals are still required where applicable. No operational calendar has been imported and no paid provider call has been made during development.
 
 ## Complete master backlog — both user request lists
@@ -18,6 +20,34 @@ This is the master plan for **all improvement items in the earlier seven-item li
 | IB-08 | Create **one multi-topic newsletter** from multiple existing/generated/old ideas, old posts or saved content, pipeline briefs, newly entered ideas, pasted text and **PDF/DOCX uploads**. Let users select/remove/reorder inputs, consolidate them coherently, preserve sources and apply IB-02's template and approved images. | Earlier #6; expanded #4 | 3, then image integration in 4 | Planned |
 | IB-09 | Provide **LinkedIn API connection/setup guidance and OAuth**. Retain a **prepare-only mode**: put/prepare the final post without submitting it if the granted API supports native drafts; otherwise use an honest Studio draft/copy/open-LinkedIn handoff. Never publish merely to simulate saving a draft. | Earlier #7 | 5 | Planned; capability verification needed |
 | IB-10 | Add **specific date/time/timezone and social platform/account scheduling**. Editor modifies/finalizes content; agent prepares the publishing package; **user approves publication of the exact package and schedule**; a supported publisher releases it at the approved time and records the actual result. Edits require reapproval; uncertain API outcomes must not produce duplicate posts. Prepare-only IB-09 remains a separate available mode. | Expanded #1; extends rather than deletes earlier #7 | 5 | Planned; provider/platform access needed |
+
+## New feedback pipeline — awaiting explicit build instruction
+
+| ID | Item | Priority | Status |
+|---|---|---|---|
+| IB-11 | Consistent spacing between sections throughout Studio, including the Calendar import/pipeline layout shown in the user's screenshot. | High — usability | Queued; do not build |
+
+### IB-11 — consistent section spacing across Studio
+
+User report: separate sections touch or appear crowded. Apply a consistent spacing system everywhere, rather than fixing Calendar alone.
+
+Scope when authorized:
+
+- Add clear vertical gaps between independent panels, section headings, toolbars, notices, forms and action groups. Keep sensible internal padding within each section.
+- Start with the screenshot's Calendar sequence: channel tabs → upload/import section → Imported pipeline → month/navigation toolbar → publishing/timezone notice → calendar grid or agenda. These boundaries must remain visibly separate with import/history expanded or collapsed.
+- Space import headings, explanatory copy, file controls, import history and pipeline brief cards so their relationships are easy to scan.
+- Audit the same boundaries across Home, Ideas, Create/editors, Reviews, Library, Agent Rules, Workflow settings, AI & budgets, People/access, Analytics and Operations, including dialogs and collapsible sections.
+- Use shared spacing values and responsive layout rules; avoid per-page patches, doubled gaps from nested panels, and excessive whitespace on mobile.
+
+Acceptance when built:
+
+1. Adjacent independent section borders never touch in the Calendar example or other audited pages.
+2. Section separation and internal padding follow one consistent visual rhythm on desktop and mobile.
+3. Expanded/collapsed panels, empty/error/loading states and long imported titles preserve readable spacing without horizontal overflow or clipped controls.
+4. Before/after screenshots demonstrate the Calendar correction and representative Ideas, editor, Agent Rules and AI/budgets screens.
+5. Existing content, import data, AI requests, review decisions and publication behavior are unaffected.
+
+User item 2 currently contains a screenshot but no separate written requirement. Treat it as supporting evidence for IB-11; do not invent an additional feature request. Append further feedback here as the user supplies it. No layout edits, feature code, import operations or deployment are authorized by this backlog entry.
 
 ### Original-list completeness check
 
