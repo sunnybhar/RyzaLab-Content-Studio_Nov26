@@ -30,6 +30,7 @@ This is the master plan for **all improvement items in the earlier seven-item li
 | IB-14 | Broaden and improve research across relevant websites, news, specialist blogs and accessible YouTube material; remove Wikipedia completely from new research. Refines IB-05/IB-06. | High — research quality | Queued; do not build |
 | IB-15 | Evidence-led deep research: investigation briefs, primary-source tracing, full-source reading, claim verification, data analysis, research dossier, reliable writing handoff and bounded costs. Extends IB-14/IB-05/IB-06. | High — research depth and reliability | Queued; do not build |
 | IB-16 | Add Blog as a 4–10 minute reading format alongside short LinkedIn posts and 8–15 minute newsletters, with an editor format dropdown and the same applicable research/writing features. | High — content creation | Queued; do not build |
+| IB-17 | Shared imported/generated/manual idea and brief library available across every active channel and Blog format, with destination-specific adaptation rather than source-channel lock-in. | High — cross-channel creation | Queued; do not build |
 
 ### IB-11 — consistent section spacing across Studio
 
@@ -146,6 +147,33 @@ Acceptance when built:
 Dependencies: newsletter structure/exports (IB-02), pipeline/idea entry points (IB-04), research/Humanizer (IB-05/06/07/14/15), images (IB-01), combined long-form content where applicable (IB-08), destination/scheduling capabilities (IB-09/10). Extend relevant planned screens and acceptance tests when explicitly authorized; do not start implementation now.
 
 Status: queued only. No app code, generation limits, stored content, channel setup or deployment changed.
+
+### IB-17 — shared pipeline and ideas across channels
+
+User report: selecting Newsletter in Create shows No matching briefs after importing LinkedIn calendar entries. User requires imported and generated ideas to be available for LinkedIn, Newsletter, Blog, Instagram, Reddit and YouTube. Manual ideas should follow the same shared-library behavior.
+
+Current cause confirmed read-only: Existing Pipeline filters briefs by `brief.channel === selected channel`. Its Create for options are limited to the source channel, LinkedIn and Newsletter; when no brief matches, the first LinkedIn option can display even under the Newsletter tab. The standard idea.use flow creates content in the idea's original channel and searches for an existing draft by idea/author without a distinct target channel/format. Removing only the dropdown filter would therefore be incomplete.
+
+Scope when authorized:
+
+1. Treat imported briefs and AI/manual ideas as reusable source concepts. Make the authorized shared collection available from Ideas and Create for every active destination: LinkedIn, Instagram, Reddit, YouTube and Newsletter, plus Blog as the IB-16 writing format. Do not restore retired channels or imply a Blog is already a connected publishing platform.
+2. Preserve the imported/generated source channel, original planned date, audience, angle, source links, versions and provenance as metadata, not as a restriction on reuse. Channel tabs can filter channel-specific output drafts; they must not hide reusable source briefs from the creation picker. Offer source-channel filters explicitly if useful, without making them the default lock-in.
+3. Let users choose the target platform/account and writing format independently. Default the target to the selected channel, show the full supported choices, and prevent the screenshot's misleading LinkedIn default under Newsletter. Blog follows the shared Write as format selector and an explicit destination when publishing is needed.
+4. From the same brief or generated/manual idea, allow Generate ideas, Add manually or Write directly for the selected target. Adapt the output's audience, length, tone and structure using that destination's rules; do not simply copy an identical LinkedIn post into every channel. Example outputs include an Instagram caption/carousel outline, Reddit discussion, YouTube script, Blog or Newsletter where appropriate.
+5. Create independently editable derivatives linked to the common original. Reuse the exact existing derivative when intended, but key that lookup by source + author + target channel/account + format, rather than returning an unrelated existing LinkedIn draft when the user requested a different output. Do not duplicate shared source records simply to populate each channel's dropdown.
+6. Carry selected evidence into derivatives with source access, relevance, freshness and Wikipedia-exclusion checks. Use the target channel's saved Instructions/Context/voice/Humanizer and output contract. Original channel approval never approves another channel's adapted content.
+7. Keep original imported calendar dates intact. A new destination's date/time/account, budget, review and publication approval are separate decisions. Cross-channel availability never auto-generates paid content, schedules multiple releases or publishes everywhere.
+8. Preserve existing drafts, source permissions, IDs and history during rollout. Shared means available to authorized users, not bypassing channel/private-source access grants.
+
+Acceptance when built:
+
+- Import a LinkedIn-only workbook and verify its briefs can be selected under Newsletter, Instagram, Reddit, YouTube and LinkedIn, and used for a Blog when IB-16 is implemented.
+- Repeat with an AI-generated idea and a manually entered idea. Selecting an output target does not alter or duplicate the original source concept.
+- Create a LinkedIn post and a Newsletter/Blog/video derivative from the same source; verify separate correctly formatted drafts, rules, budgets and approvals, with preserved common source evidence.
+- The target picker matches the active creation destination, includes all supported targets and no longer shows an unrelated LinkedIn default when Newsletter has no channel-labelled source records.
+- No source edit, date reassignment, paid request, multi-channel scheduling or publication happens simply by changing tabs or selecting a target. Permission-restricted sources remain restricted.
+
+Status: queued only, subject to the standing no-build instruction. Extends IB-04, IB-08 and IB-16. No app changes or deployment.
 
 ### Original-list completeness check
 
