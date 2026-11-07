@@ -1,3 +1,4 @@
+import {researchProfileSchema} from "./research-profile";
 import { z } from "zod";
 import type { Actor, Channel, StudioState } from "./types";
 import { requirePermission, StudioError } from "./permissions";
@@ -70,6 +71,7 @@ export function saveAgentRuleFile(
       409,
       "This file changed. Refresh Agent Rules before replacing it.",
     );
+  if(change.slot==="source_preferences"&&change.extractedText){try{researchProfileSchema.parse(JSON.parse(change.extractedText));}catch{throw new StudioError(400,"Source Preferences must use valid JSON from its template, with supported sectors/depth and public domain names. Wikipedia cannot be enabled.");}}
   const bytes = validateStoredAgentFile(change);
   const next = structuredClone(input);
   next.agentRuleFiles = (next.agentRuleFiles || []).filter(

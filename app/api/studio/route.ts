@@ -1,3 +1,4 @@
+import {researchProfile} from "@/lib/studio/research-profile";
 import {commitDraftSave} from "@/lib/studio/draft-save";
 import {assertActiveRequest} from "@/lib/studio/active-channels";
 import {studioRequestDiagnostics} from "@/lib/studio/request-diagnostics";
@@ -145,7 +146,7 @@ export async function POST(req: NextRequest) {
     if(command.type==="research.retrieve") {
       const {existing}=publicRetrievalTarget(state,actor,command);
       if(existing)return NextResponse.json({state:filteredState(state,actor),actor,mode:"live"});
-      retrievalResult=await retrieveBroadReferences(command.query);
+      retrievalResult=await retrieveBroadReferences(command.query,fetch,new Date().toISOString(),researchProfile(state,command.channel));
     }
     diagnostics.stage("apply_command");
     let next = applyCommand(state, actor, command, {

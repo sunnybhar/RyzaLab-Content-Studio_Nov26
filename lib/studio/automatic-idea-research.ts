@@ -1,3 +1,4 @@
+import {researchProfile} from "./research-profile";
 import {ideaResearchQuery,screenIdeaResearch} from "./idea-research-query";
 import type { Actor, StudioState } from "./types";
 import { commandSchema } from "./commands";
@@ -74,7 +75,7 @@ export async function automaticIdeaResearch(
       byte.toString(16).padStart(2, "0"),
     ).join("");
   const query=ideaResearchQuery(input.topic,input.audience);
-  const result = screenIdeaResearch(await retrieve(query, undefined, now),input.topic,input.audience);
+  const result = screenIdeaResearch(await retrieve(query, undefined, now,researchProfile(state,input.channel)),input.topic,input.audience);
   const next = applyCommand(
     state,
     actor,

@@ -15,7 +15,9 @@ export const researchConfigSchema = z
   .passthrough();
 const citation = z.object({
   publishedAt: z.string().max(100).optional(),
-  sourceKind: z.enum(["reference_extract", "scholarly_abstract", "web_search_excerpt", "news_search_excerpt"]).optional(),
+  author:z.string().max(200).optional(),
+  accessNote:z.string().max(500).optional(),
+  sourceKind: z.enum(["reference_extract", "scholarly_abstract", "web_search_excerpt", "news_search_excerpt","article_text","video_description","video_transcript","document_extract"]).optional(),
   url: z.url().refine((v) => {
     const url = new URL(v);
     return /^https?:$/.test(url.protocol) && !url.username && !url.password;
@@ -115,7 +117,7 @@ export const publicResearchSchema = z
   .object({
     version: z.literal(2),
     summary: z.string().min(1).max(40000),
-    citations: z.array(citation).min(1).max(6),
+    citations: z.array(citation).min(1).max(25),
     status: z.literal("retrieved_references"),
     scope: z.literal("public_reference_apis"),
     retrievedAt: z.iso.datetime(),
@@ -123,15 +125,15 @@ export const publicResearchSchema = z
     notice: z.string().max(3000),
     retrieval: z
       .object({
-        adapter: z.literal("public-refs-v1"),
-        requests: z.number().int().min(1).max(4),
-        responseBytes: z.number().int().min(1).max(262144),
-        excerptBytes: z.number().int().min(1).max(12000),
+        adapter: z.enum(["public-refs-v1","bounded-web-v2"]),
+        requests: z.number().int().min(1).max(40),
+        responseBytes: z.number().int().min(1).max(8388608),
+        excerptBytes: z.number().int().min(1).max(100000),
         providers: z
-          .array(z.enum(["wikipedia", "crossref", "bing_web", "bing_news"]))
+          .array(z.enum(["wikipedia", "crossref", "bing_web", "bing_news","public_page"]))
           .min(1)
-          .max(4),
-        gaps: z.array(z.string().max(300)).max(4),
+          .max(8),
+        gaps: z.array(z.string().max(300)).max(20),
         providerChargeCents: z.literal(0),
       })
       .strict(),

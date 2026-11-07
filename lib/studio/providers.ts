@@ -101,6 +101,7 @@ export async function runProvider(
         {
           type: research.data.webSearchTool,
           name: "web_search",
+          blocked_domains:["wikipedia.org","wikiwand.com","wikipedia-on-ipfs.org"],
           max_uses: research.data.maxSearchUses,
         },
       ],

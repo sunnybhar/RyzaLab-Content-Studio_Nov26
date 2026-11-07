@@ -62,7 +62,7 @@ export function ResearchPanel({
       </p>
       <details>
         <summary>Find public references</summary>
-        <p>Find web/news source links and excerpts alongside available Wikipedia introductions and Crossref abstracts. Up to four public requests, six excerpts and 12 KB of excerpt text. Search results are excerpts, not full-page reads; coverage and availability vary. No separate Research key or paid search charge is required.</p>
+        <p>Find relevant web/news sources, accessible article passages and scholarly abstracts. Wikipedia is excluded from new research. Each source identifies whether article text or only a search excerpt was available; coverage varies. Public retrieval does not require a separate Research key.</p>
         <label className="s-field">
           Public research question
           <textarea
@@ -211,6 +211,8 @@ export function ResearchPanel({
                           {cite.title || cite.url}
                         </a>
                         {cite.publishedAt&&<p>Published {cite.publishedAt}</p>}
+                        {cite.accessNote && <p>{cite.accessNote}</p>}
+                        {cite.author && <p>By {cite.author}</p>}
                         <p>{cite.citedText}</p>
                       </article>
                     ))}

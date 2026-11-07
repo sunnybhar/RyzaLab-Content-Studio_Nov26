@@ -11,7 +11,7 @@ const request:typeof fetch=async(url,init)=>{
 };
 test('bounded references retain provenance and enter the existing evidence flow without paid search setup',async()=>{
  const result=await retrievePublicReferences('household handoff checklist',request,now);
- assert.equal(result.citations.length,2);assert.equal(result.citations[1].publishedAt,'2025-06');assert.equal(result.retrieval.providerChargeCents,0);
+ assert.equal(result.citations.length,1);assert.equal(result.citations[0].publishedAt,'2025-06');assert.equal(result.retrieval.providerChargeCents,0);
  const state=initialState(DEMO_ACTOR,true),command={type:'research.retrieve',channel:'LinkedIn',query:'household handoff checklist',idempotencyKey:'public-1'};
  assert.throws(()=>applyCommand(state,DEMO_ACTOR,command),/Trusted server/);
  const next=applyCommand(state,DEMO_ACTOR,command,{now,retrievalResult:result});
@@ -22,10 +22,11 @@ test('bounded references retain provenance and enter the existing evidence flow 
 test('failure and oversized responses never become usable evidence',async()=>{
  let count=0;
  await assert.rejects(()=>retrievePublicReferences('household checklist',async()=>{count++;return new Response('x'.repeat(65537));}),/No usable public/);
- assert.equal(count,2);
+ assert.equal(count,1);
  await assert.rejects(()=>retrievePublicReferences('x',request),/5–2000/);
 });
-test('partial coverage is explicit and title-only search hits are excluded',async()=>{
- const result=await retrievePublicReferences('handoff checklist',async(url,init)=>String(url).includes('crossref')?Response.json({message:{items:[{title:['No abstract'],DOI:'10.1000/example'}]}}):request(url,init),now);
- assert.equal(result.citations.length,1);assert.match(result.notice,/not unrestricted web/);
+test('title-only scholarly hits are excluded and Wikipedia is never called',async()=>{
+ const hosts:string[]=[];
+ await assert.rejects(()=>retrievePublicReferences('handoff checklist',async(url)=>{hosts.push(new URL(String(url)).hostname);return Response.json({message:{items:[{title:['No abstract'],DOI:'10.1000/example'}]}});},now),/No usable public/);
+ assert.deepEqual(hosts,['api.crossref.org']);
 });

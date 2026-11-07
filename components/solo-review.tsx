@@ -240,6 +240,7 @@ export function SoloReview({
                 >
                   {citation.title || citation.url}
                 </a>
+                {citation.accessNote && <p>{citation.accessNote}</p>}
                 <p>{citation.citedText}</p>
               </article>
             ))}

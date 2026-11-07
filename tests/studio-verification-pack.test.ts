@@ -77,7 +77,7 @@ async function references() {
                 },
               },
             }
-          : { message: { items: [] } },
+          : { message: { items: [{title:["Home automation"],DOI:"10.1000/home-automation",abstract:"A source about household automation controls and documentation. ".repeat(5)}] } },
       ),
     now,
   );
@@ -132,7 +132,7 @@ test("LOCAL MOCK ONLY: one pack prepares sequential AI cases and two manual draf
         body: "A useful handoff explains everyday controls, the fallback when automation stops, and where to find instructions. This is general guidance from supplied public references, not a personal installation claim.",
         metadata: "",
         questions: [],
-        sources: ["https://en.wikipedia.org/wiki/Home_automation"],
+        sources: ["https://doi.org/10.1000/home-automation"],
       };
       if(job.channel==="Newsletter")body.body=body.body.repeat(45);
       job.result = JSON.stringify(body);

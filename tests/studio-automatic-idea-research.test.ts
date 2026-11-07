@@ -78,7 +78,7 @@ const refs = () =>
                 },
               },
             }
-          : { message: { items: [] } },
+          : { message: { items: [{title:["Home automation"],DOI:"10.1000/home-automation",abstract:"A source about household automation controls and documentation. ".repeat(5)}] } },
       ),
     now,
   );
@@ -108,7 +108,7 @@ test("automatic idea generation retrieves public evidence and freezes it before 
   const job = next.jobs.find((j) => j.kind === "ideas")!;
   assert.equal(
     JSON.parse(job.prompt).webEvidence[0].citations[0].url,
-    "https://en.wikipedia.org/wiki/Home_automation",
+    "https://doi.org/10.1000/home-automation",
   );
   assert.equal(job.researchSnapshots?.length, 1);
   assert.equal(job.reserved, priced.cost);
@@ -171,7 +171,7 @@ test("manual assistance preserves purpose, saves actual evidence on the original
   assert.equal(idea.origin, "manual");
   assert.equal(idea.brief, "My own angle remains unchanged.");
   assert.deepEqual(idea.sources, [
-    "https://en.wikipedia.org/wiki/Home_automation",
+    "https://doi.org/10.1000/home-automation",
   ]);
   next = applyCommand(
     next,

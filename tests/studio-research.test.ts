@@ -125,7 +125,7 @@ test("Claude research sends a single bounded search only with qualified snapshot
     assert.equal(url, "https://api.anthropic.com/v1/messages");
     const body = JSON.parse(String(options?.body));
     assert.deepEqual(body.tools, [
-      { type: "web_search_20250305", name: "web_search", max_uses: 1 },
+      { type: "web_search_20250305", name: "web_search", max_uses: 1, blocked_domains:["wikipedia.org","wikiwand.com","wikipedia-on-ipfs.org"] },
     ]);
     return new Response(JSON.stringify(response), {
       status: 200,

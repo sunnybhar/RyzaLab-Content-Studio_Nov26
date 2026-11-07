@@ -38,6 +38,8 @@ export function IdeaEvidence({
                 {new URL(cite.url).hostname}
                 {cite.publishedAt ? ` · Published ${cite.publishedAt}` : ""}
               </p>
+              {cite.accessNote && <p>{cite.accessNote}</p>}
+              {cite.author && <p>By {cite.author}</p>}
               <p>{cite.citedText}</p>
             </article>
           ))}
