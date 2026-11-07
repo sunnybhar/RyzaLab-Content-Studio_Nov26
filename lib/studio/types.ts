@@ -291,6 +291,7 @@ export interface Content {
   preparationId?: string;
 }
 export interface Package {
+  documentLayout?: import("./document-layout").DocumentLayout;
   format?: string;
   editorialOverride?: { actor: string; at: string; reason: string; checks: string[] };
   singleReview?: boolean;

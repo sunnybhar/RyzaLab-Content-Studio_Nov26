@@ -31,7 +31,7 @@ export function PublicationHandoff({
   }
   async function download(format: "docx" | "pdf") {
     try {
-      await exportContentDocument(pkg.title, pkg.text, pkg.revision, format);
+      await exportContentDocument(pkg.title, pkg.text, pkg.revision, format,{layout:pkg.documentLayout,imageUrl:pkg.media.imageUrl,imageAlt:pkg.media.imageAlt,imageCaption:pkg.media.imageCaption,sectionImages:pkg.media.sectionImages});
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Download failed.");
     }

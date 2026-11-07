@@ -1,3 +1,4 @@
+import {parseDocumentLayout} from "./document-layout";
 import {eligibleEvidence,eligibleReferences,eligibleSourceReferences} from "./source-policy";
 import {documentSections} from "./document-sections";
 import {isLongForm} from "./channel-writing";
@@ -1242,7 +1243,9 @@ export function applyCommand(
         );
       if (c.overrideReason && !c.singleReview) bad("Overrides require the single review action.");
       const bypassedChecks = [...new Set([...editorialIssues, ...(readiness?.blockers || [])])];
+      const approvedDocumentLayout=isLongForm(d.channel,d.format)?parseDocumentLayout(s.agentRuleFiles?.find(file=>file.channel===d.channel&&file.slot==="newsletter_layout")?.extractedText):undefined;
       const payload = {
+        ...(approvedDocumentLayout?{documentLayout:approvedDocumentLayout}:{}),
         ...(c.singleReview ? { singleReview:true, format:d.format } : {}),
         ...(manualOverride ? { editorialOverride: { actor:actor.email, at:now, reason:c.overrideReason!, checks:bypassedChecks } } : {}),
         contentId: d.id,

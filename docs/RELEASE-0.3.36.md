@@ -8,6 +8,8 @@ Historical excluded sources remain readable in labelled archive details, but can
 
 Reviews may cite only workflow references actually included in the compiled context, plus supplied research/newsletter source IDs. Article metadata extraction preserves apostrophes, spaced attributes and numeric entities.
 
+Approved long-form publication handoff downloads now include main/section images and freeze the supported document layout at approval, so later channel-resource edits do not change that approved layout.
+
 Local validation includes source reuse, provider egress, immutable history, review eligibility, reader privacy and archive/fresh-review browser checks. Final production build/regression/browser results are recorded in WORK-IN-PROGRESS.md. No paid provider request, operational import or publication occurred during development.
 
 The deeper investigative dossier, full template handling, tighter estimates, LinkedIn integration and approved scheduled publishing remain unfinished. This release does not complete the full backlog.
