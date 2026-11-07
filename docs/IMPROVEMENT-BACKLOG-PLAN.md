@@ -29,6 +29,7 @@ This is the master plan for **all improvement items in the earlier seven-item li
 | IB-13 | Clarify AI maximum allowance versus recorded usage cost, expose the calculation, and evaluate tighter estimates and confirmation within existing budgets. | High — cost clarity | Queued; do not build |
 | IB-14 | Broaden and improve research across relevant websites, news, specialist blogs and accessible YouTube material; remove Wikipedia completely from new research. Refines IB-05/IB-06. | High — research quality | Queued; do not build |
 | IB-15 | Evidence-led deep research: investigation briefs, primary-source tracing, full-source reading, claim verification, data analysis, research dossier, reliable writing handoff and bounded costs. Extends IB-14/IB-05/IB-06. | High — research depth and reliability | Queued; do not build |
+| IB-16 | Add Blog as a 4–10 minute reading format alongside short LinkedIn posts and 8–15 minute newsletters, with an editor format dropdown and the same applicable research/writing features. | High — content creation | Queued; do not build |
 
 ### IB-11 — consistent section spacing across Studio
 
@@ -109,6 +110,42 @@ Expand source discovery into a senior-writer-style investigation: adaptive depth
 The detailed plan includes phases, a proposed 30-brief evaluation set, engineering/editorial acceptance criteria, cost/freshness rules and provider/input dependencies. It complements IB-14 rather than silently marking the underlying research changes complete. Current lease-expiry recovery must be verified before adding deeper paid automation.
 
 Status: backlog/design only. No implementation, paid research, provider setup, outreach, operational imports or deployment authorized by this planning task.
+
+### IB-16 — Blogs and a shared writing-format selector
+
+User request: add Blogs between short LinkedIn posts and longer newsletters. All applicable existing/planned features should remain available, and generated ideas must be usable to write blogs as well as posts/newsletters.
+
+Format targets:
+
+| Writing format | Requested length | Writing behavior |
+|---|---|---|
+| LinkedIn post | Short-form | Concise, focused post using channel-appropriate length, structure and attribution. |
+| Blog | Estimated 4–10 minute read | A developed article with an introduction, useful headings, evidence, analysis and conclusion; depth appropriate to its subject. |
+| Newsletter | Estimated 8–15 minute read | A deeper, structured edition with background, analysis, sources and support for combining topics/material. |
+
+Reading time is an estimate, not a guaranteed duration. When built, use a documented consistent reading-speed assumption to calculate a visible reading-time estimate and word count; let users set a target within the selected range. These ranges overlap intentionally. Do not distinguish formats by length alone: structure and purpose also matter. The new newsletter reading-time requirement supersedes a fixed 1,200–1,600-word default where that default cannot meet the chosen target. Existing page-count/export requirements remain layout-dependent and must not be falsely guaranteed from words alone.
+
+Scope when authorized:
+
+1. Add **Blog** as an explicit first-class writing format in Ideas and Create, alongside LinkedIn post and Newsletter. Do not restore any retired channel. Keep content format separate from destination/platform; choosing Blog does not imply a supported native LinkedIn publishing API or a connected website/CMS.
+2. Add a clearly labelled **Write as** dropdown in the LinkedIn writing flow/editor: **LinkedIn post / Blog / Newsletter**. Make the choice available when opening writing from a generated idea, a manually created idea or Existing Pipeline, and retain it in the saved draft and generation request.
+3. Let users create a Blog directly from generated ideas, with the selected idea, research evidence, source links, pipeline origin and applicable Agent Rules carried into the writing request. Retain the same manual and imported-brief entry paths.
+4. Give Blogs the same applicable capabilities: saved Instructions/Context/knowledge/skills, original voice and Humanizer, deep research and traceable sources, editable structure/templates, optional images and placement, writing progress, revisions, review/override, budgets, calendar planning and supported text/PDF/DOCX exports. Planned capabilities remain planned dependencies, not claims that they exist now. Source citations should be readable in long-form Blog output and preserved in exports.
+5. Use format-specific generation contracts, structure and qualified output allowances. A Blog must not be a short post relabelled as a Blog, and a Newsletter must meet its own reading-depth/structure target rather than sharing an identical length prompt. Handle insufficient evidence honestly rather than padding to a target.
+6. Changing Write as on an existing draft must preserve the original and its history. Show that a format change does not automatically rewrite or overwrite the text. Rewriting/adapting requires an explicit action under the existing valid budget or a new approved allowance; changed content/format must refresh review/approval as applicable. Do not silently change publishing destination or lose selected sources.
+7. Display format and estimated reading time in the editor, preview, relevant idea/draft actions and library/calendar details, without appending metadata to the saved title. Publishing remains subject to the exact destination's actual capability and a final approved package.
+
+Acceptance when built:
+
+- An AI-generated idea, manual idea and imported brief can each open a Blog draft, preserving evidence and provenance.
+- The LinkedIn writing flow offers all three Write as choices and preserves the selected format after save/reload.
+- New generation uses the selected format's structure and target; word count/estimated reading time accurately reflect the resulting text.
+- Existing text/history, sources and destinations survive format selection; no paid rewrite or publication starts merely by changing the dropdown.
+- Applicable rules, research, images, exports, review and budget controls operate for Blogs consistently with the other formats. Blog/newsletter layout and citations survive image-free export as well.
+
+Dependencies: newsletter structure/exports (IB-02), pipeline/idea entry points (IB-04), research/Humanizer (IB-05/06/07/14/15), images (IB-01), combined long-form content where applicable (IB-08), destination/scheduling capabilities (IB-09/10). Extend relevant planned screens and acceptance tests when explicitly authorized; do not start implementation now.
+
+Status: queued only. No app code, generation limits, stored content, channel setup or deployment changed.
 
 ### Original-list completeness check
 

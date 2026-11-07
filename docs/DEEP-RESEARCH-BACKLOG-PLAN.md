@@ -1,6 +1,8 @@
 # IB-15 — Evidence-led deep research for ideas, posts and newsletters
 
-Status: **backlog/design only; do not implement or deploy until explicitly instructed.** This expands IB-14's source-quality correction and IB-05/IB-06's research discovery/rules. It does not supersede the Wikipedia exclusion, user approval, privacy or cost controls. IB-12 remains withdrawn.
+Status: **backlog/design only; do not implement or deploy until explicitly instructed.**
+
+Later requirement IB-16 adds Blogs (estimated 4–10 minute read) and sets Newsletters to an estimated 8–15 minute read. All research/dossier/verification capabilities here must support Blogs too; use the selected format and target rather than applying the same length to every output. This expands IB-14's source-quality correction and IB-05/IB-06's research discovery/rules. It does not supersede the Wikipedia exclusion, user approval, privacy or cost controls. IB-12 remains withdrawn.
 
 ## 1. Product outcome and boundaries
 
