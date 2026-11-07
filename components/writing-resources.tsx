@@ -22,7 +22,7 @@ const resources: {
     slot: "research_instructions",
     title: "Research Instructions",
     description:
-      "Research goals, sector priorities, source checks and evidence standards. Kept separate from writing instructions.",
+      "Guides evidence analysis for new ideas and writing when sources are selected. Structured Source Preferences drive public discovery; this private file is not sent as a public query.",
     template:
       "# Research instructions\nPrioritize construction, real estate, home automation and IoT sources relevant to the question. Seek original evidence and contrary findings. Exclude Wikipedia completely. Distinguish article text, snippets and transcripts; never invent source access.",
   },

@@ -338,6 +338,7 @@ export interface Connection {
   updatedAt: string;
 }
 export interface Job {
+  researchSourceUrls?: string[];
   reviewCorrection?: {reviewJobId:string;rootSubmissionId:string;round:number};
   uncertainPredecessorIds?: string[];
   writingFollowupId?: string;

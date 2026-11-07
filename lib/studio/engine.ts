@@ -291,7 +291,7 @@ export function applyCommand(
       const result=publicResearchSchema.safeParse(ctx.retrievalResult);
       if(!result.success)bad("Trusted server retrieval result required.");
       s.jobs.unshift({id:id(),kind:"research",channel:c.channel,contentId:parent?.id,account:parent?.account,
-        prompt:c.query,connectionId:"public-reference-retrieval",estimate:0,reserved:0,actual:0,state:"succeeded",attempt:1,
+        prompt:c.query,researchSourceUrls:c.sourceUrls,connectionId:"public-reference-retrieval",estimate:0,reserved:0,actual:0,state:"succeeded",attempt:1,
         idempotencyKey:c.idempotencyKey,createdBy:actor.email,createdAt:now,result:JSON.stringify(result.data)});
       break;
     }

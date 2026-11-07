@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
     if(command.type==="research.retrieve") {
       const {existing}=publicRetrievalTarget(state,actor,command);
       if(existing)return NextResponse.json({state:filteredState(state,actor),actor,mode:"live"});
-      retrievalResult=await retrieveBroadReferences(command.query,fetch,new Date().toISOString(),researchProfile(state,command.channel));
+      retrievalResult=await retrieveBroadReferences(command.query,fetch,new Date().toISOString(),researchProfile(state,command.channel),command.sourceUrls);
     }
     diagnostics.stage("apply_command");
     let next = applyCommand(state, actor, command, {

@@ -34,8 +34,9 @@ export function ResearchPanel({
   demo?: boolean;
 }) {
   const [query, setQuery] = useState("");
+  const [sourceLinks,setSourceLinks]=useState("");
   const [busy, setBusy] = useState(false);
-  const pending = useRef<{ query: string; key: string } | null>(null);
+  const pending = useRef<{ query: string; links:string; key: string } | null>(null);
   const jobs = state.jobs.filter(
     (j) =>
       j.kind === "research" &&
@@ -75,10 +76,10 @@ export function ResearchPanel({
             placeholder="For example: what should a household handoff checklist contain?"
           />
         </label>
+        <label className="s-field">Optional public source links (one per line, up to 10)<textarea aria-label="Research source links" value={sourceLinks} maxLength={20000} rows={3} disabled={disabled||busy} onChange={e=>setSourceLinks(e.target.value)} placeholder="https://example.org/article"/></label>
         <p>
           Only this question is sent to public search. Keep private details,
-          secrets and personal stories out of it. Two bounded source requests; no
-          automatic retry.
+          secrets and personal stories out of it. Supplied links are read directly within source, byte and deadline bounds. Private instructions stay out of public queries. No automatic retry.
         </p>
         <button
           className="s-btn"
@@ -90,8 +91,8 @@ export function ResearchPanel({
             query.trim().length < 5
           }
           onClick={async () => {
-            if (!pending.current || pending.current.query !== query)
-              pending.current = { query, key: crypto.randomUUID() };
+            if (!pending.current || pending.current.query !== query || pending.current.links !== sourceLinks)
+              pending.current = { query, links:sourceLinks, key: crypto.randomUUID() };
             setBusy(true);
             try {
               const ok = await run(
@@ -101,6 +102,7 @@ export function ResearchPanel({
                   contentId: content?.id,
                   expectedRevision: content?.revision,
                   query: query.trim(),
+                  sourceUrls:[...new Set(sourceLinks.split(/\s+/).map(url=>url.trim()).filter(Boolean))],
                   idempotencyKey: pending.current.key,
                 },
                 "Public references retrieved — inspect the excerpts before use",

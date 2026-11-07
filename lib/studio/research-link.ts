@@ -146,7 +146,7 @@ export function researchJobInput(
 
 /** Authorization and replay checks run before any external request. */
 export function publicRetrievalTarget(state: StudioState, actor: Actor, input: {
- channel: Channel; contentId?: string; expectedRevision?: number; query: string; idempotencyKey: string;
+ sourceUrls?:string[]; channel: Channel; contentId?: string; expectedRevision?: number; query: string; idempotencyKey: string;
 }) {
  const content=input.contentId?state.contents.find(c=>c.id===input.contentId&&!c.deletedAt):undefined;
  if(input.contentId&&(!content||content.channel!==input.channel||content.revision!==input.expectedRevision))throw new StudioError(409,"Draft changed. Refresh before retrieving references.");
@@ -154,6 +154,6 @@ export function publicRetrievalTarget(state: StudioState, actor: Actor, input: {
  requirePermission(state,actor,"read",scope);requirePermission(state,actor,"job.create",scope);
  if(content)requirePermission(state,actor,"content.edit",scope);
  const existing=state.jobs.find(j=>j.createdBy===actor.email&&j.idempotencyKey===input.idempotencyKey);
- if(existing&&(existing.connectionId!=="public-reference-retrieval"||existing.channel!==input.channel||existing.contentId!==input.contentId||existing.prompt!==input.query))throw new StudioError(409,"This request key belongs to a different operation.");
+ if(existing&&(existing.connectionId!=="public-reference-retrieval"||existing.channel!==input.channel||existing.contentId!==input.contentId||existing.prompt!==input.query||JSON.stringify(existing.researchSourceUrls||[])!==JSON.stringify(input.sourceUrls||[])))throw new StudioError(409,"This request key belongs to a different operation.");
  return {content,existing};
 }

@@ -92,6 +92,7 @@ export function htmlEvidence(html: string) {
 export async function readPublicPage(
   value: string,
   redirects = 0,
+  expiresAt = Date.now()+12000,
 ): Promise<{
   url: string;
   title: string;
@@ -102,13 +103,14 @@ export async function readPublicPage(
   requests: number;
   sourceKind: "article_text" | "video_description";
 }> {
+  if(Date.now()>=expiresAt)throw Error("Source reading deadline reached.");
   const url = publicPageUrl(value);
   if (redirects > 3) throw Error("Source redirect limit reached.");
   let dnsTimer: ReturnType<typeof setTimeout> | undefined;
   const records = await Promise.race([
     lookup(url.hostname, { all: true, verbatim: true }),
     new Promise<never>((_, reject) => {
-      dnsTimer = setTimeout(() => reject(Error("Source DNS lookup timed out.")), 5000);
+      dnsTimer = setTimeout(() => reject(Error("Source DNS lookup timed out.")), Math.max(1,Math.min(5000,expiresAt-Date.now())));
     }),
   ]).finally(() => { if (dnsTimer) clearTimeout(dnsTimer); });
   const ipv4 = records.filter((r) => r.family === 4);
@@ -196,14 +198,14 @@ export async function readPublicPage(
     );
     const deadline = setTimeout(
       () => req.destroy(Error("Source reading timed out.")),
-      10000,
+      Math.max(1,Math.min(10000,expiresAt-Date.now())),
     );
     req.on("close", () => clearTimeout(deadline));
     req.on("error", reject);
     req.end();
   });
   if (response.location)
-    return readPublicPage(new URL(response.location, url).href, redirects + 1);
+    return readPublicPage(new URL(response.location, url).href, redirects + 1, expiresAt);
   const evidence = /html/i.test(response.type)
     ? htmlEvidence(response.body)
     : {

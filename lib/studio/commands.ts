@@ -151,7 +151,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   }),
   command("workflow.importPreset", { channel }),
   command("research.saveReference", { jobId: id, title: short }),
-  command("research.retrieve", { channel, contentId: id.optional(), expectedRevision: z.number().int().optional(), query: z.string().trim().min(5).max(2000), idempotencyKey: id }),
+  command("research.retrieve", { sourceUrls:z.array(z.string().trim().url().max(2000).refine(value=>value.startsWith("https://"))).max(10).optional(), channel, contentId: id.optional(), expectedRevision: z.number().int().optional(), query: z.string().trim().min(5).max(2000), idempotencyKey: id }),
   command("research.start", { channel, contentId: id.optional(), query: z.string().trim().min(5).max(2000), idempotencyKey: id }),
   command("idea.recoverCompleteCards", {jobId:id}),
   command("idea.importSavedResult", { jobId: id }),
