@@ -480,3 +480,6 @@ User explicitly requested backlog capture and no building until they say so. Add
 
 ## November 7 — feedback item 2, title-only pipeline dropdowns
 Added IB-12 to the master feedback pipeline. Read-only inspection confirms the idea composer appends plannedDate/Unscheduled and channel to dropdown labels, not stored titles. Future fix should show only original titles across pipeline dropdowns while preserving stable IDs and separate metadata details, including identical-title selection and genuine title text. Documentation only; no app code or deployment. Explicit build instruction still required.
+
+## November 7 — IB-12 withdrawn
+User explicitly withdrew IB-12. Removed its row and detailed scope from the active master backlog. Earlier IB-12 notes above are historical and no longer actionable. Dropdown behavior remains unchanged; IB-11 remains queued. No implementation or deployment.
