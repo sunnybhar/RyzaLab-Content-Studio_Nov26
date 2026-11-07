@@ -5,7 +5,7 @@ import type { IdeaStage } from "@/lib/studio/idea-board";
 import { useId, useRef, useState } from "react";
 import { SourceReferences } from "./idea-evidence";
 import { X } from "lucide-react";
-import type { Content, Idea, Schedule, Job } from "@/lib/studio/types";
+import type { Content, Idea, Schedule, Job, Channel } from "@/lib/studio/types";
 import "./ideas-browser.css";
 
 const date = (value: string) =>
@@ -18,6 +18,7 @@ const date = (value: string) =>
 /** Compact idea summaries; the retained brief and sources live in the detail dialog. */
 export function IdeasBrowser({
   ideas,
+  targetChannel,
   jobs = [],
   onStage,
   canStage,
@@ -42,6 +43,7 @@ export function IdeasBrowser({
   renderResearch,
 }: {
   renderResearch?: (idea: Idea) => import("react").ReactNode;
+  targetChannel?:Channel;
   ideas: Idea[];
   jobs?: Job[];
   onStage?: (idea: Idea, stage: IdeaStage) => Promise<boolean>;
@@ -94,6 +96,7 @@ export function IdeasBrowser({
     const existing = contents.find(
       (content) =>
         content.ideaId === idea.id &&
+        (!targetChannel||content.channel===targetChannel) &&
         content.createdBy === actorEmail &&
         !content.deletedAt,
     );
@@ -122,6 +125,7 @@ export function IdeasBrowser({
     contents.find(
       (content) =>
         content.ideaId === selected.id &&
+        (!targetChannel||content.channel===targetChannel) && content.format===format && content.account===account.trim() &&
         content.createdBy === actorEmail &&
         !content.deletedAt,
     );
@@ -204,7 +208,7 @@ export function IdeasBrowser({
                   <SourceReferences sources={selected.sources} />
                 </>
               )}
-              {selected.state !== "rejected" && !linkedDraft && (
+              {selected.state !== "rejected" && (
                 <div className="s-idea-create-options">
                   <label>
                     Draft format

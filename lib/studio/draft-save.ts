@@ -11,6 +11,7 @@ export async function commitDraftSave(original:StudioState,actor:Actor,command:D
   const next=applyCommand(before,actor,command,ctx);
   try{await io.commit(before,next);return next;}
   catch(error){
+   if(error instanceof StudioError&&![409,503,504].includes(error.code))throw error;
    let fresh:StudioState;
    try{fresh=await io.load();}catch{throw error;}
    const receipt=fresh.contents.find(c=>c.id===command.id);

@@ -778,10 +778,10 @@ export default function Workspace() {
     setLocalError("");
     try {
       const result = await send({
-        type: "idea.use", id: idea.id, format, account,
+        type: "idea.use", id: idea.id, targetChannel:channel==="All channels"?idea.channel:channel, format:(channel==="Newsletter"?"Newsletter":format), account,
       });
       const draft = result.state.contents.find(
-        (item) => item.ideaId === idea.id && item.createdBy === actor!.email && !item.deletedAt,
+        (item) => item.ideaId === idea.id && item.createdBy === actor!.email && !item.deletedAt && item.channel===(channel==="All channels"?idea.channel:channel) && item.format===(channel==="Newsletter"?"Newsletter":format) && item.account===(account||"RyzaLab"),
       );
       if (!draft) throw new Error("The linked draft could not be found. Refresh the workspace and try again.");
       setPage("Create");
@@ -1973,14 +1973,15 @@ export default function Workspace() {
                 </section>
               ) : (
                 <IdeasBrowser
+                  targetChannel={channel==="All channels"?undefined:channel}
                   jobs={state.jobs.filter(job=>channel==="All channels"||job.channel===channel)}
                   includeEmptyRequests={ideaTab==="All ideas"&&!search}
                   canStage={idea=>allowed("idea.edit",{channel:idea.channel})}
                   onStage={(idea,stage)=>execute({type:"idea.stage",id:idea.id,stage,expectedStage:ideaStage(idea)})}
                   renderRequestStatus={job=><IdeaGenerationStatus state={state} actor={actor} channel={channel} requestId={job.id} live={mode==="live"} refresh={()=>refresh(true)} send={send}/>}
                   renderResearch={idea=><IdeaEvidence state={state} actor={actor} channel={idea.channel} ids={idea.researchJobIds}/>}
-                  ideas={state.ideas.filter((idea) => matches(idea) && (ideaTab === "All ideas" || idea.state.toLowerCase() === ideaTab.toLowerCase()))}
-                  allIdeas={state.ideas.filter(idea=>channel==="All channels"||idea.channel===channel)}
+                  ideas={state.ideas.filter((idea) => (!search||idea.title.toLowerCase().includes(search.toLowerCase())) && (ideaTab === "All ideas" || idea.state.toLowerCase() === ideaTab.toLowerCase()))}
+                  allIdeas={state.ideas}
                   contents={state.contents}
                   schedules={state.schedules}
                   actorEmail={actor.email}
@@ -1989,7 +1990,7 @@ export default function Workspace() {
                   error={localError}
                   onOpen={() => setLocalError("")}
                   canReview={(idea) => allowed("idea.review", { channel: idea.channel })}
-                  canUse={(idea, account) => allowed("content.create", { channel: idea.channel, account }) && (idea.state !== "pending" || allowed("idea.review", { channel: idea.channel }))}
+                  canUse={(idea, account) => allowed("content.create", { channel:channel==="All channels"?idea.channel:channel, account }) && (idea.state !== "pending" || allowed("idea.review", { channel: idea.channel }))}
                   canReuse={(idea) => allowed("idea.edit", { channel: idea.channel })}
                   onUse={useIdea}
                   onNewsletter={allowed("content.create", {channel: "Newsletter", account: "RyzaLab"}) ? (idea) => createNewsletter("idea", idea.id) : undefined}

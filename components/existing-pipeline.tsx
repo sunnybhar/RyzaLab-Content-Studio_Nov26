@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import {ACTIVE_CHANNELS} from "@/lib/studio/active-channels";
 import type { Channel, StudioState } from "@/lib/studio/types";
 import type { PipelineBrief } from "@/lib/studio/pipeline";
 import "./pipeline.css";
@@ -29,7 +30,7 @@ export function ExistingPipeline({
     [target, setTarget] = useState<Channel | "">("");
   const briefs = (state.pipelineBriefs || []).filter(
     (b) =>
-      (channel === "All channels" || b.channel === channel) &&
+      
       `${b.title} ${b.angle} ${b.externalId}`
         .toLowerCase()
         .includes(search.toLowerCase()),
@@ -93,13 +94,7 @@ export function ExistingPipeline({
                 value={actual}
                 onChange={(e) => setTarget(e.target.value as Channel)}
               >
-                {[
-                  ...new Set([
-                    brief?.channel || "LinkedIn",
-                    "LinkedIn",
-                    "Newsletter",
-                  ]),
-                ].map((c) => (
+                {ACTIVE_CHANNELS.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
               </select>

@@ -5,7 +5,7 @@ export interface DraftValues {title:string;text:string;metadata:string;collectio
 export const valuesOf=(c:Content):DraftValues=>({title:c.title,text:c.text,metadata:c.metadata,collection:c.collection||"",media:c.media});
 export function equalDraft(a:DraftValues,b:DraftValues){const stable=(v:DraftValues)=>JSON.stringify(v,(_key,value)=>value&&typeof value==="object"&&!Array.isArray(value)?Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b))):value);return stable(a)===stable(b);}
 const valuesSchema=z.object({title:z.string().max(200),text:z.string().max(60000),metadata:z.string().max(60000),collection:z.string().max(100),media:mediaSchema}).strict();
-const recoverySchema=z.object({v:z.literal(1),at:z.number(),baseRevision:z.number().int().positive(),base:valuesSchema,values:valuesSchema,pending:commandSchema.extract(["content.save"]).optional()}).strict();
+const recoverySchema=z.object({v:z.literal(1),at:z.number(),baseRevision:z.number().int().positive(),base:valuesSchema,values:valuesSchema,pending:commandSchema.transform(c=>{if(c.type!=="content.save"||!c.operationId)throw Error("Invalid recovery save operation");return c;}).optional()}).strict();
 export type DraftRecovery=z.infer<typeof recoverySchema>;
 export const RECOVERY_PREFIX="ryza-draft-recovery-v1:";
 export function recoveryKey(mode:string,workspace:string,actor:string,contentId:string){return RECOVERY_PREFIX+JSON.stringify([mode,workspace,actor,contentId]);}

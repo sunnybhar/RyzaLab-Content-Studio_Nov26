@@ -4296,3 +4296,15 @@
 .studio-v2 .s-idea-request-context {display:grid;gap:5px;font-size:12px;opacity:.85;}
 .studio-v2 .s-idea-request-context>span:last-child {display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .studio-v2.s-sidebar-collapsed.s-sidebar-pinned .s-sidebar-tools {display:none;}
+
+/* Shared section rhythm: independent panels remain visually separate. */
+.studio-v2 .s-main-content > :is(.s-panel,.s-toolbar,.s-calendar-toolbar,.s-info-strip,.s-review-grid,.s-calendar,.s-review-history) + :is(.s-panel,.s-toolbar,.s-calendar-toolbar,.s-info-strip,.s-review-grid,.s-calendar,.s-review-history){margin-block-start:24px}
+.studio-v2 .s-main-content > details.s-panel > summary{padding:16px 20px;cursor:pointer}
+.studio-v2 .pipeline-import,.studio-v2 .existing-pipeline{padding:20px}
+.studio-v2 .pipeline-import .s-section-heading,.studio-v2 .existing-pipeline .s-section-heading{padding:0 0 16px}
+.studio-v2 details.s-panel > .pipeline-import{border:0;box-shadow:none}
+.studio-v2 .pipeline-import > :is(p,label,details,.s-actions){margin-block:14px}
+.studio-v2 .pipeline-calendar{padding:0 20px 20px}
+.studio-v2 .s-solo-review > :is(details,p,section) + :is(details,p,section){margin-top:16px}
+.studio-v2 .s-modal .s-actions,.studio-v2 .s-editor-main .s-actions{gap:12px;flex-wrap:wrap}
+@media(max-width:640px){.studio-v2 .pipeline-import,.studio-v2 .existing-pipeline{padding:16px}.studio-v2 .s-main-content > :is(.s-panel,.s-toolbar,.s-calendar-toolbar,.s-info-strip,.s-review-grid) + :is(.s-panel,.s-toolbar,.s-calendar-toolbar,.s-info-strip,.s-review-grid){margin-block-start:20px}}

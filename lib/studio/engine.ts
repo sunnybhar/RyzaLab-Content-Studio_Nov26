@@ -775,10 +775,11 @@ export function applyCommand(
         need("idea.review", { channel: idea.channel });
         idea.state = "approved";
       }
-      need("content.create", { channel: idea.channel, account: c.account });
+      const targetChannel=c.targetChannel||idea.channel;
+      need("content.create", { channel: targetChannel, account: c.account||"RyzaLab" });
       const existing = s.contents.find(
         (d) =>
-          d.ideaId === idea.id && d.createdBy === actor.email && !d.deletedAt,
+          d.ideaId === idea.id && d.createdBy === actor.email && !d.deletedAt && d.channel===targetChannel && d.format===c.format && d.account===(c.account||"RyzaLab"),
       );
       if (existing) {
         content(existing.id);
@@ -786,7 +787,7 @@ export function applyCommand(
       }
       const d: Content = {
         id: id(),
-        channel: idea.channel,
+        channel: targetChannel,
         account: c.account || "RyzaLab",
         title: idea.title,
         format: c.format,
@@ -804,7 +805,7 @@ export function applyCommand(
         history: [],
         state: "draft",
         workflowId: s.workflows.find(
-          (w) => w.channel === idea.channel && w.status === "active",
+          (w) => w.channel === targetChannel && w.status === "active",
         )?.id,
         createdBy: actor.email,
         updatedAt: now,

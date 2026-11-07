@@ -200,6 +200,7 @@ export function useStudio() {
     try{clearRecovery(localStorage,actor?.id);}catch{}
     if (supabase && mode === "live") await supabase.auth.signOut();
     else {
+      latest.current=null;
       localStorage.removeItem("ryzalab-studio-v2");
       await refresh();
     }

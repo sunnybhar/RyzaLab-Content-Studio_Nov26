@@ -134,6 +134,7 @@ export function IdeaRunProgress({
             ? "The provider does not report a percentage; this shows the actual request stage."
             : ""}
       </p>
+      {job?.state === "awaiting_confirmation" && <p>This is the approved maximum, not the final cost. Unused reservation is released after confirmed settlement; uncertain outcomes retain their reservation.</p>}
       {job?.state === "awaiting_confirmation" && (
         <button
           type="button"
@@ -141,7 +142,7 @@ export function IdeaRunProgress({
           disabled={busy}
           onClick={() => void confirm()}
         >
-          Confirm AI request allowance · ${(job.estimate / 100).toFixed(2)}
+          Approve up to ${(job.estimate / 100).toFixed(2)}
         </button>
       )}
       {job && (

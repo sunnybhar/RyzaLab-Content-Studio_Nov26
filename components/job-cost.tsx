@@ -5,10 +5,11 @@ export function JobCost({ job }: { job: Job }) {
     <details>
       <summary>Usage and cost details</summary>
       <p>
-        Quoted maximum: {dollars(job.estimate)} · Still reserved:{" "}
+        Approved maximum: {dollars(job.estimate)} · Still reserved:{" "}
         {dollars(job.reserved)} · Recorded cost:{" "}
         {job.actual === undefined ? "not settled" : dollars(job.actual)}.
       </p>
+      {Boolean(job.pricingSnapshot)&&typeof job.pricingSnapshot==="object"&&<details><summary>How this maximum was calculated</summary><p>The maximum reserves the quoted input/context bound and output-token limit using the saved model rates, rounded up to cents. Similar requests can have the same maximum even when actual usage differs.</p><pre>{JSON.stringify(Object.fromEntries(Object.entries(job.pricingSnapshot as Record<string,unknown>).filter(([key])=>["provider","model","currency","inputBytes","maxInputBytes","maxOutputTokens","inputCentsPerMillion","outputCentsPerMillion","fixedCents","verifiedAt"].includes(key))),null,2)}</pre></details>}
       {job.providerUsage ? (
         <p>
           Input: {job.providerUsage.inputTokens.toLocaleString()} tokens ·
