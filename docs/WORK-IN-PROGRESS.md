@@ -486,3 +486,6 @@ User explicitly withdrew IB-12. Removed its row and detailed scope from the acti
 
 ## November 7 — AI cost clarity queued as IB-13
 User requested adding the cost-display recommendations to the backlog only. Added approve-up-to wording, maximum/actual side-by-side, transparent pricing/rounding breakdown, later tighter-estimate evaluation and confirmations only within valid existing explicit budgets. Unknown outcomes retain reservation protection; no pricing/budget behavior changed. IB-12 stays withdrawn. Documentation only; no implementation or deployment.
+
+## November 7 — broader research and Wikipedia exclusion queued as IB-14
+User requests changes proposal/backlog only. Read-only diagnosis: small web/news RSS result sets merged with Wikipedia/Crossref, six-result cap and permissive lexical matching can admit irrelevant brand/store/account pages; full discovered pages are not fetched. Added IB-14 refining IB-05/06: mandatory Wikipedia exclusion from all new research/evidence paths, relevant sector-first multi-query web/news/blog/accessible YouTube sourcing, diversity/dedup, article quality, honest snippets/page/transcript coverage and traceable sources. Updated prior optional-Wikipedia wording to the new exclusion requirement. Preserve historical evidence/costs and budgets/privacy; no code/configuration/deployment work.

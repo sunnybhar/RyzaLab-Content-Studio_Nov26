@@ -14,7 +14,7 @@ This is the master plan for **all improvement items in the earlier seven-item li
 | IB-02 | Upload, edit, download and select a **newsletter structure/format template**. Generate the final newsletter in that structure, with image slots and a matching visual PDF/DOCX layout. Preserve detailed background, evidence, reasoning, sources and the existing 1,200–1,600-word / at-least-2–3-page target, subject to the chosen template and actual export pagination. Text-only export remains available. | Earlier #2 and #6.1; expanded #4; previous newsletter requirements | 3, then image integration in 4 | Planned enhancement |
 | IB-03 | Upload an existing **Excel content calendar** and provide a downloadable XLSX template based on the supplied workbook. Preview/map columns, import dates/times/platforms, retain history and detect duplicates. Import actual entries, not empty formatted spreadsheet rows. | Earlier #3; expanded #2 | 1 | Implemented v0.3.28; rollout verification pending |
 | IB-04 | Create **Existing Pipeline** with its own header and searchable dropdown in **both Ideas and Create**, for **LinkedIn posts and Newsletters**. Imported titles and angles become linked pipeline briefs/calendar entries. Start in three ways: imported brief, AI or manual. From a pipeline brief, either generate ideas or **write content directly**. | Earlier #3.1; expanded #2 | 1 | Implemented v0.3.28; rollout verification pending |
-| IB-05 | Replace the apparent Wikipedia-first experience with **general web/news search and supplied website/link retrieval**. Use relevant accessible websites and other sources; retain source URLs, dates, excerpts and coverage. Wikipedia is optional supplementary background. | Earlier #4; expanded #3 | 2 | Planned |
+| IB-05 | Replace the apparent Wikipedia-first experience with **general web/news search and supplied website/link retrieval**. Use relevant accessible websites and other sources; retain source URLs, dates, excerpts and coverage. Wikipedia must be completely excluded from new research discovery, retrieval and generation evidence. | Earlier #4; expanded #3 | 2 | Planned |
 | IB-06 | Add separately uploadable/editable **Research Instructions and Source Preferences**. Search construction, real estate, home automation, IoT and related specialist sectors first; include baby-care/elder-care contexts where relevant; then broaden to other areas when needed. Make preferred/excluded websites, relevance and widening/fallback behavior visible. | Earlier #4, including sector examples; expanded #3 | 2 | Planned |
 | IB-07 | Obtain **Ryan's Humanizer** and upload it as distinct writing instruction/skill guidance used for content generation. Keep it identifiable, editable, versioned and scoped to the intended channels. Do not replace it with an unrelated public prompt or bury it within research settings. | Earlier #5 | 2 | Planned; Ryan's file/link needed |
 | IB-08 | Create **one multi-topic newsletter** from multiple existing/generated/old ideas, old posts or saved content, pipeline briefs, newly entered ideas, pasted text and **PDF/DOCX uploads**. Let users select/remove/reorder inputs, consolidate them coherently, preserve sources and apply IB-02's template and approved images. | Earlier #6; expanded #4 | 3, then image integration in 4 | Planned |
@@ -27,6 +27,7 @@ This is the master plan for **all improvement items in the earlier seven-item li
 |---|---|---|---|
 | IB-11 | Consistent spacing between sections throughout Studio, including the Calendar import/pipeline layout shown in the user's screenshot. | High — usability | Queued; do not build |
 | IB-13 | Clarify AI maximum allowance versus recorded usage cost, expose the calculation, and evaluate tighter estimates and confirmation within existing budgets. | High — cost clarity | Queued; do not build |
+| IB-14 | Broaden and improve research across relevant websites, news, specialist blogs and accessible YouTube material; remove Wikipedia completely from new research. Refines IB-05/IB-06. | High — research quality | Queued; do not build |
 
 ### IB-11 — consistent section spacing across Studio
 
@@ -66,6 +67,37 @@ Scope when authorized, in priority order:
 Acceptance when built: maximum allowance and recorded usage are visibly distinct before/after a request; the breakdown matches saved pricing/usage; failed/unknown requests do not imply zero cost or automatic release; an authorized-budget flow avoids redundant confirmation without bypassing limits. Prioritize wording and final-cost visibility before estimate/confirmation behavior changes.
 
 Status: queued only. No app changes, pricing adjustments, paid calls or deployment until the user explicitly instructs building.
+
+### IB-14 — diverse, relevant research; no Wikipedia
+
+Latest user instruction: explain the proposed changes and queue them; do not build. This strengthens IB-05/IB-06 rather than replacing the existing sector-first/research-rules requirements.
+
+Observed issue and read-only diagnosis:
+
+- The screenshot contains mostly Apple home/store/account pages, a relevant news article and a Wikipedia company introduction. Home/store/account snippets are not evidence about the specific home-device event or claim.
+- Current discovery attempts Bing web/news RSS with up to three results per search, merges them with Wikipedia/Crossref and caps the combined result set at six. It does not fetch those discovered article pages.
+- The current lexical screen can accept a generic page merely because it mentions a topic word such as Apple. There is no sufficient source-domain diversity or topic-specific article-quality selection. The screenshot alone does not establish a provider outage.
+
+Proposed changes when authorized:
+
+1. **Remove Wikipedia completely from new research:** disable its dedicated retrieval, exclude Wikipedia domains/subdomains in discovery and after redirects, and block Wikipedia evidence in new idea/post/newsletter requests, including previously saved Wikipedia references selected for a new run. Do not silently delete historical jobs, costs, drafts or citation records; label those historical sources as excluded from future research. Do not substitute a Wikipedia mirror as independent evidence.
+2. **Use broader discovery:** evaluate a supported general web/news search provider and bounded safe retrieval of accessible article pages, official technical documentation, standards/regulatory sources, specialist publications, credible independent blogs and YouTube material. Do not claim to search every page on the internet or bypass private/paywalled content.
+3. **Search the subject, not just the brand:** make several bounded targeted searches for the actual event/product/claim, audience and relevant sector. Prioritize construction, real estate, home automation and IoT (and relevant baby/elder-care contexts), then broaden when coverage is insufficient. A vendor homepage, store, login/account page, category index or search page should not qualify merely for mentioning the company.
+4. **Select for relevance and diversity:** deduplicate syndicated/repeated stories; prevent one domain from dominating when relevant alternatives exist. Prefer multiple independent publishers plus relevant primary sources. For a normal topic, aim for 4–6 useful sources across at least three domains when available; never fill a quota with irrelevant material or fabricate coverage. Relevant Apple support/product documentation can remain; generic Apple pages should be excluded.
+5. **Handle blogs and YouTube honestly:** identify author/publisher, publication date and source type. Distinguish official statements, independent reporting, opinion, affiliate/sponsored content and peer-reviewed material. Use video transcripts/captions or creator descriptions only when accessible through supported methods; preserve video/channel URL and timestamps where available. A title/thumbnail/snippet is not proof the video was watched. If no transcript is available, show the limitation or let the user supply one.
+6. **Show usable evidence:** display article/video title, publisher/domain or channel, date when available, original link, excerpt/transcript passage, why it matches the brief and what was actually retrieved. Distinguish search snippets from fetched page text/transcripts and identify unavailable material. Search snippets alone must not be presented as full-article verification.
+7. **Apply consistently:** research for AI ideas, manually entered ideas, post writing and newsletter generation follows the same exclusion/relevance rules. Preserve traceable selected sources per request; newsletters cite actual sources in their body/export while LinkedIn posts retain a separate research/source panel unless the user asks for inline citations.
+8. **Keep research configurable and bounded:** expose preferred/excluded websites and source types under the planned Research Instructions/Source Preferences; Wikipedia exclusion is mandatory, not a user-toggle default. Show sector-first/wider-search coverage and missing evidence. Paid search/tool costs, retrieval bounds, privacy protection and authorization remain explicit; no private Agent Rules/context are sent as public search queries.
+
+Acceptance when built:
+
+- No Wikipedia endpoint or domain is contacted or returned/attached to a new request, including fallback, redirect and saved-evidence paths. Historical records remain intact and clearly identified.
+- The screenshot's topic returns relevant event/device reporting and specialist evidence instead of generic brand/store/account pages; diverse sources appear where available.
+- A relevant blog and accessible YouTube transcript/description can be selected and attributed honestly, with missing access reported.
+- Coverage, dates, links, evidence excerpts and source types remain visible and traceable in ideas and writing; insufficient results trigger a coverage message, not unrelated filler.
+- Ranking/diversity and sector fallback are demonstrated on representative briefs; no live paid test is started without its authorized budget.
+
+Status: queued only. No research code, source configuration, saved evidence, paid request or deployment changed by this planning task.
 
 ### Original-list completeness check
 
@@ -141,7 +173,7 @@ Add Research Instructions and Source Preferences under Agent Rules, separately e
 Search in two explicit passes:
 
 1. Sector-first: official product/technical documentation, standards/regulatory bodies, research and credible specialist industry sites matching the brief and audience. Evaluate relevance before accepting excerpts.
-2. Wider discovery: broaden to general news, other disciplines and background material only when sector coverage is insufficient or the user requests it. Keep relevance ranking; do not fill a source list with unrelated matches. Wikipedia is optional supplementary background, not a required/preferred starting point.
+2. Wider discovery: broaden to general news, other disciplines and background material only when sector coverage is insufficient or the user requests it. Keep relevance ranking; do not fill a source list with unrelated matches. Wikipedia must be completely excluded, including fallback results and any newly selected generation evidence. This supersedes the earlier optional-background proposal.
 
 Choose/evaluate a general web/news search provider based on index coverage, available page retrieval, citation quality, per-request bounds and cost. Supplied URLs need a bounded safe public-page reader (including redirects/content limits and private-network protection). Accessible website text may be used with source attribution; private/paywalled/unavailable pages need an honest coverage message. Do not claim that a search index reaches every page on the internet. Uploaded private instructions never become public search queries.
 
