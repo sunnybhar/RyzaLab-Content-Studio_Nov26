@@ -1,3 +1,4 @@
+import {newsletterSources} from "./newsletter-bundle";
 import {draftSavePayload,savedOperation} from "./save-operation";
 import {importPipeline,pipelineSnapshot} from "./pipeline";
 import {validateWritingFollowup} from "./writing-followup";
@@ -856,6 +857,15 @@ export function applyCommand(
         s.preparations.push(authorization);
         d.preparationId = authorization.id;
       }
+      break;
+    }
+    case "newsletter.compose": {
+      need("content.create",{channel:"Newsletter",account:"RyzaLab"});
+      const sources=newsletterSources(s,actor,c.sources,now);
+      const requestHash=(ctx.hash||fingerprint)({title:c.title,outline:c.outline,sources:c.sources});
+      const existing=s.contents.find(d=>d.createdBy===actor.email&&d.newsletterRequestKey===c.requestKey);
+      if(existing){content(existing.id);if(existing.newsletterRequestHash!==requestHash)bad("This request identifier belongs to different newsletter sources. Check the saved draft before creating another.");break;}
+      s.contents.unshift({id:id(),channel:"Newsletter",account:"RyzaLab",title:c.title,format:"Newsletter",text:"",metadata:"",media:structuredClone(EMPTY_MEDIA),newsletterSources:sources,newsletterOutline:c.outline,newsletterRequestKey:c.requestKey,newsletterRequestHash:requestHash,assignedTo:actor.email,revision:1,textRevision:1,mediaRevision:1,factsRevision:1,history:[],state:"draft",workflowId:s.workflows.find(w=>w.channel==="Newsletter"&&w.status==="active")?.id,createdBy:actor.email,updatedAt:now});
       break;
     }
     case "content.newsletter": {

@@ -1,4 +1,5 @@
 "use client";
+import {NewsletterComposer} from "./newsletter-composer";
 import {ImageAssistant} from "./image-assistant";
 import {parseDocumentLayout} from "@/lib/studio/document-layout";
 import {ReviewHistory} from "./review-history";
@@ -2729,6 +2730,7 @@ export default function Workspace() {
               <>
                 {notice.startsWith("Submitted for review")&&<div className="s-info-strip" role="status">Submitted for review — now under review.<button className="s-btn" onClick={()=>move("Reviews")}>View in Reviews</button></div>}
                 <ExistingPipeline key={`create:${pipelineFocus}`} initialId={pipelineFocus} state={state} channel={channel} disabled={readOnly||busy} onIdeas={pipelineIdeas} onWrite={(b,c)=>void pipelineWrite(b,c)} onImport={pipelineImport}/>
+                {allowed("content.create",{channel:"Newsletter",account:"RyzaLab"})&&<NewsletterComposer state={state} send={send} disabled={readOnly||busy} demo={mode==="demo"} open={id=>{setSelected(id);setChannel("Newsletter");setSearch("");setNotice("Combined newsletter outline saved. Write manually or explicitly request AI drafting.");}}/>}
                 <div className="s-toolbar">
                   <div className="s-inline">
                     <h2>Your workbench</h2>
@@ -4746,6 +4748,7 @@ function Editor({
           </div>
           {tab === "Write" && (
             <div className="s-writing">
+              {c.newsletterSources&&<details className="s-version"><summary>Combined newsletter outline and {c.newsletterSources.length} source snapshots</summary><p style={{whiteSpace:"pre-wrap"}}>{c.newsletterOutline}</p>{c.newsletterSources.map((source,i)=><details key={i}><summary>{source.title} · {source.kind}{source.revision?` · revision ${source.revision}`:""}</summary><p>Captured {stamp(source.capturedAt)}</p><div style={{whiteSpace:"pre-wrap"}}>{source.text}</div><p>{source.metadata}</p></details>)}</details>}
               {c.newsletterSource && <details className="s-version"><summary>Newsletter source · {c.newsletterSource.channel} · {c.newsletterSource.title}</summary><p>Saved source snapshot{c.newsletterSource.revision ? ` · revision ${c.newsletterSource.revision}` : ""}. Use this as reference for manual writing or AI adaptation.</p><div style={{whiteSpace:"pre-wrap"}}>{c.newsletterSource.text}</div><p>{c.newsletterSource.metadata}</p></details>}
               {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} recoverJob={progressJob} demo={mode === "demo"} />}
               <HighlightedTextarea

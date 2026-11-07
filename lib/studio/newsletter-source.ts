@@ -7,6 +7,42 @@ export function canReadNewsletterSource(
   actor: Actor,
   content: Content,
 ) {
+  for (const source of content.newsletterSources || []) {
+    if (source.kind === "content") {
+      const original = state.contents.find(
+        (c) => c.id === source.id && !c.deletedAt,
+      );
+      if (
+        !original ||
+        !can(state, actor, "read", {
+          channel: original.channel,
+          account: original.account,
+          contentId: original.id,
+          assignedTo: original.assignedTo,
+        })
+      )
+        return false;
+    }
+    if (source.kind === "idea") {
+      const original = state.ideas.find((i) => i.id === source.id);
+      if (
+        !original ||
+        !can(state, actor, "read", { channel: original.channel })
+      )
+        return false;
+    }
+    if (source.kind === "pipeline") {
+      const original = state.pipelineBriefs?.find((p) => p.id === source.id);
+      if (
+        !original ||
+        !can(state, actor, "read", {
+          channel: original.channel,
+          account: original.account,
+        })
+      )
+        return false;
+    }
+  }
   const source = content.newsletterSource;
   if (!source) return true;
   if (source.kind === "idea") {

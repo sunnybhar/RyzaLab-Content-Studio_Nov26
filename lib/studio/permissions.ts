@@ -1,3 +1,4 @@
+import {canReadNewsletterSource} from "./newsletter-source";
 import type {
   Actor,
   Channel,
@@ -106,7 +107,7 @@ export function filteredState(state: StudioState, actor: Actor): StudioState {
   if (can(state, actor, "users.manage")) return structuredClone(state);
   const s = structuredClone(state),
     visible = s.contents.filter((c) =>
-      can(state, actor, "read", {
+      canReadNewsletterSource(state,actor,c) && can(state, actor, "read", {
         channel: c.channel,
         account: c.account,
         contentId: c.id,

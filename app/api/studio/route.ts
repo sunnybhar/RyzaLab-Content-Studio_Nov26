@@ -67,6 +67,13 @@ export async function POST(req: NextRequest) {
     let state=original;
     let parsed = commandSchema.parse(await req.json());
     assertActiveRequest(state,parsed);
+    if(parsed.type==="newsletter.compose") {
+      requirePermission(state,actor,"content.create",{channel:"Newsletter",account:"RyzaLab"});
+      if(parsed.sources.reduce((sum,source)=>sum+(source.kind==="document"?source.file.byteSize:0),0)>524288)throw new StudioError(400,"Combined document uploads must be at most 512 KB.");
+      const sources=[];
+      for(const source of parsed.sources) sources.push(source.kind==="document"?{...source,extractedText:await extractAgentFile(source.file)}:source);
+      parsed={...parsed,sources};
+    }
     if(parsed.type==="content.save"&&parsed.operationId){
       diagnostics.stage("save_draft");
       const next=await commitDraftSave(original,actor,parsed,{load:()=>loadState(db,actor),commit:async(before,after)=>{if(Buffer.byteLength(JSON.stringify(after))>24000000)throw new StudioError(413,"Workspace history reached its current storage limit.");await persist(db,before,after);}},{hash});

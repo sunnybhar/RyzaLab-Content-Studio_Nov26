@@ -1,3 +1,4 @@
+import {newsletterInputSchema} from "./newsletter-bundle";
 import { pipelineImportSchema } from "./pipeline";
 import {agentArchiveSchema} from "./agent-archives";
 import {storedAgentFileSchema,AGENT_FILE_SLOTS} from "./agent-rule-files";
@@ -179,6 +180,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     ideaId: id.optional(),
     account: z.string().max(200).optional(),
   }),
+  command("newsletter.compose", {title:short,outline:z.string().trim().min(1).max(12000),sources:z.array(newsletterInputSchema).min(1).max(10),requestKey:id}),
   command("content.newsletter", { sourceKind: z.enum(["idea", "content"]), sourceId: id, expectedRevision: z.number().int().positive().optional() }),
   command("job.recoverIncomplete", {jobId:id,expectedRevision:z.number().int().positive()}),
   command("job.editDraft", { jobId: id, expectedRevision: z.number().int().positive() }),

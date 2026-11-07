@@ -543,3 +543,6 @@ Continuing remaining backlog after v0.3.30 as authorized. Added image request co
 
 ### v0.3.31 image increment validation
 302 domain tests pass; production build/TypeScript pass. Focused browser validates zero requests on mount, explicit maximum consent, saved result preview and separate attachment without calling a provider. Domain checks cover same-draft completed asset ownership, stale revision rejection, removed slides, authorization and preserving the package cap when enabling images. Production submit success/failure regression passes. Main and slide placement implemented; section image layouts/live provider acceptance remain pending. Release scope in RELEASE-0.3.31.md.
+
+### Multi-source newsletter WIP
+v0.3.31 successfully pushed to both studio-rebuild and main at 64bea75. Continuing IB-08: Create composer selects posts/ideas/pipeline briefs across channels, accepts text/document uploads, and exposes an editable outline before saving a blank newsletter. Source snapshots preserve provenance and original files; generation receives the selected snapshots/outline. Live PDF/DOCX extraction uses existing bounded extractor. Permissions rechecked at selection/generation/dispatch; unavailable sources hide combined snapshots from non-admin filtered state. Type/domain/browser verification in progress; not deployed. No AI/provider calls.
