@@ -477,3 +477,6 @@ Verified Git push succeeded: origin/main advanced1213943→7234927 (Release veri
 
 ## November 7 — new feedback backlog only; implementation paused
 User explicitly requested backlog capture and no building until they say so. Added IB-11 to the master backlog: consistent section gaps/padding across all Studio pages, with the supplied Calendar screenshot as the first concrete case (upload/import → imported pipeline → month toolbar → notice/grid). Defined responsive/expanded-state visual acceptance criteria. Screenshot-only numbered item2 is evidence, not an invented second requirement. No app code changed or production deployment triggered. Further builds await explicit instruction.
+
+## November 7 — feedback item 2, title-only pipeline dropdowns
+Added IB-12 to the master feedback pipeline. Read-only inspection confirms the idea composer appends plannedDate/Unscheduled and channel to dropdown labels, not stored titles. Future fix should show only original titles across pipeline dropdowns while preserving stable IDs and separate metadata details, including identical-title selection and genuine title text. Documentation only; no app code or deployment. Explicit build instruction still required.

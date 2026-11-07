@@ -26,6 +26,7 @@ This is the master plan for **all improvement items in the earlier seven-item li
 | ID | Item | Priority | Status |
 |---|---|---|---|
 | IB-11 | Consistent spacing between sections throughout Studio, including the Calendar import/pipeline layout shown in the user's screenshot. | High — usability | Queued; do not build |
+| IB-12 | Show only the imported brief title in Existing Pipeline dropdown options; remove appended date, channel and other metadata from the option label. | High — usability | Queued; do not build |
 
 ### IB-11 — consistent section spacing across Studio
 
@@ -47,7 +48,25 @@ Acceptance when built:
 4. Before/after screenshots demonstrate the Calendar correction and representative Ideas, editor, Agent Rules and AI/budgets screens.
 5. Existing content, import data, AI requests, review decisions and publication behavior are unaffected.
 
-User item 2 currently contains a screenshot but no separate written requirement. Treat it as supporting evidence for IB-11; do not invent an additional feature request. Append further feedback here as the user supplies it. No layout edits, feature code, import operations or deployment are authorized by this backlog entry.
+The Calendar screenshot supplied with the spacing report supports IB-11. The user subsequently supplied a separate written item 2 and dropdown screenshot; this is tracked independently as IB-12 below. No layout edits, feature code, import operations or deployment are authorized by these backlog entries.
+
+### IB-12 — title-only imported brief dropdowns (user feedback item 2)
+
+User request: imported brief options must show only their title, without automatically appended date or LinkedIn/channel text.
+
+Current cause verified read-only: the idea composer's Existing Pipeline option renders `title · plannedDate (or Unscheduled) · channel`. This is display-label formatting; the saved title and the Topic / Brief field are not modified by that concatenation.
+
+Scope when authorized:
+
+- Render only the original saved title in imported-brief dropdown options in Ideas, the manual/AI idea composer and Create. Remove automatically prepended/appended IDs, dates, Unscheduled labels and channel names from the option text.
+- Keep date, timezone, channel and source details in the separate selected-brief details area and Calendar, rather than inside the title label.
+- Keep stable internal IDs as option values so duplicate titles still select the correct brief. If disambiguation is needed, use separate details or filters without changing the title text.
+- Do not strip meaningful dates or platform names that were actually part of the original uploaded title; remove only UI-added metadata.
+
+Acceptance when built: options match the saved title exactly; selection prefills the original title without metadata; the correct brief/source/date/channel remains linked; both LinkedIn and Newsletter entry paths work; saved records and calendar dates are unchanged.
+
+Status: queued, documentation only. Wait for the user's explicit build instruction.
+
 
 ### Original-list completeness check
 
