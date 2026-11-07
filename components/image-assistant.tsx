@@ -1,5 +1,5 @@
-import {resolvedConnection} from "@/lib/studio/solo-quality";
 "use client";
+import {resolvedConnection} from "@/lib/studio/solo-quality";
 import { useEffect, useState } from "react";
 import type { Actor, Command, Content, StudioState } from "@/lib/studio/types";
 import { preparationFor } from "@/lib/studio/preparation-budget";

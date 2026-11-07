@@ -564,3 +564,6 @@ Direct-source/methodology focused checks and source-selection browser pass. Adde
 
 ### Bounded evidence candidate
 New evidence prompt compiler fits long retrieved extracts and newsletter source passages into the qualified model input allowance, with explicit retained/included/omitted coverage, exact source passages and full original records preserved. Mandatory task, current human copy, outline and Instructions are not shortened; oversized mandatory context still fails explicitly. Fourteen combined correction/newsletter/evidence domain tests pass. Final regression/build and browser checks pending for v0.3.34. Image controls now honor the same channel/default mapping as server dispatch. Deep dossier/claim-ledger and publishing scope remain unfinished; no paid calls.
+
+### v0.3.34 verified
+All322domain tests and production build/TypeScript pass. Focused research/image/correction browsers pass; full production app browser passes. Direct source retrieval and versioned private research-analysis guidance, bounded evidence prompt coverage, GPT Image adapter guards and image-description project roundtrip documented in RELEASE-0.3.34.md. No paid provider calls or operational publications. Production push follows; full deep dossier/section-layout/estimate/LinkedIn/scheduling backlog remains unfinished.
