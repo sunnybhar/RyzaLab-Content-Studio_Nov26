@@ -588,3 +588,6 @@ Corrected research-panel typecheck and historical-source-controls browser pass. 
 
 ### v0.3.36 release gate and requested stop
 User requested stopping after v0.3.36 deployment; do not start the remaining backlog. All339 domain tests and production build pass. Approved-handoff artifact browser verifies all three images and the frozen font/header; six section-image tests include immutable approved layout. Full production app/newsletter and historical-source browsers are finishing before release push. No paid provider call or operational publication.
+
+### v0.3.36 verified; stop after release
+All339 domain tests pass; production build/TypeScript pass. Full production app, newsletter package/export, illustrated approved-handoff artifacts and historical-source controls browsers pass. Release is ready for push to main/studio-rebuild. Hosted rollout remains to be checked separately; no paid provider requests or operational publications occurred. User explicitly paused all remaining backlog after this release. Resume only on a new user instruction.
