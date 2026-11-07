@@ -1,4 +1,6 @@
 "use client";
+import {useDraftSave,DraftSaveStatus} from "./draft-save-controller";
+import type {DraftValues} from "@/lib/studio/draft-recovery";
 import {CalendarImport} from "./calendar-import";
 import {ExistingPipeline} from "./existing-pipeline";
 import type {PipelineBrief} from "@/lib/studio/pipeline";
@@ -4530,35 +4532,10 @@ function Editor({
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [docsText, setDocsText] = useState("");
-  const baseline = useRef({ id: c.id, revision: c.revision, title: c.title, text: c.text, metadata: c.metadata, collection: c.collection || "", media: comparableMedia(c.media) });
-  const [externalChange, setExternalChange] = useState(false);
-  function loadSavedDraft() {
-    setTitle(c.title);
-    setText(c.text);
-    setMetadata(c.metadata);
-    setCollection(c.collection || "");
-    setMedia(c.media || initialMedia());
-    setSlideIndex((i) => Math.max(0, Math.min(i, c.media.slides.length - 1)));
-    setSceneIndex((i) => Math.max(0, Math.min(i, c.media.scenes.length - 1)));
-    baseline.current = { id: c.id, revision: c.revision, title: c.title, text: c.text, metadata: c.metadata, collection: c.collection || "", media: comparableMedia(c.media) };
-    setExternalChange(false);
-  }
-  useEffect(() => {
-    const previous = baseline.current;
-    const unsaved = title !== previous.title || text !== previous.text || metadata !== previous.metadata || collection !== previous.collection || comparableMedia(media) !== previous.media;
-    const matchesSaved = title === c.title && text === c.text && metadata === c.metadata && collection === (c.collection || "") && comparableMedia(media) === comparableMedia(c.media);
-    if (previous.id === c.id && previous.revision !== c.revision && unsaved && !matchesSaved) {
-      setExternalChange(true);
-      return;
-    }
-    loadSavedDraft();
-  }, [c.id, c.revision]);
-  const dirty =
-    title !== c.title ||
-    text !== c.text ||
-    metadata !== c.metadata ||
-    collection !== (c.collection || "") ||
-    comparableMedia(media) !== comparableMedia(c.media);
+  function applyWorking(values:DraftValues){setTitle(values.title);setText(values.text);setMetadata(values.metadata);setCollection(values.collection);setMedia(values.media);}
+  const draftSave=useDraftSave({content:c,actor,mode,values:{title,text,metadata,collection,media},apply:applyWorking,send,refresh,onError});
+  const externalChange=draftSave.conflict;
+  const dirty=draftSave.dirty;
   const requirements = inputRequirements({...c, title, text, metadata, media});
   function jumpToRequirement(item: ReturnType<typeof inputRequirements>[number]) {
     setTab(item.tab);
@@ -4577,20 +4554,7 @@ function Editor({
   }
   const slide = media.slides[slideIndex];
   const scene = media.scenes[sceneIndex];
-  const save = () =>
-    externalChange ? Promise.resolve(false) : run(
-      {
-        type: "content.save",
-        id: c.id,
-        expectedRevision: c.revision,
-        title,
-        text,
-        metadata,
-        media,
-        collection,
-      },
-      "Draft saved",
-    );
+  const save = () => draftSave.save();
   function updateMedia(p: Partial<MediaProject>) {
     setMedia((m) => ({ ...m, ...p }));
   }
@@ -4733,36 +4697,26 @@ function Editor({
           <Badge>{c.channel}</Badge>
           <Badge>Revision {c.revision}</Badge>
           <Badge tone={dirty ? "amber" : "green"}>
-            {dirty ? "Unsaved changes" : "Saved"}
+            {draftSave.busy ? "Saving…" : draftSave.status==="unknown" ? "Save outcome unknown" : dirty ? "Unsaved changes" : "Saved"}
           </Badge>
           <button
-            disabled={readOnly || busy || !dirty || externalChange}
+            disabled={readOnly || busy || !dirty || externalChange || draftSave.busy || draftSave.status==="unknown"}
             className="s-btn"
             onClick={() => void save()}
           >
             Save draft
           </button>
           <button
-            disabled={readOnly || busy || dirty || externalChange || (!state.settings.reviewPolicy && requirements.length > 0)}
+            disabled={readOnly || busy || draftSave.busy || draftSave.status==="unknown" || dirty || externalChange || (!state.settings.reviewPolicy && requirements.length > 0)}
             className="s-btn s-primary"
             title={dirty ? "Save your changes before submitting" : ""}
-            onClick={() =>
-              void run(
-                { type: "content.submit", id: c.id },
-                "Draft submitted for human review",
-              )
-            }
+            onClick={async()=>{if(await run({type:"content.submit",id:c.id},"Submitted for review — now under review"))back();}}
           >
             <ShieldCheck size={15} /> Submit for review
           </button>
         </div>
       </div>
-      {externalChange && (
-        <div className="s-info-strip" role="alert">
-          <span>This saved draft changed elsewhere while you had unsaved edits. Your edits are still here; copy them somewhere safe before loading the updated draft.</span>
-          <button className="s-btn" onClick={() => { if (window.confirm("Discard your unsaved edits and load the current saved draft?")) loadSavedDraft(); }}>Discard unsaved edits and load latest</button>
-        </div>
-      )}
+      <DraftSaveStatus controller={draftSave}/>
       {requirements.length > 0 && <section id="draft-needs-input" className="s-input-required" aria-label="Needs your input"><h3 aria-live="polite">Needs your input · {requirements.length} {requirements.length === 1 ? "item" : "items"}</h3><p>Highlighted passages need verified details or a rewrite. Saving does not resolve them. Resolve the highlighted passages or submit for review to inspect the checks. A reviewer can record a manual override.</p><ul>{requirements.map((item,i)=><li key={`${item.field}:${item.start}`}><button className="s-text-button" onClick={()=>jumpToRequirement(item)}>{item.label}: {item.text}</button></li>)}</ul></section>}
       {postPreview && <PostPreview text={text} account={c.account} channel={c.channel} media={media} unsaved={dirty} AssetMedia={AssetMedia} onClose={() => setPostPreview(false)} />}
       <StageTracker

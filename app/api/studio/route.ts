@@ -1,3 +1,4 @@
+import {commitDraftSave} from "@/lib/studio/draft-save";
 import {assertActiveRequest} from "@/lib/studio/active-channels";
 import {studioRequestDiagnostics} from "@/lib/studio/request-diagnostics";
 import {readAgentPackage} from "@/lib/studio/agent-package";
@@ -65,6 +66,12 @@ export async function POST(req: NextRequest) {
     let state=original;
     let parsed = commandSchema.parse(await req.json());
     assertActiveRequest(state,parsed);
+    if(parsed.type==="content.save"&&parsed.operationId){
+      diagnostics.stage("save_draft");
+      const next=await commitDraftSave(original,actor,parsed,{load:()=>loadState(db,actor),commit:async(before,after)=>{if(Buffer.byteLength(JSON.stringify(after))>24000000)throw new StudioError(413,"Workspace history reached its current storage limit.");await persist(db,before,after);}},{hash});
+      diagnostics.stage("respond");
+      return NextResponse.json({state:filteredState(next,actor),actor,mode:"live"},{headers:{"Cache-Control":"no-store"}});
+    }
     if(parsed.type==="agentRules.importPackage"&&parsed.archives?.length){requirePermission(state,actor,"workflow.edit",{channel:parsed.channel});for(const archive of parsed.archives){const bytes=Buffer.from(archive.base64,"base64");await readAgentPackage(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),archive.kind);}}
     if(parsed.type==="agentRules.save"||parsed.type==="agentVoice.create"){
       requirePermission(state,actor,"workflow.edit",{channel:parsed.channel==="Shared"?undefined:parsed.channel});

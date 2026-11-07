@@ -182,6 +182,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   command("job.recoverIncomplete", {jobId:id,expectedRevision:z.number().int().positive()}),
   command("job.editDraft", { jobId: id, expectedRevision: z.number().int().positive() }),
   command("content.save", {
+    operationId: z.uuid().optional(),
     id,
     expectedRevision: z.number().int().positive(),
     text,

@@ -1,3 +1,4 @@
+export class StudioResponseError extends Error {constructor(message:string,public status:number){super(message);this.name="StudioResponseError";}}
 export async function readStudioResponse<T>(response: Response): Promise<T> {
   let value: unknown;
   try {
@@ -20,10 +21,7 @@ export async function readStudioResponse<T>(response: Response): Promise<T> {
       typeof error.error === "string"
         ? error.error
         : "Studio request failed. Refresh to check its current status.";
-    throw Error(
-      message +
-        (typeof error.trace === "string" ? ` Reference: ${error.trace}` : ""),
-    );
+    throw new StudioResponseError(message + (typeof error.trace === "string" ? ` Reference: ${error.trace}` : ""),response.status);
   }
   if (!value || typeof value !== "object")
     throw Error(

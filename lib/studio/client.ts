@@ -1,4 +1,5 @@
 "use client";
+import {clearRecovery} from "./draft-recovery";
 import {readStudioResponse} from "./response";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -26,6 +27,7 @@ export function useStudio() {
     latest = useRef<StudioState | null>(null);
   const pendingRefresh=useRef<Promise<void>|null>(null);
   const update = (s: StudioState) => {
+    if(s&&latest.current&&s.version<latest.current.version)return;
     latest.current = s;
     setState(s);
   };
@@ -81,7 +83,8 @@ export function useStudio() {
   useEffect(() => {
     refresh();
     if (!supabase || mode === "demo") return;
-    const { data } = supabase.auth.onAuthStateChange(() => {
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if(event==="SIGNED_OUT"){try{clearRecovery(localStorage);}catch{} latest.current=null;setState(null);setActor(null);}
       setTimeout(() => refresh(), 0);
     });
     return () => data.subscription.unsubscribe();
@@ -194,6 +197,7 @@ export function useStudio() {
     }
   }
   async function signOut() {
+    try{clearRecovery(localStorage,actor?.id);}catch{}
     if (supabase && mode === "live") await supabase.auth.signOut();
     else {
       localStorage.removeItem("ryzalab-studio-v2");

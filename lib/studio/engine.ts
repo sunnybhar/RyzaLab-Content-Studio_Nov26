@@ -1,3 +1,4 @@
+import {draftSavePayload,savedOperation} from "./save-operation";
 import {importPipeline,pipelineSnapshot} from "./pipeline";
 import {validateWritingFollowup} from "./writing-followup";
 import {ideaStage} from "./idea-board";
@@ -911,6 +912,10 @@ export function applyCommand(
     case "content.save": {
       const d = content(c.id);
       if (d.deletedAt) bad("Restore this item before editing.");
+      const signature=(ctx.hash||fingerprint)(draftSavePayload(c));
+      const replay=savedOperation(d,actor,c.operationId);
+      if(replay){if(replay.signature!==signature)throw new StudioError(409,"This save identifier belongs to different edits. Check save status before starting a new save.");return structuredClone(input);}
+
       if (d.revision !== c.expectedRevision)
         throw new StudioError(
           409,
@@ -970,6 +975,7 @@ export function applyCommand(
           workflowId: currentWorkflow(d, s)?.id || "",
           ruleVersion: s.settings.protectedVersion,
         });
+      if(c.operationId)d.saveOperations=[...(d.saveOperations||[]),{id:c.operationId,actor:actor.email,signature,baseRevision:c.expectedRevision,savedRevision:d.revision,at:now}].slice(-20);
       break;
     }
     case "content.reviewEdit": {

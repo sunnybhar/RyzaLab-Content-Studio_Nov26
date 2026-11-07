@@ -10,7 +10,7 @@ import type { NextRequest } from "next/server";
 import { StudioError, memberFor } from "./permissions";
 import { initialState, EMPTY_MEDIA } from "./seed";
 import type { StudioState, Actor, Role } from "./types";
-export function database(timeoutMs?:number) {
+export function database(timeoutMs=15000) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL,
     key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key)

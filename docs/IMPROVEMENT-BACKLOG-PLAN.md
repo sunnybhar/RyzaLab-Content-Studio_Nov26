@@ -1,6 +1,6 @@
 # RyzaLab Content Studio — improvement backlog and proposed build plan
 
-Current instruction (November 7, 2026): **backlog capture only. Do not implement or deploy further changes until the user explicitly says to build.** Earlier Build 1 authorization is historical, not authorization to start this new spacing work or subsequent builds.
+Current instruction: **the user has explicitly authorized implementation of the pending backlog.** Work proceeds in tested releases, starting with save/recovery reliability and the two-person review flow. Missing provider credentials/files and actual publishing approvals remain prerequisites for their respective capabilities.
 
 Status update: the user approved building and deploying after reviewing the wireframes, then accepted the first-release scope: Calendar import/template and Existing Pipeline (Build 1). Build 1 is implemented and verified locally for v0.3.28; production rollout verification is pending. Remaining builds stay queued for subsequent releases; provider credentials, private guidance files and actual publishing approvals are still required where applicable. No operational calendar has been imported and no paid provider call has been made during development.
 
@@ -21,20 +21,20 @@ This is the master plan for **all improvement items in the earlier seven-item li
 | IB-09 | Provide **LinkedIn API connection/setup guidance and OAuth**. Retain a **prepare-only mode**: put/prepare the final post without submitting it if the granted API supports native drafts; otherwise use an honest Studio draft/copy/open-LinkedIn handoff. Never publish merely to simulate saving a draft. | Earlier #7 | 5 | Planned; capability verification needed |
 | IB-10 | Add **specific date/time/timezone and social platform/account scheduling**. Editor modifies/finalizes content; agent prepares the publishing package; **user approves publication of the exact package and schedule**; a supported publisher releases it at the approved time and records the actual result. Edits require reapproval; uncertain API outcomes must not produce duplicate posts. Prepare-only IB-09 remains a separate available mode. | Expanded #1; extends rather than deletes earlier #7 | 5 | Planned; provider/platform access needed |
 
-## New feedback pipeline — awaiting explicit build instruction
+## Feedback execution pipeline — authorized, delivered in tested releases
 
 | ID | Item | Priority | Status |
 |---|---|---|---|
-| IB-11 | Consistent spacing between sections throughout Studio, including the Calendar import/pipeline layout shown in the user's screenshot. | High — usability | Queued; do not build |
-| IB-13 | Clarify AI maximum allowance versus recorded usage cost, expose the calculation, and evaluate tighter estimates and confirmation within existing budgets. | High — cost clarity | Queued; do not build |
-| IB-14 | Broaden and improve research across relevant websites, news, specialist blogs and accessible YouTube material; remove Wikipedia completely from new research. Refines IB-05/IB-06. | High — research quality | Queued; do not build |
-| IB-15 | Evidence-led deep research: investigation briefs, primary-source tracing, full-source reading, claim verification, data analysis, research dossier, reliable writing handoff and bounded costs. Extends IB-14/IB-05/IB-06. | High — research depth and reliability | Queued; do not build |
-| IB-16 | Add Blog as a 4–10 minute reading format alongside short LinkedIn posts and 8–15 minute newsletters, with an editor format dropdown and the same applicable research/writing features. | High — content creation | Queued; do not build |
-| IB-17 | Shared imported/generated/manual idea and brief library available across every active channel and Blog format, with destination-specific adaptation rather than source-channel lock-in. | High — cross-channel creation | Queued; do not build |
-| IB-18 | Reliable draft saving: preserve unsaved edits, reconcile timed-out saves, prevent duplicate submissions, synchronize versions and resolve conflicts safely; investigate database latency. | High — reliability / edit preservation | Queued; do not build |
-| IB-19 | After confirmed Submit for review, close the editor and return to the Create list with a clear Under review status and View in Reviews action. | High — workflow clarity | Queued; do not build |
-| IB-20 | AI resolves actionable review findings, rechecks the revised draft and escalates only facts/decisions it cannot resolve; founder reviews the final changes and gives final approval. | High — agentic review / minimal manual work | Queued; do not build |
-| IB-21 | Reviews page with two sections: pending actionable reviews above approved/published history; latest 10 published items, 1/2/3/6/12-month filters, metadata and exact-version popup previews across channels. | High — review/history usability | Queued; do not build |
+| IB-11 | Consistent spacing between sections throughout Studio, including the Calendar import/pipeline layout shown in the user's screenshot. | High — usability | Authorized; queued |
+| IB-13 | Clarify AI maximum allowance versus recorded usage cost, expose the calculation, and evaluate tighter estimates and confirmation within existing budgets. | High — cost clarity | Authorized; queued |
+| IB-14 | Broaden and improve research across relevant websites, news, specialist blogs and accessible YouTube material; remove Wikipedia completely from new research. Refines IB-05/IB-06. | High — research quality | Authorized; queued |
+| IB-15 | Evidence-led deep research: investigation briefs, primary-source tracing, full-source reading, claim verification, data analysis, research dossier, reliable writing handoff and bounded costs. Extends IB-14/IB-05/IB-06. | High — research depth and reliability | Authorized; queued |
+| IB-16 | Add Blog as a 4–10 minute reading format alongside short LinkedIn posts and 8–15 minute newsletters, with an editor format dropdown and the same applicable research/writing features. | High — content creation | Authorized; queued |
+| IB-17 | Shared imported/generated/manual idea and brief library available across every active channel and Blog format, with destination-specific adaptation rather than source-channel lock-in. | High — cross-channel creation | Authorized; queued |
+| IB-18 | Reliable draft saving: preserve unsaved edits, reconcile timed-out saves, prevent duplicate submissions, synchronize versions and resolve conflicts safely; investigate database latency. | High — reliability / edit preservation | Authorized; queued |
+| IB-19 | After confirmed Submit for review, close the editor and return to the Create list with a clear Under review status and View in Reviews action. | High — workflow clarity | Authorized; queued |
+| IB-20 | AI resolves actionable review findings, rechecks the revised draft and escalates only facts/decisions it cannot resolve; founder reviews the final changes and gives final approval. | High — agentic review / minimal manual work | Authorized; queued |
+| IB-21 | Reviews page with two sections: pending actionable reviews above approved/published history; latest 10 published items, 1/2/3/6/12-month filters, metadata and exact-version popup previews across channels. | High — review/history usability | Authorized; queued |
 
 ### IB-11 — consistent section spacing across Studio
 

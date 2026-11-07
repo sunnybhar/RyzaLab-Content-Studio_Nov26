@@ -231,6 +231,7 @@ export interface SoloReviewPolicy {
   autoReview: boolean;
 }
 export interface Content {
+  saveOperations?: import("./save-operation").SaveOperation[];
   pipelineRequestKey?: string;
   pipelineBriefId?: string;
   pipelineSnapshot?: import("./pipeline").PipelineBrief;
