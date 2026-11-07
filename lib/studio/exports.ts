@@ -683,8 +683,8 @@ export async function exportContentDocument(
     ctx.fillStyle = "#172d30";
     ctx.textBaseline = "top";
     ctx.font = `400 18px ${layout.font}`;
-    ctx.fillText(layout.header, margin, 28);
-    ctx.fillText(layout.footer, margin, canvas.height - 42);
+    ctx.fillText(layout.header, margin, 28, canvas.width-margin*2);
+    ctx.fillText(layout.footer, margin, canvas.height - 42, canvas.width-margin*2);
   };
   const flush = () => {
     if (page++) pdf.addPage();

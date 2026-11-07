@@ -573,3 +573,6 @@ v0.3.34 pushed to main/studio-rebuild at2d43aaa. Current IB-01/02 work adds stab
 
 ### Section-image integration checks
 All327domain tests pass including stable/repeated headings, immutable same-draft figure attachment, replacement, missing heading detection, project roundtrip, asset ownership and AI caption-only corrections with invented-image rejection. Illustrated export browser passes three ordered figures/captions in DOCX, supported font/header/margins, multipage PDF count, text-only export and renamed-heading guard. Review/editor/history now render article figures in context, and package approval validates their immutable assets. Image-placement browser/typecheck and final production build/smoke still in progress. Original source files and current full backlog retained; no provider calls.
+
+### v0.3.35 verified
+All327domain tests and production build/TypeScript pass. Section placement browser and illustrated export artifact browser pass. Full production app and newsletter ZIP/guidance/PDF/DOCX browsers pass. Supported heading-based image layout, captions, in-context review/history, immutable asset checks and optional exports ready for production push. Complete arbitrary template conversion, deep dossier, tighter estimates and publishing integrations remain pending. No provider calls, operational imports or publications.
