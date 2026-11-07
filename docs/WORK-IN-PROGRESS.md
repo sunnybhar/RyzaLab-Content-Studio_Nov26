@@ -549,3 +549,6 @@ v0.3.31 successfully pushed to both studio-rebuild and main at 64bea75. Continui
 
 ### Multi-source newsletter release candidate
 All306 domain checks passed before the final binary-exclusion test; combined composer browser passes selection/text/document/outline/open and exact original download. Updated source generation to exclude original base64 payloads and retain extracted text; fixed hash serialization for live request idempotency. Final307-test regression, production build/TypeScript and full production app browser pass for v0.3.32. This release is not all remaining backlog. External provider publishing/AI not exercised.
+
+### Automatic correction loop WIP
+v0.3.32 pushed to main/studio-rebuild at fe322a4 after307tests/build/full production browser passed. Current IB-20 WIP adds founder opt-in automatic corrections (existing policies remain off), two-round maximum, exact review/revision/root submission guards, package budget checks for correction plus recheck, retained prior copies, no automatic retry of ambiguous/failed/invalid output, and final founder approval protection. Submission, maintenance and receipt persistence use a shared preparation pipeline. Type/regression and new round/permission/approval boundary tests are in progress; this work is not deployed. No provider call made.

@@ -297,6 +297,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     requireIndependentReview: z.boolean(),
     autoDraft: z.boolean(),
     autoReview: z.boolean(),
+    autoCorrect: z.boolean().optional(),
     expectedRuleVersion: short,
   }),
   command("preparation.authorize", {

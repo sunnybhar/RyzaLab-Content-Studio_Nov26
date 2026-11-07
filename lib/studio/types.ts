@@ -230,6 +230,7 @@ export interface SoloReviewPolicy {
   packageCap: number;
   autoDraft: boolean;
   autoReview: boolean;
+  autoCorrect?: boolean;
 }
 export interface Content {
   saveOperations?: import("./save-operation").SaveOperation[];
@@ -276,7 +277,8 @@ export interface Content {
   agentReview?: AgentReview;
   initialWriting?: {id:string; actor:string; at:string; policyVersion:string; identity:string; revision:number};
   automaticWriting?: {intentId:string; jobId?:string; error?:string; at:string};
-  reviewSubmission?: { id: string; actor: string; identity: string; at: string };
+  reviewCycle?: {rootSubmissionId:string;rounds:number;jobId?:string;status:"correcting"|"reviewing"|"ready"|"needs_input"|"stopped";reason?:string;at:string};
+  reviewSubmission?: { rootId?:string; id: string; actor: string; identity: string; at: string };
   automaticReview?: { acceptanceId: string; jobId?: string; error?: string; at: string };
   generatedBy?: {
     provider: Connection["provider"];
@@ -336,6 +338,7 @@ export interface Connection {
   updatedAt: string;
 }
 export interface Job {
+  reviewCorrection?: {reviewJobId:string;rootSubmissionId:string;round:number};
   uncertainPredecessorIds?: string[];
   writingFollowupId?: string;
   leaseExpiredAt?: string;

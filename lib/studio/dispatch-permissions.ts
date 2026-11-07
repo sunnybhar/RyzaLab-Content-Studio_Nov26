@@ -1,3 +1,4 @@
+import {correctionIsCurrent} from "./review-correction";
 import {isActiveChannel} from "./active-channels";
 import { copyIdentity, currentCopyAcceptance } from "./solo-quality";
 import type { Actor, Job, StudioState } from "./types";
@@ -33,6 +34,7 @@ export function canDispatchJob(state: StudioState, actor: Actor, job: Job) {
   )
     return false;
 
+  if(job.reviewCorrection&&(!content||!correctionIsCurrent(state,content,job)))return false;
   if(!researchSourcesCurrent(state,actor,job))return false;
   const scope = {
     channel: job.channel,

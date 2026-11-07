@@ -1,3 +1,4 @@
+import {correctionIsCurrent} from "./review-correction";
 import {isLongForm} from "./channel-writing";
 import {incompleteDraftBody,applyRecoveredWorkingText} from "./incomplete-draft";
 import type { Content, Job, StudioState } from "./types";
@@ -136,12 +137,13 @@ export function settleWrittenOutput(
       // Existing human copy still needs explicit comparison before replacement.
       if (c.text.trim()) return;
     }
+    const correction=Boolean(job.reviewCorrection&&correctionIsCurrent(state,c,job));
     if (
       !c ||
       c.deletedAt ||
       c.revision !== job.targetRevision ||
       copyIdentity(c, state) !== job.targetIdentity ||
-      c.state !== "draft" ||
+      (c.state !== "draft" && !correction) ||
       currentCopyAcceptance(c, state) ||
       job.targetAccepted
     ) {
@@ -150,7 +152,13 @@ export function settleWrittenOutput(
         "Your working version changed or is protected. Review this candidate beside your current draft; nothing was overwritten.";
       return;
     }
+    if(job.reviewCorrection&&!correction){job.outputStatus="conflict";job.error="Correction context changed or this version was approved. Saved candidate did not replace it.";return;}
     applyDraftCandidate(c, job, job.createdBy, now, id, Boolean(job.candidate.questions.length));
+    if(job.reviewCorrection){
+      c.state="review";
+      c.reviewSubmission={id:id(),rootId:job.reviewCorrection.rootSubmissionId,actor:job.createdBy,identity:copyIdentity(c,state),at:now};
+      c.reviewCycle={rootSubmissionId:job.reviewCorrection.rootSubmissionId,rounds:job.reviewCorrection.round,status:"reviewing",jobId:job.id,at:now};
+    }
   } else {
     let report;
     try {

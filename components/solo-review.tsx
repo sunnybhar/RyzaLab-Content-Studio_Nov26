@@ -161,7 +161,9 @@ export function SoloReview({
       setBusy(false);
     }
   }
-  const status =
+  const correctionJob=state.jobs.find(j=>j.id===content.reviewCycle?.jobId);
+  const correctionActive=content.reviewCycle?.status==="correcting"&&correctionJob&&["queued","running","awaiting_confirmation"].includes(correctionJob.state);
+  const status = correctionActive ? `AI correcting draft · round ${content.reviewCycle!.rounds}/2` :
     current?.state === "unknown" ? "AI review outcome needs recovery — your draft is preserved" :
     current?.state === "running"
       ? "AI review in progress…"
@@ -177,6 +179,7 @@ export function SoloReview({
               : "Ready for your review";
   return (
     <section className="s-solo-review" aria-label="Review and publish">
+      {content.reviewCycle?.reason&&<p role="status">{content.reviewCycle.reason}</p>}
       {content.media.imageUrl && (
         <div className="s-solo-asset">
           {renderAsset(content.media.imageUrl)}

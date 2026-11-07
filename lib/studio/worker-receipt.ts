@@ -1,3 +1,4 @@
+import {orchestrateReviewPreparation} from "./review-preparation";
 import { z } from "zod";
 import type { StudioState, Job } from "./types";
 import { studioDatabaseError } from "./database-errors";
@@ -225,7 +226,7 @@ export async function persistWorkerReceipt(
         503,
         "Workspace unavailable for saved outcome recovery. No provider request was repeated.",
       );
-    const next = applyWorkerReceipt(previous, receipt);
+    const next = orchestrateReviewPreparation(applyWorkerReceipt(previous, receipt),receipt.receivedAt);
     try {
       stage("settlement_persist");
       await persist(db, previous, next);

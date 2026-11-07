@@ -39,6 +39,7 @@ export function SoloPolicySettings({
   const [automaticReview, setAutomaticReview] = useState(
     policy?.autoReview ?? true,
   );
+  const [automaticCorrection,setAutomaticCorrection]=useState(policy?.autoCorrect??false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const activeJobs = state.jobs.some((job) =>
@@ -80,6 +81,7 @@ export function SoloPolicySettings({
         requireIndependentReview: independent,
         autoDraft: automaticWriting,
         autoReview: automaticReview,
+        autoCorrect: automaticCorrection,
         expectedRuleVersion: editRules,
       });
       setEditing(false);
@@ -98,8 +100,7 @@ export function SoloPolicySettings({
         <div>
           <h2>Review and preparation</h2>
           <p>
-            Approve the copy first, then review and approve the complete
-            package.
+            Writer submits; AI prepares and checks; founder reviews the final content and approves.
           </p>
         </div>
         {founder && ready && !editing && (
@@ -113,6 +114,7 @@ export function SoloPolicySettings({
               );
               setIndependent(policy?.requireIndependentReview ?? false);
               setAutomaticReview(policy?.autoReview ?? true);
+              setAutomaticCorrection(policy?.autoCorrect??false);
               setAutomaticWriting(policy?.autoDraft ?? true);
               setEditVersion(policy?.version);
               setEditRules(state.settings.protectedVersion);
@@ -206,8 +208,10 @@ export function SoloPolicySettings({
               checked={automaticReview}
               onChange={(event) => setAutomaticReview(event.target.checked)}
             />{" "}
-            Prepare an AI textual review automatically after copy approval
+            Prepare an AI textual review automatically after submission
           </label>
+          <label><input type="checkbox" checked={automaticCorrection} disabled={!automaticReview} onChange={event=>setAutomaticCorrection(event.target.checked)}/> Automatically correct review findings and recheck (maximum two rounds, within the package allowance)</label>
+          <p>Existing settings keep automatic corrections off until the founder enables them. Missing facts, uncertain outcomes, changed drafts or insufficient budget stop the loop; final approval stays with the founder.</p>
           <p>
             Automatic review requires a validated review connection, verified
             pricing, a running worker and a package allowance. Missing setup or

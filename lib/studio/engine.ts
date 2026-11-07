@@ -51,6 +51,7 @@ import { publicRetrievalTarget, researchJobInput, researchEvidence, researchSour
 import { publicResearchSchema, savedResearchSchema } from "./research";
 import { review } from "../brand";
 export type ExecutionContext = {
+  reviewCorrection?: Job["reviewCorrection"];
   retrievalResult?: unknown;
   now?: string;
   id?: () => string;
@@ -1023,7 +1024,7 @@ export function applyCommand(
         const authorization = { id:id(), contentId:d.id, channel:d.channel, account:d.account,
           authorizedFor:d.assignedTo, authorizedBy:actor.email, at:now, period:budgetMonth(now,s.settings.timezone),
           maxCents:Math.min(existing?.maxCents ?? policy.packageCap, policy.packageCap, 200),
-          functions:["review"] as import("./types").FunctionKind[], policyVersion:policy.version };
+          functions:(policy.autoCorrect?["text","review"]:["review"]) as import("./types").FunctionKind[], policyVersion:policy.version };
         s.preparations ??= []; s.preparations.push(authorization); d.preparationId=authorization.id;
       }
       const owner =
@@ -1746,6 +1747,7 @@ export function applyCommand(
         requireIndependentReview: c.requireIndependentReview,
         autoDraft: c.autoDraft,
         autoReview: c.autoReview,
+        autoCorrect: c.autoCorrect ?? false,
       };
       s.settings.monthlyCap = c.monthlyCap;
       if (!s.settings.requestCap) s.settings.requestCap = c.packageCap;
@@ -2091,6 +2093,7 @@ export function applyCommand(
       const j: Job = {
         id: id(),
         kind: c.kind,
+        reviewCorrection:ctx.reviewCorrection,
         uncertainPredecessorIds:c.uncertainPredecessorIds,
         ideaPurpose:c.ideaPurpose,
         channel: c.channel,
