@@ -160,10 +160,9 @@ test("completed cited evidence enters ideas and writing with retained IDs, excer
     ["cited"],
   );
 });
-test("uncited, incomplete, unknown, other-channel and inaccessible research cannot be selected", () => {
+test("uncited, incomplete, unknown and inaccessible research cannot be selected; authorized cross-channel sources can be reused", () => {
   for (const mutate of [
     (s: StudioState) => (s.jobs[0].state = "unknown"),
-    (s: StudioState) => (s.jobs[0].channel = "Reddit"),
     (s: StudioState) => (s.jobs[0].createdBy = "another@example.com"),
     (s: StudioState) =>
       (s.jobs[0].result = JSON.stringify({ summary: "Uncited assertion" })),
@@ -177,6 +176,7 @@ test("uncited, incomplete, unknown, other-channel and inaccessible research cann
     }
     assert.throws(() => researchEvidence(s, DEMO_ACTOR, "LinkedIn", ["cited"]));
   }
+  const shared=researchFixture();shared.jobs[0].channel="Reddit";assert.equal(researchEvidence(shared,DEMO_ACTOR,"LinkedIn",["cited"]).length,1);
   assert.throws(
     () =>
       ideaJobInput(researchFixture(), DEMO_ACTOR, {

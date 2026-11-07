@@ -771,9 +771,10 @@ export function applyCommand(
       const idea = s.ideas.find((i) => i.id === c.id);
       if (!idea) bad("Idea not found.");
       need("read", { channel: idea.channel });
+      if(idea.state==="rejected")bad("Revise or copy this rejected idea before writing from it.");
       if (idea.state !== "approved") {
-        need("idea.review", { channel: idea.channel });
-        idea.state = "approved";
+        if(can(s,actor,"idea.review",{channel:idea.channel}))idea.state="approved";
+        else if(idea.createdBy!==actor.email||!can(s,actor,"idea.edit",{channel:idea.channel}))need("idea.review",{channel:idea.channel});
       }
       const targetChannel=c.targetChannel||idea.channel;
       need("content.create", { channel: targetChannel, account: c.account||"RyzaLab" });

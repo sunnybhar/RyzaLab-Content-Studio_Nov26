@@ -251,7 +251,7 @@ for (const sample of samples)
     assert.equal(c.channel, channel);
     const body =
       channel === "Newsletter"
-        ? "A clearer household handoff\n\n"+"Write down the routine, the person to call and the fallback. Review the document together before relying on it. ".repeat(65)
+        ? "A clearer household handoff\n\n"+"Write down the routine, the person to call and the fallback. Review the document together before relying on it. ".repeat(85)
         : "A useful household handoff can list the routine, who to call and what to do if the usual person is away.";
     if (sample.ai) {
       s = cmd(s, {

@@ -31,7 +31,6 @@ export function researchEvidence(
   channel: Channel,
   ids: string[] = [],
 ) {
-  requirePermission(state,actor,"read",{channel});
   if (ids.length > 5 || new Set(ids).size !== ids.length)
     throw new StudioError(
       400,

@@ -1518,7 +1518,7 @@ export default function Workspace() {
             <div className="s-release-label" aria-label="Studio version">
               <strong>{page}</strong>
               <small>
-                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.28"} ·{" "}
+                v{process.env.NEXT_PUBLIC_STUDIO_VERSION || "0.3.29"} ·{" "}
                 {process.env.NEXT_PUBLIC_STUDIO_COMMIT || "local"}
               </small>
             </div>
@@ -1992,7 +1992,7 @@ export default function Workspace() {
                   error={localError}
                   onOpen={() => setLocalError("")}
                   canReview={(idea) => allowed("idea.review", { channel: idea.channel })}
-                  canUse={(idea, account) => allowed("content.create", { channel:channel==="All channels"?idea.channel:channel, account }) && (idea.state !== "pending" || allowed("idea.review", { channel: idea.channel }))}
+                  canUse={(idea, account) => allowed("content.create", { channel:channel==="All channels"?idea.channel:channel, account }) && (idea.state !== "pending" || allowed("idea.review", { channel: idea.channel }) || (idea.createdBy===actor.email && allowed("idea.edit",{channel:idea.channel})))}
                   canReuse={(idea) => allowed("idea.edit", { channel: idea.channel })}
                   onUse={useIdea}
                   onNewsletter={allowed("content.create", {channel: "Newsletter", account: "RyzaLab"}) ? (idea) => createNewsletter("idea", idea.id) : undefined}
@@ -2725,6 +2725,7 @@ export default function Workspace() {
               />
             ) : (
               <>
+                {notice.startsWith("Submitted for review")&&<div className="s-info-strip" role="status">Submitted for review — now under review.<button className="s-btn" onClick={()=>move("Reviews")}>View in Reviews</button></div>}
                 <ExistingPipeline key={`create:${pipelineFocus}`} initialId={pipelineFocus} state={state} channel={channel} disabled={readOnly||busy} onIdeas={pipelineIdeas} onWrite={(b,c)=>void pipelineWrite(b,c)} onImport={pipelineImport}/>
                 <div className="s-toolbar">
                   <div className="s-inline">
@@ -4499,6 +4500,8 @@ function Editor({
   const [includeNewsletterImage,setIncludeNewsletterImage]=useState(true);
   const [tab, setTab] = useState("Write");
   const [postPreview, setPostPreview] = useState(false);
+  const [submitting,setSubmitting]=useState(false);
+  const submitLock=useRef(false);
   const [slideIndex, setSlideIndex] = useState(0);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
@@ -4678,12 +4681,12 @@ function Editor({
             Save draft
           </button>
           <button
-            disabled={readOnly || busy || draftSave.busy || draftSave.status==="unknown" || dirty || externalChange || (!state.settings.reviewPolicy && requirements.length > 0)}
+            disabled={readOnly || busy || submitting || draftSave.busy || draftSave.status==="unknown" || dirty || externalChange || (!state.settings.reviewPolicy && requirements.length > 0)}
             className="s-btn s-primary"
             title={dirty ? "Save your changes before submitting" : ""}
-            onClick={async()=>{if(await run({type:"content.submit",id:c.id},"Submitted for review — now under review"))back();}}
+            onClick={async()=>{if(submitLock.current)return;submitLock.current=true;setSubmitting(true);try{if(await run({type:"content.submit",id:c.id},"Submitted for review — now under review"))back();}finally{submitLock.current=false;setSubmitting(false);}}}
           >
-            <ShieldCheck size={15} /> Submit for review
+            <ShieldCheck size={15} /> {submitting?"Submitting…":"Submit for review"}
           </button>
         </div>
       </div>
@@ -4752,7 +4755,7 @@ function Editor({
               />
               {c.pipelineSnapshot&&<details className="pipeline-origin"><summary>Existing Pipeline · {c.pipelineSnapshot.externalId||c.pipelineSnapshot.title}</summary><p>{c.pipelineSnapshot.angle}</p><p>Imported from {c.pipelineSnapshot.sourceFile} · {c.pipelineSnapshot.sheet}, row {c.pipelineSnapshot.row} · brief v{c.pipelineSnapshot.version}</p><p>Planned: {c.pipelineSnapshot.plannedDate||"Unscheduled"} {c.pipelineSnapshot.plannedTime} · {c.pipelineSnapshot.timezone}. This is not a publishing approval.</p>{c.pipelineSnapshot.sourceUrls.map(url=><p key={url}>{url}</p>)}</details>}
               <GenerationRulesStatus content={c} state={state}/>
-              {isLongForm(c.channel,c.format)&&<section aria-label="Download newsletter" className="s-actions"><button className="s-btn" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export newsletter DOCX</button><button className="s-btn s-primary" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export newsletter PDF</button>{media.imageUrl&&<label><input type="checkbox" checked={includeNewsletterImage} onChange={e=>setIncludeNewsletterImage(e.target.checked)}/> Include attached image</label>}<p>Downloads use the content above automatically. No copy/paste or image is required.</p></section>}
+              {isLongForm(c.channel,c.format)&&<section aria-label={/blog/i.test(c.format)?"Download blog":"Download newsletter"} className="s-actions"><button className="s-btn" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} DOCX</button><button className="s-btn s-primary" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} PDF</button>{media.imageUrl&&<label><input type="checkbox" checked={includeNewsletterImage} onChange={e=>setIncludeNewsletterImage(e.target.checked)}/> Include attached image</label>}<p>Downloads use the content above automatically. No copy/paste or image is required.</p></section>}
               <div className="s-editor-wordcount">
                 {text.trim() ? text.trim().split(/\s+/).length : 0} words{" "}
                 <span>{text.length} characters</span>

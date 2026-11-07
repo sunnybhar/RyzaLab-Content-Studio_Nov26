@@ -51,7 +51,7 @@ export function ReviewHistory({
         <label>
           Status
           <select
-            value={status}
+            aria-label="Status" value={status}
             onChange={(e) => {
               setStatus(e.target.value as typeof status);
               setLimit(20);
@@ -64,7 +64,7 @@ export function ReviewHistory({
         <label>
           {status === "published" ? "Published" : "Approved"} in
           <select
-            value={period}
+            aria-label={status === "published" ? "Published in" : "Approved in"} value={period}
             onChange={(e) => {
               setPeriod(e.target.value);
               setLimit(20);

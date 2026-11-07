@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {ACTIVE_CHANNELS} from "@/lib/studio/active-channels";
 import type { Channel, StudioState } from "@/lib/studio/types";
 import type { PipelineBrief } from "@/lib/studio/pipeline";
@@ -28,6 +28,7 @@ export function ExistingPipeline({
   const [search, setSearch] = useState(""),
     [selected, setSelected] = useState(initialId || ""),
     [target, setTarget] = useState<Channel | "">("");
+  useEffect(()=>setTarget(""),[channel]);
   const briefs = (state.pipelineBriefs || []).filter(
     (b) =>
       

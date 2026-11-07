@@ -78,7 +78,9 @@ export function SoloReview({
       e instanceof Error ? e.message : "Source access needs attention.",
     );
   }
-  const findings = [...new Set(issues)];
+  const allFindings=[...new Set(issues)];
+  const operationalFindings=allFindings.filter(issue=>/Generation or review is still pending|automatic textual review must finish|previous review outcome is uncertain|previous review did not attach|Resolve existing active|package allowance|review setup|active channel setup|current independent AI review/i.test(issue));
+  const findings=allFindings.filter(issue=>!operationalFindings.includes(issue));
   // Existing review drafts enter the same submission path, without an invented approval.
   useEffect(() => {
     if (
@@ -160,10 +162,12 @@ export function SoloReview({
     }
   }
   const status =
+    current?.state === "unknown" ? "AI review outcome needs recovery — your draft is preserved" :
     current?.state === "running"
       ? "AI review in progress…"
       : current?.state === "queued"
         ? "AI review queued…"
+        : operationalFindings.length ? "AI preparation needs attention — your draft is preserved"
         : findings.length
           ? "Checks need attention — edit or override to continue"
           : readiness.agent
@@ -245,6 +249,7 @@ export function SoloReview({
         <strong>{status}</strong>
       </p>
       {readiness.agent && <p>{readiness.agent.summary}</p>}
+      {!!operationalFindings.length&&<details><summary>Processing details — not content corrections</summary><p>These messages describe the same review preparation/recovery problem. They are not separate writing tasks.</p><ul>{operationalFindings.map(issue=><li key={issue}>{issue}</li>)}</ul></details>}
       <details>
         <summary>
           Check details
