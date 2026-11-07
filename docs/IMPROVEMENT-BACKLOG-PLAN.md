@@ -31,6 +31,7 @@ This is the master plan for **all improvement items in the earlier seven-item li
 | IB-15 | Evidence-led deep research: investigation briefs, primary-source tracing, full-source reading, claim verification, data analysis, research dossier, reliable writing handoff and bounded costs. Extends IB-14/IB-05/IB-06. | High — research depth and reliability | Queued; do not build |
 | IB-16 | Add Blog as a 4–10 minute reading format alongside short LinkedIn posts and 8–15 minute newsletters, with an editor format dropdown and the same applicable research/writing features. | High — content creation | Queued; do not build |
 | IB-17 | Shared imported/generated/manual idea and brief library available across every active channel and Blog format, with destination-specific adaptation rather than source-channel lock-in. | High — cross-channel creation | Queued; do not build |
+| IB-18 | Reliable draft saving: preserve unsaved edits, reconcile timed-out saves, prevent duplicate submissions, synchronize versions and resolve conflicts safely; investigate database latency. | High — reliability / edit preservation | Queued; do not build |
 
 ### IB-11 — consistent section spacing across Studio
 
@@ -174,6 +175,33 @@ Acceptance when built:
 - No source edit, date reassignment, paid request, multi-channel scheduling or publication happens simply by changing tabs or selecting a target. Permission-restricted sources remain restricted.
 
 Status: queued only, subject to the standing no-build instruction. Extends IB-04, IB-08 and IB-16. No app changes or deployment.
+
+### IB-18 — draft save reliability, timeout recovery and version conflicts
+
+User approved backlog capture of the save-reliability recommendations, not implementation. Focus on the actual reported messages: “The Studio database save timed out” and “This draft changed. Reload before saving so no edits are lost.” A successful database commit with a lost/timed-out response could leave the editor stale and cause the second error, but that connection is a hypothesis until request traces confirm it. Do not diagnose a missing migration from a timeout.
+
+Scope when authorized:
+
+1. **Preserve unsaved edits first.** Maintain a recoverable local working copy while saves are pending, timed out or conflicted. Show Unsaved, Saving, Saved, Save outcome unknown and Conflict states truthfully. Scope recovery to the correct account/workspace/draft; address local storage access, retention, sign-out/shared-device behavior and failed local writes. Do not claim edits are safely backed up unless that write succeeded.
+2. **Reconcile uncertain saves.** Give the save an identifiable operation and check whether that exact operation committed after a response timeout. If confirmed, synchronize the persisted revision/baseline without replacing newer local edits. If still uncertain, retain the local copy and show a status-check action. Never interpret a timeout as proof of failure or blindly resubmit an AI request.
+3. **Make retries idempotent.** Stable operation IDs bind to the actor, workspace, target, expected version and exact payload. Same-operation retries cannot duplicate drafts, saves, reservations, AI jobs or charges; changed payloads require a distinct operation. Preserve existing concurrency checks and budget protections.
+4. **Handle conflicts without destructive reloads.** Show the user's unsaved version against the latest saved version, identify meaningful differences and support a deliberate merge or saving a separate copy where authorized. Keep originals/history. Do not silently choose last-write-wins, overwrite newer work or discard a local recovery copy merely because a refresh succeeded.
+5. **Keep editor versions synchronized.** Coordinate acknowledgements, background refresh, other tabs/sessions and AI/worker updates. A delayed response must not move the editor backward or replace newer local text. Edits after a save starts must remain dirty; update the baseline only to the version actually acknowledged. Review/approval still applies to the exact resulting revision.
+6. **Measure and fix the underlying latency.** Trace the reported operation through database read/commit times, workspace payload size, concurrent saves, worker updates and transaction contention. Choose optimizations from evidence; do not assume the cause or merely extend timeouts. Consider bounded writes or storage changes only if measurements justify them, with migration/compatibility planning where needed.
+7. **Use actionable, accurate messages.** Distinguish slow save, confirmed save failure, uncertain outcome and revision conflict. Keep a diagnostic reference for investigation, but show a practical recovery action. A database save timeout, provider outcome uncertainty and missing schema are different states and must not be conflated.
+
+Acceptance when built:
+
+- Simulate both commit-success/response-loss and no-commit/timeouts; recover the correct outcome with preserved user edits and no duplicate operation.
+- Test editing while saving, delayed/out-of-order responses, refresh/reopen, two tabs/users and AI updates during editing. No newer local/server content is silently lost.
+- Verify conflict comparison/merge/separate-copy recovery, stale-version rejection, permissions, retained history and approval invalidation after relevant changes.
+- Confirm same-operation retry behavior and no duplicate job/reservation/charge. Unknown provider outcomes retain existing protection and are not automatically retried as a save-recovery shortcut.
+- Verify local recovery isolation/retention, sign-out handling and an honest fallback when local persistence fails.
+- Record measured database timings and before/after evidence for any performance optimization; production diagnosis is separate from fixture tests.
+
+Proposed priority when authorized: **preserve edits → reconcile timed-out saves → synchronize versions and resolve conflicts → optimize measured database bottlenecks**. Coordinate with IB-15's research/generation worker-recovery prerequisite without treating this draft-save item as proof that provider lease expiry is fixed.
+
+Status: queued only. No app code, local recovery storage, database settings, retries, migrations, paid requests or deployment changed by this planning task.
 
 ### Original-list completeness check
 
