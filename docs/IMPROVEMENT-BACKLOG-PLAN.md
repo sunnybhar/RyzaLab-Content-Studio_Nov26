@@ -28,6 +28,7 @@ This is the master plan for **all improvement items in the earlier seven-item li
 | IB-11 | Consistent spacing between sections throughout Studio, including the Calendar import/pipeline layout shown in the user's screenshot. | High — usability | Queued; do not build |
 | IB-13 | Clarify AI maximum allowance versus recorded usage cost, expose the calculation, and evaluate tighter estimates and confirmation within existing budgets. | High — cost clarity | Queued; do not build |
 | IB-14 | Broaden and improve research across relevant websites, news, specialist blogs and accessible YouTube material; remove Wikipedia completely from new research. Refines IB-05/IB-06. | High — research quality | Queued; do not build |
+| IB-15 | Evidence-led deep research: investigation briefs, primary-source tracing, full-source reading, claim verification, data analysis, research dossier, reliable writing handoff and bounded costs. Extends IB-14/IB-05/IB-06. | High — research depth and reliability | Queued; do not build |
 
 ### IB-11 — consistent section spacing across Studio
 
@@ -98,6 +99,16 @@ Acceptance when built:
 - Ranking/diversity and sector fallback are demonstrated on representative briefs; no live paid test is started without its authorized budget.
 
 Status: queued only. No research code, source configuration, saved evidence, paid request or deployment changed by this planning task.
+
+### IB-15 — comprehensive deep-research programme
+
+Full plan: [DEEP-RESEARCH-BACKLOG-PLAN.md](DEEP-RESEARCH-BACKLOG-PLAN.md).
+
+Expand source discovery into a senior-writer-style investigation: adaptive depth, explicit subquestions, sector-first and contrary-evidence searches, original-source tracing, full article/PDF/accessible transcript reading, source independence/quality, claim-to-passage checks, reproducible data analysis, contextual insights and a reusable dossier. Preserve a simple user flow, exact source/rule snapshots, meaningful progress and independent research/generation recovery under explicit spending limits. Exclude Wikipedia completely. Never invent interviews, facts, citations, metrics or source access. No external outreach without separate authorization.
+
+The detailed plan includes phases, a proposed 30-brief evaluation set, engineering/editorial acceptance criteria, cost/freshness rules and provider/input dependencies. It complements IB-14 rather than silently marking the underlying research changes complete. Current lease-expiry recovery must be verified before adding deeper paid automation.
+
+Status: backlog/design only. No implementation, paid research, provider setup, outreach, operational imports or deployment authorized by this planning task.
 
 ### Original-list completeness check
 
