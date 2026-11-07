@@ -1,44 +1,408 @@
 "use client";
-import {useEffect,useRef,useState} from "react";
-import {equalDraft,valuesOf,recoveryKey,readRecovery,type DraftValues,type DraftRecovery} from "@/lib/studio/draft-recovery";
-import {savedOperation} from "@/lib/studio/save-operation";
-import {StudioResponseError} from "@/lib/studio/response";
-import type {DraftSaveCommand} from "@/lib/studio/draft-save";
-import type {Actor,Command,Content,StudioResponse} from "@/lib/studio/types";
-export function useDraftSave({content:c,actor,mode,values,apply,send,refresh,onError}:{content:Content;actor:Actor;mode:string;values:DraftValues;apply:(v:DraftValues)=>void;send:(c:Command)=>Promise<unknown>;refresh:()=>Promise<void>;onError:(message:string)=>void}){
- const base=useRef({revision:c.revision,values:valuesOf(c)}),pending=useRef<DraftSaveCommand|undefined>(undefined);
- const [initialized,setInitialized]=useState(false),[conflict,setConflict]=useState(false),[status,setStatus]=useState<"idle"|"saving"|"saved"|"unknown"|"failed">("idle"),[localError,setLocalError]=useState(""),[notice,setNotice]=useState(""),[checking,setChecking]=useState(false),[checked,setChecked]=useState(false);
- const key=recoveryKey(mode,process.env.NEXT_PUBLIC_SUPABASE_URL||"local",actor.id,c.id);
- const live=useRef({c,values,apply});live.current={c,values,apply};
- const dirty=!equalDraft(values,valuesOf(c));
- useEffect(()=>{
-  try{const record=readRecovery(localStorage,key);if(record){if(record.pending&&record.pending.id!==c.id)throw Error("Recovery record does not match this draft.");base.current={revision:record.baseRevision,values:record.base};pending.current=record.pending;apply(record.values);setConflict(record.baseRevision!==c.revision&&!equalDraft(record.values,valuesOf(c)));setStatus(record.pending?"unknown":"idle");setNotice("Recovered your local working copy. Check it against the saved version before continuing.");}}
-  catch{setLocalError("Local recovery is unavailable. Keep a downloaded copy before leaving this editor.");}
-  setInitialized(true);
- },[key]);
- useEffect(()=>{
-  if(!initialized)return;
-  const current=live.current,receipt=savedOperation(c,actor,pending.current?.operationId);
-  if(receipt&&pending.current){const submitted:DraftValues={title:pending.current.title,text:pending.current.text,metadata:pending.current.metadata,media:pending.current.media,collection:pending.current.collection||""};const changedAfterSave=!equalDraft(current.values,submitted);pending.current=undefined;base.current={revision:c.revision,values:valuesOf(c)};setStatus("saved");setChecked(false);if(changedAfterSave&&!equalDraft(submitted,valuesOf(c))){setConflict(true);}else{setConflict(false);if(!changedAfterSave)current.apply(valuesOf(c));}return;}
-  if(base.current.revision===c.revision)return;
-  const unsaved=!equalDraft(current.values,base.current.values);
-  if(unsaved&&!equalDraft(current.values,valuesOf(c))){setConflict(true);return;}
-  if(!pending.current){base.current={revision:c.revision,values:valuesOf(c)};setConflict(false);current.apply(valuesOf(c));}
- },[initialized,c,actor.id]);
- function flush(){if(!initialized)return;try{const current=live.current;if(!equalDraft(current.values,valuesOf(current.c))||pending.current){const record:DraftRecovery={v:1,at:Date.now(),baseRevision:base.current.revision,base:base.current.values,values:current.values,pending:pending.current};localStorage.setItem(key,JSON.stringify(record));}else localStorage.removeItem(key);setLocalError("");}catch{setLocalError("Your working copy could not be stored on this device. Download it before refreshing or leaving.");}}
- const flushRef=useRef(flush);flushRef.current=flush;
- useEffect(()=>{if(initialized)flush();},[initialized,values.title,values.text,values.metadata,values.collection,values.media,status,c.revision]);
- useEffect(()=>{const warn=(e:BeforeUnloadEvent)=>{if(!equalDraft(live.current.values,valuesOf(live.current.c))||pending.current){e.preventDefault();e.returnValue="";}};window.addEventListener("beforeunload",warn);return()=>window.removeEventListener("beforeunload",warn);},[]);
- async function save(retry=false){if(status==="saving"||conflict)return false;const command=retry?pending.current:{type:"content.save" as const,id:c.id,expectedRevision:c.revision,operationId:crypto.randomUUID(),...values};if(!command)return false;pending.current=command;setStatus("saving");setChecked(false);try{const record:DraftRecovery={v:1,at:Date.now(),baseRevision:base.current.revision,base:base.current.values,values:live.current.values,pending:command};localStorage.setItem(key,JSON.stringify(record));}catch{setLocalError("Local recovery storage is unavailable. Keep a copy of your writing.");}
-  try{const result=await send(command) as StudioResponse;const receipt=savedOperation(result.state.contents.find(x=>x.id===c.id)!,actor,command.operationId);if(!receipt)throw Error("The save result could not be verified. Check save status before submitting again.");setStatus("saved");return true;}
-  catch(error){const definitive=error instanceof StudioResponseError&&[400,401,403,404,409,413,422].includes(error.status);setStatus(definitive?"failed":"unknown");if(definitive)pending.current=undefined;if(error instanceof StudioResponseError&&error.status===409){setConflict(true);void refresh().catch(()=>{});}onError((error as Error).message);return false;}
- }
- async function check(){setChecking(true);try{await refresh();setChecked(true);setNotice("Save status checked. If still unknown, no confirmed receipt was found; your working copy is retained.");}catch{setNotice("Could not check save status. Your working copy is retained; no save or AI request was repeated.");}finally{setChecking(false);}}
- function rebase(){base.current={revision:c.revision,values:valuesOf(c)};pending.current=undefined;setConflict(false);setStatus("idle");setNotice("Your merged working copy is ready. Save explicitly to create a new revision.");}
- function discard(){if(!window.confirm("Replace your working copy with the latest saved version? Download your edits first if you need them."))return;pending.current=undefined;base.current={revision:c.revision,values:valuesOf(c)};apply(valuesOf(c));setConflict(false);setStatus("idle");setNotice("");}
- function download(){const url=URL.createObjectURL(new Blob([JSON.stringify({title:values.title,text:values.text,metadata:values.metadata,collection:values.collection,media:values.media},null,2)],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="RyzaLab-working-copy.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
- return {dirty,conflict,status,localError,notice,save,check,checking,checked,rebase,discard,download,apply,values,saved:valuesOf(c),busy:status==="saving"};
+import { useEffect, useRef, useState } from "react";
+import {
+  equalDraft,
+  valuesOf,
+  recoveryKey,
+  readRecovery,
+  type DraftValues,
+  type DraftRecovery,
+} from "@/lib/studio/draft-recovery";
+import { savedOperation } from "@/lib/studio/save-operation";
+import { StudioResponseError } from "@/lib/studio/response";
+import type { DraftSaveCommand } from "@/lib/studio/draft-save";
+import type {
+  Actor,
+  Command,
+  Content,
+  StudioResponse,
+} from "@/lib/studio/types";
+export function useDraftSave({
+  content: c,
+  actor,
+  mode,
+  values,
+  apply,
+  send,
+  refresh,
+  onError,
+}: {
+  content: Content;
+  actor: Actor;
+  mode: string;
+  values: DraftValues;
+  apply: (v: DraftValues) => void;
+  send: (c: Command) => Promise<unknown>;
+  refresh: () => Promise<void>;
+  onError: (message: string) => void;
+}) {
+  const base = useRef({ revision: c.revision, values: valuesOf(c) }),
+    pending = useRef<DraftSaveCommand | undefined>(undefined);
+  const [initialized, setInitialized] = useState(false),
+    [conflict, setConflict] = useState(false),
+    [status, setStatus] = useState<
+      "idle" | "saving" | "saved" | "unknown" | "failed"
+    >("idle"),
+    [localError, setLocalError] = useState(""),
+    [notice, setNotice] = useState(""),
+    [checking, setChecking] = useState(false),
+    [checked, setChecked] = useState(false);
+  const key = recoveryKey(
+    mode,
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "local",
+    actor.id,
+    c.id,
+  );
+  const live = useRef({ c, values, apply });
+  live.current = { c, values, apply };
+  const dirty = !equalDraft(values, valuesOf(c));
+  useEffect(() => {
+    try {
+      const record = readRecovery(localStorage, key);
+      if (record) {
+        if (record.pending && record.pending.id !== c.id)
+          throw Error("Recovery record does not match this draft.");
+        base.current = { revision: record.baseRevision, values: record.base };
+        pending.current = record.pending;
+        apply(record.values);
+        setConflict(
+          record.baseRevision !== c.revision &&
+            !equalDraft(record.values, valuesOf(c)),
+        );
+        setStatus(record.pending ? "unknown" : "idle");
+        setNotice(
+          "Recovered your local working copy. Check it against the saved version before continuing.",
+        );
+      }
+    } catch {
+      setLocalError(
+        "Local recovery is unavailable. Keep a downloaded copy before leaving this editor.",
+      );
+    }
+    setInitialized(true);
+  }, [key]);
+  useEffect(() => {
+    if (!initialized) return;
+    const current = live.current,
+      receipt = savedOperation(c, actor, pending.current?.operationId);
+    if (receipt && pending.current) {
+      const submitted: DraftValues = {
+        format: pending.current.format || c.format,
+        title: pending.current.title,
+        text: pending.current.text,
+        metadata: pending.current.metadata,
+        media: pending.current.media,
+        collection: pending.current.collection || "",
+      };
+      const changedAfterSave = !equalDraft(current.values, submitted);
+      pending.current = undefined;
+      base.current = { revision: c.revision, values: valuesOf(c) };
+      setStatus("saved");
+      setChecked(false);
+      if (changedAfterSave && !equalDraft(submitted, valuesOf(c))) {
+        setConflict(true);
+      } else {
+        setConflict(false);
+        if (!changedAfterSave) current.apply(valuesOf(c));
+      }
+      return;
+    }
+    if (base.current.revision === c.revision) return;
+    const unsaved = !equalDraft(current.values, base.current.values);
+    if (unsaved && !equalDraft(current.values, valuesOf(c))) {
+      setConflict(true);
+      return;
+    }
+    if (!pending.current) {
+      base.current = { revision: c.revision, values: valuesOf(c) };
+      setConflict(false);
+      current.apply(valuesOf(c));
+    }
+  }, [initialized, c, actor.id]);
+  function flush() {
+    if (!initialized) return;
+    try {
+      const current = live.current;
+      if (!equalDraft(current.values, valuesOf(current.c)) || pending.current) {
+        const record: DraftRecovery = {
+          v: 1,
+          at: Date.now(),
+          baseRevision: base.current.revision,
+          base: base.current.values,
+          values: current.values,
+          pending: pending.current,
+        };
+        localStorage.setItem(key, JSON.stringify(record));
+      } else localStorage.removeItem(key);
+      setLocalError("");
+    } catch {
+      setLocalError(
+        "Your working copy could not be stored on this device. Download it before refreshing or leaving.",
+      );
+    }
+  }
+  const flushRef = useRef(flush);
+  flushRef.current = flush;
+  useEffect(() => {
+    if (initialized) flush();
+  }, [
+    initialized,
+    values.title,
+    values.text,
+    values.metadata,
+    values.collection,
+    values.format,
+    values.media,
+    status,
+    c.revision,
+  ]);
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => {
+      if (
+        !equalDraft(live.current.values, valuesOf(live.current.c)) ||
+        pending.current
+      ) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, []);
+  async function save(retry = false) {
+    if (status === "saving" || conflict) return false;
+    const command = retry
+      ? pending.current
+      : {
+          type: "content.save" as const,
+          id: c.id,
+          expectedRevision: c.revision,
+          operationId: crypto.randomUUID(),
+          ...values,
+        };
+    if (!command) return false;
+    pending.current = command;
+    setStatus("saving");
+    setChecked(false);
+    try {
+      const record: DraftRecovery = {
+        v: 1,
+        at: Date.now(),
+        baseRevision: base.current.revision,
+        base: base.current.values,
+        values: live.current.values,
+        pending: command,
+      };
+      localStorage.setItem(key, JSON.stringify(record));
+    } catch {
+      setLocalError(
+        "Local recovery storage is unavailable. Keep a copy of your writing.",
+      );
+    }
+    try {
+      const result = (await send(command)) as StudioResponse;
+      const receipt = savedOperation(
+        result.state.contents.find((x) => x.id === c.id)!,
+        actor,
+        command.operationId,
+      );
+      if (!receipt)
+        throw Error(
+          "The save result could not be verified. Check save status before submitting again.",
+        );
+      setStatus("saved");
+      return true;
+    } catch (error) {
+      const definitive =
+        error instanceof StudioResponseError &&
+        [400, 401, 403, 404, 409, 413, 422].includes(error.status);
+      setStatus(definitive ? "failed" : "unknown");
+      if (definitive) pending.current = undefined;
+      if (error instanceof StudioResponseError && error.status === 409) {
+        setConflict(true);
+        void refresh().catch(() => {});
+      }
+      onError((error as Error).message);
+      return false;
+    }
+  }
+  async function check() {
+    setChecking(true);
+    try {
+      await refresh();
+      setChecked(true);
+      setNotice(
+        "Save status checked. If still unknown, no confirmed receipt was found; your working copy is retained.",
+      );
+    } catch {
+      setNotice(
+        "Could not check save status. Your working copy is retained; no save or AI request was repeated.",
+      );
+    } finally {
+      setChecking(false);
+    }
+  }
+  function rebase() {
+    base.current = { revision: c.revision, values: valuesOf(c) };
+    pending.current = undefined;
+    setConflict(false);
+    setStatus("idle");
+    setNotice(
+      "Your merged working copy is ready. Save explicitly to create a new revision.",
+    );
+  }
+  function discard() {
+    if (
+      !window.confirm(
+        "Replace your working copy with the latest saved version? Download your edits first if you need them.",
+      )
+    )
+      return;
+    pending.current = undefined;
+    base.current = { revision: c.revision, values: valuesOf(c) };
+    apply(valuesOf(c));
+    setConflict(false);
+    setStatus("idle");
+    setNotice("");
+  }
+  function download() {
+    const url = URL.createObjectURL(
+      new Blob(
+        [
+          JSON.stringify(
+            {
+              title: values.title,
+              text: values.text,
+              metadata: values.metadata,
+              collection: values.collection,
+              media: values.media,
+            },
+            null,
+            2,
+          ),
+        ],
+        { type: "application/json" },
+      ),
+    );
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "RyzaLab-working-copy.json";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  return {
+    dirty,
+    conflict,
+    status,
+    localError,
+    notice,
+    save,
+    check,
+    checking,
+    checked,
+    rebase,
+    discard,
+    download,
+    apply,
+    values,
+    saved: valuesOf(c),
+    busy: status === "saving",
+  };
 }
-export function DraftSaveStatus({controller:r}:{controller:ReturnType<typeof useDraftSave>}){
- return <>{r.notice&&<p role="status" className="s-info-strip">{r.notice}</p>}{r.localError&&<p role="alert" className="s-info-strip">{r.localError}<button className="s-btn" onClick={r.download}>Download working copy</button></p>}{r.status==="unknown"&&<section className="s-panel" aria-label="Save outcome unknown"><h3>Save outcome unknown — your working copy is retained</h3><p>The save may have committed. Check its status first; this does not make an AI request.</p><div className="s-actions"><button className="s-btn" disabled={r.checking} onClick={()=>void r.check()}>Check save status</button>{r.checked&&!r.conflict&&<button className="s-btn" onClick={()=>void r.save(true)}>Retry the same save safely</button>}<button className="s-btn" onClick={r.download}>Download working copy</button></div></section>}{r.conflict&&<section className="s-panel" aria-label="Resolve draft changes"><h3>A newer saved version is available. Your edits are preserved.</h3><p>Compare the versions below, edit your working copy normally, or bring saved fields into it. Nothing is overwritten until you explicitly save a new revision.</p>{(["title","text","metadata","collection"] as const).filter(k=>r.values[k]!==r.saved[k]).map(k=><details key={k}><summary>Compare {k}</summary><label className="s-field">Your working {k}<textarea readOnly value={r.values[k]}/></label><label className="s-field">Latest saved {k}<textarea readOnly value={r.saved[k]}/></label><button className="s-btn" onClick={()=>r.apply({...r.values,[k]:r.saved[k]})}>Use saved {k} in working copy</button></details>)}{JSON.stringify(r.values.media)!==JSON.stringify(r.saved.media)&&<p>Media also differs. Download your working copy before replacing it.</p>}<div className="s-actions"><button className="s-btn" onClick={r.rebase}>Use this merged version for next save</button><button className="s-btn" onClick={r.discard}>Load latest saved version</button><button className="s-btn" onClick={r.download}>Download working copy</button></div></section>}</>;
+export function DraftSaveStatus({
+  controller: r,
+}: {
+  controller: ReturnType<typeof useDraftSave>;
+}) {
+  return (
+    <>
+      {r.notice && (
+        <p role="status" className="s-info-strip">
+          {r.notice}
+        </p>
+      )}
+      {r.localError && (
+        <p role="alert" className="s-info-strip">
+          {r.localError}
+          <button className="s-btn" onClick={r.download}>
+            Download working copy
+          </button>
+        </p>
+      )}
+      {r.status === "unknown" && (
+        <section className="s-panel" aria-label="Save outcome unknown">
+          <h3>Save outcome unknown — your working copy is retained</h3>
+          <p>
+            The save may have committed. Check its status first; this does not
+            make an AI request.
+          </p>
+          <div className="s-actions">
+            <button
+              className="s-btn"
+              disabled={r.checking}
+              onClick={() => void r.check()}
+            >
+              Check save status
+            </button>
+            {r.checked && !r.conflict && (
+              <button className="s-btn" onClick={() => void r.save(true)}>
+                Retry the same save safely
+              </button>
+            )}
+            <button className="s-btn" onClick={r.download}>
+              Download working copy
+            </button>
+          </div>
+        </section>
+      )}
+      {r.conflict && (
+        <section className="s-panel" aria-label="Resolve draft changes">
+          <h3>A newer saved version is available. Your edits are preserved.</h3>
+          <p>
+            Compare the versions below, edit your working copy normally, or
+            bring saved fields into it. Nothing is overwritten until you
+            explicitly save a new revision.
+          </p>
+          {(["title", "text", "metadata", "collection", "format"] as const)
+            .filter((k) => r.values[k] !== r.saved[k])
+            .map((k) => (
+              <details key={k}>
+                <summary>Compare {k}</summary>
+                <label className="s-field">
+                  Your working {k}
+                  <textarea readOnly value={r.values[k]} />
+                </label>
+                <label className="s-field">
+                  Latest saved {k}
+                  <textarea readOnly value={r.saved[k]} />
+                </label>
+                <button
+                  className="s-btn"
+                  onClick={() => r.apply({ ...r.values, [k]: r.saved[k] })}
+                >
+                  Use saved {k} in working copy
+                </button>
+              </details>
+            ))}
+          {JSON.stringify(r.values.media) !== JSON.stringify(r.saved.media) && (
+            <p>
+              Media also differs. Download your working copy before replacing
+              it.
+            </p>
+          )}
+          <div className="s-actions">
+            <button className="s-btn" onClick={r.rebase}>
+              Use this merged version for next save
+            </button>
+            <button className="s-btn" onClick={r.discard}>
+              Load latest saved version
+            </button>
+            <button className="s-btn" onClick={r.download}>
+              Download working copy
+            </button>
+          </div>
+        </section>
+      )}
+    </>
+  );
 }

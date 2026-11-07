@@ -108,6 +108,7 @@ export function IdeasBrowser({
           "Image",
           "Video",
           "Article",
+          "Blog",
           "Newsletter",
           "Audio",
         ].includes(idea.format || "")
@@ -222,6 +223,7 @@ export function IdeasBrowser({
                         "Image",
                         "Video",
                         "Article",
+          "Blog",
                         "Newsletter",
                         "Audio",
                       ].map((option) => (

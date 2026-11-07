@@ -256,7 +256,7 @@ export function DraftAssistant({
       )}
       {isLongForm(content.channel, content.format) && (
         <p>
-          Newsletter/article target: 1,200–1,600 words, with background,
+          Long-form target: Blog 4–10 minutes; Newsletter 8–15 minutes, with background,
           evidence, reasoning, practical guidance and sources. Download PDF or
           DOCX directly below the content. Images are optional. Page count
           depends on layout.

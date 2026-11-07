@@ -123,7 +123,8 @@ export function settleWrittenOutput(
       return;
     }
     if(isLongForm(c.channel,c.format)){
-      if(job.candidate.body.trim().split(/\s+/).length<1200)job.candidate.questions.push("Expand this newsletter to at least 1,200 substantive words with background, evidence, reasoning and practical guidance before review.");
+      const minWords=/blog/i.test(c.format)?800:1600;
+      if(job.candidate.body.trim().split(/\s+/).length<minWords)job.candidate.questions.push(`Expand this ${/blog/i.test(c.format)?"blog":"newsletter"} to at least ${minWords.toLocaleString("en-US")} substantive words with background, evidence, reasoning and practical guidance before review.`);
       if(!job.candidate.sources.length&&!/^#{0,3}\s*(Sources|References)\s*:?$/im.test(job.candidate.body))job.candidate.questions.push("Add relevant source citations and a readable Sources section for this article before review.");
     }
     job.outputStatus = "ready";

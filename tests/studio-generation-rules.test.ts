@@ -103,7 +103,7 @@ for (const channel of ["LinkedIn", "Newsletter"] as Channel[])
     assert.match(system, /UNIQUE_SHARED_FOUNDER_VOICE/);
     const other = channel === "LinkedIn" ? "Newsletter" : "LinkedIn";
     assert.doesNotMatch(system, new RegExp(`${other} unique brand context`));
-    assert.match(system, channel === "Newsletter" ? /1,200–1,600/ : /180–250/);
+    assert.match(system, channel === "Newsletter" ? /1,600–3,000/ : /180–250/);
     next.agentRuleFiles!.find(
       (file) => file.channel === channel && file.slot === "instructions",
     )!.extractedText = "MODIFIED_AFTER_ENQUEUE";

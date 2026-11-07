@@ -1,4 +1,5 @@
 "use client";
+import {ReviewHistory} from "./review-history";
 import {useDraftSave,DraftSaveStatus} from "./draft-save-controller";
 import type {DraftValues} from "@/lib/studio/draft-recovery";
 import {CalendarImport} from "./calendar-import";
@@ -756,6 +757,7 @@ export default function Workspace() {
             "Image",
             "Video",
             "Article",
+            "Blog",
             "Newsletter",
             "Audio",
           ],
@@ -2713,7 +2715,7 @@ export default function Workspace() {
                 busy={busy}
                 mode={mode as "demo" | "live"}
                 run={execute}
-                back={() => setSelected(null)}
+                back={() => {setSelected(null);setSearch("");setChannel(activeContent.channel);}}
                 form={openForm}
                 onError={setLocalError}
                 refresh={() => refresh(true)}
@@ -2744,6 +2746,7 @@ export default function Workspace() {
                   edits need a new approval.
                 </span>
               </div>
+              <h2>Pending actionable reviews</h2>
               <div className="s-review-grid">
                 {reviews.filter(matches).map((c) => (
                   <ReviewCard
@@ -2788,42 +2791,8 @@ export default function Workspace() {
                   thoughtful review here.
                 </Empty>
               )}
-              <section className="s-panel s-recent-panel">
-                <div className="s-section-heading">
-                  <h2>Approved packages</h2>
-                  <Badge tone="green">{activePackages.length} approved</Badge>
-                </div>
-                {activePackages.filter(matches).map((p) => (
-                  <div className="s-list-row" key={p.id}>
-                    <div>
-                      <strong>{p.title}</strong>
-                      <p>
-                        {p.channel} · Revision {p.revision} · Approved{" "}
-                        {stamp(p.approvedAt)}
-                      </p>
-                    </div>
-                    <span className="s-muted">{p.approvedBy}</span>
-                    <button
-                      disabled={readOnly}
-                      className="s-btn"
-                      onClick={() => scheduleForm(p.contentId)}
-                    >
-                      <CalendarDays size={14} /> Plan publication
-                    </button>
-                    <button
-                      className="s-icon-button"
-                      aria-label={`Export ${p.title}`}
-                      onClick={() =>
-                        void exportPostPackage(p).catch((e) =>
-                          setLocalError(String(e)),
-                        )
-                      }
-                    >
-                      <ArrowDownToLine size={16} />
-                    </button>
-                  </div>
-                ))}
-              </section>
+              <ReviewHistory state={state} AssetMedia={AssetMedia} onPlan={pkg=>scheduleForm(pkg.contentId,pkg.id,pkg)} onExport={pkg=>void exportPostPackage(pkg).catch(e=>setLocalError(String(e)))}/>
+
             </>
           )}
           {page === "Library" && (
@@ -4520,6 +4489,7 @@ function Editor({
   const writingInFlight = state.settings.reviewPolicy?.mode === "two_step" && state.jobs.some((job) => job.contentId === c.id && job.kind === "text" && job.outputContract === "draft_v1" && ["queued", "running"].includes(job.state));
   // Prevent local edits while the worker may apply a result to the saved revision.
   const readOnly = editorReadOnly || Boolean(writingInFlight) || (state.settings.reviewPolicy?.mode === "two_step" && busy);
+  const [writeFormat,setWriteFormat]=useState(c.format);
   const [title, setTitle] = useState(c.title);
   const [text, setText] = useState(c.text);
   const [metadata, setMetadata] = useState(c.metadata);
@@ -4533,8 +4503,8 @@ function Editor({
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [sceneIndex, setSceneIndex] = useState(0);
   const [docsText, setDocsText] = useState("");
-  function applyWorking(values:DraftValues){setTitle(values.title);setText(values.text);setMetadata(values.metadata);setCollection(values.collection);setMedia(values.media);}
-  const draftSave=useDraftSave({content:c,actor,mode,values:{title,text,metadata,collection,media},apply:applyWorking,send,refresh,onError});
+  function applyWorking(values:DraftValues){setWriteFormat(values.format);setTitle(values.title);setText(values.text);setMetadata(values.metadata);setCollection(values.collection);setMedia(values.media);}
+  const draftSave=useDraftSave({content:c,actor,mode,values:{title,text,metadata,collection,media,format:writeFormat},apply:applyWorking,send,refresh,onError});
   const externalChange=draftSave.conflict;
   const dirty=draftSave.dirty;
   const requirements = inputRequirements({...c, title, text, metadata, media});
@@ -4738,7 +4708,7 @@ function Editor({
             />
             <p>
               {c.format} · {c.channel} {c.account ? `· ${c.account}` : ""}
-            </p>
+            </p><label className="s-field">Write as<select aria-label="Write as" value={writeFormat} disabled={readOnly||draftSave.busy} onChange={e=>setWriteFormat(e.target.value)}>{[...new Set([c.format,"Text post","Blog","Newsletter","Carousel","Image","Video","Audio"])].map(value=><option key={value}>{value}</option>)}</select></label><p className="s-muted">Changing format preserves your text. Save first, then explicitly revise with AI to adapt it. Blog: 4–10 min · Newsletter: 8–15 min, estimated at 200 words/minute. Estimated current read: {Math.max(1,Math.ceil(text.trim().split(/\s+/).filter(Boolean).length/200))} min.</p>
           </div>
           <div className="s-view-tabs s-editor-tabs">
             {[

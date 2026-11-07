@@ -31,6 +31,7 @@ export function researchEvidence(
   channel: Channel,
   ids: string[] = [],
 ) {
+  requirePermission(state,actor,"read",{channel});
   if (ids.length > 5 || new Set(ids).size !== ids.length)
     throw new StudioError(
       400,
@@ -41,13 +42,12 @@ export function researchEvidence(
     if (
       !job ||
       job.kind !== "research" ||
-      job.channel !== channel ||
       job.state !== "succeeded" ||
       !job.result
     )
       throw new StudioError(
         409,
-        "Select completed cited research from this channel. Failed or uncertain research cannot be used as evidence.",
+        "Select completed cited research you can access. Failed or uncertain research cannot be used as evidence.",
       );
     requirePermission(state, actor, "read", {
       channel: job.channel,
