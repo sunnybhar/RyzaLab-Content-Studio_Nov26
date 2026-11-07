@@ -534,3 +534,6 @@ Added dedicated resource slots/UI for actual Humanizer, research instructions, s
 
 ### Research reader and source details checkpoint
 In development: sector/depth/source preferences drive discovery, Wikipedia excluded from new retrieval, bounded public HTTPS article extraction with pinned public-address DNS and deadlines. Source cards identify article versus excerpt access and authors where available. Updated legacy test fixtures to the new no-Wikipedia policy. Typecheck passed before the final DNS deadline change; full regression running. Resource upload/version UI and export-layout browser acceptance, complete deep investigation and automatic correction remain unfinished. This checkpoint is not deployed and does not complete the full backlog.
+
+### v0.3.30 release verification
+User requested deployment of progress so far. Production build and TypeScript pass; all 297 domain tests pass. Focused research selection and resource guidance/version browser tests pass. Production app smoke and production Agent Rules persistence/download browser tests passed. Release scope/limitations documented in RELEASE-0.3.30.md; full backlog remains unfinished. No paid calls or operational imports/publications.

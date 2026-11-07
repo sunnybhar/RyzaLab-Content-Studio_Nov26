@@ -126,7 +126,7 @@ export const publicResearchSchema = z
     retrieval: z
       .object({
         adapter: z.enum(["public-refs-v1","bounded-web-v2"]),
-        requests: z.number().int().min(1).max(40),
+        requests: z.number().int().min(1).max(85),
         responseBytes: z.number().int().min(1).max(8388608),
         excerptBytes: z.number().int().min(1).max(100000),
         providers: z
