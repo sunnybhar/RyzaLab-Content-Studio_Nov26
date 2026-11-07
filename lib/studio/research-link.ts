@@ -1,3 +1,4 @@
+import {containsExcludedSource} from "./source-policy";
 import type { Actor, Channel, Job, StudioState } from "./types";
 import { can, requirePermission, StudioError } from "./permissions";
 import { savedResearchSchema } from "./research";
@@ -93,6 +94,7 @@ export function researchJobInput(
     idempotencyKey: string;
   },
 ) {
+  if(containsExcludedSource(input.query))throw new StudioError(400,"Wikipedia source URLs are excluded. Use an allowed public source or a topic question instead.");
   const content = input.contentId
     ? state.contents.find((c) => c.id === input.contentId && !c.deletedAt)
     : undefined;
@@ -148,6 +150,7 @@ export function researchJobInput(
 export function publicRetrievalTarget(state: StudioState, actor: Actor, input: {
  sourceUrls?:string[]; channel: Channel; contentId?: string; expectedRevision?: number; query: string; idempotencyKey: string;
 }) {
+ if(containsExcludedSource(input.query))throw new StudioError(400,"Wikipedia source URLs are excluded. Use an allowed source or a public topic question.");
  const content=input.contentId?state.contents.find(c=>c.id===input.contentId&&!c.deletedAt):undefined;
  if(input.contentId&&(!content||content.channel!==input.channel||content.revision!==input.expectedRevision))throw new StudioError(409,"Draft changed. Refresh before retrieving references.");
  const scope={channel:input.channel,contentId:content?.id,account:content?.account,assignedTo:content?.assignedTo,function:"research" as const};

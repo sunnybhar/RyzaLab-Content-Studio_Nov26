@@ -576,3 +576,6 @@ All327domain tests pass including stable/repeated headings, immutable same-draft
 
 ### v0.3.35 verified
 All327domain tests and production build/TypeScript pass. Section placement browser and illustrated export artifact browser pass. Full production app and newsletter ZIP/guidance/PDF/DOCX browsers pass. Supported heading-based image layout, captions, in-context review/history, immutable asset checks and optional exports ready for production push. Complete arbitrary template conversion, deep dossier, tighter estimates and publishing integrations remain pending. No provider calls, operational imports or publications.
+
+### Historical source reuse audit WIP
+v0.3.35 pushed to both branches at b31e521 after327tests/build/full app/newsletter browsers passed. IB-14 audit now filters source citations/dependent claims, imported workflow source snapshots, idea source references and pipeline source URLs in new model work without rewriting originals. Legacy queued supporting evidence is checked before dispatch/settlement; current human prose may still be revised to remove old citations. New generated excluded-source artifacts are retained rather than silently imported/applied or retried. Six focused reuse checks pass; initial327-test regression passed before the final audit checks. Final regression/build/browser pending. No provider calls.

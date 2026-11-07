@@ -1,3 +1,4 @@
+import {eligibleReferences} from "./source-policy";
 import {requestedIdeaQuantity} from "./idea-generation";
 import {compileSystem,renderSystem,type SystemContext} from "./system-context";
 import {isLongForm,writingFormat} from "./channel-writing";
@@ -117,9 +118,9 @@ export function quote(
   const ideaQuantity=input.kind==="ideas"?requestedIdeaQuantity(input.prompt):undefined;
   if(ideaQuantity&&ideaQuantity*300>card.maxOutputTokens)throw new StudioError(400,`This idea batch needs more than the qualified ${card.maxOutputTokens.toLocaleString("en-US")} output tokens. Generate at most ${Math.floor(card.maxOutputTokens/300)} ideas per request with this connection, or qualify a larger output allowance. No AI request was sent.`);
   if(input.kind==="text"&&isLongForm(workflow.channel,writingFormat(input.prompt))&&card.maxOutputTokens<4096)throw new StudioError(409,"Long-form writing needs at least 4,096 qualified output tokens. Open AI & budgets → Bounded research and writing, then check model and save setup again. No paid request was sent.");
-  const referenceSnapshots = state.references.filter((r) =>
+  const referenceSnapshots = eligibleReferences(state.references.filter((r) =>
     workflow.references.includes(r.id),
-  );
+  ));
   const system = input.kind === "research" ? PUBLIC_RESEARCH_SYSTEM : compileSystem({
     kind: input.kind,
     prompt: input.prompt,

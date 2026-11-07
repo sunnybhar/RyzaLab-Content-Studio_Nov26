@@ -1,3 +1,4 @@
+import {eligibleEvidence,eligibleReferences,eligibleSourceReferences} from "./source-policy";
 import {documentSections} from "./document-sections";
 import {isLongForm} from "./channel-writing";
 import {newsletterSources} from "./newsletter-bundle";
@@ -337,6 +338,8 @@ export function applyCommand(
         bad(
           "Research has missing sources or tool errors. It cannot be represented as cited evidence.",
         );
+      const permitted=eligibleEvidence([parsed!.data!])[0];
+      if(!permitted)bad("This result contains only excluded sources. Retrieve non-Wikipedia evidence before saving a new reference.");
       if (s.references.some((r) => r.sourceJobId === job.id))
         return structuredClone(input);
       s.references.unshift({
@@ -344,7 +347,7 @@ export function applyCommand(
         title: c.title,
         channel: job.channel,
         kind: "source",
-        content: job.result!,
+        content: JSON.stringify(permitted),
         createdAt: now,
         sourceJobId: job.id,
       });
@@ -711,7 +714,7 @@ export function applyCommand(
 
     case "idea.create": {
       const pipeline=pipelineSnapshot(s,actor,c.pipelineBriefId);
-      const evidence=researchEvidence(s,actor,c.channel,c.researchJobIds);
+      const evidence=eligibleEvidence(researchEvidence(s,actor,c.channel,c.researchJobIds));
       need("idea.edit", { channel: c.channel });
       s.ideas.unshift({
         id: id(),
@@ -724,7 +727,7 @@ export function applyCommand(
         state: "pending",
         createdBy: actor.email,
         createdAt: now,
-        sources:[...new Set([...evidence.flatMap(item=>item.citations.map(cite=>cite.url)),...(pipeline?.sourceUrls||[])])],
+        sources:eligibleSourceReferences([...new Set([...evidence.flatMap(item=>item.citations.map(cite=>cite.url)),...(pipeline?.sourceUrls||[])])]),
       });
       break;
     }
@@ -1285,9 +1288,9 @@ export function applyCommand(
             : {}),
           rulesSnapshot: s.settings.protectedRules,
           workflowSnapshot: structuredClone(workflow),
-          referenceSnapshots: s.references
+          referenceSnapshots: eligibleReferences(s.references
             .filter((r) => workflow.references.includes(r.id))
-            .map((r) => structuredClone(r)),
+            .map((r) => structuredClone(r))),
           researchSnapshots: (d.researchJobIds || []).map(jobId=>({jobId,raw:s.jobs.find(j=>j.id===jobId)!.result!})),
         },
       };
@@ -2142,9 +2145,9 @@ export function applyCommand(
           createdById: actor.id,
           project: d?.collection || "Unassigned",
           pricingSnapshot: ctx.pricingSnapshot,
-          referenceSnapshots: s.references
+          referenceSnapshots: eligibleReferences(s.references
             .filter((r) => workflow.references.includes(r.id))
-            .map((r) => structuredClone(r)),
+            .map((r) => structuredClone(r))),
         },
       };
       if(ctx.pricingSnapshot&&["ideas","text","review"].includes(j.kind))j.systemSnapshot=compileSystem(j,(ctx.pricingSnapshot as {maxInputBytes:number}).maxInputBytes);

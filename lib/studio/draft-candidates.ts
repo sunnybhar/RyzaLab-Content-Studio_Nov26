@@ -1,3 +1,4 @@
+import {jobHasExcludedSupport,containsExcludedSource} from "./source-policy";
 import {suppliedReviewReferences} from "./review-references";
 import {correctionIsCurrent} from "./review-correction";
 import {isLongForm} from "./channel-writing";
@@ -85,6 +86,7 @@ export function settleWrittenOutput(
   id = () => crypto.randomUUID(),
 ) {
   if (job.appliedAt || !job.outputContract) return;
+  if(jobHasExcludedSupport(job)){job.outputStatus="conflict";job.error="Saved work contains excluded historical source evidence. It was retained without changing current copy or claiming a fresh review.";return;}
   const c = state.contents.find((c) => c.id === job.contentId);
   const member = state.members.find(
     (m) => m.email === job.createdBy && !m.revoked,
@@ -131,6 +133,7 @@ export function settleWrittenOutput(
         "The result does not match the selected-piece format. Raw response retained; no copy was replaced.";
       return;
     }
+    if([job.candidate.body,job.candidate.metadata,...job.candidate.sources,...(job.candidate.imageCaptions||[]).flatMap(image=>[image.alt,image.caption])].some(containsExcludedSource)){job.outputStatus="invalid";job.error="The candidate includes an excluded Wikipedia source URL. Original copy and saved output were retained; no automatic paid retry.";return;}
     if(job.candidate.imageCaptions?.some(image=>!(image.imageId==="hero"&&c.media.imageUrl)&&!c.media.sectionImages?.some(existing=>existing.id===image.imageId))){job.outputStatus="invalid";job.error="The candidate referenced an image that was not supplied. Original copy and assets were preserved.";return;}
     if(isLongForm(c.channel,c.format)){
       const minWords=/blog/i.test(c.format)?800:1600;

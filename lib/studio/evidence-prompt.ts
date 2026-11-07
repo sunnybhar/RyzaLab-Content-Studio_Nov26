@@ -1,3 +1,4 @@
+import {eligibleReferences} from "./source-policy";
 import type { Channel, StudioState } from "./types";
 import { readRates } from "./pricing";
 import { compileSystem } from "./system-context";
@@ -163,9 +164,9 @@ export function evidencePrompt(
           prompt,
           rulesSnapshot: state.settings.protectedRules,
           workflowSnapshot: workflow,
-          referenceSnapshots: state.references.filter((r) =>
+          referenceSnapshots: eligibleReferences(state.references.filter((r) =>
             workflow?.references.includes(r.id),
-          ),
+          )),
           agentContextSnapshot: agentContext(state, channel, prompt),
           outputContract:
             kind === "text"

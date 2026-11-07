@@ -1,3 +1,4 @@
+import {jobHasExcludedSupport} from "@/lib/studio/source-policy";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { authenticate, loadState } from "@/lib/studio/store";
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     if (!expired && !recoverable && !canDispatchJob(state, actor, job))
       throw new StudioError(
         409,
-        "Job access, draft or source context changed. Inspect the saved request.",
+        jobHasExcludedSupport(job)?"This queued request contains excluded historical Wikipedia evidence. Cancel the undispatched request in AI & budgets and start with allowed sources. The original record remains saved; no new provider request was sent.":"Job access, draft or source context changed. Inspect the saved request.",
       );
     const token = process.env.STUDIO_WORKER_TOKEN;
     if (!token || token.length < 32)
