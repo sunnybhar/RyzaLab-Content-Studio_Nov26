@@ -18,7 +18,7 @@ User authorization: combine the earlier backlog and all subsequent feedback and 
 | 10 | IB-07 Humanizer management | Resource upload/version/context integration built for 0.3.30 | Implement upload/version/use; actual Ryan file/link required for live acceptance |
 | 11 | IB-16 Blog and format selector | Core format selector/contracts built for 0.3.29 | 4–10min Blog; 8–15min Newsletter; distinct structures; no paid rewrite on selection |
 | 12 | IB-02 newsletter structure/export templates | Resource/context and supported JSON export layout built for 0.3.30; full template/image flow pending | Upload/edit/select/download, section/image slots and formatted exports |
-| 13 | IB-08 multi-source newsletter | Pending | Posts/ideas/briefs/text/PDF/DOCX source basket with provenance |
+| 13 | IB-08 multi-source newsletter | Composer/snapshots/outline and source-aware writing built for 0.3.32 | Posts/ideas/briefs/text/PDF/DOCX source basket with provenance |
 | 14 | IB-01 image generation | Main/slide image workflow built for 0.3.31; section placement and live acceptance pending | User chooses OpenAI; secure one connection for post/Blog/Newsletter; qualified model/rate/key needed |
 | 15 | IB-20 AI corrections and re-review | Pending | Bounded corrections, genuine founder questions only, current revision report and final human approval |
 | 16 | IB-21 Reviews/history layout | History/preview built for 0.3.29; AI queue integration pending | Two sections; latest10 publications; 1/2/3/6/12months; exact snapshot popup |

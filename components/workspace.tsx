@@ -1,4 +1,5 @@
 "use client";
+import {NewsletterSources} from "./newsletter-sources";
 import {NewsletterComposer} from "./newsletter-composer";
 import {ImageAssistant} from "./image-assistant";
 import {parseDocumentLayout} from "@/lib/studio/document-layout";
@@ -4748,7 +4749,7 @@ function Editor({
           </div>
           {tab === "Write" && (
             <div className="s-writing">
-              {c.newsletterSources&&<details className="s-version"><summary>Combined newsletter outline and {c.newsletterSources.length} source snapshots</summary><p style={{whiteSpace:"pre-wrap"}}>{c.newsletterOutline}</p>{c.newsletterSources.map((source,i)=><details key={i}><summary>{source.title} · {source.kind}{source.revision?` · revision ${source.revision}`:""}</summary><p>Captured {stamp(source.capturedAt)}</p><div style={{whiteSpace:"pre-wrap"}}>{source.text}</div><p>{source.metadata}</p></details>)}</details>}
+              <NewsletterSources content={c}/>
               {c.newsletterSource && <details className="s-version"><summary>Newsletter source · {c.newsletterSource.channel} · {c.newsletterSource.title}</summary><p>Saved source snapshot{c.newsletterSource.revision ? ` · revision ${c.newsletterSource.revision}` : ""}. Use this as reference for manual writing or AI adaptation.</p><div style={{whiteSpace:"pre-wrap"}}>{c.newsletterSource.text}</div><p>{c.newsletterSource.metadata}</p></details>}
               {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} recoverJob={progressJob} demo={mode === "demo"} />}
               <HighlightedTextarea

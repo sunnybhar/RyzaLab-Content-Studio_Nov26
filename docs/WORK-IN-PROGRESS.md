@@ -546,3 +546,6 @@ Continuing remaining backlog after v0.3.30 as authorized. Added image request co
 
 ### Multi-source newsletter WIP
 v0.3.31 successfully pushed to both studio-rebuild and main at 64bea75. Continuing IB-08: Create composer selects posts/ideas/pipeline briefs across channels, accepts text/document uploads, and exposes an editable outline before saving a blank newsletter. Source snapshots preserve provenance and original files; generation receives the selected snapshots/outline. Live PDF/DOCX extraction uses existing bounded extractor. Permissions rechecked at selection/generation/dispatch; unavailable sources hide combined snapshots from non-admin filtered state. Type/domain/browser verification in progress; not deployed. No AI/provider calls.
+
+### Multi-source newsletter release candidate
+All306 domain checks passed before the final binary-exclusion test; combined composer browser passes selection/text/document/outline/open and exact original download. Updated source generation to exclude original base64 payloads and retain extracted text; fixed hash serialization for live request idempotency. Final307-test regression/build and production smoke in progress for v0.3.32. This release is not all remaining backlog. External provider publishing/AI not exercised.
