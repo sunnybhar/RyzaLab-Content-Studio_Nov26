@@ -2773,7 +2773,7 @@ export default function Workspace() {
                       <Badge tone="amber">Review requested</Badge>
                     </div>
                     <h2>{c.title}</h2>
-                    <ReviewContentEditor content={c} canEdit={allowed("content.edit", {channel:c.channel,account:c.account,contentId:c.id,assignedTo:c.assignedTo})} send={send} onEditing={editing=>setReviewEditing(editing ? c.id : null)} openDraft={()=>openContent(c)} />
+                    <ReviewContentEditor AssetMedia={AssetMedia} content={c} canEdit={allowed("content.edit", {channel:c.channel,account:c.account,contentId:c.id,assignedTo:c.assignedTo})} send={send} onEditing={editing=>setReviewEditing(editing ? c.id : null)} openDraft={()=>openContent(c)} />
                     {reviewEditing === c.id ? <p>Save and submit your changes above to continue the review.</p> : (
                       <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send} refresh={() => refresh(true)} progressJob={progressAuthorizedJob} demo={mode === "demo"}
                         onApproved={(pkg, approvedState) => {

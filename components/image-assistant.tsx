@@ -60,6 +60,7 @@ export function ImageAssistant({
     0;
   const configured =
     connection?.provider === "openai" &&
+    /^gpt-image-[a-z0-9.-]+$/i.test(connection.model) &&
     connection.status === "validated" &&
     connection.hasKey &&
     maximum > 0;

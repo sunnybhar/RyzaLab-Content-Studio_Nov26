@@ -6,6 +6,8 @@ import {
   historyRecords,
   type HistoryRecord,
 } from "@/lib/studio/review-history";
+import {ArticleBody} from "./article-images";
+import {isLongForm} from "@/lib/studio/channel-writing";
 import { SlideLayerPreview } from "./slide-layers";
 export function ReviewHistory({
   state,
@@ -184,10 +186,10 @@ function HistoryPreview({
           {r.status === "published" ? "Published" : "Approved"} {date(r.at)}
         </p>
         <p>This is the saved approved package, not a later editable draft.</p>
-        <div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+        {isLongForm(p.channel,p.format)?<ArticleBody text={p.text} media={p.media} AssetMedia={AssetMedia}/>:<div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
           {p.text}
-        </div>
-        {p.media.imageUrl && <AssetMedia source={p.media.imageUrl} />}{" "}
+        </div>}
+        {!isLongForm(p.channel,p.format)&&p.media.imageUrl && <AssetMedia source={p.media.imageUrl} />}{" "}
         {p.media.slides.map((s) => (
           <section key={s.id}>
             <h3>{s.title}</h3>

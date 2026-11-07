@@ -6,13 +6,14 @@ const fixture = initialState(DEMO_ACTOR, true);
 fixture.contents = fixture.contents.slice(0, 1);
 const content = fixture.contents[0];
 content.state = "draft";
+content.format="Blog";content.text="## Background\nA useful household context.";
 fixture.jobs = [];
 fixture.connections.push({
   id: "image-connection",
   title: "Image OpenAI",
   provider: "openai",
   function: "image",
-  model: "qualified-image-model",
+  model: "gpt-image-1",
   hasKey: true,
   status: "validated",
   updatedAt: new Date().toISOString(),
@@ -28,7 +29,7 @@ workflow.functionConnections = {
 fixture.settings.reviewPolicy = undefined;
 const script = await build({
   stdin: {
-    contents: `import React,{useState}from'react';import{createRoot}from'react-dom/client';import{ImageAssistant}from'./components/image-assistant';import{applyCommand}from'./lib/studio/engine';window.calls=[];function App(){const[state,setState]=useState(${JSON.stringify(fixture)});const content=state.contents[0];async function run(c){window.calls.push(c);if(c.type==='job.enqueue')setState({...state,jobs:[{...c,id:'generated-image',state:'succeeded',result:'/api/studio/assets?id=11111111-1111-4111-8111-111111111111',createdAt:new Date().toISOString(),createdBy:${JSON.stringify(DEMO_ACTOR.email)},reserved:4}]});else setState(applyCommand(state,${JSON.stringify(DEMO_ACTOR)},c,{demo:true}));return true;}return <><ImageAssistant content={content} state={state} actor={${JSON.stringify(DEMO_ACTOR)}} dirty={false} readOnly={false} busy={false} run={run} refresh={async()=>{}} AssetMedia={({source})=><p>Private image preview: {source}</p>}/><output>{content.media.imageUrl?'Image attached':'No attached image'}</output></>};createRoot(document.getElementById('app')).render(<App/>);`,
+    contents: `import React,{useState}from'react';import{createRoot}from'react-dom/client';import{ImageAssistant}from'./components/image-assistant';import{applyCommand}from'./lib/studio/engine';window.calls=[];function App(){const[state,setState]=useState(${JSON.stringify(fixture)});const content=state.contents[0];async function run(c){window.calls.push(c);if(c.type==='job.enqueue')setState({...state,jobs:[{...c,id:'generated-image',state:'succeeded',result:'/api/studio/assets?id=11111111-1111-4111-8111-111111111111',createdAt:new Date().toISOString(),createdBy:${JSON.stringify(DEMO_ACTOR.email)},reserved:4}]});else setState(applyCommand(state,${JSON.stringify(DEMO_ACTOR)},c,{demo:true}));return true;}return <><ImageAssistant content={content} state={state} actor={${JSON.stringify(DEMO_ACTOR)}} dirty={false} readOnly={false} busy={false} run={run} refresh={async()=>{}} AssetMedia={({source})=><p>Private image preview: {source}</p>}/><output>{content.media.imageUrl?'Image attached':'No attached image'}</output><output>Section images: {content.media.sectionImages?.length||0}</output></>};createRoot(document.getElementById('app')).render(<App/>);`,
     resolveDir: process.cwd(),
     loader: "tsx",
   },
@@ -76,10 +77,14 @@ try {
     .fill("Conceptual room, AI generated");
   await page.getByRole("button", { name: "Use image", exact: true }).click();
   await page.getByText("Image attached", { exact: true }).waitFor();
+  await page.getByLabel("Image placement",{exact:true}).selectOption("section:0:Background");
+  await page.getByRole("button",{name:"Use image",exact:true}).click();
+  await page.getByText("Section images: 1",{exact:true}).waitFor();
   const calls = await page.evaluate(() => (window as any).calls);
   assert.equal(calls.filter((c: any) => c.type === "job.enqueue").length, 1);
   assert.equal(calls[0].confirmed, true);
   assert.equal(calls[1].alt, "Conceptual room, AI generated");
+  assert.equal(calls[2].sectionKey,"section:0:Background");
   assert.deepEqual(errors, []);
   console.log(
     "PASS: no image request on mount, explicit maximum consent, saved result preview and separate attachment; no provider calls",

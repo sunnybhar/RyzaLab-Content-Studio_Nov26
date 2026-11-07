@@ -91,7 +91,7 @@ export function generationInput(
       ? { title: idea.title, brief: idea.brief, sources: idea.sources }
       : null,
     currentCopy: contentWording(c),
-    imagePlacements:(c.media.sectionImages||[]).map(image=>({section:image.section,alt:image.alt,caption:image.caption})),
+    imagePlacements:[...(c.media.imageUrl?[{imageId:"hero",alt:c.media.imageAlt,caption:c.media.imageCaption}]:[]),...(c.media.sectionImages||[]).map(image=>({imageId:image.id,section:image.section,alt:image.alt,caption:image.caption}))],
     imagePlacementInstructions:"Preserve existing section headings linked to images. Image descriptions are not proof of visual inspection or real installations.",
     webEvidence:webEvidence.map(evidence=>({...evidence,citations:evidence.citations.map((citation,index)=>({...citation,referenceId:`research:${evidence.jobId}:source:${index+1}`}))})),
     researchMethodology:webEvidence.length||c.newsletterSources?.length?researchMethodology(state,c.channel):undefined,

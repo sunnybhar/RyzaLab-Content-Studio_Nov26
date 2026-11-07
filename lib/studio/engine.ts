@@ -1181,6 +1181,7 @@ export function applyCommand(
         );
       const assets = [
         d.media.imageUrl,
+        ...(d.media.sectionImages||[]).map(image=>image.url),
         ...d.media.slides.map((x) => x.image),
         ...d.media.scenes.flatMap((x) => [x.sourceUrl, x.audioUrl]),
       ].filter(Boolean) as string[];

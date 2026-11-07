@@ -41,6 +41,13 @@ export function applyDraftCandidate(
   if(result.imageBrief&&!content.media.imagePrompt){content.media.imagePrompt=result.imageBrief;content.mediaRevision=(content.mediaRevision||1)+1;}
 
   content.researchJobIds = job.researchJobIds;
+  if(result.imageCaptions?.length){
+    for(const image of result.imageCaptions){
+      if(image.imageId==="hero"&&content.media.imageUrl){content.media.imageAlt=image.alt;content.media.imageCaption=image.caption;}
+      else content.media.sectionImages=content.media.sectionImages?.map(existing=>existing.id===image.imageId?{...existing,alt:image.alt,caption:image.caption}:existing);
+    }
+    content.mediaRevision=(content.mediaRevision||1)+1;
+  }
   content.metadata = [result.metadata, ...(unresolvedQuestions ? result.questions.map(q => `[Confirm: ${q}]`) : [])].filter(Boolean).join("\n\n");
   if (result.slides?.length && !content.media.slides.length) {
     content.media.slides = result.slides.map((slide, i) => ({
@@ -124,6 +131,7 @@ export function settleWrittenOutput(
         "The result does not match the selected-piece format. Raw response retained; no copy was replaced.";
       return;
     }
+    if(job.candidate.imageCaptions?.some(image=>!(image.imageId==="hero"&&c.media.imageUrl)&&!c.media.sectionImages?.some(existing=>existing.id===image.imageId))){job.outputStatus="invalid";job.error="The candidate referenced an image that was not supplied. Original copy and assets were preserved.";return;}
     if(isLongForm(c.channel,c.format)){
       const minWords=/blog/i.test(c.format)?800:1600;
       if(job.candidate.body.trim().split(/\s+/).length<minWords)job.candidate.questions.push(`Expand this ${/blog/i.test(c.format)?"blog":"newsletter"} to at least ${minWords.toLocaleString("en-US")} substantive words with background, evidence, reasoning and practical guidance before review.`);

@@ -12,6 +12,7 @@ import { can } from "@/lib/studio/permissions";
 import { currentWorkflow } from "@/lib/studio/stages";
 import { copyIdentity, packageReadiness } from "@/lib/studio/solo-quality";
 import { researchEvidence } from "@/lib/studio/research-link";
+import {isLongForm} from "@/lib/studio/channel-writing";
 import { SlideLayerPreview } from "./slide-layers";
 import "./solo-review.css";
 
@@ -181,7 +182,7 @@ export function SoloReview({
   return (
     <section className="s-solo-review" aria-label="Review and publish">
       {content.reviewCycle?.reason&&<p role="status">{content.reviewCycle.reason}</p>}
-      {content.media.imageUrl && (
+      {!isLongForm(content.channel,content.format)&&content.media.imageUrl && (
         <div className="s-solo-asset">
           {renderAsset(content.media.imageUrl)}
         </div>

@@ -1,4 +1,7 @@
 "use client";
+import type {ComponentType} from "react";
+import {ArticleBody} from "./article-images";
+import {isLongForm} from "@/lib/studio/channel-writing";
 import { useEffect, useState } from "react";
 import type { Content, Command } from "@/lib/studio/types";
 import {
@@ -28,7 +31,9 @@ export function ReviewContentEditor({
   send,
   onEditing,
   openDraft,
+  AssetMedia,
 }: {
+  AssetMedia?:ComponentType<{source:string;alt?:string}>;
   content: Content;
   canEdit: boolean;
   send: (command: Command) => Promise<unknown>;
@@ -70,7 +75,7 @@ export function ReviewContentEditor({
           disabled={busy}
           onChange={(e) => setText(e.target.value)}
         />
-      ) : (
+      ) : AssetMedia&&isLongForm(content.channel,content.format)?<ArticleBody text={content.text} media={content.media} AssetMedia={AssetMedia} renderText={value=><MarkedCopy text={value}/>}/>: (
         <div className="s-review-copy" style={{ whiteSpace: "pre-wrap" }}>
           <MarkedCopy
             text={
