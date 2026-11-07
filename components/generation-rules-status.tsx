@@ -14,6 +14,8 @@ export function GenerationRulesStatus({
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
   if (!job) return null;
   const context = job.agentContextSnapshot;
+  let coverage:{researchSourcesIncluded:number;researchSourcesRetained:number;passagesExcerpted:number}|undefined;
+  try{const value=JSON.parse(job.prompt).evidenceCoverage;if(typeof value?.researchSourcesIncluded==="number"&&typeof value?.researchSourcesRetained==="number"&&typeof value?.passagesExcerpted==="number")coverage=value;}catch{}
   let researchVersion:{fileName:string;uploadedAt:string}|undefined;
   try{const value=JSON.parse(job.prompt).researchMethodology?.resourceVersion;if(typeof value?.fileName==="string"&&typeof value?.uploadedAt==="string")researchVersion=value;}catch{}
   return (
@@ -43,6 +45,7 @@ export function GenerationRulesStatus({
           request.
         </p>
       )}
+      {coverage&&<p>Research sources included: {coverage.researchSourcesIncluded}/{coverage.researchSourcesRetained}. {coverage.passagesExcerpted} passages excerpted to fit the model allowance. Full retained extracts remain in Studio; omitted passages were not used in this request.</p>}
       {researchVersion&&<p>Research Instructions used for evidence analysis: {researchVersion.fileName} · saved {new Date(researchVersion.uploadedAt).toLocaleString()}. Public discovery did not receive this private file text.</p>}
       {!!context?.voice.length && (
         <>

@@ -561,3 +561,6 @@ v0.3.33 pushed to main/studio-rebuild at fe44262 after314tests/build/full produc
 
 ### Research/image compatibility checks
 Direct-source/methodology focused checks and source-selection browser pass. Added GPT Image family validation before dispatch, invalid returned PNG detection without automatic paid retry, and fixed project export/import schema to preserve the attached image description. Twelve image/media-export tests pass. Current Research Instructions version is shown in the saved writing request's Agent Rules details. Final combined regression/build/release remains pending; no provider calls.
+
+### Bounded evidence candidate
+New evidence prompt compiler fits long retrieved extracts and newsletter source passages into the qualified model input allowance, with explicit retained/included/omitted coverage, exact source passages and full original records preserved. Mandatory task, current human copy, outline and Instructions are not shortened; oversized mandatory context still fails explicitly. Fourteen combined correction/newsletter/evidence domain tests pass. Final regression/build and browser checks pending for v0.3.34. Image controls now honor the same channel/default mapping as server dispatch. Deep dossier/claim-ledger and publishing scope remain unfinished; no paid calls.

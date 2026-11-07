@@ -1,3 +1,4 @@
+import {evidencePrompt} from "./evidence-prompt";
 import {researchMethodology} from "./research-methodology";
 import {eligibleEvidence} from "./source-policy";
 import {pipelineSnapshot} from "./pipeline";
@@ -72,7 +73,7 @@ export function generationInput(
   const researchJobIds = input.researchJobIds ?? c.researchJobIds ?? idea?.researchJobIds ?? [];
   const webEvidence = eligibleEvidence(researchEvidence(state,actor,c.channel,researchJobIds));
   if(researchJobIds.length&&!webEvidence.length)throw new StudioError(409,"The selected evidence contains only excluded sources. Research again using non-Wikipedia sources before writing.");
-  const prompt = JSON.stringify({
+  const prompt = evidencePrompt(state,c.channel,input.kind,connectionId,{
     task:
       input.kind === "text"
         ? "Write or revise only this selected piece. Return the complete draft JSON contract; never a weekly pack or instructions in the body."

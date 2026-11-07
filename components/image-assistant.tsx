@@ -1,3 +1,4 @@
+import {resolvedConnection} from "@/lib/studio/solo-quality";
 "use client";
 import { useEffect, useState } from "react";
 import type { Actor, Command, Content, StudioState } from "@/lib/studio/types";
@@ -40,7 +41,7 @@ export function ImageAssistant({
       (w) => w.channel === content.channel && w.status === "active",
     ),
     connection = state.connections.find(
-      (c) => c.id === workflow?.functionConnections?.image,
+      (c) => c.id === resolvedConnection(state,content.channel,"image"),
     );
   const qualified = state.settings.qualifiedRates?.find(
     (r) =>

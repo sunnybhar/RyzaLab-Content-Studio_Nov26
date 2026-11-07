@@ -1,3 +1,4 @@
+import {evidencePrompt} from "./evidence-prompt";
 import {researchMethodology} from "./research-methodology";
 import {eligibleEvidence} from "./source-policy";
 import {pipelineSnapshot} from "./pipeline";
@@ -126,7 +127,7 @@ export function ideaJobInput(
     researchJobIds: c.researchJobIds,
     estimate: 0,
     idempotencyKey: c.idempotencyKey,
-    prompt: JSON.stringify({
+    prompt: evidencePrompt(state,c.channel,"ideas",connectionId,{
       task:
         ideaCountContract(c.quantity) + (c.purpose?" Develop this user-entered idea rather than proposing a different topic. Explain what the supplied research supports and what remains uncertain in the brief. Return a proposal; do not claim the user has accepted it.":"") +
         ' Generate idea cards, not finished posts. Return ONLY JSON with no additional fields. Limits: title 3–100 characters, brief 5–240 characters, audience at most 100 characters, format at most 100 characters, sources at most 2 nonempty compact citations; preserve complete source URLs. For supplied web evidence, include the exact relevant source URLs in each idea card. Do not cite an irrelevant URL just to fill a source list. Sources can be provided internal document names with section references or relevant web URLs; a citation does not imply external access. Schema: {"ideas":[{"title":"...","brief":"specific angle, proof needed, why useful","audience":"...","format":"...","sources":[]}]}. Do not invent source access. Do not claim current web research unless webEvidence is supplied.',
