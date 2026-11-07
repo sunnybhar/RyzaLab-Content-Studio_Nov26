@@ -81,6 +81,7 @@ export const STAGE_DEFINITIONS: {
 export function hasVisuals(c: Content) {
   return Boolean(
     c.media.imageUrl ||
+    c.media.sectionImages?.length ||
     c.media.slides.length ||
     c.media.scenes.length ||
     /video|reel|short|carousel|image|photo|thumbnail|visual|document slide/i.test(
@@ -174,6 +175,9 @@ export function factsSignature(
     title: c.title,
     metadata: c.metadata,
     image: c.media.imageUrl,
+    ...(c.media.imageAlt?{imageAlt:c.media.imageAlt}:{}),
+    ...(c.media.imageCaption?{imageCaption:c.media.imageCaption}:{}),
+    ...(c.media.sectionImages?.length?{sectionImages:c.media.sectionImages}:{}),
     slides: c.media.slides.map((s) => ({
       title: s.title,
       body: s.body,

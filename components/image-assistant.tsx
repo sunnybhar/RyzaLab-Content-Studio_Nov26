@@ -1,4 +1,6 @@
 "use client";
+import {documentSections} from "@/lib/studio/document-sections";
+import {isLongForm} from "@/lib/studio/channel-writing";
 import {resolvedConnection} from "@/lib/studio/solo-quality";
 import { useEffect, useState } from "react";
 import type { Actor, Command, Content, StudioState } from "@/lib/studio/types";
@@ -30,6 +32,8 @@ export function ImageAssistant({
   refresh: () => Promise<void>;
   progressJob?: (id: string) => Promise<unknown>;
 }) {
+  const sections=isLongForm(content.channel,content.format)?documentSections(content.text):[];
+  const [caption,setCaption]=useState("AI-generated concept illustration.");
   const [downloadError, setDownloadError] = useState("");
   const [prompt, setPrompt] = useState(content.media.imagePrompt || ""),
     [alt, setAlt] = useState(
@@ -253,6 +257,7 @@ export function ImageAssistant({
                     onChange={(e) => setPlacement(e.target.value)}
                   >
                     <option value="hero">Post / article main image</option>
+                    {sections.map(section=><option key={section.key} value={section.key}>Section: {section.title}</option>)}
                     {content.media.slides.map((slide) => (
                       <option key={slide.id} value={slide.id}>
                         Slide: {slide.title}
@@ -260,6 +265,7 @@ export function ImageAssistant({
                     ))}
                   </select>
                 </label>
+                <label className="s-field">Image caption<input aria-label="Image caption" value={caption} maxLength={1000} onChange={e=>setCaption(e.target.value)}/></label>
                 <div className="s-actions">
                   <button
                     className="s-btn"
@@ -271,8 +277,9 @@ export function ImageAssistant({
                           contentId: content.id,
                           jobId: job.id,
                           expectedRevision: content.revision,
-                          alt,
-                          slideId: placement === "hero" ? undefined : placement,
+                          alt,caption,
+                          sectionKey:placement.startsWith("section:")?placement:undefined,
+                          slideId: placement === "hero" || placement.startsWith("section:") ? undefined : placement,
                         },
                         "Image attached to draft",
                       )

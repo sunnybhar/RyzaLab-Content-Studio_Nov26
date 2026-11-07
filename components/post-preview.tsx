@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import type { MediaProject } from "@/lib/studio/types";
+import {ArticleBody} from "./article-images";
 import { SlideLayerPreview } from "./slide-layers";
 import "./post-preview.css";
 
 export function PostPreview({
   text,
+  format,
   account,
   channel,
   media,
@@ -15,6 +17,7 @@ export function PostPreview({
   onClose,
 }: {
   text: string;
+  format?:string;
   account: string;
   channel: string;
   media: MediaProject;
@@ -32,6 +35,7 @@ export function PostPreview({
     dialog.current?.showModal();
   }, []);
   const slide = media.slides[slideIndex];
+  const article=/Newsletter|Hub/i.test(channel)||/blog|article|newsletter/i.test(format||"");
   return (
     <dialog
       ref={dialog}
@@ -61,10 +65,10 @@ export function PostPreview({
               <div>Draft · {channel}</div>
             </div>
           </header>
-          <div className={`s-feed-copy ${expanded ? "" : "s-feed-clamped"}`}>
+          {article?<ArticleBody text={text} media={media} AssetMedia={AssetMedia}/>:<div className={`s-feed-copy ${expanded ? "" : "s-feed-clamped"}`}>
             {text || "Your post text will appear here."}
-          </div>
-          {text.length > 250 && (
+          </div>}
+          {!article&&text.length > 250 && (
             <button
               className="s-text-button"
               onClick={() => setExpanded(!expanded)}
@@ -72,7 +76,7 @@ export function PostPreview({
               {expanded ? "Show less" : "…see more"}
             </button>
           )}
-          {media.imageUrl && (
+          {!article&&media.imageUrl && (
             <div className="s-feed-media">
               <AssetMedia source={media.imageUrl} />
             </div>
@@ -154,7 +158,7 @@ export function PostPreview({
               ))}
             </section>
           )}
-          <footer>Like · Comment · Repost · Send</footer>
+          {!article&&<footer>Like · Comment · Repost · Send</footer>}
         </article>
         <p>Preview only. Publishing stays on the platform.</p>
       </div>

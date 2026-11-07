@@ -1,4 +1,5 @@
 "use client";
+import {ArticleImages} from "./article-images";
 import {NewsletterSources} from "./newsletter-sources";
 import {NewsletterComposer} from "./newsletter-composer";
 import {ImageAssistant} from "./image-assistant";
@@ -297,9 +298,11 @@ const initialMedia = (): MediaProject => ({
 function AssetMedia({
   source,
   kind = "image",
+  alt="Slide source",
 }: {
   source: string;
   kind?: "image" | "video" | "audio";
+  alt?:string;
 }) {
   const [url, setUrl] = useState<string | undefined>();
   const [failure, setFailure] = useState("");
@@ -342,7 +345,7 @@ function AssetMedia({
   ) : kind === "audio" ? (
     <audio controls preload="metadata" src={url} />
   ) : (
-    <img src={url} alt="Slide source" />
+    <img src={url} alt={alt} />
   );
 }
 function Badge({
@@ -4505,6 +4508,7 @@ function Editor({
   const documentLayoutFile=state.agentRuleFiles?.find(f=>f.channel===c.channel&&f.slot==="newsletter_layout");
   const documentLayout=parseDocumentLayout(documentLayoutFile?.extractedText);
   const [includeNewsletterImage,setIncludeNewsletterImage]=useState(true);
+  const [exportPages,setExportPages]=useState<number>();
   const [tab, setTab] = useState("Write");
   const [postPreview, setPostPreview] = useState(false);
   const [submitting,setSubmitting]=useState(false);
@@ -4699,7 +4703,7 @@ function Editor({
       </div>
       <DraftSaveStatus controller={draftSave}/>
       {requirements.length > 0 && <section id="draft-needs-input" className="s-input-required" aria-label="Needs your input"><h3 aria-live="polite">Needs your input · {requirements.length} {requirements.length === 1 ? "item" : "items"}</h3><p>Highlighted passages need verified details or a rewrite. Saving does not resolve them. Resolve the highlighted passages or submit for review to inspect the checks. A reviewer can record a manual override.</p><ul>{requirements.map((item,i)=><li key={`${item.field}:${item.start}`}><button className="s-text-button" onClick={()=>jumpToRequirement(item)}>{item.label}: {item.text}</button></li>)}</ul></section>}
-      {postPreview && <PostPreview text={text} account={c.account} channel={c.channel} media={media} unsaved={dirty} AssetMedia={AssetMedia} onClose={() => setPostPreview(false)} />}
+      {postPreview && <PostPreview text={text} format={writeFormat} account={c.account} channel={c.channel} media={media} unsaved={dirty} AssetMedia={AssetMedia} onClose={() => setPostPreview(false)} />}
       <StageTracker
         content={c}
         state={state}
@@ -4761,11 +4765,13 @@ function Editor({
                 value={text}
                 onChange={(e) => setText(e.target.value)}
               />
+              {isLongForm(c.channel,c.format)&&<section aria-label={/blog/i.test(c.format)?"Download blog":"Download newsletter"} className="s-actions"><button className="s-btn" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined,imageAlt:media.imageAlt,imageCaption:media.imageCaption,sectionImages:includeNewsletterImage?media.sectionImages:undefined,onExported:result=>setExportPages(result.pages)}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} DOCX</button><button className="s-btn s-primary" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined,imageAlt:media.imageAlt,imageCaption:media.imageCaption,sectionImages:includeNewsletterImage?media.sectionImages:undefined,onExported:result=>setExportPages(result.pages)}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} PDF</button>{(media.imageUrl||media.sectionImages?.length)&&<label><input type="checkbox" checked={includeNewsletterImage} onChange={e=>setIncludeNewsletterImage(e.target.checked)}/> Include attached images</label>}<p>Downloads use the content above automatically. No copy/paste or image is required.</p>{exportPages&&<p>Last PDF: {exportPages} pages in the selected layout.</p>}{documentLayoutFile&&!documentLayout&&<p>The uploaded layout is reference guidance. Export uses the default design until valid layout JSON settings are saved in Agent Rules.</p>}</section>}
               {c.pipelineSnapshot&&<details className="pipeline-origin"><summary>Existing Pipeline · {c.pipelineSnapshot.externalId||c.pipelineSnapshot.title}</summary><p>{c.pipelineSnapshot.angle}</p><p>Imported from {c.pipelineSnapshot.sourceFile} · {c.pipelineSnapshot.sheet}, row {c.pipelineSnapshot.row} · brief v{c.pipelineSnapshot.version}</p><p>Planned: {c.pipelineSnapshot.plannedDate||"Unscheduled"} {c.pipelineSnapshot.plannedTime} · {c.pipelineSnapshot.timezone}. This is not a publishing approval.</p>{c.pipelineSnapshot.sourceUrls.map(url=><p key={url}>{url}</p>)}</details>}
               <GenerationRulesStatus content={c} state={state}/>
               <ImageAssistant content={c} state={state} actor={actor} dirty={dirty||externalChange} readOnly={readOnly} busy={busy} run={run} refresh={refresh} progressJob={progressJob} AssetMedia={AssetMedia}/>
-              {media.imageUrl&&<section className="s-version" aria-label="Attached main image"><AssetMedia source={media.imageUrl}/><p>{media.imageAlt||"AI-generated concept illustration"}</p><button className="s-btn" disabled={readOnly} onClick={()=>updateMedia({imageUrl:undefined,imageAlt:undefined})}>Remove main image</button><p>Save after removing. The stored original remains available in image request history.</p></section>}
-              {isLongForm(c.channel,c.format)&&<section aria-label={/blog/i.test(c.format)?"Download blog":"Download newsletter"} className="s-actions"><button className="s-btn" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} DOCX</button><button className="s-btn s-primary" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} PDF</button>{media.imageUrl&&<label><input type="checkbox" checked={includeNewsletterImage} onChange={e=>setIncludeNewsletterImage(e.target.checked)}/> Include attached image</label>}<p>Downloads use the content above automatically. No copy/paste or image is required.</p>{documentLayoutFile&&!documentLayout&&<p>The uploaded layout is reference guidance. Export uses the default design until valid layout JSON settings are saved in Agent Rules.</p>}</section>}
+              <ArticleImages text={text} media={media} update={updateMedia} disabled={readOnly} AssetMedia={AssetMedia}/>
+              {media.imageUrl&&<section className="s-version" aria-label="Attached main image"><AssetMedia source={media.imageUrl}/><p>{media.imageAlt||"AI-generated concept illustration"}</p><button className="s-btn" disabled={readOnly} onClick={()=>updateMedia({imageUrl:undefined,imageAlt:undefined,imageCaption:undefined})}>Remove main image</button><p>Save after removing. The stored original remains available in image request history.</p></section>}
+
               <div className="s-editor-wordcount">
                 {text.trim() ? text.trim().split(/\s+/).length : 0} words{" "}
                 <span>{text.length} characters</span>

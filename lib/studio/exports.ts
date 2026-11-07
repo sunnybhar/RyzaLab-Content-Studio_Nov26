@@ -1,3 +1,4 @@
+import {sectionImageSchema,documentSections,unplacedSectionImages,type SectionImage} from "./document-sections";
 import {documentLayoutSchema,type DocumentLayout} from "./document-layout";
 import { z } from "zod";
 import { slideLayersSchema } from "./layers";
@@ -83,6 +84,8 @@ export const mediaProjectSchema = z
     imagePrompt: z.string().max(20000),
     imageUrl: assetSource.optional(),
     imageAlt:z.string().max(1000).optional(),
+    imageCaption:z.string().max(1000).optional(),
+    sectionImages:z.array(sectionImageSchema.extend({url:assetSource})).max(12).optional(),
     narration: z.string().max(100000),
     captions: z.string().max(100000),
     aspect: z.enum(["9:16", "16:9", "1:1"]),
@@ -440,97 +443,36 @@ function validateDocument(title: string, text: string, revision: number) {
     throw new Error("Document exceeds the export size limit.");
 }
 export async function exportContentDocument(
-  title: string,
-  text: string,
-  revision: number,
-  format: "docx" | "pdf",
-  options?: {imageUrl?:string;imageCaption?:string;layout?:DocumentLayout;onExported?:(result:{pages?:number;format:"pdf"|"docx"})=>void},
-): Promise<void> {
-  validateDocument(title, text, revision);
-  const layout=options?.layout?documentLayoutSchema.parse(options.layout):undefined;
-  const name = `${filename(title)}-revision-${revision}`;
-  let hero:{data:Uint8Array;url:string;width:number;height:number}|undefined;
-  if(options?.imageUrl){const loaded=await loadImage(options.imageUrl);try{const canvas=document.createElement("canvas");canvas.width=1200;canvas.height=Math.min(750,Math.round(1200*loaded.image.naturalHeight/loaded.image.naturalWidth));const ctx=canvas.getContext("2d");if(!ctx)throw Error("Image rendering unavailable.");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);const scale=Math.min(canvas.width/loaded.image.naturalWidth,canvas.height/loaded.image.naturalHeight);const width=loaded.image.naturalWidth*scale,height=loaded.image.naturalHeight*scale;ctx.drawImage(loaded.image,(canvas.width-width)/2,(canvas.height-height)/2,width,height);const url=canvas.toDataURL("image/jpeg",0.9);hero={data:Uint8Array.from(atob(url.split(",")[1]),char=>char.charCodeAt(0)),url,width:560,height:Math.round(canvas.height*560/1200)};}finally{loaded.dispose();}}
-
-  if (format === "docx") {
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun, Header, Footer } =
-      await import("docx");
-    const document = new Document({
-      creator: "RyzaLab",
-      styles:{default:{document:{run:{font:layout?.font||"Arial",size:(layout?.bodySize||11)*2},paragraph:{spacing:{after:140,line:layout?Math.round(layout.lineSpacing*240):280}}}}},
-      title,
-      description: `Revision ${revision}`,
-      sections: [
-        {
-          ...(layout?{properties:{page:{size:layout.pageSize==="A4"?{width:11906,height:16838}:{width:12240,height:15840},margin:{top:Math.round(layout.marginMm*1440/25.4),bottom:Math.round(layout.marginMm*1440/25.4),left:Math.round(layout.marginMm*1440/25.4),right:Math.round(layout.marginMm*1440/25.4)}}},headers:{default:new Header({children:[new Paragraph(layout.header)]})},footers:{default:new Footer({children:[new Paragraph(layout.footer)]})}}:{}),
-          children: [
-            new Paragraph({ text: title, heading: HeadingLevel.TITLE }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: `Revision ${revision}`, italics: true }),
-              ],
-            }),
-            ...(hero?[new Paragraph({children:[new ImageRun({type:"jpg",data:hero.data,transformation:{width:hero.width,height:hero.height}})]}),...(options?.imageCaption?[new Paragraph({text:options.imageCaption})]:[])]:[]),
-            ...text
-              .replace(/\r\n?/g, "\n")
-              .split("\n")
-              .map((line) => new Paragraph(/^#{1,3}\s/.test(line)?{text:line.replace(/^#{1,3}\s/,""),heading:HeadingLevel.HEADING_2}:{text:line})),
-          ],
-        },
-      ],
-    });
-    download(await Packer.toBlob(document), `${name}.docx`);
-    options?.onExported?.({format:"docx"});
-    return;
-  }
-  await document.fonts.ready;
-  const { jsPDF } = await import("jspdf");
-  const pdf = new jsPDF({format:layout?.pageSize==="Letter"?"letter":"a4"});
-  // Rasterize installed browser fonts so Unicode and wrapping match the editor.
-  const canvas = document.createElement("canvas");
-  canvas.width = 1240;
-  canvas.height = layout?.pageSize==="Letter"?1605:1754;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("This browser cannot render document PDFs.");
-  const margin = layout?Math.round(layout.marginMm*canvas.width/(layout.pageSize==="Letter"?215.9:210)):118;
-  let y = margin;
-  let page = 0;
-  const clear = () => {
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#172d30";
-    ctx.textBaseline = "top";
-    if(layout){ctx.font=`400 18px ${layout.font}`;ctx.fillText(layout.header,margin,28);ctx.fillText(layout.footer,margin,canvas.height-42);}
-
-  };
-  const flush = () => {
-    if (page++) pdf.addPage();
-    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
-  };
-  const line = (value: string, size: number, height: number) => {
-    ctx.font = `400 ${size}px ${layout?.font||"Inter"}, sans-serif`;
-    const rows = wrapText(ctx, value, canvas.width - margin * 2);
-    for (const row of rows) {
-      if (y + height > canvas.height - margin) {
-        flush();
-        clear();
-        y = margin;
-        ctx.font = `400 ${size}px ${layout?.font||"Inter"}, sans-serif`;
-      }
-      ctx.fillText(row, margin, y);
-      y += height;
-    }
-  };
-  clear();
-  line(title, 40, 52);
-  line(`Revision ${revision}`, 22, 34);
-  y += 24;
-  if(hero){const height=hero.height*(canvas.width-margin*2)/hero.width;ctx.drawImage(await (async()=>{const image=new Image();image.src=hero.url;await image.decode();return image;})(),margin,y,canvas.width-margin*2,height);y+=height+24;if(options?.imageCaption)line(options.imageCaption,20,30);}
-  for (const paragraph of text.replace(/\r\n?/g, "\n").split("\n"))
-    /^#{1,3}\s/.test(paragraph)?line(paragraph.replace(/^#{1,3}\s/,""),30,44):line(paragraph,layout?layout.bodySize*2.08:24,layout?layout.bodySize*2.08*layout.lineSpacing:38);
-  flush();
-  pdf.save(`${name}.pdf`);
-  options?.onExported?.({format:"pdf",pages:pdf.getNumberOfPages()});
+ title:string,text:string,revision:number,format:'docx'|'pdf',
+ options?:{imageUrl?:string;imageAlt?:string;imageCaption?:string;sectionImages?:SectionImage[];layout?:DocumentLayout;onExported?:(result:{pages?:number;format:'pdf'|'docx'})=>void},
+):Promise<void>{
+ validateDocument(title,text,revision);
+ const layout=documentLayoutSchema.parse(options?.layout||{}),name=`${filename(title)}-revision-${revision}`;
+ const sections=documentSections(text),images=z.array(sectionImageSchema).max(12).parse(options?.sectionImages||[]);
+ if(images.some(image=>!sections.some(section=>section.key===image.section)))throw Error('A section image lost its heading. Reassign/remove it or export without images.');
+ type Raster={data:Uint8Array;url:string;width:number;height:number;alt:string;caption:string};
+ const cache=new Map<string,Omit<Raster,'alt'|'caption'>>();
+ async function prepare(source:string,alt:string,caption:string):Promise<Raster>{let raster=cache.get(source);if(!raster){const loaded=await loadImage(source);try{const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=Math.min(750,Math.round(1200*loaded.image.naturalHeight/loaded.image.naturalWidth));const context=canvas.getContext('2d');if(!context)throw Error('Image rendering unavailable.');context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);const scale=Math.min(canvas.width/loaded.image.naturalWidth,canvas.height/loaded.image.naturalHeight),width=loaded.image.naturalWidth*scale,height=loaded.image.naturalHeight*scale;context.drawImage(loaded.image,(canvas.width-width)/2,(canvas.height-height)/2,width,height);const url=canvas.toDataURL('image/jpeg',.9);const printable=((layout.pageSize==='Letter'?215.9:210)-layout.marginMm*2)*96/25.4;const docWidth=Math.floor(Math.min(560,printable));raster={data:Uint8Array.from(atob(url.split(',')[1]),char=>char.charCodeAt(0)),url,width:docWidth,height:Math.round(canvas.height*docWidth/1200)};cache.set(source,raster);}finally{loaded.dispose();}}return {...raster,alt,caption};}
+ const hero=options?.imageUrl?await prepare(options.imageUrl,options.imageAlt||'Article illustration',options.imageCaption||''):undefined;
+ const placed=new Map<string,Raster[]>();for(const image of images){const raster=await prepare(image.url,image.alt,image.caption);placed.set(image.section,[...(placed.get(image.section)||[]),raster]);}
+ const lines=text.replace(/\r\n?/g,'\n').split('\n');
+ if(format==='docx'){
+ const {Document,Packer,Paragraph,TextRun,HeadingLevel,ImageRun,Header,Footer}=await import('docx');
+ const picture=(image:Raster)=>[new Paragraph({children:[new ImageRun({type:'jpg',data:image.data,transformation:{width:image.width,height:image.height},altText:{name:image.alt,title:image.alt,description:image.alt}})]}),...(image.caption?[new Paragraph({children:[new TextRun({text:image.caption,italics:true})]})]:[])];
+ const body=lines.flatMap((line,index)=>{const section=sections.find(s=>s.line===index);return[new Paragraph(section?{text:section.title,heading:HeadingLevel.HEADING_2}:{text:line}),...(section?(placed.get(section.key)||[]).flatMap(picture):[])];});
+ const document=new Document({creator:'RyzaLab',title,description:`Revision ${revision}`,styles:{default:{document:{run:{font:layout.font,size:layout.bodySize*2},paragraph:{spacing:{after:140,line:Math.round(layout.lineSpacing*240)}}}}},sections:[{properties:{page:{size:layout.pageSize==='A4'?{width:11906,height:16838}:{width:12240,height:15840},margin:{top:Math.round(layout.marginMm*1440/25.4),bottom:Math.round(layout.marginMm*1440/25.4),left:Math.round(layout.marginMm*1440/25.4),right:Math.round(layout.marginMm*1440/25.4)}}},headers:{default:new Header({children:[new Paragraph(layout.header)]})},footers:{default:new Footer({children:[new Paragraph(layout.footer)]})},children:[new Paragraph({text:title,heading:HeadingLevel.TITLE}),new Paragraph({children:[new TextRun({text:`Revision ${revision}`,italics:true})]}),...(hero?picture(hero):[]),...body]}]});
+ download(await Packer.toBlob(document),`${name}.docx`);options?.onExported?.({format:'docx'});return;
+ }
+ await document.fonts.ready;const {jsPDF}=await import('jspdf');const pdf=new jsPDF({format:layout.pageSize==='Letter'?'letter':'a4'}),canvas=document.createElement('canvas');canvas.width=1240;canvas.height=layout.pageSize==='Letter'?1605:1754;const ctx=canvas.getContext('2d');if(!ctx)throw Error('This browser cannot render document PDFs.');
+ const margin=Math.round(layout.marginMm*canvas.width/(layout.pageSize==='Letter'?215.9:210));let y=margin,page=0;
+ const clear=()=>{ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#172d30';ctx.textBaseline='top';ctx.font=`400 18px ${layout.font}`;ctx.fillText(layout.header,margin,28);ctx.fillText(layout.footer,margin,canvas.height-42);};
+ const flush=()=>{if(page++)pdf.addPage();pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,pdf.internal.pageSize.getWidth(),pdf.internal.pageSize.getHeight());};
+ const next=()=>{flush();clear();y=margin;};
+ const line=(value:string,size:number,height:number)=>{ctx.font=`400 ${size}px ${layout.font}`;for(const row of wrapText(ctx,value,canvas.width-margin*2)){if(y+height>canvas.height-margin){next();ctx.font=`400 ${size}px ${layout.font}`;}ctx.fillText(row,margin,y);y+=height;}};
+ const picture=async(image:Raster)=>{const height=image.height*(canvas.width-margin*2)/image.width;if(y+height+40>canvas.height-margin)next();const element=new Image();element.src=image.url;await element.decode();ctx.drawImage(element,margin,y,canvas.width-margin*2,height);y+=height+18;if(image.caption)line(image.caption,20,30);y+=18;};
+ clear();line(title,40,52);line(`Revision ${revision}`,22,34);y+=24;if(hero)await picture(hero);
+ for(const [index,value]of lines.entries()){const section=sections.find(s=>s.line===index);section?line(section.title,30,44):line(value,layout.bodySize*2.08,layout.bodySize*2.08*layout.lineSpacing);if(section)for(const image of placed.get(section.key)||[])await picture(image);}
+ flush();pdf.save(`${name}.pdf`);options?.onExported?.({format:'pdf',pages:pdf.getNumberOfPages()});
 }
 export async function importDocx(file: File): Promise<string> {
   if (!/\.docx$/i.test(file.name)) throw new Error("Choose a DOCX file.");
@@ -694,6 +636,7 @@ export async function buildPostPackage(pkg: Package): Promise<Blob> {
     );
   const assets = [
     pkg.media.imageUrl,
+    ...(pkg.media.sectionImages||[]).map(image=>image.url),
     ...pkg.media.slides.map((slide) => slide.image),
     ...pkg.media.scenes.flatMap((scene) => [scene.sourceUrl, scene.audioUrl]),
   ].filter((url): url is string => Boolean(url));

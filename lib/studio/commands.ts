@@ -1,3 +1,4 @@
+import {sectionImageSchema} from "./document-sections";
 import {newsletterInputSchema} from "./newsletter-bundle";
 import { pipelineImportSchema } from "./pipeline";
 import {agentArchiveSchema} from "./agent-archives";
@@ -46,6 +47,8 @@ export const mediaSchema = z
     imagePrompt: text,
     imageUrl: z.string().max(8000000).optional(),
     imageAlt: z.string().max(1000).optional(),
+    imageCaption:z.string().max(1000).optional(),
+    sectionImages:z.array(sectionImageSchema).max(12).optional(),
     narration: text,
     captions: text,
     aspect: z.enum(["9:16", "16:9", "1:1"]),
@@ -196,7 +199,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     account: z.string().max(200).optional(),
     collection: z.string().max(100).optional(),
   }),
-  command("content.image.apply", { contentId: id, jobId: id, expectedRevision: z.number().int().positive(), alt: z.string().trim().min(1).max(1000), slideId: id.optional() }),
+  command("content.image.apply", { contentId: id, jobId: id, expectedRevision: z.number().int().positive(), alt: z.string().trim().min(1).max(1000), caption:z.string().max(1000).optional(), sectionKey:z.string().max(600).optional(), slideId: id.optional() }),
   command("content.reviewEdit", { id, expectedRevision: z.number().int().positive(), text, metadata: text }),
   command("content.submit", { id }),
   command("content.restore", { id, revisionId: id }),

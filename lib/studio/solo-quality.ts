@@ -1,3 +1,4 @@
+import {unplacedSectionImages} from "./document-sections";
 import {hasWritingFollowup} from "./writing-followup";
 import type { Content, StudioState } from "./types";
 import { currentWorkflow, hasVisuals } from "./stages";
@@ -74,6 +75,7 @@ export function packageReadiness(c: Content, s: StudioState, singleReview = fals
     acceptance = currentCopyAcceptance(c, s),
     identity = copyIdentity(c, s);
   const blockers = copyBlockers(c);
+  if(unplacedSectionImages(c.text,c.media).length)blockers.push("A section image lost its heading. Reassign or remove it before final review.");
   if (!singleReview && !acceptance) blockers.push("Review and approve the current copy first.");
   if (
     s.jobs.some(

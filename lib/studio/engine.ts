@@ -1,3 +1,5 @@
+import {documentSections} from "./document-sections";
+import {isLongForm} from "./channel-writing";
 import {newsletterSources} from "./newsletter-bundle";
 import {draftSavePayload,savedOperation} from "./save-operation";
 import {importPipeline,pipelineSnapshot} from "./pipeline";
@@ -928,9 +930,12 @@ export function applyCommand(
       const imageJob = s.jobs.find(j => j.id === c.jobId && j.contentId === d.id && j.channel === d.channel && j.kind === "image" && j.state === "succeeded");
       if (!imageJob || !/^\/api\/studio\/assets\?id=[0-9a-f-]{36}$/i.test(imageJob.result || "")) bad("Select a completed image belonging to this draft.");
       if (c.slideId && !d.media.slides.some(slide => slide.id === c.slideId)) bad("The selected slide no longer exists.");
+      if(c.slideId&&c.sectionKey)bad("Choose one image placement.");
+      if(c.sectionKey&&(!isLongForm(d.channel,d.format)||!documentSections(d.text).some(section=>section.key===c.sectionKey)))bad("The selected article section no longer exists. Save and select its current heading.");
       const media = structuredClone(d.media);
-      if (c.slideId) media.slides = media.slides.map(slide => slide.id === c.slideId ? {...slide, image:imageJob!.result} : slide);
-      else {media.imageUrl = imageJob!.result; media.imageAlt = c.alt; media.imagePrompt = imageJob!.prompt;}
+      if(c.sectionKey){const placed={id:id(),section:c.sectionKey,url:imageJob!.result!,alt:c.alt,caption:c.caption||"AI-generated concept illustration.",jobId:imageJob!.id};media.sectionImages=[...(media.sectionImages||[]).filter(image=>image.section!==c.sectionKey),placed];if(media.sectionImages.length>12)bad("Use at most twelve section images.");}
+      else if (c.slideId) media.slides = media.slides.map(slide => slide.id === c.slideId ? {...slide, image:imageJob!.result} : slide);
+      else {media.imageUrl = imageJob!.result; media.imageAlt = c.alt; media.imageCaption=c.caption||"AI-generated concept illustration."; media.imagePrompt = imageJob!.prompt;}
       return applyCommand(input, actor, {type:"content.save", id:d.id, expectedRevision:d.revision, title:d.title, text:d.text, metadata:d.metadata, media}, ctx);
     }
     case "content.save": {

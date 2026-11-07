@@ -18,6 +18,7 @@ export async function verifyApprovalAssets(
 ) {
   const uses = [
     { url: content.media.imageUrl, kind: "image" },
+    ...(content.media.sectionImages||[]).map(image=>({url:image.url,kind:"image"})),
     ...content.media.slides.map((s) => ({ url: s.image, kind: "image" })),
     ...content.media.scenes.flatMap((s) => [
       { url: s.sourceUrl, kind: "scene" },

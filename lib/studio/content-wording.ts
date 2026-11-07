@@ -8,6 +8,9 @@ export function contentWording(d: Content) {
     d.metadata,
     d.media.narration,
     d.media.captions,
+    ...(d.media.imageAlt?[d.media.imageAlt]:[]),
+    ...(d.media.imageCaption?[d.media.imageCaption]:[]),
+    ...(d.media.sectionImages||[]).flatMap(image=>[image.alt,image.caption]),
     ...d.media.slides.flatMap((s) => [
       s.title,
       s.body,

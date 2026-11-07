@@ -142,6 +142,8 @@ export interface MediaProject {
   imagePrompt: string;
   imageUrl?: string;
   imageAlt?: string;
+  imageCaption?: string;
+  sectionImages?: import("./document-sections").SectionImage[];
   narration: string;
   captions: string;
   aspect: "9:16" | "16:9" | "1:1";
