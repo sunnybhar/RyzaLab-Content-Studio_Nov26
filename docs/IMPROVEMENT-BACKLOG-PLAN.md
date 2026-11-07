@@ -26,6 +26,7 @@ This is the master plan for **all improvement items in the earlier seven-item li
 | ID | Item | Priority | Status |
 |---|---|---|---|
 | IB-11 | Consistent spacing between sections throughout Studio, including the Calendar import/pipeline layout shown in the user's screenshot. | High — usability | Queued; do not build |
+| IB-13 | Clarify AI maximum allowance versus recorded usage cost, expose the calculation, and evaluate tighter estimates and confirmation within existing budgets. | High — cost clarity | Queued; do not build |
 
 ### IB-11 — consistent section spacing across Studio
 
@@ -48,6 +49,23 @@ Acceptance when built:
 5. Existing content, import data, AI requests, review decisions and publication behavior are unaffected.
 
 The Calendar screenshot supplied with the spacing report supports IB-11. No layout edits, feature code, import operations or deployment are authorized by this backlog entry.
+
+### IB-13 — clearer AI allowances and recorded costs
+
+User approved queuing the recommendations from the cost-display discussion. IB-12 was withdrawn and remains withdrawn; its identifier is not reused.
+
+Scope when authorized, in priority order:
+
+1. Replace “Confirm AI request allowance · $0.14” with **“Approve up to $0.14”**, using the actual quoted maximum rather than a hardcoded value.
+2. Explain that this is a conservative maximum reservation, not the final charge. Final recorded cost depends on reported usage; unused reservation is released only after a supported, conclusive settlement. Unknown or unreconciled outcomes must retain truthful reservation/status wording rather than promise a release.
+3. Show the completed request's **recorded cost and approved maximum together**, e.g. “Recorded cost: $0.07 · Approved maximum: $0.14”. Distinguish usage-priced cost, unresolved reservations and provider invoice charges.
+4. Provide an expandable explanation of the input/context estimate, maximum output allowance, provider/model rates and whole-cent rounding. Explain why similar requests can share a maximum despite different actual usage. Use the frozen pricing snapshot for that request.
+5. Subsequently evaluate tighter estimates against representative requests and actual usage. Do not weaken spending limits or present an expected cost as a guaranteed ceiling.
+6. Evaluate proceeding without repeated confirmation only where a request is covered by an existing explicit authorization for that actor, content, function and budget. Require confirmation when outside that authorization; retain request/package/monthly limits, uncertain-request protection and explicit authorization for additional paid attempts. Do not enable new spending by default as a cosmetic change.
+
+Acceptance when built: maximum allowance and recorded usage are visibly distinct before/after a request; the breakdown matches saved pricing/usage; failed/unknown requests do not imply zero cost or automatic release; an authorized-budget flow avoids redundant confirmation without bypassing limits. Prioritize wording and final-cost visibility before estimate/confirmation behavior changes.
+
+Status: queued only. No app changes, pricing adjustments, paid calls or deployment until the user explicitly instructs building.
 
 ### Original-list completeness check
 

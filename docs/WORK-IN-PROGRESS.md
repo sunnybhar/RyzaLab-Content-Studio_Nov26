@@ -483,3 +483,6 @@ Added IB-12 to the master feedback pipeline. Read-only inspection confirms the i
 
 ## November 7 — IB-12 withdrawn
 User explicitly withdrew IB-12. Removed its row and detailed scope from the active master backlog. Earlier IB-12 notes above are historical and no longer actionable. Dropdown behavior remains unchanged; IB-11 remains queued. No implementation or deployment.
+
+## November 7 — AI cost clarity queued as IB-13
+User requested adding the cost-display recommendations to the backlog only. Added approve-up-to wording, maximum/actual side-by-side, transparent pricing/rounding breakdown, later tighter-estimate evaluation and confirmations only within valid existing explicit budgets. Unknown outcomes retain reservation protection; no pricing/budget behavior changed. IB-12 stays withdrawn. Documentation only; no implementation or deployment.
