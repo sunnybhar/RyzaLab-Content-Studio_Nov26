@@ -507,3 +507,6 @@ User wants confirmed review submission to close the editor and return to Create 
 
 ## November 7 — agentic review correction queued as IB-20
 User wants AI to resolve actionable review findings with minimum founder involvement. Added IB-20 for bounded review→correction→re-review, factual/evidence-aware fixes, consolidated genuine founder questions, preserved original/concurrent edits, current revision reports, concise change summary and one final human decision. Screenshot shows an uncertain prior review/no actual report, not completed AI findings; recovery remains prerequisite, with no blind paid retry or fabricated verification. Standing no-build instruction preserved; documentation only.
+
+## November 7 — Reviews layout and publication history queued as IB-21
+User requests two Reviews sections: pending actionable items above approved/published content; default last10 actual publications newest first, 1/2/3/6/12calendar-month access, date/title/channel/format metadata and popup previews. Added IB-21 with approval-only status separated within history, correct immutable package previews, all accessible channels/formats, explicit date bases, full filtered results via pagination, preserved list state and truthful publication evidence. No layout code/data/deployment changes under standing no-build instruction.

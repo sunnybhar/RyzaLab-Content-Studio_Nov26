@@ -34,6 +34,7 @@ This is the master plan for **all improvement items in the earlier seven-item li
 | IB-18 | Reliable draft saving: preserve unsaved edits, reconcile timed-out saves, prevent duplicate submissions, synchronize versions and resolve conflicts safely; investigate database latency. | High — reliability / edit preservation | Queued; do not build |
 | IB-19 | After confirmed Submit for review, close the editor and return to the Create list with a clear Under review status and View in Reviews action. | High — workflow clarity | Queued; do not build |
 | IB-20 | AI resolves actionable review findings, rechecks the revised draft and escalates only facts/decisions it cannot resolve; founder reviews the final changes and gives final approval. | High — agentic review / minimal manual work | Queued; do not build |
+| IB-21 | Reviews page with two sections: pending actionable reviews above approved/published history; latest 10 published items, 1/2/3/6/12-month filters, metadata and exact-version popup previews across channels. | High — review/history usability | Queued; do not build |
 
 ### IB-11 — consistent section spacing across Studio
 
@@ -252,6 +253,37 @@ Acceptance when built:
 - The screenshot's uncertain-review scenario shows recovery status and never falsely claims that AI reviewed/fixed the draft.
 
 Dependencies: current worker/review recovery prerequisite (IB-15), edit/timeout integrity (IB-18), clear submitted/review progress (IB-19), qualified cost authorization (IB-13), research/evidence quality (IB-05/06/14/15), channel formats/rules/templates (IB-02/07/16/17). Status: queued only. No review execution, correction request, content changes or deployment authorized by this backlog capture.
+
+### IB-21 — two-section Reviews page and accessible publication history
+
+User requests a Reviews layout with two distinct sections, recent published content and selectable historical ranges. Standing backlog-only instruction still applies.
+
+**Section 1 — Pending actionable reviews (top)**
+
+- Show items requiring writer/founder action, with content title, channel, format, submission date and a clear current status. Prioritize ready-for-founder work and genuine outstanding decisions in the two-person flow.
+- Use a clear Open review action, opening the relevant review popup. Keep AI preparing/system-recovery status distinct from editorial action items; routine automated checks should not become a checklist for the founder.
+- Display an item count and a meaningful empty state. Approved/published history must not inflate the actionable-review count.
+
+**Section 2 — Approved & Published content (below)**
+
+- Default to the **latest 10 confirmed published items**, newest publication first, across every active accessible social platform. Include Newsletter and Blog formats when available; publication destination capability remains explicit. There is no need for a separate history panel for each channel.
+- Within this second section, provide Published and Approved / awaiting publication choices (or equivalent status filters). Approved but unpublished packages remain accessible without claiming they were published. The latest-10 default refers to actual published items, not the latest ten approvals.
+- Each row/card shows **date, content heading/title, social channel/destination, content type and a Preview button**. Distinguish published date from approval date; optionally expose created date for users looking up writing history. Use the workspace timezone consistently and label the relevant date field.
+- Preview opens in a **popup window/modal** with readable complete text and included images/media. Display the selected version, title, channel, type and appropriate approval/publication dates; provide the actual live URL when recorded. Show the immutable approved/published package for that record, not the latest editable draft. Opening/closing preview must retain list filters and scroll position.
+- Provide historical period choices of **1 month, 2 months, 3 months, 6 months and 12 months**, plus a return to Latest 10. Once a period is chosen, show all matching authorized items through pagination/load more rather than silently limiting the period to ten. Keep newest first and show a result count/empty state.
+- Make date-range semantics explicit: published-history ranges use the recorded publication timestamp; approved-but-unpublished history uses approval timestamp. If users choose to search by writing/created date, expose that basis explicitly rather than silently mixing different dates. Calculate calendar-month lookbacks in the workspace timezone and test boundary cases.
+- Support channel/content-type filters within the common history where helpful, retaining an all-channels default and consistent metadata/Preview action under every date filter.
+
+Data/integrity constraints:
+
+- A scheduled time, submission, approval, export or copied text is not proof of publication. Show Published only from an actual platform result or the existing human-confirmed publication record; unknown outcomes remain unknown.
+- Preserve original records, revision history, permissions and current publication links. Multiple platform publications of a shared idea must retain the correct destination/package/date rather than merge distinct posts incorrectly. Avoid duplicate rows caused by joins/repeated schedules.
+- Do not auto-publish, alter approvals or load inaccessible private content as a side effect of opening history/preview. Older approved packages remain available where authorized even if their draft changed later.
+- Apply the shared section spacing/responsive accessibility requirements. Modal supports keyboard focus, accessible close and mobile readability.
+
+Acceptance when built: two clearly spaced sections; actionable count excludes historical items; default shows at most ten actual publications latest first; every requested month range retrieves the full matching history with correct dates/metadata; published and approval-only statuses remain truthful; all active accessible channels/formats are represented; every Preview opens the correct complete saved version and returns to the same list context.
+
+Dependencies: IB-11 spacing, IB-19 submission completion, IB-20 two-person AI-preparation flow, IB-16 Blog formats and IB-09/10 future publisher receipts. Existing manual publication records should work without waiting for automatic publishing. Status: queued only; no page/layout code, record changes or deployment.
 
 ### Original-list completeness check
 
