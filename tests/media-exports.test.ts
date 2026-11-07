@@ -56,6 +56,7 @@ test("editable source roundtrips all layout, audio, caption, and final aspect ch
   media.slides[0].image = "data:image/png;base64,aGVsbG8=";
   media.scenes[0].audioUrl = "/api/studio/assets/narration.mp3";
   media.imageUrl = "/storage/illustration.png";
+  media.imageAlt = "An AI-generated concept illustration";
   media.captions = "Hello\nGoodbye";
   assert.deepEqual(importProject(serializeProject(media)), media);
   for (const aspect of ["9:16", "16:9", "1:1"] as const)

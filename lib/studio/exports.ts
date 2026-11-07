@@ -82,6 +82,7 @@ export const mediaProjectSchema = z
     scenes: z.array(sceneSchema).max(100),
     imagePrompt: z.string().max(20000),
     imageUrl: assetSource.optional(),
+    imageAlt:z.string().max(1000).optional(),
     narration: z.string().max(100000),
     captions: z.string().max(100000),
     aspect: z.enum(["9:16", "16:9", "1:1"]),

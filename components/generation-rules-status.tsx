@@ -14,6 +14,8 @@ export function GenerationRulesStatus({
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
   if (!job) return null;
   const context = job.agentContextSnapshot;
+  let researchVersion:{fileName:string;uploadedAt:string}|undefined;
+  try{const value=JSON.parse(job.prompt).researchMethodology?.resourceVersion;if(typeof value?.fileName==="string"&&typeof value?.uploadedAt==="string")researchVersion=value;}catch{}
   return (
     <details className="s-review-policy">
       <summary>Agent Rules used for this writing request</summary>
@@ -41,6 +43,7 @@ export function GenerationRulesStatus({
           request.
         </p>
       )}
+      {researchVersion&&<p>Research Instructions used for evidence analysis: {researchVersion.fileName} · saved {new Date(researchVersion.uploadedAt).toLocaleString()}. Public discovery did not receive this private file text.</p>}
       {!!context?.voice.length && (
         <>
           <p>Voice examples included:</p>

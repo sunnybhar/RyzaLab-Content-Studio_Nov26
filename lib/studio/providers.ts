@@ -31,6 +31,7 @@ export async function validateConnection(connection: Connection, key: string) {
       : connection.provider === "google"
         ? ["text", "ideas", "review"]
         : ["text", "ideas", "review", "image", "audio"];
+  if(connection.function==="image"&&!/^gpt-image-[a-z0-9.-]+$/i.test(connection.model))throw new StudioError(400,"The image adapter supports qualified OpenAI GPT Image models at 1024×1024, medium quality. Choose a supported image model rather than a text or legacy DALL-E model.");
   if (!supported.includes(connection.function))
     throw new StudioError(
       400,
@@ -112,6 +113,7 @@ export async function runProvider(
         false,
         "Image adapter unavailable for this provider.",
       );
+    if(!/^gpt-image-[a-z0-9.-]+$/i.test(connection.model))throw new ProviderFailure(false,"This image model is not supported by the qualified GPT Image adapter. No paid request was sent.");
     url = "https://api.openai.com/v1/images/generations";
     headers.authorization = `Bearer ${key}`;
     body = {
@@ -218,10 +220,9 @@ export async function runProvider(
         true,
         "Provider completed without a usable image payload. Check billing before retrying.",
       );
-    return {
-      bytes: new Uint8Array(Buffer.from(json.data[0].b64_json, "base64")),
-      mime: "image/png",
-    };
+    const bytes=Buffer.from(json.data[0].b64_json,"base64");
+    if(bytes.length<9||bytes.length>50*1024*1024||!bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))throw new ProviderFailure(true,"Provider returned an invalid or oversized image payload. Check the existing outcome before any new paid request.");
+    return {bytes:new Uint8Array(bytes),mime:"image/png"};
   }
   const text =
     connection.provider === "anthropic"

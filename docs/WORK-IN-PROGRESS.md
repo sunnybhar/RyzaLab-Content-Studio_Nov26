@@ -558,3 +558,6 @@ v0.3.32 pushed to main/studio-rebuild at fe322a4 after307tests/build/full produc
 
 ### Direct sources and private research methodology WIP
 v0.3.33 pushed to main/studio-rebuild at fe44262 after314tests/build/full production browser passed. Current IB-05/06/14 work adds explicit HTTPS source URLs to public retrieval, persisted/replay-checked source lists, evidence only from successful reads, per-domain/depth limits, aggregate byte bounds and one deadline across page redirects. Saved Research Instructions plus baseline evidence/data/counterargument methods join new applicable idea/writing analysis prompts with exact resource version, never public search queries. Focused10research checks and research browser pass; full regression/build pending. This does not claim a complete investigative dossier/claim ledger or external paid acceptance.
+
+### Research/image compatibility checks
+Direct-source/methodology focused checks and source-selection browser pass. Added GPT Image family validation before dispatch, invalid returned PNG detection without automatic paid retry, and fixed project export/import schema to preserve the attached image description. Twelve image/media-export tests pass. Current Research Instructions version is shown in the saved writing request's Agent Rules details. Final combined regression/build/release remains pending; no provider calls.
