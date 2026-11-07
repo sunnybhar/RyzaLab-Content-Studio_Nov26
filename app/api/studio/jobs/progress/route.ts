@@ -23,10 +23,10 @@ export async function POST(req: NextRequest) {
     const job = state.jobs.find(
       (j) => j.id === input.jobId && j.createdBy === actor.email,
     );
-    if (!job || !["text", "ideas", "review"].includes(job.kind))
+    if (!job || !["text", "ideas", "review", "image"].includes(job.kind))
       throw new StudioError(
         404,
-        "Your authorized written-content job was not found.",
+        "Your authorized content job was not found.",
       );
     requirePermission(state, actor, "job.create", {
       channel: job.channel,

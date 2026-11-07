@@ -62,6 +62,7 @@ export function SoloReview({
   const current = state.jobs.find(
     (j) => j.id === content.automaticReview?.jobId,
   );
+  const automatedWorkPending=state.jobs.some(j=>j.contentId===content.id&&["queued","running"].includes(j.state));
   const issues = [...readiness.blockers];
   if (content.automaticReview?.error && !readiness.agent)
     issues.push(content.automaticReview.error);
@@ -127,13 +128,13 @@ export function SoloReview({
     );
   }, [demo, current?.id, current?.state, actor.email, progressJob]);
   useEffect(() => {
-    if (demo || readiness.agent || !policy?.autoReview) return;
+    if (demo || (readiness.agent&&!automatedWorkPending) || !policy?.autoReview) return;
     const timer = window.setInterval(
       () => void refresh().catch(() => {}),
       5000,
     );
     return () => window.clearInterval(timer);
-  }, [demo, readiness.agent?.jobId, policy?.autoReview, refresh]);
+  }, [demo, readiness.agent?.jobId, automatedWorkPending, policy?.autoReview, refresh]);
   async function approve() {
     if (!workflow) return;
     setBusy(true);

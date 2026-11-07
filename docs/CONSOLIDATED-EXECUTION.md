@@ -20,7 +20,7 @@ User authorization: combine the earlier backlog and all subsequent feedback and 
 | 12 | IB-02 newsletter structure/export templates | Resource/context and supported JSON export layout built for 0.3.30; full template/image flow pending | Upload/edit/select/download, section/image slots and formatted exports |
 | 13 | IB-08 multi-source newsletter | Composer/snapshots/outline and source-aware writing built for 0.3.32 | Posts/ideas/briefs/text/PDF/DOCX source basket with provenance |
 | 14 | IB-01 image generation | Main/slide image workflow built for 0.3.31; section placement and live acceptance pending | User chooses OpenAI; secure one connection for post/Blog/Newsletter; qualified model/rate/key needed |
-| 15 | IB-20 AI corrections and re-review | Pending | Bounded corrections, genuine founder questions only, current revision report and final human approval |
+| 15 | IB-20 AI corrections and re-review | Opt-in bounded loop built/tested for 0.3.33; live quality acceptance pending | Bounded corrections, genuine founder questions only, current revision report and final human approval |
 | 16 | IB-21 Reviews/history layout | History/preview built for 0.3.29; AI queue integration pending | Two sections; latest10 publications; 1/2/3/6/12months; exact snapshot popup |
 | 17 | IB-09 LinkedIn OAuth/prepare-only | Pending | Developer app/credentials/access/capability verification; no fabricated native drafts |
 | 18 | IB-10 approved scheduled publishing | Pending | Exact version/account/timezone approval, receipts, cancellation and uncertain-outcome reconciliation |

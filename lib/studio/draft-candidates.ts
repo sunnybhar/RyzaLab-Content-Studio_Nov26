@@ -1,3 +1,4 @@
+import {suppliedReviewReferences} from "./review-references";
 import {correctionIsCurrent} from "./review-correction";
 import {isLongForm} from "./channel-writing";
 import {incompleteDraftBody,applyRecoveredWorkingText} from "./incomplete-draft";
@@ -169,10 +170,10 @@ export function settleWrittenOutput(
         "Reviewer response was not a valid report; required review remains pending.";
       return;
     }
-    const workflow = job.workflowSnapshot;
+    const references = suppliedReviewReferences(job);
     if (
       report.issues.some((i) =>
-        i.referenceIds.some((id) => !workflow?.references.includes(id)),
+        i.referenceIds.some((id) => !references.has(id)),
       )
     ) {
       job.outputStatus = "invalid";

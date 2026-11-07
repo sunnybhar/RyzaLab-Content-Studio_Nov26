@@ -1,5 +1,32 @@
-import type {Content,Job,StudioState} from './types';
-import {copyIdentity,currentCopyAcceptance} from './solo-quality';
-export const MAX_CORRECTION_ROUNDS=2;
+import type { Content, Job, StudioState } from "./types";
+import { copyIdentity, currentCopyAcceptance } from "./solo-quality";
+export const MAX_CORRECTION_ROUNDS = 2;
 /** Both dispatch and settlement enforce the same exact report/revision/approval boundary. */
-export function correctionIsCurrent(state:StudioState,content:Content,job:Job){const correction=job.reviewCorrection;if(!correction)return false;return Boolean(state.settings.reviewPolicy?.autoCorrect&&content.state==='review'&&!content.deletedAt&&!currentCopyAcceptance(content,state)&&content.reviewCycle?.jobId===job.id&&content.reviewCycle.rootSubmissionId===correction.rootSubmissionId&&(content.reviewSubmission?.rootId||content.reviewSubmission?.id)===correction.rootSubmissionId&&correction.round>=1&&correction.round<=MAX_CORRECTION_ROUNDS&&content.revision===job.targetRevision&&copyIdentity(content,state)===job.targetIdentity&&content.agentReview?.jobId===correction.reviewJobId&&content.agentReview.identity===job.targetIdentity&&!state.packages.some(p=>p.contentId===content.id&&p.revision===content.revision));}
+export function correctionIsCurrent(
+  state: StudioState,
+  content: Content,
+  job: Job,
+) {
+  const correction = job.reviewCorrection;
+  if (!correction) return false;
+  return Boolean(
+    state.settings.reviewPolicy?.autoReview &&
+    state.settings.reviewPolicy.autoCorrect &&
+    content.state === "review" &&
+    !content.deletedAt &&
+    !currentCopyAcceptance(content, state) &&
+    content.reviewCycle?.jobId === job.id &&
+    content.reviewCycle.rootSubmissionId === correction.rootSubmissionId &&
+    (content.reviewSubmission?.rootId || content.reviewSubmission?.id) ===
+      correction.rootSubmissionId &&
+    correction.round >= 1 &&
+    correction.round <= MAX_CORRECTION_ROUNDS &&
+    content.revision === job.targetRevision &&
+    copyIdentity(content, state) === job.targetIdentity &&
+    content.agentReview?.jobId === correction.reviewJobId &&
+    content.agentReview.identity === job.targetIdentity &&
+    !state.packages.some(
+      (p) => p.contentId === content.id && p.revision === content.revision,
+    ),
+  );
+}

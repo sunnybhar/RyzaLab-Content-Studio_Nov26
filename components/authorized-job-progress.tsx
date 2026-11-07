@@ -38,7 +38,7 @@ export function AuthorizedJobProgress({
       (j.state === "queued" ||
         (j.state === "running" &&
           Boolean(j.leaseUntil && Date.parse(j.leaseUntil) < now))) &&
-      ["text", "ideas", "review"].includes(j.kind) &&
+      ["text", "ideas", "review", "image"].includes(j.kind) &&
       !sampleIds.has(j.id),
   );
   const [error, setError] = useState(""),
