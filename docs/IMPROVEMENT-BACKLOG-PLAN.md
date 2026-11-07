@@ -32,6 +32,7 @@ This is the master plan for **all improvement items in the earlier seven-item li
 | IB-16 | Add Blog as a 4–10 minute reading format alongside short LinkedIn posts and 8–15 minute newsletters, with an editor format dropdown and the same applicable research/writing features. | High — content creation | Queued; do not build |
 | IB-17 | Shared imported/generated/manual idea and brief library available across every active channel and Blog format, with destination-specific adaptation rather than source-channel lock-in. | High — cross-channel creation | Queued; do not build |
 | IB-18 | Reliable draft saving: preserve unsaved edits, reconcile timed-out saves, prevent duplicate submissions, synchronize versions and resolve conflicts safely; investigate database latency. | High — reliability / edit preservation | Queued; do not build |
+| IB-19 | After confirmed Submit for review, close the editor and return to the Create list with a clear Under review status and View in Reviews action. | High — workflow clarity | Queued; do not build |
 
 ### IB-11 — consistent section spacing across Studio
 
@@ -202,6 +203,25 @@ Acceptance when built:
 Proposed priority when authorized: **preserve edits → reconcile timed-out saves → synchronize versions and resolve conflicts → optimize measured database bottlenecks**. Coordinate with IB-15's research/generation worker-recovery prerequisite without treating this draft-save item as proof that provider lease expiry is fixed.
 
 Status: queued only. No app code, local recovery storage, database settings, retries, migrations, paid requests or deployment changed by this planning task.
+
+### IB-19 — clear completion after review submission
+
+User report: after Submit for review, the editor stays open with the same submission button, making it unclear whether the action completed. Requested behavior: close the editor and show the Create list so the user understands the content is now under review.
+
+Current cause confirmed read-only: the editor button calls content.submit through run and sets a success notice, but does not call the existing back/navigation callback after success. The automatic-review status can change while the user remains in the editor. The screenshot alone is not proof that every displayed draft has a confirmed successful submission; use server state to decide navigation.
+
+Scope when authorized:
+
+- Show Submitting… and prevent repeat clicks while the action is pending.
+- After confirmed successful submission, close the editor and return to the Create list. Preserve useful channel filters/list position, but ensure the submitted item is visible rather than hidden by a stale search/filter.
+- Show a clear confirmation such as “Submitted for review — now under review”, plus View in Reviews. Mark the list item Under review; show automated-check progress separately if checks continue in the backend. Submission completion does not mean review or publication is complete.
+- Avoid leaving an active Submit for review action that invites accidental duplicate submissions for the same submitted revision.
+- On validation error, failed save or uncertain/timeout outcome, stay in the editor, preserve writing and show recovery/status actions. Reconcile the original operation through IB-18; navigate only when submission is confirmed, never falsely report success or retry a paid review request.
+- Apply consistently to posts, newsletters and Blogs when available. Editing/resubmitting a later revision must follow existing revision and approval protections.
+
+Acceptance when built: successful submit returns to Create with the exact item marked Under review and a working Reviews link; pending prevents repeat submissions; failure/uncertainty preserves the editor and edits; refresh retains the authoritative submission state; backend review may continue without another manual step or duplicate job.
+
+Status: queued only under the standing no-build instruction. No submission handler, navigation, content state, review request or deployment changed.
 
 ### Original-list completeness check
 

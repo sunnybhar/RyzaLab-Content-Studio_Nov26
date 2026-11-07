@@ -501,3 +501,6 @@ User reports Newsletter shows no matching briefs from LinkedIn calendar imports 
 
 ## November 7 — save reliability queued as IB-18
 User approved backlog capture of draft-saving improvements following database save timeout and stale-revision screenshots. Added IB-18 covering protected unsaved edits, exact-operation timeout reconciliation, idempotency, version synchronization, comparison/merge/separate-copy recovery, measured database latency and interruption/concurrency tests. Timeout→stale editor remains a hypothesis, not confirmed root cause. Prioritize edit preservation and recovery; keep source permissions, privacy, approvals and uncertain-provider protections. Documentation only; no implementation or deployment.
+
+## November 7 — review submission completion queued as IB-19
+User wants confirmed review submission to close the editor and return to Create list with an obvious under-review state. Read-only inspection confirms current handler runs content.submit/success notice but does not navigate back. Added IB-19 for pending protection, confirmed-success return/list badge/Reviews link, and preserved editor/reconciliation on errors or uncertain outcome. Submission is not completed review/publication. Standing no-build instruction retained; documentation only, no implementation/deployment.
