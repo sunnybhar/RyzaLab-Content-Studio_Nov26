@@ -537,3 +537,6 @@ In development: sector/depth/source preferences drive discovery, Wikipedia exclu
 
 ### v0.3.30 release verification
 User requested deployment of progress so far. Production build and TypeScript pass; all 297 domain tests pass. Focused research selection and resource guidance/version browser tests pass. Production app smoke and production Agent Rules persistence/download browser tests passed. Release scope/limitations documented in RELEASE-0.3.30.md; full backlog remains unfinished. No paid calls or operational imports/publications.
+
+### OpenAI image editor WIP
+Continuing remaining backlog after v0.3.30 as authorized. Added image request controls to Write for every format, connection/mapping guidance, explicit maximum consent, existing job status, authenticated preview/download, and explicit main-image/slide application. New server command only applies a succeeded same-draft image through existing save/revision/check invalidation. TypeScript passes. Domain/browser/regression tests and final release are pending; no paid image requests or provider credentials used. Section-by-section image placement remains outside this first image increment.

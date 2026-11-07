@@ -911,6 +911,17 @@ export function applyCommand(
       });
       break;
     }
+    case "content.image.apply": {
+      const d = content(c.contentId);
+      if (d.revision !== c.expectedRevision) throw new StudioError(409, "Draft changed. Reload before selecting this image.");
+      const imageJob = s.jobs.find(j => j.id === c.jobId && j.contentId === d.id && j.channel === d.channel && j.kind === "image" && j.state === "succeeded");
+      if (!imageJob || !/^\/api\/studio\/assets\?id=[0-9a-f-]{36}$/i.test(imageJob.result || "")) bad("Select a completed image belonging to this draft.");
+      if (c.slideId && !d.media.slides.some(slide => slide.id === c.slideId)) bad("The selected slide no longer exists.");
+      const media = structuredClone(d.media);
+      if (c.slideId) media.slides = media.slides.map(slide => slide.id === c.slideId ? {...slide, image:imageJob!.result} : slide);
+      else {media.imageUrl = imageJob!.result; media.imageAlt = c.alt; media.imagePrompt = imageJob!.prompt;}
+      return applyCommand(input, actor, {type:"content.save", id:d.id, expectedRevision:d.revision, title:d.title, text:d.text, metadata:d.metadata, media}, ctx);
+    }
     case "content.save": {
       const d = content(c.id);
       if (d.deletedAt) bad("Restore this item before editing.");

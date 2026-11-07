@@ -128,6 +128,7 @@ function download(blob: Blob, name: string) {
   anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+export async function downloadImageAsset(source:string) { download(await assetBlob(source), "ryzalab-concept.png"); }
 export function serializeProject(media: MediaProject): string {
   const output = JSON.stringify(
     {

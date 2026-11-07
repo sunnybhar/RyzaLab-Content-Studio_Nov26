@@ -141,6 +141,7 @@ export interface MediaProject {
   scenes: Scene[];
   imagePrompt: string;
   imageUrl?: string;
+  imageAlt?: string;
   narration: string;
   captions: string;
   aspect: "9:16" | "16:9" | "1:1";
