@@ -1,5 +1,5 @@
-import {refreshGate} from "./refresh-policy";
 "use client";
+import {refreshGate} from "./refresh-policy";
 import {clearRecovery} from "./draft-recovery";
 import {readStudioResponse} from "./response";
 import { useCallback, useEffect, useRef, useState } from "react";

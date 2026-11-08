@@ -1,6 +1,7 @@
 -- Service-only compact worker polling; no workspace/data deletion.
 begin;
 create table if not exists public.studio_poll_checkpoints(kind text primary key check(kind='maintenance'),version bigint,lease text,lease_until timestamptz);
+alter table public.studio_poll_checkpoints add column if not exists checked_at timestamptz;
 alter table public.studio_poll_checkpoints enable row level security;
 revoke all on public.studio_poll_checkpoints from public,anon,authenticated;
 grant select,insert,update on public.studio_poll_checkpoints to service_role;
@@ -25,8 +26,8 @@ begin
   due=due or exists(select 1 from jsonb_array_elements(coalesce(s->'planningTasks','[]')) t where t->>'state'='planned' and t->>'at'<=stamp and not exists(select 1 from jsonb_array_elements(coalesce(s->'notices','[]')) n where n->>'eventId'='planning-due:'||(t->>'id')||':'||(t->>'at')));
   due=due or exists(select 1 from jsonb_array_elements(coalesce(s->'schedules','[]')) t where t->>'state'='planned' and t->>'at'<=stamp and not exists(select 1 from jsonb_array_elements(coalesce(s->'notices','[]')) n where n->>'eventId' in ('due-ready:'||(t->>'id')||':'||(t->>'at'),'due-blocked:'||(t->>'id')||':'||(t->>'at'))));
   due=due or exists(select 1 from jsonb_array_elements(coalesce(s->'recurrences','[]')) r where r->>'state'='active' and ((r->>'nextAt'<=stamp and r->>'lastOccurrence' is distinct from r->>'nextAt') or (r->>'nextAt'>stamp and (r->>'nextAt')::timestamptz<now()+interval '24 hours' and not exists(select 1 from jsonb_array_elements(coalesce(s->'notices','[]')) n where n->>'eventId'='research-choice:'||(r->>'id')||':'||(r->>'nextAt')))));
-  if p_docs_enabled and s->'settings'->>'docsMode'='automatic' then
-   due=due or exists(select 1 from jsonb_array_elements(coalesce(s->'contents','[]')) c where nullif(c->>'deletedAt','') is null and nullif(c->>'docId','') is not null and nullif(c->>'docsOwnerId','') is not null and nullif(c->>'docsOwnerEmail','') is not null and coalesce(c->>'docsLastCheckedAt',c->>'docsFetchedAt') is not null and coalesce(c->>'docsLastCheckedAt',c->>'docsFetchedAt')::timestamptz<now()-interval '5 minutes');
+  if p_docs_enabled and s->'settings'->>'docsMode'='automatic' and (point.checked_at is null or point.checked_at<now()-interval '5 minutes') then
+   due=due or exists(select 1 from jsonb_array_elements(coalesce(s->'contents','[]')) c where nullif(c->>'deletedAt','') is null and nullif(c->>'docId','') is not null and nullif(c->>'docsOwnerId','') is not null and nullif(c->>'docsOwnerEmail','') is not null and exists(select 1 from jsonb_array_elements(s->'members') m where m->>'email'=c->>'docsOwnerEmail' and not coalesce((m->>'revoked')::boolean,false)) and coalesce(c->>'docsLastCheckedAt',c->>'docsFetchedAt') is not null and coalesce(c->>'docsLastCheckedAt',c->>'docsFetchedAt')::timestamptz<now()-interval '5 minutes');
   end if;
   trash_before=to_char((now()-make_interval(days=>coalesce((s->'settings'->>'trashDays')::int,30))) at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
   due=due or exists(select 1 from jsonb_array_elements(coalesce(s->'contents','[]')) c where c->>'deletedAt'<=trash_before and not exists(select 1 from jsonb_array_elements(coalesce(s->'packages','[]')) p where p->>'contentId'=c->>'id') and not exists(select 1 from jsonb_array_elements(coalesce(s->'schedules','[]')) p where p->>'contentId'=c->>'id') and not exists(select 1 from jsonb_array_elements(coalesce(s->'planningTasks','[]')) p where p->>'contentId'=c->>'id' and p->>'state'='planned'));
@@ -38,7 +39,7 @@ create or replace function public.studio_finish_maintenance_poll(p_lease text,p_
 language plpgsql security definer set search_path=public as $$
 begin
  if p_version>(select version from public.studio_workspace where id=true) then raise exception 'Invalid checkpoint version'; end if;
- update public.studio_poll_checkpoints set version=p_version,lease=null,lease_until=null where kind='maintenance' and lease=p_lease;
+ update public.studio_poll_checkpoints set version=p_version,lease=null,lease_until=null,checked_at=now() where kind='maintenance' and lease=p_lease;
  if not found then raise exception 'Maintenance lease changed' using errcode='40001'; end if;
 end; $$;
 revoke all on function public.studio_poll_status(text,text,boolean),public.studio_finish_maintenance_poll(text,bigint) from public,anon,authenticated;

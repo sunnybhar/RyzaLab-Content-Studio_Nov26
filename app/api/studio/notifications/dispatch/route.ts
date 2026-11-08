@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
       !timingSafeEqual(Buffer.from(configured), Buffer.from(provided))
     )
       throw new StudioError(401, "Worker authorization required.");
+    if(!process.env.EMAIL_API_KEY||!process.env.EMAIL_FROM)return NextResponse.json({message:"Email provider is not configured; no notification polling.",idle:true,configured:false});
     const db = database();
     const poll=await workerPollStatus(db,"notifications");
     if(!poll.due)return NextResponse.json({message:"No pending notifications.",idle:true,version:poll.version});

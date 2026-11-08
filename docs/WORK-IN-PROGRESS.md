@@ -615,3 +615,6 @@ User screenshot confirms73.463GB/5GB egress, database35MB and negligible file st
 
 ### Compact polling verification
 Conditional refresh fixture passes initial load, concurrent-component coalescing,304 handling, hidden-tab pause, explicit checks and account-cache isolation. Initial compact SQL tests pass due jobs/timers, notification gating, checkpoint lease ownership and service-only permissions. Added ownership/scoped-permission-checked compact job status so running-status requests do not read full state or return prompts/results; actual execution retains full fresh authorization/CAS checks. Latest egress SQL also includes the prior history-save optimization to give the user one script. Final tests/build/browser pending; SQL not applied remotely.
+
+### v0.3.39 egress release candidate
+All353 domain tests pass. Corrected a client-directive ordering error caught by the initial build; corrected production build/TypeScript pass. Focused refresh/account-cache browser and owner-only authorized-job browser pass. Compact SQL checks pass and final timer refinement prevents repeated unauthorized/misconfigured Docs polling. Initial loads and genuine version changes still read full state; no fully normalized data-layer claim. SQL is prepared, not applied. Full production app/submission browsers finishing; no paid calls or live database modifications.
