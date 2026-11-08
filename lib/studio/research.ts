@@ -128,13 +128,15 @@ export const publicResearchSchema = z
     retrieval: z
       .object({
         adapter: z.enum(["public-refs-v1","bounded-web-v2"]),
-        requests: z.number().int().min(1).max(85),
+        requests: z.number().int().min(1).max(110),
         responseBytes: z.number().int().min(1).max(8388608),
         excerptBytes: z.number().int().min(1).max(100000),
         providers: z
           .array(z.enum(["wikipedia", "crossref", "bing_web", "bing_news","public_page"]))
           .min(1)
           .max(8),
+        plan:z.object({version:z.literal(1),depth:z.enum(["focused","deep","extended"]),question:z.string().max(2000),questions:z.array(z.string().max(500)).max(8),searches:z.array(z.object({purpose:z.string().max(100),query:z.string().max(3000)})).max(6),notice:z.string().max(500)}).optional(),
+        coverage:z.object({sourcesRead:z.number().int().nonnegative(),excerptsOnly:z.number().int().nonnegative(),domains:z.number().int().nonnegative(),duplicatePassages:z.number().int().nonnegative(),elapsedMs:z.number().int().nonnegative()}).optional(),
         gaps: z.array(z.string().max(300)).max(20),
         providerChargeCents: z.literal(0),
       })

@@ -19,6 +19,7 @@ export async function automaticIdeaResearch(
   input: Input,
   retrieve = retrieveBroadReferences,
   now = new Date().toISOString(),
+  saveResearch?: (next:StudioState)=>Promise<void>,
 ) {
   for (const action of ["read", "idea.edit"])
     requirePermission(state, actor, action, { channel: input.channel });
@@ -75,7 +76,8 @@ export async function automaticIdeaResearch(
       byte.toString(16).padStart(2, "0"),
     ).join("");
   const query=ideaResearchQuery(input.topic,input.audience);
-  const result = screenIdeaResearch(await retrieve(query, undefined, now,researchProfile(state,input.channel)),input.topic,input.audience);
+  const saved=state.jobs.find(job=>job.idempotencyKey===researchKey&&job.createdBy===actor.email);
+  const result = screenIdeaResearch(saved?.result?JSON.parse(saved.result):await retrieve(query, undefined, now,researchProfile(state,input.channel)),input.topic,input.audience);
   const next = applyCommand(
     state,
     actor,
@@ -87,6 +89,7 @@ export async function automaticIdeaResearch(
     },
     { retrievalResult: result, now },
   );
+  if(saveResearch && next!==state)await saveResearch(next);
   const command = commandSchema.parse({
     ...input,
     research: true,

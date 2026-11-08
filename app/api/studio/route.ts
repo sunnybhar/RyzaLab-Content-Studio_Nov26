@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
         "Command is too large; upload assets separately.",
       );
     diagnostics.stage("load_state");
-    const original = await loadState(db, actor);
+    let original = await loadState(db, actor);
     diagnostics.stage("prepare_command");
     let state=original;
     let parsed = commandSchema.parse(await req.json());
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     );
     if(command.type==="idea.generate"&&command.automaticResearch) {
       diagnostics.stage("research_and_prepare_ideas");
-      const prepared=await automaticIdeaResearch(state,actor,command);
+      const prepared=await automaticIdeaResearch(state,actor,command,undefined,undefined,async saved=>{await persist(db,original,saved);original=saved;});
       if(prepared.existing)return NextResponse.json({state:filteredState(state,actor),actor,mode:"live"});
       state=prepared.state;command=prepared.command;
     }

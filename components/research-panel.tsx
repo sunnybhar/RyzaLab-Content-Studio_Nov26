@@ -64,7 +64,7 @@ export function ResearchPanel({
       </p>
       <details>
         <summary>Find public references</summary>
-        <p>Find relevant web/news sources, accessible article passages and scholarly abstracts. Wikipedia is excluded from new research. Each source identifies whether article text or only a search excerpt was available; coverage varies. Public retrieval does not require a separate Research key.</p>
+        <p>Find original evidence, independent reporting and contrary evidence through several bounded searches; read accessible articles and searchable PDFs. Wikipedia is excluded from new research. Each source identifies whether article text or only a search excerpt was available; coverage varies. Public retrieval does not require a separate Research key.</p>
         <label className="s-field">
           Public research question
           <textarea
@@ -245,6 +245,7 @@ export function ResearchPanel({
                       </details>
                     ) : null}
                     <p>{evidence.notice}</p>
+                    {evidence.version===2&&evidence.retrieval.plan&&<details><summary>Investigation plan and coverage</summary><ul>{evidence.retrieval.plan.searches.map((search,i)=><li key={i}>{search.purpose}: {search.query}</li>)}</ul><p>{evidence.retrieval.coverage?.sourcesRead??0} sources read · {evidence.retrieval.coverage?.excerptsOnly??evidence.citations.length} excerpts only. Domain count is not independent corroboration.</p></details>}
                     {evidence.version===2 && evidence.retrieval.gaps.map(gap=><p key={gap} role="status">{gap}</p>)}
                   </details>
                 </>

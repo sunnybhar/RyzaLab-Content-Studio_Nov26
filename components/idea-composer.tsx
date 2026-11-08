@@ -1,5 +1,6 @@
 "use client";
 import {ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active-channels";
+import {ResearchPanel} from "./research-panel";
 import {IdeaRunProgress} from "./idea-run-progress";
 import {relevantIdeaCitation} from "@/lib/studio/idea-research-query";
 import {researchEvidence} from "@/lib/studio/research-link";
@@ -40,6 +41,7 @@ export function IdeaComposer({
 }) {
   const resumed=!demo?state.jobs.find(j=>j.kind==="ideas"&&!j.contentId&&j.channel===initialChannel&&j.createdBy===actor.email&&j.ideaPurpose===(mode==="manual"?"manual_assistance":undefined)&&["queued","running","awaiting_confirmation","unknown"].includes(j.state)):undefined;
   let resumeInput:{topic?:string;audience?:string;sourceText?:string;quantity?:number;pipeline?:{id?:string}}={};try{resumeInput=resumed?JSON.parse(resumed.prompt):{};}catch{}
+  const [selectedResearch,setSelectedResearch]=useState<string[]>([]);
   const [pipelineBriefId,setPipelineBriefId]=useState(initialBriefId||resumeInput.pipeline?.id);
   const initialBrief=state.pipelineBriefs?.find(b=>b.id===pipelineBriefId);
   const dialog = useRef<HTMLDialogElement>(null),
@@ -90,7 +92,7 @@ export function IdeaComposer({
     try {
       proposal = parseGeneratedIdeas(job.result, 1)[0];
     } catch {}
-  const evidenceIds = job?.researchJobIds || [];
+  const evidenceIds = job?.researchJobIds || selectedResearch;
   let relevanceWarning=false;try{relevanceWarning=Boolean(job)&&researchEvidence(state,actor,channel,evidenceIds).some(result=>result.citations.every(cite=>!relevantIdeaCitation(cite,title,audience)));}catch{}
   async function confirmRequest(){setBusy(true);setError("");try{await send({type:"job.confirm",id:job!.id});setLastChecked(Date.now());}catch(e){setError(e instanceof Error?e.message:"Could not confirm this request.");}finally{setBusy(false);}}
 
@@ -112,6 +114,7 @@ export function IdeaComposer({
       quantity,
       channel,
       mode,
+      selectedResearch,
     });
     if (!retry.current || retry.current.signature !== signature)
       retry.current = { signature, key: crypto.randomUUID() };
@@ -124,7 +127,8 @@ export function IdeaComposer({
       await send({
         type: "idea.generate",
         pipelineBriefId,
-        automaticResearch: true,
+        automaticResearch: !selectedResearch.length,
+        researchJobIds:selectedResearch,
         purpose: mode === "manual" ? "manual_assistance" : undefined,
         channel,
         topic: title.trim(),
@@ -229,9 +233,11 @@ export function IdeaComposer({
         When automatic drafting is enabled, opening writing also starts its
         first AI draft within the founder-approved post allowance.
       </p>
+      {!!selectedResearch.length&&<p role="status">Using {selectedResearch.length} saved research result(s). Generating ideas will reuse these sources without another public search.</p>}
       {submitted&&<IdeaRunProgress job={job} busy={busy} startedAt={startedAt} sourceCount={evidenceIds.length} readyCount={mode==="manual"?(proposal?1:0):cards.length} targetCount={mode==="manual"?1:quantity} lastChecked={lastChecked} syncError={syncError} requestError={error} refresh={checkStatus} confirm={confirmRequest}/>}
       {relevanceWarning&&<p className="s-alert s-error" role="alert">These saved references do not match the current topic/audience well. They are retained for audit; inspect the ideas before using them. This request will not be regenerated automatically.</p>}
       {!!state.pipelineBriefs?.length&&<label className="s-field">Existing Pipeline<select aria-label="Existing Pipeline" value={pipelineBriefId||""} disabled={working} onChange={e=>{const b=state.pipelineBriefs?.find(b=>b.id===e.target.value);setPipelineBriefId(b?.id);if(b){editTitle(b.title);setBrief([b.angle,b.sourceUrls.join("\n")].filter(Boolean).join("\n\n"));setAudience(b.audience);}else{editTitle("");setBrief("");setAudience("");}}}><option value="">Start from a new topic</option>{state.pipelineBriefs.map(b=><option key={b.id} value={b.id}>{b.title} · {b.plannedDate||"Unscheduled"} · {b.channel}</option>)}</select></label>}
+      <details className="s-version"><summary>Use saved research or add source links</summary><ResearchPanel state={state} actor={actor} channel={channel} selected={selectedResearch} onSelected={setSelectedResearch} run={async command=>{await send(command);return true;}} refresh={refresh} disabled={working} demo={demo}/></details>
       <details open={mode==="manual"||!submitted} className="s-idea-request-details"><summary>Request details{mode==="generate"?` · ${channel} · ${quantity} ideas`:""}</summary>
       <form
         onSubmit={(event) => {

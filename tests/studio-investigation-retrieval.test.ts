@@ -1,0 +1,100 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { jsPDF } from "jspdf";
+import { investigationPlan } from "../lib/studio/research-plan";
+import { researchProfileSchema } from "../lib/studio/research-profile";
+import { retrieveBroadReferences } from "../lib/studio/web-discovery";
+import { publicPdfEvidence } from "../lib/studio/pdf-evidence";
+test("bounded investigation explicitly pursues original evidence and contrary reporting", () => {
+  const focused = investigationPlan(
+    "household control handoff",
+    researchProfileSchema.parse({ depth: "focused" }),
+  );
+  const deep = investigationPlan(
+    "household control handoff",
+    researchProfileSchema.parse({}),
+  );
+  const extended = investigationPlan(
+    "household control handoff",
+    researchProfileSchema.parse({ depth: "extended" }),
+  );
+  assert.equal(focused.searches.length, 2);
+  assert.equal(deep.searches.length, 4);
+  assert.equal(extended.searches.length, 6);
+  assert.match(JSON.stringify(deep.searches), /original data|methodology/);
+  assert.match(JSON.stringify(deep.searches), /criticism correction/);
+  assert.match(extended.searches[4].query, /sample baseline/);
+});
+test("multi-query retrieval reads permitted articles and PDFs and records actual coverage", async () => {
+  const queries: string[] = [];
+  let n = 0;
+  const request = (async (input: any) => {
+    const url = new URL(String(input));
+    queries.push(url.searchParams.get("q") || "");
+    n++;
+    return new Response(
+      `<rss><channel><item><title>Household control handoff specialist evidence ${n}</title><link>https://source${n}.example.org/research/handoff</link><description>Household control handoff documentation explains practical household limitations and supported routines with study number ${n}.</description></item></channel></rss>`,
+    );
+  }) as typeof fetch;
+  const read: string[] = [];
+  const result = await retrieveBroadReferences(
+    "household control handoff",
+    request,
+    "2026-11-08T02:00:00.000Z",
+    researchProfileSchema.parse({}),
+    ["https://standards.example.org/handoff.pdf"],
+    async (url) => {
+      read.push(url);
+      return {
+        url,
+        title: "Household handoff research",
+        text: `Original household control handoff evidence at ${url}, with documented methods and explicit limitations. `.repeat(
+          3,
+        ),
+        bytes: 500,
+        requests: 1,
+        publishedAt: "2026-01-01",
+        author: "Researcher",
+        sourceKind: url.endsWith(".pdf") ? "document_extract" : "article_text",
+      };
+    },
+  );
+  assert.equal(queries.length, 8);
+  assert.ok(queries.some((q) => q.includes("criticism correction")));
+  assert.ok(read.includes("https://standards.example.org/handoff.pdf"));
+  assert.ok(result.citations.some((c) => c.sourceKind === "document_extract"));
+  assert.equal(result.retrieval.plan?.searches.length, 4);
+  assert.equal(result.retrieval.coverage?.sourcesRead, read.length);
+  assert.equal(result.retrieval.coverage?.excerptsOnly, 0);
+  assert.ok(!JSON.stringify(result).includes("wikipedia.org"));
+});
+test("searchable public PDFs retain page locators; unreadable or overlong PDFs fail without pretending OCR", async () => {
+  const pdf = new jsPDF();
+  pdf.text(
+    "Household control handoff research describes the original sample, units and limitations. This document explains the practical boundary of local control and the method used for testing.",
+    10,
+    20,
+    { maxWidth: 180 },
+  );
+  const result = await publicPdfEvidence(
+    new Uint8Array(pdf.output("arraybuffer")),
+  );
+  assert.equal(result.pagesRead, 1);
+  assert.match(result.text, /\[Page 1\]/);
+  assert.match(result.text, /original sample/);
+  await assert.rejects(
+    () => publicPdfEvidence(new Uint8Array([1, 2, 3])),
+    /Unsupported/,
+  );
+  const blank = new jsPDF();
+  await assert.rejects(
+    () => publicPdfEvidence(new Uint8Array(blank.output("arraybuffer"))),
+    /insufficient searchable text/,
+  );
+  const long = new jsPDF();
+  for (let i = 0; i < 20; i++) long.addPage();
+  await assert.rejects(
+    () => publicPdfEvidence(new Uint8Array(long.output("arraybuffer"))),
+    /20-page/,
+  );
+});

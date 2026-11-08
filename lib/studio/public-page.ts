@@ -1,3 +1,4 @@
+import {publicPdfEvidence} from "./pdf-evidence";
 import { lookup } from "node:dns/promises";
 import { request as httpsRequest } from "node:https";
 import type { LookupFunction } from "node:net";
@@ -105,7 +106,7 @@ export async function readPublicPage(
   author: string;
   bytes: number;
   requests: number;
-  sourceKind: "article_text" | "video_description";
+  sourceKind: "article_text" | "video_description" | "document_extract";
 }> {
   if(Date.now()>=expiresAt)throw Error("Source reading deadline reached.");
   const url = publicPageUrl(value);
@@ -126,6 +127,7 @@ export async function readPublicPage(
     location?: string;
     type: string;
     body: string;
+    raw?: Buffer;
     bytes: number;
   }>((resolve, reject) => {
     const pinnedLookup = ((
@@ -143,7 +145,7 @@ export async function readPublicPage(
         family: 4,
         lookup: pinnedLookup,
         headers: {
-          Accept: "text/html, text/plain;q=0.8",
+          Accept: "text/html, application/pdf;q=0.9, text/plain;q=0.8",
           "Accept-Encoding": "identity",
           "User-Agent": "RyzaLabStudio research reader",
         },
@@ -172,7 +174,7 @@ export async function readPublicPage(
         }
         if (
           status !== 200 ||
-          !/text\/(?:html|plain)|application\/xhtml\+xml/i.test(type)
+          !/text\/(?:html|plain)|application\/(?:xhtml\+xml|pdf)/i.test(type)
         ) {
           res.destroy();
           reject(Error(`Source unavailable or unsupported (${status}).`));
@@ -193,7 +195,8 @@ export async function readPublicPage(
           resolve({
             status,
             type,
-            body: Buffer.concat(chunks).toString("utf8"),
+            body: /application\/pdf/i.test(type)?"":Buffer.concat(chunks).toString("utf8"),
+            ...(/application\/pdf/i.test(type)?{raw:Buffer.concat(chunks)}:{}),
             bytes,
           }),
         );
@@ -210,6 +213,7 @@ export async function readPublicPage(
   });
   if (response.location)
     return readPublicPage(new URL(response.location, url).href, redirects + 1, expiresAt);
+  if(response.raw){const document=await publicPdfEvidence(new Uint8Array(response.raw));return{url:url.href,title:url.pathname.split("/").pop()||url.hostname,text:document.text,publishedAt:"",author:"",bytes:response.bytes,requests:redirects+1,sourceKind:"document_extract"};}
   const evidence = /html/i.test(response.type)
     ? htmlEvidence(response.body)
     : {

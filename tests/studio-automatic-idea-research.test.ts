@@ -261,3 +261,17 @@ test('mandatory policy and Instructions are never silently shortened to fit a re
 test('oversized idea counts are blocked before spending instead of guaranteeing output truncation',()=>{
  const s=fixture(),c={...input(),quantity:7,research:false,researchJobIds:[]};const command=ideaJobInput(s,DEMO_ACTOR,c);assert.throws(()=>quote(s,command),/at most 6 ideas/);assert.equal(s.jobs.length,0);
 });
+
+test("research is saved before idea enqueue and a stopped enqueue can reuse it without another retrieval",async()=>{
+ const s=fixture(),c=input();let calls=0;let saved:typeof s|undefined;
+ const retrieve=async()=>{calls++;return refs();};
+ const prepared=await automaticIdeaResearch(s,DEMO_ACTOR,c,retrieve,now,async next=>{saved=structuredClone(next);});
+ assert.ok(saved);assert.equal(saved.jobs.length,1);assert.equal(saved.jobs[0].kind,"research");
+ const blocked=structuredClone(saved);blocked.settings.requestCap=0;
+ assert.throws(()=>applyCommand(blocked,DEMO_ACTOR,prepared.command,{now,quotedCost:50}));
+ assert.equal(saved.jobs[0].state,"succeeded");
+ const replay=await automaticIdeaResearch(saved,DEMO_ACTOR,c,async()=>{throw Error("Saved research must not be retrieved twice");},now);
+ assert.equal(calls,1);assert.equal(replay.command.researchJobIds?.[0],saved.jobs[0].id);
+ const generation=ideaJobInput(replay.state,DEMO_ACTOR,replay.command);
+ assert.equal(JSON.parse(generation.prompt).webEvidence[0].jobId,saved.jobs[0].id);
+});
