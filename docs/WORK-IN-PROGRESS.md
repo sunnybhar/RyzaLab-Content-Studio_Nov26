@@ -591,3 +591,6 @@ User requested stopping after v0.3.36 deployment; do not start the remaining bac
 
 ### v0.3.36 verified; stop after release
 All339 domain tests pass; production build/TypeScript pass. Full production app, newsletter package/export, illustrated approved-handoff artifacts and historical-source controls browsers pass. Release is ready for push to main/studio-rebuild. Hosted rollout remains to be checked separately; no paid provider requests or operational publications occurred. User explicitly paused all remaining backlog after this release. Resume only on a new user instruction.
+
+### IB-15 resumed alone after v0.3.36
+User authorized only deep research, claim ledger and data analysis; all other unfinished backlog stays paused. WIP adds a separate source-backed dossier contract, exact-quotation validation, finite deterministic arithmetic and explicit budgeted analysis using the existing Writing model/worker receipts. UI, retrieval planning, independent research persistence, regression and browser validation remain in progress; not deployed. No paid provider calls.

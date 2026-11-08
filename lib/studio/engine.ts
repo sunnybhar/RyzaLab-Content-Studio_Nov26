@@ -1,3 +1,4 @@
+import {researchAnalysisInput} from "./research-analysis";
 import {parseDocumentLayout} from "./document-layout";
 import {eligibleEvidence,eligibleReferences,eligibleSourceReferences} from "./source-policy";
 import {documentSections} from "./document-sections";
@@ -57,6 +58,7 @@ import { review } from "../brand";
 export type ExecutionContext = {
   reviewCorrection?: Job["reviewCorrection"];
   retrievalResult?: unknown;
+  researchAnalysis?: boolean;
   now?: string;
   id?: () => string;
   demo?: boolean;
@@ -288,6 +290,7 @@ export function applyCommand(
       s.agentRuleFiles=s.agentRuleFiles?.filter(f=>f.id!==file.id);break;
     }
 
+    case "research.analyze": return applyCommand(input,actor,researchAnalysisInput(s,actor,c),{...ctx,researchAnalysis:true});
     case "research.retrieve": {
       const {content:parent,existing}=publicRetrievalTarget(s,actor,c);
       if(existing)return input;
@@ -2048,8 +2051,9 @@ export function applyCommand(
         bad(
           "This connection is not the active workflow binding for this function. A permitted administrator must activate the desired mapping.",
         );
+      if(c.researchAnalysisSourceId&&(!ctx.researchAnalysis||c.kind!=="text"||d||c.researchJobIds?.length!==1||c.researchJobIds[0]!==c.researchAnalysisSourceId))bad("Research analysis requires the canonical source-backed analysis flow.");
       const outputContract =
-        ctx.canonicalGeneration && d
+        ctx.researchAnalysis && c.researchAnalysisSourceId ? "research_v1" : ctx.canonicalGeneration && d
           ? c.kind === "text"
             ? "draft_v1"
             : c.kind === "review"
@@ -2058,6 +2062,7 @@ export function applyCommand(
           : undefined;
       const payloadHash = fingerprint({
         outputContract,
+        researchAnalysisSourceId:c.researchAnalysisSourceId,
         uncertainPredecessorIds:c.uncertainPredecessorIds,
         ideaPurpose:c.ideaPurpose,
         kind: c.kind,
@@ -2107,6 +2112,7 @@ export function applyCommand(
         id: id(),
         kind: c.kind,
         reviewCorrection:ctx.reviewCorrection,
+        researchAnalysisSourceId:c.researchAnalysisSourceId,
         uncertainPredecessorIds:c.uncertainPredecessorIds,
         ideaPurpose:c.ideaPurpose,
         channel: c.channel,

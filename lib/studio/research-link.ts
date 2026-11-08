@@ -1,3 +1,4 @@
+import {dossierForPassages} from "./research-dossier";
 import {containsExcludedSource} from "./source-policy";
 import type { Actor, Channel, Job, StudioState } from "./types";
 import { can, requirePermission, StudioError } from "./permissions";
@@ -74,7 +75,10 @@ export function researchEvidence(
         "Research needs source review: missing citations, incomplete response or search errors. No generation started.",
       );
     }
+    const analysis=state.jobs.find(candidate=>candidate.researchAnalysisSourceId===job.id&&candidate.createdBy===actor.email&&candidate.state==="succeeded"&&candidate.outputStatus==="ready"&&candidate.researchDossier&&candidate.researchSnapshots?.some(snapshot=>snapshot.jobId===job.id&&snapshot.raw===job.result));
+    const dossier=dossierForPassages(analysis?.researchDossier,value.citations);
     return {
+      ...(dossier?{dossier,analysisJobId:analysis!.id}:{}),
       jobId: job.id,
       requestedAt: job.createdAt,
       provider: job.connectionSnapshot?.provider,
