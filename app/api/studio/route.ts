@@ -1,3 +1,4 @@
+import {commitJobConfirmation} from "@/lib/studio/job-confirmation";
 import {researchProfile} from "@/lib/studio/research-profile";
 import {commitDraftSave} from "@/lib/studio/draft-save";
 import {assertActiveRequest} from "@/lib/studio/active-channels";
@@ -73,6 +74,11 @@ export async function POST(req: NextRequest) {
       const sources=[];
       for(const source of parsed.sources) sources.push(source.kind==="document"?{...source,extractedText:await extractAgentFile(source.file)}:source);
       parsed={...parsed,sources};
+    }
+    if(parsed.type==="job.confirm"){
+      diagnostics.stage("confirm_existing_request");
+      const next=await commitJobConfirmation(original,actor,parsed.id,{load:()=>loadState(db,actor),commit:(before,after)=>persist(db,before,after)},{hash});
+      return NextResponse.json({state:filteredState(next,actor),actor,mode:"live"},{headers:{"Cache-Control":"no-store"}});
     }
     if(parsed.type==="content.save"&&parsed.operationId){
       diagnostics.stage("save_draft");

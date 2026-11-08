@@ -80,7 +80,9 @@ export function IdeaRunProgress({
     ],
     [
       "3. Generate ideas",
-      job?.state === "running"
+      job?.state === "awaiting_confirmation"
+        ? "Not started — waiting for approval"
+        : job?.state === "running"
         ? "In progress"
         : complete
           ? "Finished"
@@ -107,7 +109,7 @@ export function IdeaRunProgress({
         <strong>{headline}</strong>
       </p>
       {requestError && (
-        <div className="s-alert s-error" role="alert">
+        <div className="s-alert s-error" role="alert" style={{display:"block",overflowWrap:"anywhere"}}>
           <strong>Request error</strong>
           <p>{requestError}</p>
           {!job && (

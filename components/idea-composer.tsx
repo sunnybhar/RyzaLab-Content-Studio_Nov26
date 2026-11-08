@@ -71,7 +71,7 @@ export function IdeaComposer({
     job && ["unknown", "failed", "blocked"].includes(job.state),
   );
   const working = busy || pending;
-  async function checkStatus(){try{await refreshRef.current();setLastChecked(Date.now());setSyncError("");}catch{setSyncError("Status could not be refreshed. No new AI request was made.");}}
+  async function checkStatus(){try{await refreshRef.current();setLastChecked(Date.now());setSyncError("");setError("");}catch{setSyncError("Status could not be refreshed. No new AI request was made.");}}
   useEffect(() => {
     if (demo || !pending) return;
     const timer = setInterval(
@@ -94,7 +94,9 @@ export function IdeaComposer({
     } catch {}
   const evidenceIds = job?.researchJobIds || selectedResearch;
   let relevanceWarning=false;try{relevanceWarning=Boolean(job)&&researchEvidence(state,actor,channel,evidenceIds).some(result=>result.citations.every(cite=>!relevantIdeaCitation(cite,title,audience)));}catch{}
-  async function confirmRequest(){setBusy(true);setError("");try{await send({type:"job.confirm",id:job!.id});setLastChecked(Date.now());}catch(e){setError(e instanceof Error?e.message:"Could not confirm this request.");}finally{setBusy(false);}}
+  async function confirmRequest(){setBusy(true);setError("");try{await send({type:"job.confirm",id:job!.id});setLastChecked(Date.now());}catch(e){setError(e instanceof Error?e.message:"Could not confirm this request.");try{await refreshRef.current();setLastChecked(Date.now());}catch{setSyncError("Approval status could not be refreshed. Check this existing request; do not create another one.");}}finally{setBusy(false);}}
+
+  useEffect(()=>{if(job&&["queued","running","succeeded"].includes(job.state))setError("");},[job?.id,job?.state]);
 
   function editTitle(value: string) {
     setTitle(value);
