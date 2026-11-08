@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     );
     if(command.type==="idea.generate"&&command.automaticResearch) {
       diagnostics.stage("research_and_prepare_ideas");
-      const prepared=await automaticIdeaResearch(state,actor,command,undefined,undefined,async saved=>{await persist(db,original,saved);original=saved;});
+      const prepared=await automaticIdeaResearch(state,actor,command,undefined,undefined,async saved=>{if(Buffer.byteLength(JSON.stringify(saved))>24000000)throw new StudioError(413,"Workspace history reached its current storage limit. No paid idea request was started.");await persist(db,original,saved);original=saved;});
       if(prepared.existing)return NextResponse.json({state:filteredState(state,actor),actor,mode:"live"});
       state=prepared.state;command=prepared.command;
     }

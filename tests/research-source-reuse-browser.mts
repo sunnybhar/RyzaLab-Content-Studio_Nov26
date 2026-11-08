@@ -111,6 +111,10 @@ try {
   await page
     .getByText("Use saved research or add source links", { exact: true })
     .click();
+  await page.getByText("Find public references",{exact:true}).click();
+  await page.getByLabel("Public research question",{exact:true}).fill("Household support boundaries");
+  await page.getByRole("button",{name:"Find references",exact:true}).click();
+  await page.getByRole("alert").filter({hasText:"Unexpected command"}).waitFor();
   await page
     .getByRole("checkbox", { name: "Use this evidence in idea generation" })
     .check();
