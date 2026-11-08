@@ -1,5 +1,6 @@
 "use client";
 import {ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active-channels";
+import {ResearchPanel} from "./research-panel";
 import {IdeaRunProgress} from "./idea-run-progress";
 import {relevantIdeaCitation} from "@/lib/studio/idea-research-query";
 import {researchEvidence} from "@/lib/studio/research-link";
@@ -40,6 +41,7 @@ export function IdeaComposer({
 }) {
   const resumed=!demo?state.jobs.find(j=>j.kind==="ideas"&&!j.contentId&&j.channel===initialChannel&&j.createdBy===actor.email&&j.ideaPurpose===(mode==="manual"?"manual_assistance":undefined)&&["queued","running","awaiting_confirmation","unknown"].includes(j.state)):undefined;
   let resumeInput:{topic?:string;audience?:string;sourceText?:string;quantity?:number;pipeline?:{id?:string}}={};try{resumeInput=resumed?JSON.parse(resumed.prompt):{};}catch{}
+  const [selectedResearch,setSelectedResearch]=useState<string[]>([]);
   const [pipelineBriefId,setPipelineBriefId]=useState(initialBriefId||resumeInput.pipeline?.id);
   const initialBrief=state.pipelineBriefs?.find(b=>b.id===pipelineBriefId);
   const dialog = useRef<HTMLDialogElement>(null),
@@ -124,7 +126,8 @@ export function IdeaComposer({
       await send({
         type: "idea.generate",
         pipelineBriefId,
-        automaticResearch: true,
+        automaticResearch: !selectedResearch.length,
+        researchJobIds:selectedResearch,
         purpose: mode === "manual" ? "manual_assistance" : undefined,
         channel,
         topic: title.trim(),
@@ -394,6 +397,7 @@ export function IdeaComposer({
             </button>
           </article>
         ))}
+      <details className="s-version"><summary>Research workspace — reuse sources and build a dossier</summary><ResearchPanel state={state} actor={actor} channel={channel} selected={selectedResearch} onSelected={setSelectedResearch} run={async command=>{await send(command);return true;}} refresh={refresh} disabled={working} demo={demo}/></details>
       <IdeaEvidence
         state={state}
         actor={actor}

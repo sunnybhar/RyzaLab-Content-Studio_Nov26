@@ -1,4 +1,5 @@
 "use client";
+import {ResearchAnalysis} from "./research-dossier";
 import { useEffect, useRef, useState } from "react";
 import type {
   Actor,
@@ -197,6 +198,7 @@ export function ResearchPanel({
                     Use this evidence in{" "}
                     {content ? "writing" : "idea generation"}
                   </label>
+                  <ResearchAnalysis state={state} actor={actor} channel={channel} researchJobId={job.id} run={run} refresh={refresh} disabled={disabled||busy} demo={demo}/>
                   <details>
                     <summary>
                       Findings and {evidence.citations.length} cited sources
@@ -245,6 +247,7 @@ export function ResearchPanel({
                       </details>
                     ) : null}
                     <p>{evidence.notice}</p>
+                    {evidence.version===2&&evidence.retrieval.plan&&<details><summary>Investigation plan and coverage</summary><ul>{evidence.retrieval.plan.searches.map((search,i)=><li key={i}>{search.purpose}: {search.query}</li>)}</ul><p>{evidence.retrieval.coverage?.sourcesRead??0} sources read · {evidence.retrieval.coverage?.excerptsOnly??evidence.citations.length} excerpts only. Domain count is not independent corroboration.</p></details>}
                     {evidence.version===2 && evidence.retrieval.gaps.map(gap=><p key={gap} role="status">{gap}</p>)}
                   </details>
                 </>

@@ -594,3 +594,6 @@ All339 domain tests pass; production build/TypeScript pass. Full production app,
 
 ### IB-15 resumed alone after v0.3.36
 User authorized only deep research, claim ledger and data analysis; all other unfinished backlog stays paused. WIP adds a separate source-backed dossier contract, exact-quotation validation, finite deterministic arithmetic and explicit budgeted analysis using the existing Writing model/worker receipts. UI, retrieval planning, independent research persistence, regression and browser validation remain in progress; not deployed. No paid provider calls.
+
+### Shortened research-first increment
+User asks to shorten delivery so sources, ideas and writing work first. Prioritize bounded multi-query discovery, direct article/PDF evidence, separately saved research and explicit source reuse in Ideas/Create. Full dossier/ledger/arithmetic implementation is WIP only and must not gate this source-first release. Typecheck and44 existing research/source tests pass for WIP; no live provider calls. Isolate source-first increment from main before regression/release.

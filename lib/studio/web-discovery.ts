@@ -1,3 +1,4 @@
+import {investigationPlan} from "./research-plan";
 import { readPublicPage, publicPageUrl } from "./public-page";
 import {
   researchProfileSchema,
@@ -19,11 +20,12 @@ const plain = (text: string) =>
     .replace(/&#39;|&apos;/g, "'")
     .replace(/\s+/g, " ")
     .trim();
-/** Fixed search hosts only. Result URLs are citations, never fetched server-side.
+/** Fixed search hosts only. Result URLs are validated separately before page retrieval.
  * Search excerpts are not full-page evidence or independent verification. */
 export async function discoverWeb(
   query: string,
   request: typeof fetch = fetch,
+  timeoutMs=10000,
 ) {
   if (query.trim().length < 5 || new TextEncoder().encode(query).length > 2000)
     throw new StudioError(400, "Enter a public question of 5–2000 bytes.");
@@ -46,7 +48,7 @@ export async function discoverWeb(
       const response = await request(url.toString(), {
         redirect: "error",
         cache: "no-store",
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(timeoutMs),
         headers: { Accept: "application/rss+xml, application/xml" },
       });
       if (!response.ok || !response.body) throw Error("Unavailable");
@@ -146,30 +148,14 @@ export async function retrieveBroadReferences(
       400,
       "A supplied link is excluded by the research source policy. Remove it or update Source Preferences; Wikipedia cannot be enabled.",
     );
-  const plan = researchQueries(query, profile),
-    limit =
-      profile.depth === "focused" ? 6 : profile.depth === "deep" ? 12 : 20;
-  const initial = await discoverWeb(plan.sector, request);
-  let requests = 2,
-    bytes = initial.bytes;
-  const gaps = [...initial.gaps];
-  const found = [...initial.citations];
-  if (
-    profile.depth !== "focused" ||
-    new Set(found.filter((c) => !excluded(c.url)).map((c) => host(c.url)))
-      .size < 3
-  ) {
-    const wider = await discoverWeb(plan.wider, request);
-    requests += 2;
-    bytes += wider.bytes;
-    found.push(...wider.citations);
-    gaps.push(
-      profile.depth !== "focused"
-        ? "Wider discovery included for the selected research depth."
-        : "Wider discovery used because specialist discovery had fewer than three source domains.",
-      ...wider.gaps,
-    );
-  }
+  const started=Date.now(), deadline=started+65000;
+  const plan=investigationPlan(query,profile),limit=profile.depth==="focused"?6:profile.depth==="deep"?12:20;
+  const initial=await discoverWeb(plan.searches[0].query,request,6000);
+  let requests=2,bytes=initial.bytes;
+  const gaps=[...initial.gaps],found=[...initial.citations];
+  // Specialist discovery first; then pursue original, independent and contrary evidence concurrently.
+  const followups=await Promise.all(plan.searches.slice(1).map(async search=>({search,result:await discoverWeb(search.query,request,6000)})));
+  for(const {search,result} of followups){requests+=2;bytes+=result.bytes;found.push(...result.citations);gaps.push(...result.gaps.map(g=>search.purpose+": "+g));}
   const direct = new Set(supplied),
     byDomain = new Map<string, number>();
   const candidates = [
@@ -205,7 +191,7 @@ export async function retrieveBroadReferences(
   for (let index = 0; index < candidates.length; index += 3) {
     const batch = await Promise.all(
       candidates.slice(index, index + 3).map(async (c) => {
-        if ((request !== fetch && !pageReader) || bytes > 5 * 1024 * 1024) {
+        if ((request !== fetch && !pageReader) || bytes > 5 * 1024 * 1024 || Date.now()+12000>deadline) {
           if (!c.citedText) {
             gaps.push(
               `Supplied source at ${host(c.url)} was not read within this retrieval invocation/budget.`,
@@ -235,7 +221,7 @@ export async function retrieveBroadReferences(
             publishedAt: page.publishedAt || undefined,
             author: page.author || undefined,
             accessNote:
-              page.sourceKind === "video_description"
+              page.sourceKind === "document_extract" ? "Searchable PDF text, page labels retained; at most 20 pages/16,000 characters, no OCR or table-layout verification." : page.sourceKind === "video_description"
                 ? "Creator description only; video/transcript not watched or retrieved."
                 : "Accessible article text extracted within a 512 KB page bound; this is a bounded passage, not independent verification.",
           };
@@ -264,9 +250,11 @@ export async function retrieveBroadReferences(
       gaps.push("No additional accessible scholarly abstracts available.");
     }
   }
-  const unique = citations
-    .filter((c, i, a) => a.findIndex((other) => other.url === c.url) === i)
-    .slice(0, limit);
+  const uniqueUrls=citations.filter((c,i,a)=>a.findIndex(other=>other.url===c.url)===i);
+  const fingerprints=new Set<string>();let duplicatePassages=0;
+  const unique=uniqueUrls.filter(c=>{const fingerprint=String(c.citedText).toLowerCase().replace(/\W+/g," ").trim();if(fingerprints.has(fingerprint)){duplicatePassages++;return false;}fingerprints.add(fingerprint);return true;}).slice(0,limit);
+  if(duplicatePassages)gaps.push(`${duplicatePassages} repeated source passage(s) removed; different domains do not guarantee independent origins.`);
+  if(!unique.some(c=>c.sourceKind==="article_text"||c.sourceKind==="document_extract"))gaps.push("No full article/document passages were accessible. Findings based on snippets/abstracts must remain qualified.");
   if (!unique.length)
     throw new StudioError(
       503,
@@ -284,6 +272,8 @@ export async function retrieveBroadReferences(
       "Sector-first web/news discovery, wider search, optional explicit source links, bounded public-page reading and scholarly abstracts. Wikipedia is excluded. Source cards distinguish article text, video descriptions and search excerpts; they do not imply fact verification or video viewing. No paid search API call was made; hosting/network costs are separate.",
     retrieval: {
       adapter: "bounded-web-v2",
+      plan,
+      coverage:{sourcesRead:unique.filter(c=>["article_text","document_extract","video_description","video_transcript"].includes(String(c.sourceKind))).length,excerptsOnly:unique.filter(c=>!["article_text","document_extract","video_description","video_transcript"].includes(String(c.sourceKind))).length,domains:new Set(unique.map(c=>host(String(c.url)))).size,duplicatePassages,elapsedMs:Date.now()-started},
       requests,
       responseBytes: Math.max(1, bytes),
       excerptBytes: new TextEncoder().encode(
@@ -294,7 +284,7 @@ export async function retrieveBroadReferences(
         "bing_news",
         ...(unique.some(
           (c) =>
-            c.sourceKind === "article_text" ||
+            c.sourceKind === "article_text" || c.sourceKind === "document_extract" ||
             c.sourceKind === "video_description",
         )
           ? ["public_page"]
