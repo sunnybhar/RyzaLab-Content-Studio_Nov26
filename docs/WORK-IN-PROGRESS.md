@@ -597,3 +597,6 @@ User requested a shortened increment so research can supply ideas/writing before
 
 ### v0.3.37 candidate checks
 All343 domain tests and final production build/TypeScript pass. Dedicated browser verifies a failed retrieval leaves saved sources usable, selected sources generate ideas without another public search, and their exact passages reach writing. Existing public-retrieval and confirmed/failure review-submission browsers pass. Full production smoke is rerunning after updating its version assertion from0.3.36 to0.3.37. Added workspace-size guard before independent research commit. Full ledger/analysis stays WIP on studio-rebuild, outside this release.
+
+### v0.3.37 verified source-first release
+All343 domain tests, final production build/TypeScript, full production app smoke, source selection/failure→ideas→writing browser, public retrieval browser and submission success/failure browsers pass. Ready for production push. Release contains only the shortened source-first research path; the full dossier/ledger/calculation interface remains WIP on studio-rebuild. No paid provider requests or live operational imports/publications. Hosted rollout, current public-source coverage and live configured AI/worker quality remain unverified from this environment.
