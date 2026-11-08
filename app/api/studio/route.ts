@@ -1,3 +1,4 @@
+import {readWorkspaceHead} from "@/lib/studio/workspace-head";
 import {commitJobConfirmation} from "@/lib/studio/job-confirmation";
 import {researchProfile} from "@/lib/studio/research-profile";
 import {commitDraftSave} from "@/lib/studio/draft-save";
@@ -40,6 +41,12 @@ export async function GET(req: NextRequest) {
   try {
     diagnostics.stage("authenticate");
     const { db, actor } = await authenticate(req);
+    const known=req.headers.get("x-studio-version");
+    if(known&&/^\d{1,15}$/.test(known)){
+      diagnostics.stage("check_workspace_version");
+      const head=await readWorkspaceHead(db,actor);
+      if(head&&head.version===Number(known))return new NextResponse(null,{status:304,headers:{"Cache-Control":"private, no-store","Vary":"Authorization, X-Studio-Version"}});
+    }
     diagnostics.stage("load_state");
     const state = await loadState(db, actor);
     diagnostics.stage("respond");

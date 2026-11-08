@@ -1,3 +1,4 @@
+import {workerPollStatus} from "@/lib/studio/poll-status";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { database, persist } from "@/lib/studio/store";
@@ -16,8 +17,10 @@ export async function POST(req: NextRequest) {
       !timingSafeEqual(Buffer.from(configured), Buffer.from(provided))
     )
       throw new StudioError(401, "Worker authorization required.");
-    const db = database(),
-      { data } = await db
+    const db = database();
+    const poll=await workerPollStatus(db,"notifications");
+    if(!poll.due)return NextResponse.json({message:"No pending notifications.",idle:true,version:poll.version});
+    const { data } = await db
         .from("studio_workspace")
         .select("state")
         .eq("id", true)

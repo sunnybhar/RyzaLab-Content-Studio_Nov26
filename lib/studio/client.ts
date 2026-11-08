@@ -1,3 +1,4 @@
+import {refreshGate} from "./refresh-policy";
 "use client";
 import {clearRecovery} from "./draft-recovery";
 import {readStudioResponse} from "./response";
@@ -26,6 +27,8 @@ export function useStudio() {
       pathname === "/preview" || !configured ? "demo" : "live",
     latest = useRef<StudioState | null>(null);
   const pendingRefresh=useRef<Promise<void>|null>(null);
+  const refreshPolicy=useRef(refreshGate());
+  const cachedActorId=useRef<string|null>(null);
   const update = (s: StudioState) => {
     if(s&&latest.current&&s.version<latest.current.version)return;
     latest.current = s;
@@ -34,6 +37,7 @@ export function useStudio() {
   const refresh = useCallback(
     async (background = false) => {
       if(pendingRefresh.current){try{return await pendingRefresh.current;}catch(error){if(background)throw error;setError((error as Error).message);return;}}
+      if(!refreshPolicy.current.allow(background,typeof document!=="undefined"&&document.hidden))return;
       const work=(async()=>{
       try {
         if (!background) setError("");
@@ -55,11 +59,13 @@ export function useStudio() {
           update(null as unknown as StudioState);
           return;
         }
+        if(cachedActorId.current!==data.session.user.id){latest.current=null;cachedActorId.current=data.session.user.id;}
         const r = await fetch("/api/studio", {
-            headers: { authorization: `Bearer ${data.session.access_token}` },
+            headers: { authorization: `Bearer ${data.session.access_token}`, ...(latest.current?{"X-Studio-Version":String(latest.current.version)}:{}) },
             cache: "no-store",
-          }),
-          result = await readStudioResponse<StudioResponse>(r);
+          });
+        if(r.status===304)return;
+        const result = await readStudioResponse<StudioResponse>(r);
 
         if (
           background &&
@@ -84,7 +90,7 @@ export function useStudio() {
     refresh();
     if (!supabase || mode === "demo") return;
     const { data } = supabase.auth.onAuthStateChange((event) => {
-      if(event==="SIGNED_OUT"){try{clearRecovery(localStorage);}catch{} latest.current=null;setState(null);setActor(null);}
+      if(event==="SIGNED_OUT"){try{clearRecovery(localStorage);}catch{} latest.current=null;cachedActorId.current=null;refreshPolicy.current.reset();setState(null);setActor(null);}
       setTimeout(() => refresh(), 0);
     });
     return () => data.subscription.unsubscribe();

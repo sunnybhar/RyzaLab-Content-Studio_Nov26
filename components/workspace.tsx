@@ -1551,7 +1551,7 @@ export default function Workspace() {
           </div>
         </header>
         <main className="s-main-content">
-    <AuthorizedJobProgress state={state} actor={actor} demo={mode==="demo"} request={progressAuthorizedJob} refresh={refresh} />
+    <AuthorizedJobProgress state={state} actor={actor} demo={mode==="demo"} request={progressAuthorizedJob} refresh={()=>refresh(true)} />
           {(error || localError) && (
             <div className="s-alert s-error" role="alert">
               <span>{localError || error}</span>
@@ -2725,7 +2725,7 @@ export default function Workspace() {
                 back={() => {setSelected(null);setSearch("");setChannel(activeContent.channel);}}
                 form={openForm}
                 onError={setLocalError}
-                refresh={() => refresh(true)}
+                refresh={(force=false) => refresh(!force)}
                 progressJob={progressAuthorizedJob}
                 newsletter={allowed("content.create", {channel: "Newsletter", account: "RyzaLab"}) ? () => createNewsletter("content", activeContent.id, activeContent.revision) : undefined}
                 queue={(kind = "text") => { setQueueKind(kind); setQueueTarget(activeContent); }}
@@ -4043,7 +4043,7 @@ export default function Workspace() {
           </footer>
         </main>
       </div>
-      {ideaComposer&&<IdeaComposer mode={ideaComposer} initialBriefId={pipelineIdea?.id} initialChannel={pipelineIdea?.channel||(channel==="All channels"?"LinkedIn":channel)} state={state} actor={actor} demo={mode==="demo"} send={send} refresh={()=>refresh(true)} close={()=>setIdeaComposer(null)} openContent={idea=>useIdea(idea,idea.channel==="Newsletter"?"Newsletter":"Text post","RyzaLab")} onSaved={setNotice}/>}
+      {ideaComposer&&<IdeaComposer mode={ideaComposer} initialBriefId={pipelineIdea?.id} initialChannel={pipelineIdea?.channel||(channel==="All channels"?"LinkedIn":channel)} state={state} actor={actor} demo={mode==="demo"} send={send} refresh={(force=false)=>refresh(!force)} close={()=>setIdeaComposer(null)} openContent={idea=>useIdea(idea,idea.channel==="Newsletter"?"Newsletter":"Text post","RyzaLab")} onSaved={setNotice}/>}
       {queueTarget && (
         <QueueRequest
           state={state}
@@ -4490,7 +4490,7 @@ function Editor({
     submit?: string,
   ) => void;
   onError: (e: string) => void;
-  refresh: () => Promise<void>;
+  refresh: (force?:boolean) => Promise<void>;
   progressJob?:(jobId:string)=>Promise<unknown>;
   queue: (kind?: FunctionKind) => void;
   newsletter?: () => Promise<boolean>;
@@ -4518,7 +4518,7 @@ function Editor({
   const [sceneIndex, setSceneIndex] = useState(0);
   const [docsText, setDocsText] = useState("");
   function applyWorking(values:DraftValues){setWriteFormat(values.format);setTitle(values.title);setText(values.text);setMetadata(values.metadata);setCollection(values.collection);setMedia(values.media);}
-  const draftSave=useDraftSave({content:c,actor,mode,values:{title,text,metadata,collection,media,format:writeFormat},apply:applyWorking,send,refresh,onError});
+  const draftSave=useDraftSave({content:c,actor,mode,values:{title,text,metadata,collection,media,format:writeFormat},apply:applyWorking,send,refresh:()=>refresh(true),onError});
   const externalChange=draftSave.conflict;
   const dirty=draftSave.dirty;
   const requirements = inputRequirements({...c, title, text, metadata, media});

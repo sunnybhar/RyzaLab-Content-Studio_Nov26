@@ -20,7 +20,9 @@ process.on("SIGTERM", () => {
 process.on("SIGINT", () => {
   stopping = true;
 });
+let failures=0;
 while (!stopping) {
+  let failed=false;
   for (const endpoint of ["maintenance", "notifications/dispatch", "worker"]) {
     if (stopping) break;
     try {
@@ -30,16 +32,19 @@ while (!stopping) {
         signal: AbortSignal.timeout(175000),
       });
       console.log("Studio worker", endpoint, result.status);
+      if(!result.ok)failed=true;
       if (result.status === 401) {
         console.error("Worker credentials rejected.");
         stopping = true;
         break;
       }
     } catch {
+      failed=true;
       console.error(
         "Worker request interrupted. Unknown provider/delivery outcomes require reconciliation; no paid request is blindly retried.",
       );
     }
   }
-  if (!stopping) await new Promise((resolve) => setTimeout(resolve, 30000));
+  failures=failed?Math.min(failures+1,4):0;
+  if (!stopping) await new Promise((resolve) => setTimeout(resolve, Math.min(300000,30000*2**failures)));
 }

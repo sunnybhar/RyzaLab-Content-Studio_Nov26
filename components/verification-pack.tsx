@@ -37,7 +37,7 @@ export function VerificationPack({
     if (!active || demo || disabled) return;
     let live = true;
     const tick = async () => {
-      if (progressBusy.current) return;
+      if (document.hidden || progressBusy.current) return;
       progressBusy.current = true;
       try {
         await requestRef.current({ action: "advance", runId: active.id });
@@ -52,7 +52,7 @@ export function VerificationPack({
       }
     };
     void tick();
-    const timer = setInterval(() => void tick(), 5000);
+    const timer = setInterval(() => void tick(), 15000);
     return () => {
       live = false;
       clearInterval(timer);

@@ -1,3 +1,4 @@
+import {workerPollStatus} from "@/lib/studio/poll-status";
 import {
   saveWorkerReceipt,
   readWorkerReceipt,
@@ -42,16 +43,17 @@ export async function POST(req: NextRequest) {
         503,
         "Provider execution is disabled pending provider, pricing, and spending authorization.",
       );
+    const requestedJobId = req.nextUrl.searchParams.get("jobId");
+    const db=database(12000);
+    if(!requestedJobId){const status=await workerPollStatus(db,"worker");if(!status.due)return NextResponse.json({message:"No queued or expired jobs.",idle:true,version:status.version});}
     diagnostics.stage("workspace_read");
-    const db = database(12000),
-      { data, error: readError } = await db
+    const { data, error: readError } = await db
         .from("studio_workspace")
         .select("state")
         .eq("id", true)
         .single();
     if (readError) throw studioDatabaseError(readError, "read");
     if (!data) throw new StudioError(503, "Initialize Studio first.");
-    const requestedJobId = req.nextUrl.searchParams.get("jobId");
     const state = data.state as Awaited<ReturnType<typeof loadState>>,
       now = new Date().toISOString(),
       expired = state.jobs.find(

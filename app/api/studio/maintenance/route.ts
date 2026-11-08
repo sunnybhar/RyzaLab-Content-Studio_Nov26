@@ -1,3 +1,4 @@
+import {workerPollStatus,finishMaintenancePoll} from "@/lib/studio/poll-status";
 import {advanceVerificationPacks} from "@/lib/studio/verification-pack";
 import { orchestrateInitialWriting } from "@/lib/studio/writing-orchestration";
 import { orchestrateReviewPreparation } from "@/lib/studio/review-preparation";
@@ -22,8 +23,10 @@ export async function POST(req: NextRequest) {
       !timingSafeEqual(Buffer.from(configured), Buffer.from(provided))
     )
       throw new StudioError(401, "Worker authorization required.");
-    const db = database(),
-      { data } = await db
+    const db = database();
+    const status=await workerPollStatus(db,"maintenance");
+    if(!status.due)return NextResponse.json({changed:false,idle:true,version:status.version});
+    const { data } = await db
         .from("studio_workspace")
         .select("state")
         .eq("id", true)
@@ -33,6 +36,7 @@ export async function POST(req: NextRequest) {
       next = orchestrateReviewPreparation(orchestrateInitialWriting(advanceVerificationPacks(maintenance(previous))));
     await persist(db, previous, next);
     const docs = await syncOneGoogleDoc(db, next);
+    await finishMaintenancePoll(db,status.lease,next.version);
     return NextResponse.json({
       docs,
       changed: next.version !== previous.version,

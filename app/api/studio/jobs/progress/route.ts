@@ -43,9 +43,7 @@ export async function POST(req: NextRequest) {
     const recoverable=job.state==="unknown"&&Boolean(job.leaseId);
     if (job.state !== "queued" && !expired && !recoverable)
       return NextResponse.json({
-        state: filteredState(state, actor),
-        actor,
-        mode: "live",
+        jobId:job.id,status:job.state,
       });
     if (!expired && !recoverable && !canDispatchJob(state, actor, job))
       throw new StudioError(
@@ -72,9 +70,8 @@ export async function POST(req: NextRequest) {
           "Job execution needs attention. Inspect the saved job before retrying.",
       );
     }
-    const next = await loadState(db, actor);
     return NextResponse.json(
-      { state: filteredState(next, actor), actor, mode: "live", recovered:result.recovered, message:result.message },
+      { jobId:job.id,status:result.state,recovered:result.recovered, message:result.message },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (e) {

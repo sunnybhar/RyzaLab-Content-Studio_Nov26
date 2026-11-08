@@ -21,6 +21,8 @@ export function AuthorizedJobProgress({
     ),
   );
   const [now, setNow] = useState(Date.now());
+  const [visible,setVisible]=useState(true);
+  useEffect(()=>{const changed=()=>setVisible(!document.hidden);changed();document.addEventListener("visibilitychange",changed);return()=>document.removeEventListener("visibilitychange",changed);},[]);
   const hasRunning = state.jobs.some(
     (j) => j.createdBy === actor.email && j.state === "running",
   );
@@ -51,7 +53,7 @@ export function AuthorizedJobProgress({
   refreshRef.current = refresh;
   const attemptKey = job ? `${job.id}:${job.state}` : "";
   useEffect(() => {
-    if (demo || !job || attempted.current.has(attemptKey)) return;
+    if (demo || !job || document.hidden || attempted.current.has(attemptKey)) return;
     attempted.current.add(attemptKey);
     let live = true;
     setBusy(true);
@@ -71,7 +73,7 @@ export function AuthorizedJobProgress({
     return () => {
       live = false;
     };
-  }, [attemptKey, demo, retry]);
+  }, [attemptKey, demo, retry, visible]);
   if (demo || !job) return null;
   return (
     <div className="s-panel s-panel-padding" role="status">
