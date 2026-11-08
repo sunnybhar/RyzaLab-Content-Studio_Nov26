@@ -618,3 +618,6 @@ Conditional refresh fixture passes initial load, concurrent-component coalescing
 
 ### v0.3.39 egress release candidate
 All353 domain tests pass. Corrected a client-directive ordering error caught by the initial build; corrected production build/TypeScript pass. Focused refresh/account-cache browser and owner-only authorized-job browser pass. Compact SQL checks pass and final timer refinement prevents repeated unauthorized/misconfigured Docs polling. Initial loads and genuine version changes still read full state; no fully normalized data-layer claim. SQL is prepared, not applied. Full production app/submission browsers finishing; no paid calls or live database modifications.
+
+### v0.3.39 verified egress-control release
+All353 domain tests, corrected production build/TypeScript, full production app and submission browsers pass. Focused refresh/cache-isolation and authorized-job browsers pass. Final SQL fixture verifies actual due work, leases, compact ownership/status, browser denial, no full private payload and no repeated wakeup for removed-channel recurrences. Ready for push; hosted SQL is NOT applied and rollout cannot be verified through this environment. Existing73GB usage will not be reclaimed by code changes. Migration remains separate; source/history retained, no paid calls or live publications.
