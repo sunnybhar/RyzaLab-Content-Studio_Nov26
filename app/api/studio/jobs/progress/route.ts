@@ -1,3 +1,4 @@
+import {compactJobStatus} from "@/lib/studio/poll-status";
 import {jobHasExcludedSupport} from "@/lib/studio/source-policy";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -16,11 +17,15 @@ export async function POST(req: NextRequest) {
     if (Number(req.headers.get("content-length") || 0) > 1000)
       throw new StudioError(413, "Request too large.");
     const { db, actor } = await authenticate(req),
-      state = await loadState(db, actor),
       input = z
         .object({ jobId: z.string().min(1).max(150) })
         .strict()
         .parse(await req.json());
+    const summary=await compactJobStatus(db,actor,input.jobId);
+    if(!["text","ideas","review","image"].includes(summary.kind))throw new StudioError(404,"Your authorized content job was not found.");
+    const expiredSummary=summary.state==="running"&&Boolean(summary.leaseUntil&&summary.leaseUntil<new Date().toISOString());
+    if(summary.state!=="queued"&&!expiredSummary&&!(summary.state==="unknown"&&summary.leaseId))return NextResponse.json({jobId:summary.id,status:summary.state},{headers:{"Cache-Control":"no-store"}});
+    const state=await loadState(db,actor);
     const job = state.jobs.find(
       (j) => j.id === input.jobId && j.createdBy === actor.email,
     );
