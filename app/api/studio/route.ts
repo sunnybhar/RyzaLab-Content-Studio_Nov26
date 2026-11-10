@@ -1,3 +1,4 @@
+import {researchAnalysisInput} from "@/lib/studio/research-analysis";
 import {readWorkspaceHead} from "@/lib/studio/workspace-head";
 import {commitJobConfirmation} from "@/lib/studio/job-confirmation";
 import {researchProfile} from "@/lib/studio/research-profile";
@@ -100,10 +101,10 @@ export async function POST(req: NextRequest) {
       else parsed={...parsed,extractedText:parsed.file?await extractAgentFile(parsed.file):undefined};
     }
 
-    const contextChannel=parsed.type==="idea.generate"?parsed.channel:parsed.type==="content.generate"?state.contents.find(c=>c.id===parsed.contentId)?.channel:parsed.type==="idea.use"?state.ideas.find(i=>i.id===parsed.id)?.channel:["content.submit","content.reviewEdit"].includes(parsed.type)?state.contents.find(c=>c.id===(parsed as {id:string}).id)?.channel:undefined;
+    const contextChannel=parsed.type==="research.analyze"?parsed.channel:parsed.type==="idea.generate"?parsed.channel:parsed.type==="content.generate"?state.contents.find(c=>c.id===parsed.contentId)?.channel:parsed.type==="idea.use"?state.ideas.find(i=>i.id===parsed.id)?.channel:["content.submit","content.reviewEdit"].includes(parsed.type)?state.contents.find(c=>c.id===(parsed as {id:string}).id)?.channel:undefined;
     if(contextChannel){if(!["content.submit","content.reviewEdit"].includes(parsed.type))requirePermission(state,actor,"job.create",{channel:contextChannel,function:parsed.type==="idea.generate"?"ideas":"text"});state=await hydrateAgentFiles(state,contextChannel);}
     let command = commandSchema.parse(
-      parsed.type === "content.generate"
+      parsed.type === "research.analyze" ? researchAnalysisInput(state,actor,parsed) : parsed.type === "content.generate"
         ? generationInput(state, actor, parsed)
         : parsed.type === "research.start" ? researchJobInput(state,actor,parsed) : parsed,
     );
@@ -172,6 +173,7 @@ export async function POST(req: NextRequest) {
     let next = applyCommand(state, actor, command, {
       hash,
       retrievalResult,
+      researchAnalysis: parsed.type === "research.analyze",
       canonicalGeneration: parsed.type === "content.generate" || parsed.type === "research.start",
       quotedCost: priced?.cost,
       pricingSnapshot: priced?.pricingSnapshot,

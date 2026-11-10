@@ -1,3 +1,4 @@
+import {parseResearchDossier,type DossierSource} from "./research-dossier";
 import {orchestrateReviewPreparation} from "./review-preparation";
 import { z } from "zod";
 import type { StudioState, Job } from "./types";
@@ -151,7 +152,9 @@ export function applyWorkerReceipt(
     j.providerCompletion = outcome?.completion;
     j.providerStopReason = outcome?.stopReason;
     j.error = undefined;
-    if (j.outputContract) {
+    if(j.outputContract==="research_v1"){
+      try{if(outcome?.completion!=="complete")throw new Error("Research analysis was incomplete; raw output is retained.");const prompt=JSON.parse(j.prompt);j.researchDossier=parseResearchDossier(outcome.text||"",prompt.sources as DossierSource[],receipt.receivedAt);j.outputStatus="ready";}catch(e){j.outputStatus="invalid";j.error=e instanceof Error?e.message:"Research analysis needs attention.";}
+    } else if (j.outputContract) {
       if (j.writingFollowupId) {
         j.outputStatus = "conflict";
         j.error =

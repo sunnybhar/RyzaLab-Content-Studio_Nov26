@@ -79,6 +79,7 @@ export function quote(
     kind: string;
     connectionId: string;
     prompt: string;
+    researchAnalysisSourceId?: string;
   },
   rates = effectiveRates(state),
 ) {
@@ -117,7 +118,7 @@ export function quote(
     );
   const ideaQuantity=input.kind==="ideas"?requestedIdeaQuantity(input.prompt):undefined;
   if(ideaQuantity&&ideaQuantity*300>card.maxOutputTokens)throw new StudioError(400,`This idea batch needs more than the qualified ${card.maxOutputTokens.toLocaleString("en-US")} output tokens. Generate at most ${Math.floor(card.maxOutputTokens/300)} ideas per request with this connection, or qualify a larger output allowance. No AI request was sent.`);
-  if(input.kind==="text"&&isLongForm(workflow.channel,writingFormat(input.prompt))&&card.maxOutputTokens<4096)throw new StudioError(409,"Long-form writing needs at least 4,096 qualified output tokens. Open AI & budgets → Bounded research and writing, then check model and save setup again. No paid request was sent.");
+  if(!input.researchAnalysisSourceId&&input.kind==="text"&&isLongForm(workflow.channel,writingFormat(input.prompt))&&card.maxOutputTokens<4096)throw new StudioError(409,"Long-form writing needs at least 4,096 qualified output tokens. Open AI & budgets → Bounded research and writing, then check model and save setup again. No paid request was sent.");
   const referenceSnapshots = eligibleReferences(state.references.filter((r) =>
     workflow.references.includes(r.id),
   ));
@@ -129,7 +130,7 @@ export function quote(
     referenceSnapshots,
     agentContextSnapshot: ["ideas","text","review"].includes(input.kind)?agentContext(state,workflow.channel,input.prompt):undefined,
     outputContract:
-      input.kind === "text"
+      input.researchAnalysisSourceId ? "research_v1" : input.kind === "text"
         ? "draft_v1"
         : input.kind === "review"
           ? "review_v1"

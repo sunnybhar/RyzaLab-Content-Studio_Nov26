@@ -621,3 +621,6 @@ All353 domain tests pass. Corrected a client-directive ordering error caught by 
 
 ### v0.3.39 verified egress-control release
 All353 domain tests, corrected production build/TypeScript, full production app and submission browsers pass. Focused refresh/cache-isolation and authorized-job browsers pass. Final SQL fixture verifies actual due work, leases, compact ownership/status, browser denial, no full private payload and no repeated wakeup for removed-channel recurrences. Ready for push; hosted SQL is NOT applied and rollout cannot be verified through this environment. Existing73GB usage will not be reclaimed by code changes. Migration remains separate; source/history retained, no paid calls or live publications.
+
+### November 10 — research dossier integration WIP
+User resumed implementation: integrate studio-rebuild's unfinished dossier, claim ledger and reproducible calculations while retaining main v0.3.39 and Supabase. Working branch research-dossier-integration starts at 4e0ba74; selected dossier modules ported from eaccdca without merging older route, retrieval, confirmation or egress code. Initial typecheck passes. Next: harden evidence/arithmetic validation and analysis replay/limits, add domain and browser regressions, run full tests/build and review before verified push. No hosted SQL, live provider, Supabase or deployment check performed.

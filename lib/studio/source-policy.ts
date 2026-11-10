@@ -1,3 +1,4 @@
+import {dossierForPassages,type ResearchDossier} from "./research-dossier";
 import type { Reference, Job } from "./types";
 /** New research policy. Historical records remain readable and are never rewritten. */
 export function excludedResearchUrl(value: string) {
@@ -66,9 +67,10 @@ export function eligibleSourceText(value: string) {
 }
 export function eligibleEvidence<
   T extends {
-    citations: { url: string }[];
+    citations: { url: string; citedText?: string }[];
     claims?: { sourceUrls: string[]; text?: string }[];
     summary?: string;
+    dossier?: ResearchDossier;
   },
 >(items: T[]): T[] {
   return items
@@ -90,6 +92,7 @@ export function eligibleEvidence<
       return {
         ...item,
         citations,
+        ...(item.dossier?{dossier:dossierForPassages(item.dossier,citations)}:{}),
         ...(claims ? { claims } : {}),
         ...(removed && typeof item.summary === "string"
           ? {

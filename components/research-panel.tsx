@@ -1,4 +1,5 @@
 "use client";
+import {ResearchAnalysis} from "./research-dossier";
 import { useEffect, useRef, useState } from "react";
 import type {
   Actor,
@@ -197,6 +198,7 @@ export function ResearchPanel({
                     Use this evidence in{" "}
                     {content ? "writing" : "idea generation"}
                   </label>
+                  <ResearchAnalysis state={state} actor={actor} channel={channel} researchJobId={job.id} run={run} refresh={refresh} disabled={disabled||busy} demo={demo}/>
                   <details>
                     <summary>
                       Findings and {evidence.citations.length} cited sources

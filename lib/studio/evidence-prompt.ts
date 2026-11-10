@@ -1,3 +1,4 @@
+import {dossierForPassages} from "./research-dossier";
 import {eligibleReferences} from "./source-policy";
 import type { Channel, StudioState } from "./types";
 import { readRates } from "./pricing";
@@ -110,6 +111,7 @@ export function evidencePrompt(
         const urls = new Set(citations.map((c: Evidence) => c.url));
         return {
           ...e,
+          ...(e.dossier?{dossier:dossierForPassages(e.dossier,citations)}:{}),
           summary: passage(e.summary || "", query, tier.bytes).text,
           citations,
           claims: (e.claims || [])

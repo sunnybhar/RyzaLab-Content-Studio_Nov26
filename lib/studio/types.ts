@@ -364,7 +364,9 @@ export interface Job {
   targetRevision?: number;
   targetIdentity?: string;
   targetAccepted?: boolean;
-  outputContract?: "draft_v1" | "review_v1";
+  outputContract?: "draft_v1" | "review_v1" | "research_v1";
+  researchAnalysisSourceId?: string;
+  researchDossier?: import("./research-dossier").ResearchDossier;
   outputStatus?: "ready" | "incomplete" | "invalid" | "conflict" | "applied";
   candidate?: import("./output-contracts").DraftResult;
   questionsDisposition?: { by: string; at: string; evidence: string };
