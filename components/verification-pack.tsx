@@ -26,8 +26,10 @@ export function VerificationPack({
     [error, setError] = useState("");
   const pending = useRef<string | null>(null),
     progressBusy = useRef(false),
-    requestRef = useRef(request);
+    requestRef = useRef(request),
+    versionRef = useRef(state.version);
   requestRef.current = request;
+  versionRef.current = state.version;
   const runs =
     state.verificationRuns?.filter((r) => r.createdBy === actor.email) || [];
   const active = runs.find((r) =>
@@ -40,7 +42,7 @@ export function VerificationPack({
       if (document.hidden || progressBusy.current) return;
       progressBusy.current = true;
       try {
-        await requestRef.current({ action: "advance", runId: active.id });
+        await requestRef.current({ action: "advance", runId: active.id, knownVersion:versionRef.current });
         if (live) setError("");
       } catch (e) {
         if (live)

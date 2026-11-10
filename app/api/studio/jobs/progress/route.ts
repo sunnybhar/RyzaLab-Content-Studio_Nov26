@@ -1,14 +1,10 @@
 import {compactJobStatus} from "@/lib/studio/poll-status";
-import {jobHasExcludedSupport} from "@/lib/studio/source-policy";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { authenticate, loadState } from "@/lib/studio/store";
+import { authenticate } from "@/lib/studio/store";
 import {
   StudioError,
-  requirePermission,
-  filteredState,
 } from "@/lib/studio/permissions";
-import { canDispatchJob } from "@/lib/studio/dispatch-permissions";
 import { POST as executeWorker } from "../../worker/route";
 import { failure } from "@/lib/studio/http";
 export const maxDuration = 180;
@@ -25,36 +21,9 @@ export async function POST(req: NextRequest) {
     if(!["text","ideas","review","image"].includes(summary.kind))throw new StudioError(404,"Your authorized content job was not found.");
     const expiredSummary=summary.state==="running"&&Boolean(summary.leaseUntil&&summary.leaseUntil<new Date().toISOString());
     if(summary.state!=="queued"&&!expiredSummary&&!(summary.state==="unknown"&&summary.leaseId))return NextResponse.json({jobId:summary.id,status:summary.state},{headers:{"Cache-Control":"no-store"}});
-    const state=await loadState(db,actor);
-    const job = state.jobs.find(
-      (j) => j.id === input.jobId && j.createdBy === actor.email,
-    );
-    if (!job || !["text", "ideas", "review", "image"].includes(job.kind))
-      throw new StudioError(
-        404,
-        "Your authorized content job was not found.",
-      );
-    requirePermission(state, actor, "job.create", {
-      channel: job.channel,
-      contentId: job.contentId,
-      function: job.kind,
-      account: job.account,
-      assignedTo: state.contents.find((c) => c.id === job.contentId)
-        ?.assignedTo,
-    });
-    const expired =
-      job.state === "running" &&
-      Boolean(job.leaseUntil && job.leaseUntil < new Date().toISOString());
-    const recoverable=job.state==="unknown"&&Boolean(job.leaseId);
-    if (job.state !== "queued" && !expired && !recoverable)
-      return NextResponse.json({
-        jobId:job.id,status:job.state,
-      });
-    if (!expired && !recoverable && !canDispatchJob(state, actor, job))
-      throw new StudioError(
-        409,
-        jobHasExcludedSupport(job)?"This queued request contains excluded historical Wikipedia evidence. Cancel the undispatched request in AI & budgets and start with allowed sources. The original record remains saved; no new provider request was sent.":"Job access, draft or source context changed. Inspect the saved request.",
-      );
+    // The compact RPC already checks current ownership and scoped job authority.
+    // The worker reloads current state and rechecks source access, budgets and CAS
+    // before dispatch. Loading the same full workspace here duplicates that read.
     const token = process.env.STUDIO_WORKER_TOKEN;
     if (!token || token.length < 32)
       throw new StudioError(
@@ -63,7 +32,7 @@ export async function POST(req: NextRequest) {
       );
     const outcome = await executeWorker(
       new NextRequest(
-        `https://studio.internal/api/studio/worker?jobId=${encodeURIComponent(job.id)}`,
+        `https://studio.internal/api/studio/worker?jobId=${encodeURIComponent(summary.id)}`,
         { method: "POST", headers: { authorization: `Bearer ${token}` } },
       ),
     );
@@ -76,7 +45,7 @@ export async function POST(req: NextRequest) {
       );
     }
     return NextResponse.json(
-      { jobId:job.id,status:result.state,recovered:result.recovered, message:result.message },
+      { jobId:summary.id,status:result.state,recovered:result.recovered, message:result.message },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (e) {

@@ -1037,7 +1037,7 @@ export default function Workspace() {
     if(!token)throw new Error("Sign in to check research setup.");
     const response=await fetch(bounded==="verification"?"/api/studio/verification":bounded?"/api/studio/research/bounded-setup":"/api/studio/research/setup",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify(body),signal:AbortSignal.timeout(175000)});
     const result=await response.json();if(!response.ok)throw new Error(result.error||"Research setup failed.");
-    if(result.state)await refresh();return result;
+    if(result.state||result.changed)await refresh();return result;
   }
   async function progressAuthorizedJob(jobId:string) {
     const session=await supabase?.auth.getSession(),token=session?.data.session?.access_token;

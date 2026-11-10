@@ -59,6 +59,28 @@ end; $$;
 revoke all on function public.studio_job_status(text,text) from public,anon,authenticated;
 grant execute on function public.studio_job_status(text,text) to service_role;
 
+-- Verification ticks must not transfer the workspace while a provider lease is active.
+create or replace function public.studio_verification_status(p_run_id text,p_actor_email text) returns jsonb
+language plpgsql security definer set search_path=public as $$
+declare s jsonb; v bigint; m jsonb; r jsonb; c jsonb; j jsonb; waiting boolean=false;
+begin
+ select version,state into v,s from public.studio_workspace where id=true;
+ select value into m from jsonb_array_elements(coalesce(s->'members','[]')) where value->>'email'=p_actor_email and not coalesce((value->>'revoked')::boolean,false) limit 1;
+ if m is null then raise exception 'Workspace access revoked' using errcode='42501'; end if;
+ select value into r from jsonb_array_elements(coalesce(s->'verificationRuns','[]')) where value->>'id'=p_run_id and value->>'createdBy'=p_actor_email limit 1;
+ if r is null then return null; end if;
+ -- Packs advance sequentially. A later pending case cannot bypass this case's live lease.
+ select value into c from jsonb_array_elements(coalesce(r->'cases','[]')) with ordinality as cases(value,position)
+ where value->>'phase'<>'ready' order by position limit 1;
+ if c->>'phase' in ('ideas','writing') then
+  select value into j from jsonb_array_elements(coalesce(s->'jobs','[]')) where value->>'id'=case when c->>'phase'='ideas' then c->>'ideaJobId' else c->>'writingJobId' end and value->>'createdBy'=p_actor_email limit 1;
+  waiting=coalesce(j->>'state'='awaiting_confirmation' or (j->>'state'='running' and (j->>'leaseUntil')::timestamptz>now()),false);
+ end if;
+ return jsonb_build_object('version',v,'member',m,'runId',r->>'id','waiting',waiting);
+end; $$;
+revoke all on function public.studio_verification_status(text,text) from public,anon,authenticated;
+grant execute on function public.studio_verification_status(text,text) to service_role;
+
 -- Include the earlier immutable-history save optimization.
 
 create or replace function public.studio_commit(p_expected_version bigint,p_state jsonb,p_secret jsonb default null) returns bigint

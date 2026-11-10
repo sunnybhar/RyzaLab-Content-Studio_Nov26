@@ -1,3 +1,4 @@
+import {compactVerificationStatus} from "@/lib/studio/poll-status";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { authenticate, loadState, persist } from "@/lib/studio/store";
@@ -28,17 +29,23 @@ const extend = z
   .object({ action: z.literal("extend"), runId: z.string().uuid() })
   .strict();
 const advance = z
-  .object({ action: z.literal("advance"), runId: z.string().uuid() })
+  .object({ action: z.literal("advance"), runId: z.string().uuid(), knownVersion: z.number().int().nonnegative().optional() })
   .strict();
 export async function POST(req: NextRequest) {
   try {
     if (Number(req.headers.get("content-length") || 0) > 2000)
       throw new StudioError(413, "Request too large.");
     const { db, actor } = await authenticate(req);
-    let state = await loadState(db, actor);
     const input = z
       .discriminatedUnion("action", [start, advance, extend])
       .parse(await req.json());
+    if(input.action==="advance"){
+      const status=await compactVerificationStatus(db,actor,input.runId);
+      if(status.waiting && status.version===input.knownVersion)
+        return NextResponse.json({unchanged:true,version:status.version},{headers:{"Cache-Control":"no-store"}});
+    }
+    let state = await loadState(db, actor);
+    const initialVersion=state.version;
     requirePermission(state, actor, "settings.manage");
     if (process.env.STUDIO_ALLOW_PROVIDER_EXECUTION !== "true")
       throw new StudioError(
@@ -135,7 +142,7 @@ export async function POST(req: NextRequest) {
       }
     }
     return NextResponse.json(
-      { state: filteredState(state, actor), actor, mode: "live" },
+      input.action==="advance" ? {changed:state.version!==initialVersion || state.version!==input.knownVersion,version:state.version} : { state: filteredState(state, actor), actor, mode: "live" },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (e) {
