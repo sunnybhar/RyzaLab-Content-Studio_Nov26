@@ -624,3 +624,6 @@ All353 domain tests, corrected production build/TypeScript, full production app 
 
 ### November 10 — research dossier integration WIP
 User resumed implementation: integrate studio-rebuild's unfinished dossier, claim ledger and reproducible calculations while retaining main v0.3.39 and Supabase. Working branch research-dossier-integration starts at 4e0ba74; selected dossier modules ported from eaccdca without merging older route, retrieval, confirmation or egress code. Initial typecheck passes. Next: harden evidence/arithmetic validation and analysis replay/limits, add domain and browser regressions, run full tests/build and review before verified push. No hosted SQL, live provider, Supabase or deployment check performed.
+
+### November 10 — dossier checkpoint paused for egress priority
+Thirteen new focused dossier/analysis tests pass; browser fixture verifies explicit maximum, unknown outcome without duplicate dispatch, saved receipt recovery, evidence ledger, arithmetic and JSON download without providers. TypeScript passed before final browser fixture edits; full regression/build/final review remain unrun. User reprioritized Supabase egress verification; dossier is paused on research-dossier-integration, not released or merged into main. Next dossier step: full checks and final review after egress work.

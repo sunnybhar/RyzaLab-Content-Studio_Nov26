@@ -20,10 +20,11 @@ export function researchAnalysisInput(
     channel: input.channel,
     function: "text",
   });
+  requirePermission(state, actor, "read", {channel: input.channel});
   const source = eligibleEvidence(
     researchEvidence(state, actor, input.channel, [input.researchJobId]),
   )[0];
-  if (!source?.citations.length)
+  if (!source?.citations.some(c => c.citedText.trim().length >= 20))
     throw new StudioError(
       409,
       "Retrieve permitted source passages before analysis.",
@@ -48,7 +49,7 @@ export function researchAnalysisInput(
       409,
       "Connect Writing in AI & budgets to analyze source passages.",
     );
-  const all: DossierSource[] = source.citations.map((c, index) => ({
+  const all: DossierSource[] = source.citations.filter(c => c.citedText.trim().length >= 20).map((c, index) => ({
     ...c,
     id: `s${index + 1}`,
   }));
@@ -80,6 +81,9 @@ export function researchAnalysisInput(
       coverage: {
         available: all.length,
         included: sources.length,
+        omitted: all.length - sources.length,
+        originalPassageCharacters: all.reduce((total, s) => total + s.citedText.length, 0),
+        includedPassageCharacters: sources.reduce((total, s) => total + s.citedText.length, 0),
         passages:
           "Only the supplied passage text was available for this analysis; never claim full-source access.",
       },
@@ -112,4 +116,19 @@ export function researchAnalysisInput(
   }
   if (!command) throw failure;
   return command;
+}
+
+/** Read back the exact saved request after a lost response; never reprice or reserve it. */
+export function researchAnalysisReplay(state: StudioState, actor: Actor, input: {
+  channel: Channel; researchJobId: string; idempotencyKey: string;
+}) {
+  const existing = state.jobs.find(j=>j.createdBy===actor.email && j.idempotencyKey===input.idempotencyKey);
+  if (!existing) return false;
+  requirePermission(state,actor,"job.create",{channel:input.channel,function:"text"});
+  requirePermission(state,actor,"read",{channel:input.channel});
+  researchEvidence(state,actor,input.channel,[input.researchJobId]);
+  if (existing.outputContract!=="research_v1" || existing.channel!==input.channel ||
+      existing.researchAnalysisSourceId!==input.researchJobId)
+    throw new StudioError(409,"This request key belongs to a different operation.");
+  return true;
 }

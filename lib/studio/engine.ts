@@ -1,4 +1,4 @@
-import {researchAnalysisInput} from "./research-analysis";
+import {researchAnalysisInput,researchAnalysisReplay} from "./research-analysis";
 import {parseDocumentLayout} from "./document-layout";
 import {eligibleEvidence,eligibleReferences,eligibleSourceReferences} from "./source-policy";
 import {documentSections} from "./document-sections";
@@ -290,7 +290,7 @@ export function applyCommand(
       s.agentRuleFiles=s.agentRuleFiles?.filter(f=>f.id!==file.id);break;
     }
 
-    case "research.analyze": return applyCommand(input,actor,researchAnalysisInput(s,actor,c),{...ctx,researchAnalysis:true});
+    case "research.analyze": if(researchAnalysisReplay(s,actor,c))return input;return applyCommand(input,actor,researchAnalysisInput(s,actor,c),{...ctx,researchAnalysis:true});
     case "research.retrieve": {
       const {content:parent,existing}=publicRetrievalTarget(s,actor,c);
       if(existing)return input;

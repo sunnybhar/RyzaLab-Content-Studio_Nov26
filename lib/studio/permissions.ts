@@ -138,7 +138,12 @@ export function filteredState(state: StudioState, actor: Actor): StudioState {
   );
   s.jobs = s.jobs.filter(
     (j) =>
-      j.createdBy === actor.email && (!j.contentId || ids.has(j.contentId)),
+      j.createdBy === actor.email && (!j.contentId || ids.has(j.contentId)) &&
+      (!j.researchAnalysisSourceId || Boolean(state.jobs.find(source =>
+        source.id === j.researchAnalysisSourceId && (!source.contentId || ids.has(source.contentId)) &&
+        can(state, actor, "read", {channel:source.channel, contentId:source.contentId,
+          account:source.account, assignedTo:state.contents.find(c=>c.id===source.contentId)?.assignedTo})
+      ))),
   );
   s.workflows = s.workflows.filter((w) =>
     can(state, actor, "read", { channel: w.channel }),

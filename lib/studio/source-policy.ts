@@ -151,6 +151,8 @@ export function jobHasExcludedSupport(job: Job) {
     return true;
   try {
     const prompt = JSON.parse(job.prompt);
+    if (job.outputContract === "research_v1" &&
+      (prompt.sources || []).some((s: {url: string}) => excludedResearchUrl(s.url))) return true;
     if (
       (prompt.webEvidence || []).some(
         (e: {

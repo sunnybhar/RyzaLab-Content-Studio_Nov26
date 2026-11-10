@@ -99,6 +99,7 @@ export type DossierSource = {
   sourceKind?: string;
   publishedAt?: string;
   accessNote?: string;
+  author?: string;
 };
 export type ResearchDossier = z.infer<typeof dossierResponseSchema> & {
   sources: DossierSource[];
@@ -145,6 +146,10 @@ export function parseResearchDossier(
   } catch {
     fail("The analysis is not a complete dossier contract.");
   }
+  if (!Array.isArray(sources) || !sources.length || sources.some(s =>
+    !/^s\d+$/.test(s.id) || typeof s.citedText !== "string" || !s.citedText.trim()
+  ) || new Set(sources.map(s=>s.id)).size !== sources.length)
+    fail("The frozen source set is missing or ambiguous.");
   const lookup = new Map(sources.map((s) => [s.id, s]));
   function checkQuote(e: { sourceId: string; quote: string }) {
     const source = lookup.get(e.sourceId);
@@ -192,7 +197,7 @@ export function parseResearchDossier(
     checkQuote(d);
     const n = numericLiteral(d.literal);
     const tokens: string[] =
-      d.quote.match(/[+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?/g) || [];
+      d.quote.match(/(?<![\w.,+\-])[+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?![\w]|[.,]\d)/g) || [];
     if (!tokens.includes(d.literal))
       fail("A numeric literal is not present in its exact source quotation.");
     values.set(d.id, n);
@@ -201,6 +206,8 @@ export function parseResearchDossier(
     const inputs = c.inputIds.map((id) => parsed.data.find((d) => d.id === id));
     if (inputs.some((i) => !i))
       fail("A calculation refers to a missing data input.");
+    if (new Set(c.inputIds).size !== c.inputIds.length)
+      fail("A calculation repeats a data input.");
     const rows = inputs as z.infer<typeof datum>[];
     const numbers = rows.map((i) => values.get(i.id)!);
     if (
@@ -287,18 +294,16 @@ export function parseResearchDossier(
 /** Only retain claims/data whose exact passages are actually included in this model request. */
 export function dossierForPassages(
   dossier: ResearchDossier | undefined,
-  citations: { url: string; citedText: string }[],
+  citations: { url: string; citedText?: string }[],
 ) {
   if (!dossier) return undefined;
-  const sources = dossier.sources.filter((s) =>
-    citations.some((c) => c.url === s.url && c.citedText.includes(s.citedText)),
-  );
+  const sources = dossier.sources.flatMap(s => {
+    const citation = citations.find(c => c.url === s.url && typeof c.citedText === "string" &&
+      (c.citedText.includes(s.citedText) || s.citedText.includes(c.citedText)));
+    return citation ? [{...s, citedText: citation.citedText!}] : [];
+  });
   const quotePresent = (e: { sourceId: string; quote: string }) =>
-    dossier.sources.some(
-      (s) =>
-        s.id === e.sourceId &&
-        citations.some((c) => c.url === s.url && c.citedText.includes(e.quote)),
-    );
+    sources.some(s => s.id === e.sourceId && s.citedText.includes(e.quote));
   const claims = dossier.claims.filter(
     (c) => c.evidence.length > 0 && c.evidence.every(quotePresent),
   );

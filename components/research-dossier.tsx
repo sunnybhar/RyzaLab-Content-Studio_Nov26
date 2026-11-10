@@ -24,6 +24,7 @@ export function DossierDetails({ dossier }: { dossier: ResearchDossier }) {
           </ul>
         </>
       )}
+      {!!dossier.findings.length && <><h4>Findings</h4><ul>{dossier.findings.map((v,i)=><li key={i}>{v}</li>)}</ul></>}
       <h4>Claim ledger</h4>
       {dossier.claims.map((c) => (
         <article className="s-version" key={c.id}>
@@ -118,6 +119,9 @@ export function DossierDetails({ dossier }: { dossier: ResearchDossier }) {
           ))}
         </>
       )}
+      <h4>Source access and provenance</h4>
+      {dossier.sources.map(s=><p key={s.id}><a href={s.url} target="_blank" rel="noopener noreferrer">{s.id} · {s.title}</a> · {s.sourceKind || "Unspecified excerpt"} · {s.publishedAt || "Publication date unknown"}{s.author ? ` · ${s.author}` : ""}{s.accessNote ? ` · ${s.accessNote}` : ""}</p>)}
+      <p>Analyzed {dossier.analysedAt}. Distinct URLs do not establish independent origins.</p>
       <button
         className="s-btn"
         onClick={() => {
@@ -222,6 +226,9 @@ export function ResearchAnalysis({
               ? "Outcome is uncertain; its reservation is retained. No automatic paid retry."
               : "Your saved sources remain available."}
           </p>
+          {active.state === "awaiting_confirmation" && <button className="s-btn" disabled={busy || disabled} onClick={async()=>{
+            setBusy(true);try{await run({type:"job.confirm",id:active.id},"Analysis allowance confirmed");}finally{setBusy(false);}
+          }}>Confirm saved analysis allowance</button>}
           <button
             className="s-btn"
             disabled={busy || disabled}

@@ -75,7 +75,7 @@ export function researchEvidence(
         "Research needs source review: missing citations, incomplete response or search errors. No generation started.",
       );
     }
-    const analysis=state.jobs.find(candidate=>candidate.researchAnalysisSourceId===job.id&&candidate.createdBy===actor.email&&candidate.state==="succeeded"&&candidate.outputStatus==="ready"&&candidate.researchDossier&&candidate.researchSnapshots?.some(snapshot=>snapshot.jobId===job.id&&snapshot.raw===job.result));
+    const analysis=state.jobs.find(candidate=>candidate.researchAnalysisSourceId===job.id&&can(state,actor,"read",{channel:candidate.channel})&&candidate.createdBy===actor.email&&candidate.state==="succeeded"&&candidate.outputStatus==="ready"&&candidate.researchDossier&&candidate.researchSnapshots?.some(snapshot=>snapshot.jobId===job.id&&snapshot.raw===job.result));
     const dossier=dossierForPassages(analysis?.researchDossier,value.citations);
     return {
       ...(dossier?{dossier,analysisJobId:analysis!.id}:{}),

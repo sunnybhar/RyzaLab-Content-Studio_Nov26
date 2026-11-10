@@ -1,4 +1,4 @@
-import {researchAnalysisInput} from "@/lib/studio/research-analysis";
+import {researchAnalysisInput,researchAnalysisReplay} from "@/lib/studio/research-analysis";
 import {readWorkspaceHead} from "@/lib/studio/workspace-head";
 import {commitJobConfirmation} from "@/lib/studio/job-confirmation";
 import {researchProfile} from "@/lib/studio/research-profile";
@@ -76,6 +76,8 @@ export async function POST(req: NextRequest) {
     let state=original;
     let parsed = commandSchema.parse(await req.json());
     assertActiveRequest(state,parsed);
+    if(parsed.type==="research.analyze" && researchAnalysisReplay(state,actor,parsed))
+      return NextResponse.json({state:filteredState(state,actor),actor,mode:"live"},{headers:{"Cache-Control":"no-store"}});
     if(parsed.type==="newsletter.compose") {
       requirePermission(state,actor,"content.create",{channel:"Newsletter",account:"RyzaLab"});
       if(parsed.sources.reduce((sum,source)=>sum+(source.kind==="document"?source.file.byteSize:0),0)>524288)throw new StudioError(400,"Combined document uploads must be at most 512 KB.");
