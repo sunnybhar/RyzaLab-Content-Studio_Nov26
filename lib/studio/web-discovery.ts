@@ -123,6 +123,20 @@ export async function discoverWeb(
   }
   return { citations, bytes, gaps };
 }
+async function withinResearchStep<T>(work: Promise<T>, ms: number, step: string) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      work,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${step} timed out.`)), ms);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function retrieveBroadReferences(
   query: string,
   request: typeof fetch = fetch,
@@ -151,7 +165,14 @@ export async function retrieveBroadReferences(
     );
   const started=Date.now(), deadline=started+(quick ? 50000 : 65000);
   const plan=investigationPlan(query,profile),limit=profile.depth==="focused"?6:profile.depth==="deep"?12:20;
-  const search = (item: (typeof plan.searches)[number]) => discoverWeb(item.query, request, 6000);
+  const search = (item: (typeof plan.searches)[number]) => {
+    const discovery = discoverWeb(item.query, request, 6000);
+    return quick
+      ? withinResearchStep(discovery, 13000, "Web and news discovery").catch(() => ({
+          citations: [], bytes: 0, gaps: ["Web and news discovery did not finish."],
+        }))
+      : discovery;
+  };
   const initialSearch = search(plan.searches[0]);
   const follow = () => Promise.all(plan.searches.slice(1).map(async (item) => ({ search: item, result: await search(item) })));
   const [initial, followups] = quick
@@ -212,7 +233,8 @@ export async function retrieveBroadReferences(
         }
         try {
           requests++;
-          const page = await reader(c.url);
+          const reading = reader(c.url);
+          const page = quick ? await withinResearchStep(reading, 8000, "Source page reading") : await reading;
           bytes += page.bytes;
           requests += page.requests - 1;
           if (excluded(page.url)) return;
@@ -249,7 +271,8 @@ export async function retrieveBroadReferences(
   if (citations.length < 3 && (!quick || Date.now() + 12000 < deadline)) {
     requests++;
     try {
-      const scholarly = await retrievePublicReferences(query, request, now);
+      const lookup = retrievePublicReferences(query, request, now);
+      const scholarly = quick ? await withinResearchStep(lookup, 12000, "Scholarly search") : await lookup;
       bytes += scholarly.retrieval.responseBytes;
       citations.push(...scholarly.citations.filter((c) => !excluded(c.url)));
     } catch {
@@ -264,7 +287,9 @@ export async function retrieveBroadReferences(
   if (!unique.length)
     throw new StudioError(
       503,
-      "No relevant non-Wikipedia evidence was retrieved. No paid idea/writing request was started. Try a more specific public question or supply accessible source material.",
+      quick
+        ? `No relevant non-Wikipedia evidence was retrieved. No paid idea/writing request was started. ${[...new Set(gaps)].slice(0, 3).join(" ")} Add an accessible source link to retry with evidence.`
+        : "No relevant non-Wikipedia evidence was retrieved. No paid idea/writing request was started. Try a more specific public question or supply accessible source material.",
     );
   return publicResearchSchema.parse({
     version: 2,
