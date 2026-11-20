@@ -101,7 +101,7 @@ export function IdeaRunProgress({
     ],
     [
       "4. Results",
-      complete ? `${readyCount} of ${targetCount} ready` : "Not ready yet",
+      readyCount ? `${readyCount} of ${targetCount} ready` : attention ? "No idea cards available" : "Not ready yet",
     ],
   ];
   return (

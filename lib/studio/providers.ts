@@ -162,6 +162,32 @@ export async function runProvider(
       instructions: system,
       input: job.prompt,
       max_output_tokens: maxTokens,
+      ...(job.kind === "ideas" ? {
+        text: { format: {
+          type: "json_schema",
+          name: "studio_idea_cards",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            required: ["ideas"],
+            properties: {
+              ideas: { type: "array", items: {
+                type: "object",
+                additionalProperties: false,
+                required: ["title", "brief", "audience", "format", "sources"],
+                properties: {
+                  title: { type: "string" },
+                  brief: { type: "string" },
+                  audience: { type: "string" },
+                  format: { type: "string" },
+                  sources: { type: "array", items: { type: "string" } },
+                },
+              } },
+            },
+          },
+        } },
+      } : {}),
     };
   } else {
     url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(connection.model)}:generateContent`;

@@ -4339,7 +4339,26 @@
   .studio-v2 .s-budget-section > summary { padding: 18px; }
   .studio-v2 .s-budget-section-body { padding: 16px; }
 }
-.studio-v2 dialog.s-idea-composer { margin: auto; max-height: 90vh; overflow-y: auto; }
+.studio-v2 dialog.s-idea-composer[open] {
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
+  padding: 0;
+}
+.studio-v2 .s-idea-composer > .s-modal-heading {
+  flex: none;
+  margin: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--s-line);
+}
+.studio-v2 .s-idea-composer-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 20px;
+}
 .studio-v2 dialog.s-idea-composer::backdrop { background: #0009; }
 .studio-v2 .s-agent-rule-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:24px; margin:24px 0; }
 @media (max-width: 700px) { .studio-v2 .s-agent-rule-grid { grid-template-columns:1fr; } }

@@ -1,4 +1,5 @@
 import { generatedIdeasSchema, requestedIdeaQuantity } from "./idea-generation";
+import { containsExcludedSource } from "./source-policy";
 import type { Job } from "./types";
 /** Recover only verbatim, individually complete strict-schema cards. Never close
  * unfinished JSON, supply missing fields, skip a malformed card or retry AI. */
@@ -9,7 +10,9 @@ export function completeSavedIdeaCards(
   if (
     job.providerCompletion !== "incomplete" &&
     !/^\s*\[INCOMPLETE OUTPUT/i.test(job.result) &&
-    !job.error?.startsWith("Idea generation was incomplete")
+    !job.error?.startsWith("Idea generation was incomplete") &&
+    !job.error?.startsWith("The provider result is not a complete idea-card set") &&
+    !/^Requested \d+ ideas, but the provider returned \d+\./.test(job.error || "")
   )
     return [];
   const raw = job.result
@@ -58,7 +61,7 @@ export function completeSavedIdeaCards(
       const parsed = generatedIdeasSchema.shape.ideas.element.safeParse(
         JSON.parse(raw.slice(from, cursor)),
       );
-      if (!parsed.success) break;
+      if (!parsed.success || parsed.data.sources.some(containsExcludedSource)) break;
       cards.push(parsed.data);
     } catch {
       break;

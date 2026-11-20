@@ -175,3 +175,20 @@ test('recovery respects requested count, never completes malformed fields, and r
  job.providerCompletion='refused';assert.equal(completeSavedIdeaCards(job).length,0);assert.throws(()=>applyCommand(s,DEMO_ACTOR,{type:'idea.recoverCompleteCards',jobId:job.id},{demo:true}),/No complete idea cards/);
  job.providerCompletion='incomplete';job.result='[INCOMPLETE OUTPUT]\n{"ideas":[{"title":"Only a title';assert.equal(completeSavedIdeaCards(job).length,0);job.state='unknown';assert.throws(()=>applyCommand(s,DEMO_ACTOR,{type:'idea.recoverCompleteCards',jobId:job.id},{demo:true}),/completed Ideas job/);
 });
+
+test("an unimportable saved idea set can recover only the complete leading cards", async () => {
+  const { completeSavedIdeaCards } = await import("../lib/studio/idea-recovery");
+  const state = fixture();
+  const job = state.jobs[0];
+  job.prompt = JSON.stringify({ quantity: 6 });
+  job.providerCompletion = "complete";
+  job.error = "The provider result is not a complete idea-card set. Preserve the result.";
+  job.result = JSON.stringify({ ideas: [card, { title: "Missing required fields" }] });
+  job.researchSourceCount = 3;
+  assert.deepEqual(completeSavedIdeaCards(job), [card]);
+  const imported = applyCommand(state, DEMO_ACTOR, {
+    type: "idea.recoverCompleteCards", jobId: job.id,
+  }, { demo: true });
+  assert.equal(imported.ideas.find(idea => idea.generationRunId === job.id)?.researchSourceCount, 3);
+  assert.equal(imported.jobs[0].result, job.result);
+});

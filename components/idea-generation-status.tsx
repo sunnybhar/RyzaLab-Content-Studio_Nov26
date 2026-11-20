@@ -267,7 +267,7 @@ export function IdeaGenerationStatus({
               </button>
             )}
             {job.state==="succeeded"&&!count&&recoverable.length>0&&<button className="s-btn s-primary" disabled={busy||!authorized||!can(state,actor,"idea.edit",{channel:job.channel})} onClick={()=>void command({type:"idea.recoverCompleteCards",jobId:job.id})}>Recover {recoverable.length} complete saved {recoverable.length===1?"idea":"ideas"} — no AI call</button>}
-            {job.state==="succeeded"&&!count&&<p>{recoverable.length?`${recoverable.length} fully written card(s) are available in the saved response. Recover them as pending ideas; unfinished cards will stay unimported.`:importable?"The complete saved result can be imported without another provider request.":"No complete importable batch is available. The response ended before a complete batch was written. No automatic paid retry will run."}</p>}
+            {job.state==="succeeded"&&!count&&<p>{recoverable.length?`${recoverable.length} fully written card(s) are available in the saved response. Recover them as pending ideas; unfinished cards will stay unimported.`:importable?"The complete saved result can be imported without another provider request.":"The saved response contains no importable idea cards. You can start a new request using saved research."}</p>}
             {job.state==="succeeded"&&!count&&(job.providerStopReason==="max_tokens"||/^\s*\[INCOMPLETE OUTPUT/i.test(job.result||""))&&<p role="status">The output token limit was reached{job.providerUsage?` (${job.providerUsage.outputTokens.toLocaleString()} output tokens)`:""}. Requested ideas: {expected||"not recorded"}. Incomplete cards are not ready to use.</p>}
 
             {["unknown", "failed", "blocked"].includes(job.state) && (

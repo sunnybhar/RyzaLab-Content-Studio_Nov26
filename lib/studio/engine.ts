@@ -455,6 +455,8 @@ export function applyCommand(
       for (const item of items!)
         s.ideas.unshift({
           ...item,
+          ...(job.researchUnavailable ? { sources: [], researchUnavailable: true } : {}),
+          ...(job.researchSourceCount !== undefined ? { researchSourceCount: job.researchSourceCount } : {}),
           id: id(),
           channel: job.channel,
           state: "pending",

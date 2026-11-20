@@ -12,6 +12,7 @@ import {
   type Idea,
   type StudioState,
 } from "@/lib/studio/types";
+import { completeSavedIdeaCards } from "@/lib/studio/idea-recovery";
 import { parseGeneratedIdeas } from "@/lib/studio/idea-generation";
 import { IdeaEvidence, SourceReferences } from "./idea-evidence";
 export function IdeaComposer({
@@ -89,6 +90,20 @@ export function IdeaComposer({
           : Boolean(job && i.generationRunId === job.id),
       )
     : [];
+  const recoverable = mode === "generate" && job?.state === "succeeded" && !cards.length
+    ? completeSavedIdeaCards(job)
+    : [];
+  async function recoverIdeas(jobId: string) {
+    setBusy(true);
+    setError("");
+    try {
+      await send({ type: "idea.recoverCompleteCards", jobId });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not recover saved ideas.");
+    } finally {
+      setBusy(false);
+    }
+  }
   let proposal: ReturnType<typeof parseGeneratedIdeas>[number] | undefined;
   if (mode === "manual" && job?.state === "succeeded" && job.result)
     try {
@@ -233,6 +248,7 @@ export function IdeaComposer({
           Close
         </button>
       </div>
+      <div className="s-idea-composer-body" role="region" aria-label="Idea request and results" tabIndex={0}>
       <p>
         {mode === "manual"
           ? "Enter your own idea. You can save it directly or research and develop it with AI here."
@@ -246,6 +262,43 @@ export function IdeaComposer({
       {!!selectedResearch.length&&<p role="status">Using {selectedResearch.length} saved research result(s). Generating ideas will reuse these sources without another public search.</p>}
       {submitted&&<IdeaRunProgress job={job} busy={busy} startedAt={startedAt} sourceCount={evidenceIds.length} readyCount={mode==="manual"?(proposal?1:0):cards.length} targetCount={mode==="manual"?1:quantity} lastChecked={lastChecked} syncError={syncError} requestError={error} refresh={()=>checkStatus(true)} confirm={confirmRequest}/>}
       {relevanceWarning&&<p className="s-alert s-error" role="alert">These saved references do not match the current topic/audience well. They are retained for audit; inspect the ideas before using them. This request will not be regenerated automatically.</p>}
+      {mode === "generate" && job?.state === "succeeded" && !cards.length && (
+        <div className="s-version">
+          <p>{recoverable.length
+            ? "The saved response includes complete ideas you can recover."
+            : "There are no generated idea cards available for this request."}</p>
+          {recoverable.length > 0 && (
+            <button type="button" className="s-btn" disabled={working} onClick={() => void recoverIdeas(job.id)}>
+              Recover {recoverable.length} saved {recoverable.length === 1 ? "idea" : "ideas"}
+            </button>
+          )}
+        </div>
+      )}
+      {mode === "generate" && cards.length > 0 && (
+        <section aria-label="Generated ideas">
+          <h3>Generated ideas ({cards.length})</h3>
+          {cards.map((idea) => (
+            <article key={idea.id} className="s-version">
+              <h3>{idea.title}</h3>
+              <p>{idea.brief}</p>
+              <SourceReferences sources={idea.sources} />
+              <button
+                type="button"
+                className="s-btn"
+                disabled={working}
+                onClick={() => void openIdea(idea)}
+              >
+                {local ? "Create draft" : "Use idea and open writing"}
+              </button>
+              {idea.channel === "LinkedIn" && (
+                <button type="button" className="s-btn" disabled={working} onClick={() => void openIdea(idea, "Article")}>
+                  Create article draft
+                </button>
+              )}
+            </article>
+          ))}
+        </section>
+      )}
       {!!state.pipelineBriefs?.length&&<label className="s-field">Existing Pipeline<select aria-label="Existing Pipeline" value={pipelineBriefId||""} disabled={working} onChange={e=>{const b=state.pipelineBriefs?.find(b=>b.id===e.target.value);setPipelineBriefId(b?.id);if(b){editTitle(b.title);setBrief([b.angle,b.sourceUrls.join("\n")].filter(Boolean).join("\n\n"));setAudience(b.audience);}else{editTitle("");setBrief("");setAudience("");}}}><option value="">Start from a new topic</option>{state.pipelineBriefs.map(b=><option key={b.id} value={b.id}>{b.title} · {b.plannedDate||"Unscheduled"} · {b.channel}</option>)}</select></label>}
       <details className="s-version"><summary>Use saved research or add source links</summary><ResearchPanel state={state} actor={actor} channel={channel} selected={selectedResearch} onSelected={setSelectedResearch} run={async command=>{try{await send(command);setError("");return true;}catch(e){setError(e instanceof Error?e.message:"Research could not complete. Saved sources remain available.");return false;}}} refresh={refresh} disabled={working} demo={demo}/></details>
       <details open={mode==="manual"||!submitted} className="s-idea-request-details"><summary>Request details{mode==="generate"?` · ${channel} · ${quantity} ideas`:""}</summary>
@@ -394,33 +447,13 @@ export function IdeaComposer({
           </p>
         </section>
       )}
-      {mode === "generate" &&
-        cards.map((idea) => (
-          <article key={idea.id} className="s-version">
-            <h3>{idea.title}</h3>
-            <p>{idea.brief}</p>
-            <SourceReferences sources={idea.sources} />
-            <button
-              type="button"
-              className="s-btn"
-              disabled={working}
-              onClick={() => void openIdea(idea)}
-            >
-              {local ? "Create draft" : "Use idea and open writing"}
-            </button>
-            {idea.channel === "LinkedIn" && (
-              <button type="button" className="s-btn" disabled={working} onClick={() => void openIdea(idea, "Article")}>
-                Create article draft
-              </button>
-            )}
-          </article>
-        ))}
       <IdeaEvidence
         state={state}
         actor={actor}
         channel={channel}
         ids={evidenceIds}
       />
+      </div>
     </dialog>
   );
 }
