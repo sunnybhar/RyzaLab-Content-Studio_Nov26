@@ -198,6 +198,14 @@ const channelDescriptions: Record<Channel, string> = {
   Newsletter: "A direct line to your audience.",
   Hub: "Your home for long-form thinking.",
 };
+const THEMES = [
+  { id: "midnight", label: "Midnight Blue", swatch: "#93b8ff" },
+  { id: "daylight", label: "Daylight Blue", swatch: "#2556a5" },
+  { id: "plum", label: "Violet Dusk", swatch: "#d0adff" },
+  { id: "rose", label: "Rose Quartz", swatch: "#a43560" },
+  { id: "ember", label: "Copper Ember", swatch: "#ffb579" },
+] as const;
+type Theme = (typeof THEMES)[number]["id"];
 const money = (v: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
     v / 100,
@@ -512,7 +520,7 @@ export default function Workspace() {
   );
   const [workflowChannel, setWorkflowChannel] = useState<Channel>("LinkedIn");
   const [layout, setLayout] = useState<"command" | "board">("command");
-  const [theme, setTheme] = useState<"midnight" | "daylight">("midnight");
+  const [theme, setTheme] = useState<Theme>("midnight");
   const [sidebarPinned, setSidebarPinned] = useState(true);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [preferenceActor, setPreferenceActor] = useState("");
@@ -536,7 +544,7 @@ export default function Workspace() {
       /* Device storage may be unavailable. */
     }
     setLayout(preferences.layout === "board" ? "board" : "command");
-    setTheme(preferences.theme === "daylight" ? "daylight" : "midnight");
+    setTheme(THEMES.find(({ id }) => id === preferences.theme)?.id ?? "midnight");
     setSidebarPinned(preferences.pinned !== false);
     setSidebarExpanded(preferences.expanded !== false);
     setMenuOpen(false);
@@ -2660,20 +2668,17 @@ export default function Workspace() {
               <fieldset>
                 <legend>Color theme</legend>
                 <div className="s-actions">
-                  <button
-                    className="s-btn"
-                    aria-pressed={theme === "midnight"}
-                    onClick={() => setTheme("midnight")}
-                  >
-                    Midnight Teal
-                  </button>
-                  <button
-                    className="s-btn"
-                    aria-pressed={theme === "daylight"}
-                    onClick={() => setTheme("daylight")}
-                  >
-                    Daylight Teal
-                  </button>
+                  {THEMES.map(({ id, label, swatch }) => (
+                    <button
+                      key={id}
+                      className="s-btn s-theme-choice"
+                      aria-pressed={theme === id}
+                      onClick={() => setTheme(id)}
+                    >
+                      <span className="s-theme-swatch" style={{ backgroundColor: swatch }} aria-hidden="true" />
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </fieldset>
               <fieldset>

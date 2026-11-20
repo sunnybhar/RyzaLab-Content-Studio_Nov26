@@ -1,14 +1,14 @@
 .studio-v2 {
-  --s-paper: #101820;
-  --s-panel: #192a32;
-  --s-raised: #243b45;
-  --s-text: #f3f7fa;
+  --s-paper: #101827;
+  --s-panel: #1a263b;
+  --s-raised: #273852;
+  --s-text: #f3f7ff;
   --s-teal: var(--s-text);
-  --s-muted: #bacbd1;
-  --s-accent: #42d6c0;
-  --s-accent-ink: #101820;
-  --s-line: #587780;
-  --s-sidebar: #14232c;
+  --s-muted: #bdcbe3;
+  --s-accent: #93b8ff;
+  --s-accent-ink: #101827;
+  --s-line: #61769a;
+  --s-sidebar: #152036;
   --s-green: var(--s-accent);
   --s-shadow: #00000033;
   --s-warning: #ffd08a;
@@ -3485,7 +3485,7 @@
   margin-top: 13px;
 }
 
-/* Midnight Teal: shared surfaces across the studio, editor, calendar and dialogs. */
+/* Shared theme surfaces across the studio, editor, calendar and dialogs. */
 .studio-v2 {
   line-height: 1.55;
   overflow-wrap: anywhere;
@@ -4018,13 +4018,84 @@
 .studio-v2 .s-stage { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--s-border, #36515d); }
 .studio-v2 .s-stage > div { flex: 1; min-width: 0; }
 .studio-v2 .s-stage p { margin: 5px 0; overflow-wrap: anywhere; }
-.studio-v2 .s-stage-number { min-width: 24px; color: var(--s-accent, #42d6c0); }
+.studio-v2 .s-stage-number { min-width: 24px; color: var(--s-accent); }
 .studio-v2 .s-stage-status { text-transform: capitalize; font-weight: 600; }
 .studio-v2 .s-stage-intro, .studio-v2 .s-stage-reason { color: var(--s-muted, #bacbd1); font-size: 14px; }
 .studio-v2 .s-stage-form { display: grid; gap: 12px; padding-top: 18px; }
 @media (max-width: 760px) { .studio-v2 .s-stage { flex-wrap: wrap; } .studio-v2 .s-stage > div { flex-basis: calc(100% - 40px); } }
 
-.studio-v2.s-theme-daylight { --s-paper:#f1f6f6; --s-panel:#ffffff; --s-raised:#e1eded; --s-text:#102e36; --s-muted:#405d66; --s-accent:#086b61; --s-accent-ink:#ffffff; --s-line:#718d94; --s-sidebar:#e6f0f0; --s-shadow:#173c461c; --s-warning:#754300; --s-danger:#a51b27; color-scheme:light; }
+.studio-v2.s-theme-daylight {
+  --s-paper: #f1f5fc;
+  --s-panel: #ffffff;
+  --s-raised: #e4ecf9;
+  --s-text: #182842;
+  --s-muted: #445878;
+  --s-accent: #2556a5;
+  --s-accent-ink: #ffffff;
+  --s-line: #7588a7;
+  --s-sidebar: #e7effb;
+  --s-shadow: #253d651a;
+  --s-warning: #754300;
+  --s-danger: #a51b27;
+  color-scheme: light;
+}
+.studio-v2.s-theme-plum {
+  --s-paper: #1b1425;
+  --s-panel: #2a2036;
+  --s-raised: #3a2c49;
+  --s-text: #f8f2ff;
+  --s-muted: #d5c5e4;
+  --s-accent: #d0adff;
+  --s-accent-ink: #20142f;
+  --s-line: #826c9e;
+  --s-sidebar: #241a31;
+  --s-shadow: #00000033;
+  --s-warning: #ffd08a;
+  --s-danger: #ffb4b4;
+  color-scheme: dark;
+}
+.studio-v2.s-theme-rose {
+  --s-paper: #fcf2f5;
+  --s-panel: #ffffff;
+  --s-raised: #f8e2eb;
+  --s-text: #38202b;
+  --s-muted: #6e4b5c;
+  --s-accent: #a43560;
+  --s-accent-ink: #ffffff;
+  --s-line: #a87b90;
+  --s-sidebar: #fae8ee;
+  --s-shadow: #6033481a;
+  --s-warning: #754300;
+  --s-danger: #a51b27;
+  color-scheme: light;
+}
+.studio-v2.s-theme-ember {
+  --s-paper: #211711;
+  --s-panel: #30241c;
+  --s-raised: #443327;
+  --s-text: #fff2e8;
+  --s-muted: #dfc7b6;
+  --s-accent: #ffb579;
+  --s-accent-ink: #2b190e;
+  --s-line: #92725d;
+  --s-sidebar: #2a1d15;
+  --s-shadow: #00000033;
+  --s-warning: #ffd08a;
+  --s-danger: #ffb4b4;
+  color-scheme: dark;
+}
+.studio-v2 .s-theme-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.studio-v2 .s-theme-swatch {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
 .studio-v2 .s-account-panel { padding:26px; max-width:900px; }
 .studio-v2 .s-account-panel h2 { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
 .studio-v2 .s-account-panel dl { display:grid; grid-template-columns:150px minmax(0,1fr); gap:12px; margin-bottom:28px; }
@@ -4213,7 +4284,7 @@
 .studio-v2 .s-workflow-history { border-top: 1px solid var(--s-line); margin-top: 16px; }
 .studio-v2 .s-workflow-history > summary { padding: 16px 24px; cursor: pointer; font-weight: 600; color: var(--s-muted); }
 
-/* Keep labels readable in Daylight Teal when hovering primary buttons. */
+/* Keep labels readable when hovering primary buttons. */
 .studio-v2 .s-btn.s-primary:hover, .studio-v2 .s-btn.s-primary:focus-visible { color: var(--s-muted); }
 
 /* Full-width review queue; content and checks live in a focused native dialog. */

@@ -208,7 +208,7 @@ async function main() {
       .getByRole("heading", { name: "Your account", exact: true })
       .waitFor();
     await page
-      .getByRole("button", { name: "Daylight Teal", exact: true })
+      .getByRole("button", { name: "Daylight Blue", exact: true })
       .click();
     await page.reload();
     await page
