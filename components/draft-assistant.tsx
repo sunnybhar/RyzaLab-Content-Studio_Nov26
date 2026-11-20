@@ -4,7 +4,7 @@ import {
   blockingUnknownJobs,
   hasWritingFollowup,
 } from "@/lib/studio/writing-followup";
-import { isLongForm } from "@/lib/studio/channel-writing";
+import { blogArticleLengthIssue, isLongForm } from "@/lib/studio/channel-writing";
 import { useEffect, useRef, useState } from "react";
 import type { Actor, Command, Content, StudioState } from "@/lib/studio/types";
 import {
@@ -133,7 +133,8 @@ export function DraftAssistant({
     const timer = setInterval(() => setClock(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [active?.id,active?.state]);
-  const suggested = jobs.find((job) => job.candidate && !job.appliedAt);
+  const suggested = jobs.find((job) => job.candidate && !job.appliedAt &&
+    !blogArticleLengthIssue(content.channel, content.format, job.candidate.body));
   const recoverable = jobs.find(
     (job) =>
       !job.candidate &&
@@ -712,6 +713,7 @@ export function DraftAssistant({
                   readOnly ||
                   busy ||
                   dirty ||
+                  Boolean(blogArticleLengthIssue(content.channel, content.format, job.candidate.body)) ||
                   (!!job.candidate.questions.length &&
                     (resolution[job.id] || "").trim().length < 10)
                 }

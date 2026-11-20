@@ -108,7 +108,7 @@ export function IdeasBrowser({
         !content.deletedAt,
     );
     setFormat(
-      onGenerateAlternatives && (targetChannel ?? idea.channel) === "LinkedIn" && (existing?.format ?? idea.format) !== "Article" ? "Text post" : existing?.format ||
+      (targetChannel ?? idea.channel) === "LinkedIn" && (onGenerateAlternatives || (existing?.format ?? idea.format) === "Article") ? "Text post" : existing?.format ||
         ([
           "Text post",
           "Carousel",
@@ -130,17 +130,17 @@ export function IdeasBrowser({
   }
   const linkedInFormat = (targetChannel ?? selected?.channel) === "LinkedIn";
   const draftFormat = onGenerateAlternatives && !linkedInFormat ? (targetChannel === "Newsletter" ? "Newsletter" : "Text post") : format;
-  const linkedDraft =
-    selected &&
-    contents.find(
+  const findLinkedDraft = (selectedFormat: string) => selected && contents.find(
       (content) =>
         content.ideaId === selected.id && !content.ideaTextAlternative &&
-        (!targetChannel || content.channel === targetChannel) &&
-        content.format === draftFormat &&
+        content.channel === (targetChannel ?? selected.channel) &&
+        content.format === selectedFormat &&
         content.account === account.trim() &&
         content.createdBy === actorEmail &&
         !content.deletedAt,
     );
+  const linkedDraft = findLinkedDraft(draftFormat);
+  const linkedArticle = linkedInFormat && findLinkedDraft("Article");
   return (
     <section className="s-ideas-browser" aria-label="Ideas">
       <IdeasRequestBoard
@@ -225,23 +225,15 @@ export function IdeasBrowser({
               )}
               {selected.state !== "rejected" && (
                 <div className="s-idea-create-options">
-                  {(!onGenerateAlternatives || linkedInFormat) && (
+                  {!onGenerateAlternatives && (
                   <label>
                     Draft format
                     <select
                       value={format}
                       onChange={(event) => setFormat(event.target.value)}
                     >
-                      {(onGenerateAlternatives ? ["Text post", "Article"] : [
-                        "Text post",
-                        "Carousel",
-                        "Image",
-                        "Video",
-                        "Article",
-          "Blog",
-                        "Newsletter",
-                        "Audio",
-                      ]).map((option) => (
+                      {["Text post", "Carousel", "Image", "Video", "Article", "Blog", "Newsletter", "Audio"]
+                        .filter(option => !linkedInFormat || option !== "Article").map((option) => (
                         <option key={option} value={option}>{writingFormatLabel(option, targetChannel ?? selected.channel)}</option>
                       ))}
                     </select>
@@ -300,6 +292,15 @@ export function IdeasBrowser({
                     Use idea in Brand Newsletter
                   </button>
                 )}
+                {linkedInFormat && selected.state !== "rejected" && (
+                  <button type="button" className="s-btn"
+                    disabled={busy || !account.trim() || !canUse(selected, account.trim())}
+                    onClick={async () => {
+                      if (await onUse(selected, "Article", account.trim())) close();
+                    }}>
+                    {linkedArticle ? "Open Blog Article" : "Create Blog Article"}
+                  </button>
+                )}
                 {selected.state !== "rejected" && (
                   <button
                     type="button"
@@ -314,8 +315,9 @@ export function IdeasBrowser({
                         close();
                     }}
                   >
-                    {linkedDraft
-                      ? "Open linked draft"
+                    {linkedInFormat && draftFormat === "Text post"
+                      ? linkedDraft ? "Open LinkedIn Post" : "Create LinkedIn Post"
+                      : linkedDraft ? "Open linked draft"
                       : automaticWriting
                         ? "Use idea & prepare draft with AI"
                         : onGenerateAlternatives ? "Create draft" : "Use idea & open draft"}

@@ -1,7 +1,7 @@
 import {jobHasExcludedSupport,containsExcludedSource} from "./source-policy";
 import {suppliedReviewReferences} from "./review-references";
 import {correctionIsCurrent} from "./review-correction";
-import {isLongForm, newsletterTemplateFromPrompt, writingWordCount, writingWordTarget} from "./channel-writing";
+import {blogArticleLengthIssue, isLongForm, newsletterTemplateFromPrompt, writingWordCount, writingWordTarget} from "./channel-writing";
 import {incompleteDraftBody,applyRecoveredWorkingText} from "./incomplete-draft";
 import { citesRyzaLab, retainNewsletterLinks } from "./newsletter-source";
 import { newsletterStructureIssue } from "./newsletter-outline";
@@ -118,7 +118,7 @@ export function settleWrittenOutput(
     output.completion !== "complete" ||
     /\[INCOMPLETE OUTPUT/i.test(output.text || "")
   ) {
-    if(job.outputContract==="draft_v1"&&output.completion!=="refused"&&!c.deletedAt&&c.state==="draft"&&!c.text.trim()&&c.revision===job.targetRevision&&copyIdentity(c,state)===job.targetIdentity&&!currentCopyAcceptance(c,state)&&!job.targetAccepted) {
+    if(job.outputContract==="draft_v1"&&!(c.channel==="LinkedIn"&&c.format==="Article")&&output.completion!=="refused"&&!c.deletedAt&&c.state==="draft"&&!c.text.trim()&&c.revision===job.targetRevision&&copyIdentity(c,state)===job.targetIdentity&&!currentCopyAcceptance(c,state)&&!job.targetAccepted) {
       const body=incompleteDraftBody(output.text||"");if(body){applyRecoveredWorkingText(c,job,body,job.createdBy,now,id);return;}
     }
     job.outputStatus = "incomplete";
@@ -162,6 +162,12 @@ export function settleWrittenOutput(
     if (template) {
       const issue = newsletterStructureIssue(template.sections, job.candidate.body);
       if (issue) job.candidate.questions.push(issue);
+    }
+    const articleLengthIssue = blogArticleLengthIssue(c.channel, c.format, job.candidate.body);
+    if (articleLengthIssue) {
+      job.outputStatus = "invalid";
+      job.error = `${articleLengthIssue} The response is saved in Generation activity. Generate another draft to try again.`;
+      return;
     }
     const target = writingWordTarget(c.channel, c.format);
     if (target) {

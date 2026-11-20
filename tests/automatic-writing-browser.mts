@@ -90,7 +90,7 @@ try {
       .click();
     await page
       .getByRole("dialog")
-      .getByRole("button", { name: /Use idea & open draft|Open linked draft/ })
+      .getByRole("button", { name: /Use idea & open draft|Open linked draft|Create LinkedIn Post|Open LinkedIn Post/ })
       .click();
     await page.getByLabel("Content title").waitFor();
   }

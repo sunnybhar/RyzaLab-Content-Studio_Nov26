@@ -17,7 +17,7 @@ import {activeStudioView, ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active
 import { IDEA_TEXT_ALTERNATIVES, type IdeaTextAlternative } from "@/lib/studio/idea-alternatives";
 import {ideaStage} from "@/lib/studio/idea-board";
 import {GenerationRulesStatus} from "./generation-rules-status";
-import {isLongForm, writingFormatLabel, writingWordCount, writingWordTarget} from "@/lib/studio/channel-writing";
+import {blogArticleLengthIssue, isLongForm, writingFormatLabel, writingWordCount, writingWordTarget} from "@/lib/studio/channel-writing";
 import { AuthorizedJobProgress } from "./authorized-job-progress";
 import { JobCost } from "./job-cost";
 import { budgetMonth } from "@/lib/studio/time";
@@ -895,6 +895,14 @@ export default function Workspace() {
     setChannel("Newsletter");
     setNewsletterSelection({ key: crypto.randomUUID(), source });
     return true;
+  }
+  function openArticleFromPost(post: Content) {
+    const idea = state!.ideas.find((item) => item.id === post.ideaId);
+    if (idea && idea.state !== "rejected") {
+      void useIdea(idea, "Article", post.account, "LinkedIn");
+    } else {
+      newContent(undefined, post.title, "LinkedIn", "Article");
+    }
   }
   const scheduleForm = (contentId?: string, initialPackageId?: string, exactPackage?: Package) => {
     const packages = (exactPackage ? [exactPackage] : activePackages).filter((p) => {
@@ -2882,6 +2890,9 @@ export default function Workspace() {
                 onError={setLocalError}
                 refresh={(force=false) => refresh(!force)}
                 progressJob={progressAuthorizedJob}
+                article={activeContent.channel === "LinkedIn" && activeContent.format === "Text post" &&
+                  allowed("content.create", { channel: "LinkedIn", account: activeContent.account })
+                  ? () => openArticleFromPost(activeContent) : undefined}
                 newsletter={allowed("content.create", {channel: "Newsletter", account: "RyzaLab"}) ? () => openNewsletterComposer(`content:${activeContent.id}`) : undefined}
                 queue={(kind = "text") => { setQueueKind(kind); setQueueTarget(activeContent); }}
               />
@@ -4519,6 +4530,7 @@ function Editor({
   progressJob,
   queue,
   newsletter,
+  article,
 }: {
   content: Content;
   actor: Actor;
@@ -4544,6 +4556,7 @@ function Editor({
   progressJob?:(jobId:string)=>Promise<unknown>;
   queue: (kind?: FunctionKind) => void;
   newsletter?: () => boolean;
+  article?: () => void;
 }) {
   const [generatingDraft, setGeneratingDraft] = useState<{ kind: "draft" | "template"; startedAt: number }>();
   const [draftGenerationError, setDraftGenerationError] = useState<{ kind: "draft" | "template"; message: string }>();
@@ -4577,6 +4590,10 @@ function Editor({
   const savedResearchIds = c.researchJobIds ?? linkedIdea?.researchJobIds;
   const wordTarget = writingWordTarget(c.channel, writeFormat);
   const wordCount = wordTarget ? writingWordCount(text) : text.trim().split(/\s+/).filter(Boolean).length;
+  const articleLengthIssue = text.trim() ? blogArticleLengthIssue(c.channel, writeFormat, text) : undefined;
+  const latestWritingJob = c.channel === "LinkedIn" && c.format === "Article" ? state.jobs
+    .filter(job => job.contentId === c.id && job.kind === "text" && job.targetRevision === c.revision)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] : undefined;
   const usedResearchFallback = local && state.jobs.some((job) =>
     job.id === c.generatedBy?.jobId && job.researchUnavailable,
   );
@@ -4780,6 +4797,7 @@ function Editor({
         </button>
         <div className="s-actions">
           <button className="s-btn" onClick={() => setPostPreview(true)}>Preview post</button>
+          {article && <button className="s-btn" disabled={busy || dirty || externalChange} onClick={article}>Create or open Blog Article</button>}
           {newsletter && c.channel !== "Newsletter" && <button className="s-btn" disabled={busy || dirty || externalChange} onClick={() => void newsletter()}>Use in Brand Newsletter</button>}
           <Badge>{c.channel}</Badge>
           <Badge>Revision {c.revision}</Badge>
@@ -4888,6 +4906,9 @@ function Editor({
                   </div>
                   {generatingDraft?.kind === "draft" && <DraftGenerationProgress startedAt={generatingDraft.startedAt} />}
                   {draftGenerationError?.kind === "draft" && <p role="alert">{draftGenerationError.message}</p>}
+                  {!generatingDraft && !draftGenerationError && latestWritingJob?.error &&
+                    (latestWritingJob.outputStatus === "invalid" || latestWritingJob.outputStatus === "incomplete") &&
+                    <p role="alert">{latestWritingJob.error}</p>}
                 </>
               )}
               {local && c.text.trim() && (c.state === "draft" || c.state === "review") && (
@@ -4980,6 +5001,7 @@ function Editor({
               <ArticleImages text={text} media={media} update={updateMedia} disabled={readOnly} AssetMedia={AssetMedia}/>
               {media.imageUrl&&<section className="s-version" aria-label="Attached main image"><AssetMedia source={media.imageUrl}/><p>{media.imageAlt||"AI-generated concept illustration"}</p><button className="s-btn" disabled={readOnly} onClick={()=>updateMedia({imageUrl:undefined,imageAlt:undefined,imageCaption:undefined})}>Remove main image</button><p>Save after removing. The stored original remains available in image request history.</p></section>}
 
+              {articleLengthIssue && <p role="status">{articleLengthIssue}</p>}
               <div className="s-editor-wordcount">
                 {wordCount.toLocaleString("en-US")} words{wordTarget ? " before Sources" : ""}{" "}
                 <span>{text.length} characters</span>

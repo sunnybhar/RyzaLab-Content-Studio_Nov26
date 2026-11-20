@@ -122,6 +122,7 @@ export function quote(
     workflow.references.includes(r.id),
   ));
   const system = input.kind === "research" ? PUBLIC_RESEARCH_SYSTEM : compileSystem({
+    channel: input.channel,
     kind: input.kind,
     prompt: input.prompt,
     rulesSnapshot: state.settings.protectedRules,

@@ -1,7 +1,7 @@
 import {parseDocumentLayout} from "./document-layout";
 import {eligibleEvidence,eligibleReferences,eligibleSourceReferences} from "./source-policy";
 import {documentSections} from "./document-sections";
-import {isLongForm, newsletterTemplateFromPrompt} from "./channel-writing";
+import {blogArticleLengthIssue, isLongForm, newsletterTemplateFromPrompt} from "./channel-writing";
 import {newsletterSources} from "./newsletter-bundle";
 import {draftSavePayload,savedOperation} from "./save-operation";
 import {importPipeline,pipelineSnapshot} from "./pipeline";
@@ -1922,6 +1922,8 @@ export function applyCommand(
           409,
           "Draft changed. Compare again before applying this candidate.",
         );
+      const lengthIssue = blogArticleLengthIssue(d.channel, d.format, job.candidate.body);
+      if (lengthIssue) bad(lengthIssue);
       if (c.type === "job.applyDraft" && job.candidate.questions.length && !c.questionsResolution)
         bad(
           "Record how the candidate's missing facts were resolved before applying it.",

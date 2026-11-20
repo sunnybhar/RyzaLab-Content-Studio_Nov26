@@ -185,3 +185,46 @@ test("unknown and failed first attempts remain visible and never trigger automat
   assert.equal(held.jobs.length, 1);
   assert.ok(held.contents[0].automaticWriting?.error);
 });
+
+test("a LinkedIn post and its Blog Article stay separate, and short model output does not fill the article", () => {
+  const state = fixture();
+  const post = state.contents[0];
+  post.text = "A saved LinkedIn post.";
+  state.settings.qualifiedRates![0].maxOutputTokens = 4096;
+  const createArticle = {
+    type: "idea.use", id: post.ideaId, account: post.account,
+    targetChannel: "LinkedIn", format: "Article",
+  };
+  const withArticle = applyCommand(state, DEMO_ACTOR, createArticle, { now });
+  const article = withArticle.contents[0];
+  assert.notEqual(article.id, post.id);
+  assert.equal(article.ideaId, post.ideaId);
+  assert.equal(article.format, "Article");
+  const next = orchestrateInitialWriting(withArticle, now);
+  const job = next.jobs.find(entry => entry.contentId === article.id)!;
+  assert.match(job.systemSnapshot!, /Aim for about 1,000–1,100 words/);
+  job.state = "succeeded";
+  const output = (body: string) => JSON.stringify({
+    body, metadata: "", sources: ["https://example.org/guide"], questions: [],
+  });
+  settleWrittenOutput(next, job, {
+    completion: "incomplete", text: output("A truncated article."),
+  }, now);
+  assert.equal(job.outputStatus, "incomplete");
+  assert.equal(next.contents[0].text, "");
+  settleWrittenOutput(next, job, {
+    completion: "complete", text: output("An article angle. ".repeat(260) + "\n\n## Sources\n" + "Citation ".repeat(25)),
+  }, now);
+  assert.match(job.error!, /780 words/);
+  assert.equal(job.outputStatus, "invalid");
+  assert.equal(next.contents[0].text, "");
+  assert.throws(() => applyCommand(next, DEMO_ACTOR, {
+    type: "job.editDraft", jobId: job.id, expectedRevision: article.revision,
+  }, { now }), /requires 800–1,200 words/);
+  settleWrittenOutput(next, job, {
+    completion: "complete", text: output("An article angle. ".repeat(300)),
+  }, now);
+  assert.equal(job.outputStatus, "applied");
+  assert.equal(next.contents.find(item => item.id === post.id)?.text, post.text);
+  assert.equal(applyCommand(next, DEMO_ACTOR, createArticle, { now }).contents.length, next.contents.length);
+});

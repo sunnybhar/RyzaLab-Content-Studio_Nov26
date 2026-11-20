@@ -349,7 +349,7 @@ async function main() {
     await idea.click();
     const ideaDialog = page.locator(".s-idea-detail");
     await ideaDialog.getByText("An editorial perspective grounded in the team’s own working process.").waitFor();
-    await ideaDialog.getByRole("button", { name: "Use idea & open draft", exact: true }).click();
+    await ideaDialog.getByRole("button", { name: /^(Use idea & open draft|Create LinkedIn Post)$/ }).click();
     await page.getByLabel("Content text", { exact: true }).waitFor();
     await page
       .getByLabel("Content text", { exact: true })
@@ -360,7 +360,7 @@ async function main() {
     const linkedDraftId = (await state()).contents.find((content) => content.title === title).id;
     await navigate("Ideas");
     await page.locator(".s-iw-table-wrap td:first-child button").filter({ hasText: title }).click();
-    await page.locator(".s-idea-detail").getByRole("button", { name: "Open linked draft", exact: true }).click();
+    await page.locator(".s-idea-detail").getByRole("button", { name: /^(Open linked draft|Open LinkedIn Post)$/ }).click();
     await page.getByLabel("Content text", { exact: true }).waitFor();
     assert.equal((await state()).contents.filter((content) => content.title === title).length, 1);
     assert.equal((await state()).contents.find((content) => content.title === title).id, linkedDraftId);

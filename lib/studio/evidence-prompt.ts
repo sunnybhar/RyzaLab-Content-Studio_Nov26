@@ -164,6 +164,7 @@ export function evidencePrompt(
     try {
       compileSystem(
         {
+          channel,
           kind,
           prompt,
           rulesSnapshot: state.settings.protectedRules,
