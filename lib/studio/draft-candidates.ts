@@ -3,6 +3,7 @@ import {suppliedReviewReferences} from "./review-references";
 import {correctionIsCurrent} from "./review-correction";
 import {isLongForm, newsletterTemplateFromPrompt} from "./channel-writing";
 import {incompleteDraftBody,applyRecoveredWorkingText} from "./incomplete-draft";
+import { retainNewsletterLinks } from "./newsletter-source";
 import { newsletterStructureIssue } from "./newsletter-outline";
 import type { Content, Job, StudioState } from "./types";
 import {
@@ -135,6 +136,15 @@ export function settleWrittenOutput(
       return;
     }
     if([job.candidate.body,job.candidate.metadata,...job.candidate.sources,...(job.candidate.imageCaptions||[]).flatMap(image=>[image.alt,image.caption])].some(containsExcludedSource)){job.outputStatus="invalid";job.error="The candidate includes an excluded Wikipedia source URL. Original copy and saved output were retained; no automatic paid retry.";return;}
+    if (c.channel === "Newsletter") {
+      // Older saved writing requests may have a plain text prompt.
+      let links: string[] = [];
+      try {
+        const values: unknown = JSON.parse(job.prompt || "{}")?.newsletterSourceLinks;
+        if (Array.isArray(values)) links = values.filter((value): value is string => typeof value === "string");
+      } catch {}
+      job.candidate.body = retainNewsletterLinks(job.candidate.body, links);
+    }
     if(job.candidate.imageCaptions?.some(image=>!(image.imageId==="hero"&&c.media.imageUrl)&&!c.media.sectionImages?.some(existing=>existing.id===image.imageId))){job.outputStatus="invalid";job.error="The candidate referenced an image that was not supplied. Original copy and assets were preserved.";return;}
     const template = c.channel === "Newsletter" ? newsletterTemplateFromPrompt(job.prompt) : undefined;
     if (template) {

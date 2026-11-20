@@ -4519,7 +4519,7 @@ function Editor({
   newsletter?: () => Promise<boolean>;
 }) {
   const [generatingDraft, setGeneratingDraft] = useState<{ kind: "draft" | "template"; startedAt: number }>();
-  const [draftGenerationError, setDraftGenerationError] = useState("");
+  const [draftGenerationError, setDraftGenerationError] = useState<{ kind: "draft" | "template"; message: string }>();
   const generationLock = useRef(false);
   const writingInFlight = state.settings.reviewPolicy?.mode === "two_step" && state.jobs.some((job) => job.contentId === c.id && job.kind === "text" && job.outputContract === "draft_v1" && ["queued", "running"].includes(job.state));
   // Prevent local edits while the worker may apply a result to the saved revision.
@@ -4570,14 +4570,24 @@ function Editor({
     };
   }
   async function generateSavedDraft(useExistingSources = false) {
-    if (generationLock.current || readOnly || dirty || externalChange || busy) return;
+    if (generationLock.current || readOnly || (dirty && !useExistingSources) || externalChange || busy ||
+        draftSave.busy || draftSave.status === "unknown") return;
     generationLock.current = true;
-    setGeneratingDraft({ kind: useExistingSources ? "template" : "draft", startedAt: Date.now() });
-    setDraftGenerationError("");
+    const kind = useExistingSources ? "template" : "draft";
+    setGeneratingDraft({ kind, startedAt: Date.now() });
+    setDraftGenerationError(undefined);
     try {
-      await send(draftGenerationCommand({ publicQuery: useExistingSources ? "" : defaultPublicQuery }));
+      const revision = dirty ? await draftSave.save() : c.revision;
+      if (revision === false) {
+        setDraftGenerationError({ kind, message: "Could not confirm the draft save. Check the save status before writing with the template." });
+        return;
+      }
+      await send({
+        ...draftGenerationCommand({ publicQuery: useExistingSources ? "" : defaultPublicQuery }),
+        expectedRevision: revision,
+      });
     } catch (error) {
-      setDraftGenerationError(error instanceof Error ? error.message : "Draft generation failed. Check Generation activity.");
+      setDraftGenerationError({ kind, message: error instanceof Error ? error.message : "Draft generation failed. Check Generation activity." });
     } finally {
       generationLock.current = false;
       setGeneratingDraft(undefined);
@@ -4848,7 +4858,7 @@ function Editor({
                     </button>
                   </div>
                   {generatingDraft?.kind === "draft" && <DraftGenerationProgress startedAt={generatingDraft.startedAt} />}
-                  {draftGenerationError && <p role="alert">{draftGenerationError}</p>}
+                  {draftGenerationError?.kind === "draft" && <p role="alert">{draftGenerationError.message}</p>}
                 </>
               )}
               {local && c.text.trim() && (c.state === "draft" || c.state === "review") && (
@@ -4901,7 +4911,10 @@ function Editor({
                   onAdapt={() => void generateSavedDraft(true)}
                   generationBusy={Boolean(generatingDraft) || busy}
                   adaptingSince={generatingDraft?.kind === "template" ? generatingDraft.startedAt : undefined}
-                  adaptDisabled={readOnly || dirty || externalChange || busy || c.state !== "draft"}
+                  draftDirty={dirty}
+                  savingDraft={draftSave.busy}
+                  adaptError={draftGenerationError?.kind === "template" ? draftGenerationError.message : undefined}
+                  adaptDisabled={readOnly || externalChange || busy || draftSave.busy || draftSave.status === "unknown" || c.state !== "draft"}
                 >
                   {documentDownloads}
                 </NewsletterTemplateExport>

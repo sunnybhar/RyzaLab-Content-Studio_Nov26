@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, type ComponentType } from "react";
+import { useState, type ComponentType } from "react";
 import type { Content } from "@/lib/studio/types";
-import { checkedNewsletterResponse, newsletterFilename, newsletterTemplateEndpoint } from "./newsletter-template-export";
+import { checkedNewsletterResponse, downloadTemplatedNewsletter, newsletterTemplateEndpoint } from "./newsletter-template-export";
 import { PostPreview } from "./post-preview";
 
 export function ReviewPostPreview({
@@ -13,75 +13,44 @@ export function ReviewPostPreview({
   AssetMedia: ComponentType<{ source: string; kind?: "image" | "video" | "audio" }>;
 }) {
   const [open, setOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState("");
+  const { id, title, text, channel, format, account, media } = content;
+  const newsletter = local && channel === "Newsletter";
+
+  async function downloadWord() {
+    setDownloading(true);
+    setError("");
+    try {
+      const response = await checkedNewsletterResponse(await fetch(
+        `${newsletterTemplateEndpoint}?contentId=${encodeURIComponent(id)}`,
+        { cache: "no-store", signal: AbortSignal.timeout(15000) },
+      ));
+      const { selected } = await response.json();
+      if (!selected) throw new Error("Select a Word template for this newsletter in Create.");
+      await downloadTemplatedNewsletter(selected, title, text, "docx");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not download this newsletter.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <>
-      <button type="button" className="s-btn" onClick={() => setOpen(true)}>Preview post</button>
-      {open && <SavedPostPreview content={content} local={local} AssetMedia={AssetMedia} onClose={() => setOpen(false)} />}
+      <div className="s-actions">
+        {newsletter && (
+          <button type="button" className="s-btn s-primary" disabled={downloading || !text.trim()} onClick={() => void downloadWord()}>
+            {downloading ? "Preparing Word document…" : "Download newsletter DOCX"}
+          </button>
+        )}
+        <button type="button" className="s-btn" onClick={() => setOpen(true)}>
+          {newsletter ? "Show reading preview" : "Preview post"}
+        </button>
+      </div>
+      {error && <p role="alert">{error}</p>}
+      {open && <PostPreview title={title} text={text} account={account} channel={channel} format={format}
+        media={media} unsaved={false} AssetMedia={AssetMedia} onClose={() => setOpen(false)} />}
     </>
   );
-}
-
-function SavedPostPreview({ content, local, AssetMedia, onClose }: Parameters<typeof ReviewPostPreview>[0] & { onClose: () => void }) {
-  const { id, title, text, channel, format, account, media } = content;
-  const templatedNewsletter = local && channel === "Newsletter";
-  const [preview, setPreview] = useState<{ url?: string; error?: string }>();
-  const [showReader, setShowReader] = useState(false);
-  const filename = newsletterFilename(title, "docx");
-
-  useEffect(() => {
-    if (!templatedNewsletter) return;
-    const controller = new AbortController();
-    const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(75000)]);
-    let objectUrl: string | undefined;
-    async function load() {
-      try {
-        const library = await checkedNewsletterResponse(await fetch(
-          `${newsletterTemplateEndpoint}?contentId=${encodeURIComponent(id)}`, { signal, cache: "no-store" },
-        ));
-        const { selected } = await library.json();
-        if (!selected) {
-          if (!signal.aborted) setPreview({});
-          return;
-        }
-        const response = await checkedNewsletterResponse(await fetch(newsletterTemplateEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ templateId: selected, title, text, format: "docx" }),
-          signal,
-        }));
-        const blob = await response.blob();
-        if (signal.aborted) return;
-        objectUrl = URL.createObjectURL(blob);
-        setPreview({ url: objectUrl });
-      } catch (cause) {
-        if (controller.signal.aborted) return;
-        setPreview({ error: cause instanceof Error ? cause.message : "Could not render this newsletter template." });
-      }
-    }
-    void load();
-    return () => {
-      controller.abort();
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [templatedNewsletter, id, title, text]);
-
-  const documentPreview = templatedNewsletter && !showReader && (
-    preview?.url ? (
-      <>
-        <p>Open the Word document to see the newsletter in the template selected in Create.</p>
-        <div className="s-actions">
-          <a className="s-btn s-primary" href={preview.url} download={filename}>Download newsletter DOCX</a>
-          <button type="button" className="s-btn" onClick={() => setShowReader(true)}>Show reading preview</button>
-        </div>
-      </>
-    ) : preview?.error ? (
-      <>
-        <p role="alert">{preview.error}</p>
-        <button type="button" className="s-btn" onClick={() => setShowReader(true)}>Show reading preview</button>
-      </>
-    ) : !preview ? <p role="status">Preparing newsletter preview…</p> : undefined
-  );
-
-  return <PostPreview title={title} text={text} account={account} channel={channel} format={format}
-    media={media} unsaved={false} AssetMedia={AssetMedia} documentPreview={documentPreview || undefined} onClose={onClose} />;
 }

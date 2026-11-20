@@ -211,7 +211,7 @@ export function useDraftSave({
           "The save result could not be verified. Check save status before submitting again.",
         );
       setStatus("saved");
-      return true;
+      return receipt.savedRevision;
     } catch (error) {
       const definitive =
         error instanceof StudioResponseError &&

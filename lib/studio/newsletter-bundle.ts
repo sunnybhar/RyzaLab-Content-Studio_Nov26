@@ -42,6 +42,8 @@ export interface NewsletterSourceSnapshot {
   text: string;
   metadata: string;
   revision?: number;
+  researchJobIds?: string[];
+  sourceReferences?: string[];
   capturedAt: string;
   file?: StoredAgentFile;
 }
@@ -75,6 +77,7 @@ export function newsletterSources(
         contentId: c.id,
         assignedTo: c.assignedTo,
       });
+      const idea = state.ideas.find((entry) => entry.id === c.ideaId);
       return {
         kind: input.kind,
         id: c.id,
@@ -83,6 +86,8 @@ export function newsletterSources(
         text: c.text,
         metadata: c.metadata,
         revision: c.revision,
+        researchJobIds: c.researchJobIds ?? idea?.researchJobIds,
+        sourceReferences: idea?.sources,
         capturedAt: now,
       };
     }
@@ -97,6 +102,7 @@ export function newsletterSources(
         title: idea.title,
         text: idea.brief,
         metadata: idea.sources.join("\n"),
+        researchJobIds: idea.researchJobIds,
         capturedAt: now,
       };
     }

@@ -257,7 +257,7 @@ export interface Content {
   newsletterOutline?: string;
   newsletterRequestKey?: string;
   newsletterRequestHash?: string;
-  newsletterSource?: { kind: "idea" | "content"; id: string; channel: Channel; title: string; text: string; metadata: string; revision?: number; capturedAt: string };
+  newsletterSource?: { kind: "idea" | "content"; id: string; channel: Channel; title: string; text: string; metadata: string; revision?: number; researchJobIds?: string[]; sourceReferences?: string[]; capturedAt: string };
   assignedTo: string;
   revision: number;
   factsRevision?: number;

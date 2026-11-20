@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ComponentType } from "react";
 import type { MediaProject } from "@/lib/studio/types";
 import {ArticleBody} from "./article-images";
 import { SlideLayerPreview } from "./slide-layers";
@@ -9,7 +9,6 @@ import "./post-preview.css";
 export function PostPreview({
   text,
   title,
-  documentPreview,
   format,
   account,
   channel,
@@ -20,7 +19,6 @@ export function PostPreview({
 }: {
   text: string;
   title?: string;
-  documentPreview?: ReactNode;
   format?:string;
   account: string;
   channel: string;
@@ -57,119 +55,117 @@ export function PostPreview({
         </button>
       </div>
       <div className="s-review-dialog-body">
-        {documentPreview ?? <>
-          <p>
-            Approximate feed appearance ·{" "}
-            {unsaved ? "Includes unsaved edits" : "Current draft"}. Platform
-            display may vary.
-          </p>
-          <article className="s-feed-post">
-            <header>
-              <div className="s-feed-avatar" aria-hidden="true">
-                {(account || "R").slice(0, 1)}
-              </div>
-              <div>
-                <strong>{account || "Account not selected"}</strong>
-                <div>Draft · {channel}</div>
-              </div>
-            </header>
-            {title && (titleFirst || article) && <h3 className="s-feed-title">{title}</h3>}
-            {imageFirst && !slide && media.imageUrl && <div className="s-feed-media"><AssetMedia source={media.imageUrl} /></div>}
-            {article?<ArticleBody text={text} media={media} AssetMedia={AssetMedia}/>:<div className={`s-feed-copy ${expanded ? "" : "s-feed-clamped"}`}>
-              {text || "Your post text will appear here."}
-            </div>}
-            {!article&&text.length > 250 && (
-              <button
-                className="s-text-button"
-                onClick={() => setExpanded(!expanded)}
+        <p>
+          Approximate feed appearance ·{" "}
+          {unsaved ? "Includes unsaved edits" : "Current draft"}. Platform
+          display may vary.
+        </p>
+        <article className="s-feed-post">
+          <header>
+            <div className="s-feed-avatar" aria-hidden="true">
+              {(account || "R").slice(0, 1)}
+            </div>
+            <div>
+              <strong>{account || "Account not selected"}</strong>
+              <div>Draft · {channel}</div>
+            </div>
+          </header>
+          {title && (titleFirst || article) && <h3 className="s-feed-title">{title}</h3>}
+          {imageFirst && !slide && media.imageUrl && <div className="s-feed-media"><AssetMedia source={media.imageUrl} /></div>}
+          {article?<ArticleBody text={text} media={media} AssetMedia={AssetMedia}/>:<div className={`s-feed-copy ${expanded ? "" : "s-feed-clamped"}`}>
+            {text || "Your post text will appear here."}
+          </div>}
+          {!article&&text.length > 250 && (
+            <button
+              className="s-text-button"
+              onClick={() => setExpanded(!expanded)}
+            >
+              {expanded ? "Show less" : "…see more"}
+            </button>
+          )}
+          {!article && !imageFirst && media.imageUrl && (
+            <div className="s-feed-media">
+              <AssetMedia source={media.imageUrl} />
+            </div>
+          )}
+          {slide && (
+            <section aria-label="Carousel preview">
+              <div
+                className="s-slide-preview"
+                style={{ background: slide.background, color: slide.color }}
               >
-                {expanded ? "Show less" : "…see more"}
-              </button>
-            )}
-            {!article && !imageFirst && media.imageUrl && (
-              <div className="s-feed-media">
-                <AssetMedia source={media.imageUrl} />
-              </div>
-            )}
-            {slide && (
-              <section aria-label="Carousel preview">
+                {slide.image && <AssetMedia source={slide.image} />}
                 <div
-                  className="s-slide-preview"
-                  style={{ background: slide.background, color: slide.color }}
+                  className="s-slide-copy"
+                  style={{
+                    left: `${slide.x}%`,
+                    top: `${slide.y}%`,
+                    width: `max(1px, calc(${100 - slide.x}% - 3.7037cqw))`,
+                  }}
                 >
-                  {slide.image && <AssetMedia source={slide.image} />}
-                  <div
-                    className="s-slide-copy"
+                  <h2
                     style={{
-                      left: `${slide.x}%`,
-                      top: `${slide.y}%`,
-                      width: `max(1px, calc(${100 - slide.x}% - 3.7037cqw))`,
+                      fontSize: `calc(${slide.fontSize} / 1080 * 100cqw)`,
                     }}
                   >
-                    <h2
-                      style={{
-                        fontSize: `calc(${slide.fontSize} / 1080 * 100cqw)`,
-                      }}
-                    >
-                      {slide.title}
-                    </h2>
-                    <p
-                      style={{
-                        fontSize: `calc(${slide.fontSize * 0.55} / 1080 * 100cqw)`,
-                      }}
-                    >
-                      {slide.body}
-                    </p>
-                  </div>
-                  {(slide.layers || []).map((layer) => (
-                    <SlideLayerPreview
-                      key={layer.id}
-                      layer={layer}
-                      readOnly
-                      selected={false}
-                      onSelect={() => {}}
-                      onMove={() => {}}
-                    />
-                  ))}
-                </div>
-                <div className="s-actions">
-                  <button
-                    className="s-btn"
-                    disabled={!slideIndex}
-                    onClick={() => setSlideIndex(slideIndex - 1)}
+                    {slide.title}
+                  </h2>
+                  <p
+                    style={{
+                      fontSize: `calc(${slide.fontSize * 0.55} / 1080 * 100cqw)`,
+                    }}
                   >
-                    Previous slide
-                  </button>
-                  <span>
-                    {slideIndex + 1} / {media.slides.length}
-                  </span>
-                  <button
-                    className="s-btn"
-                    disabled={slideIndex === media.slides.length - 1}
-                    onClick={() => setSlideIndex(slideIndex + 1)}
-                  >
-                    Next slide
-                  </button>
+                    {slide.body}
+                  </p>
                 </div>
-              </section>
-            )}
-            {media.scenes.length > 0 && (
-              <section className="s-feed-media">
-                <p>Source scenes — final video composition may differ.</p>
-                {media.scenes.map((scene) => (
-                  <div key={scene.id}>
-                    {scene.sourceUrl && (
-                      <AssetMedia source={scene.sourceUrl} kind="video" />
-                    )}
-                    {scene.audioUrl && (
-                      <AssetMedia source={scene.audioUrl} kind="audio" />
-                    )}
-                  </div>
+                {(slide.layers || []).map((layer) => (
+                  <SlideLayerPreview
+                    key={layer.id}
+                    layer={layer}
+                    readOnly
+                    selected={false}
+                    onSelect={() => {}}
+                    onMove={() => {}}
+                  />
                 ))}
-              </section>
-            )}
-          </article>
-        </>}
+              </div>
+              <div className="s-actions">
+                <button
+                  className="s-btn"
+                  disabled={!slideIndex}
+                  onClick={() => setSlideIndex(slideIndex - 1)}
+                >
+                  Previous slide
+                </button>
+                <span>
+                  {slideIndex + 1} / {media.slides.length}
+                </span>
+                <button
+                  className="s-btn"
+                  disabled={slideIndex === media.slides.length - 1}
+                  onClick={() => setSlideIndex(slideIndex + 1)}
+                >
+                  Next slide
+                </button>
+              </div>
+            </section>
+          )}
+          {media.scenes.length > 0 && (
+            <section className="s-feed-media">
+              <p>Source scenes — final video composition may differ.</p>
+              {media.scenes.map((scene) => (
+                <div key={scene.id}>
+                  {scene.sourceUrl && (
+                    <AssetMedia source={scene.sourceUrl} kind="video" />
+                  )}
+                  {scene.audioUrl && (
+                    <AssetMedia source={scene.audioUrl} kind="audio" />
+                  )}
+                </div>
+              ))}
+            </section>
+          )}
+        </article>
       </div>
     </dialog>
   );

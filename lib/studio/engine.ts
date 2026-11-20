@@ -896,12 +896,13 @@ export function applyCommand(
         const original = content(c.sourceId, "read");
         if (original.deletedAt || original.revision !== c.expectedRevision) bad("Open the current source draft before creating its newsletter.");
         if (!["LinkedIn", "Reddit"].includes(original.channel)) bad("Choose a LinkedIn or Reddit source.");
-        source = { kind: "content", id: original.id, channel: original.channel, title: original.title, text: original.text, metadata: original.metadata, revision: original.revision, capturedAt: now };
+        const idea = s.ideas.find((entry) => entry.id === original.ideaId);
+        source = { kind: "content", id: original.id, channel: original.channel, title: original.title, text: original.text, metadata: original.metadata, revision: original.revision, researchJobIds: original.researchJobIds ?? idea?.researchJobIds, sourceReferences: idea?.sources, capturedAt: now };
       } else {
         const original = s.ideas.find(i => i.id === c.sourceId);
         if (!original) bad("Source idea not found.");
         need("read", { channel: original.channel });
-        source = { kind: "idea", id: original.id, channel: original.channel, title: original.title, text: original.brief, metadata: original.sources.join("\n"), capturedAt: now };
+        source = { kind: "idea", id: original.id, channel: original.channel, title: original.title, text: original.brief, metadata: original.sources.join("\n"), researchJobIds: original.researchJobIds, capturedAt: now };
       }
       const existing = s.contents.find(d => !d.deletedAt && d.createdBy === actor.email && d.newsletterSource?.kind === source.kind && d.newsletterSource.id === source.id && d.newsletterSource.revision === source.revision);
       if (existing) { content(existing.id); break; }

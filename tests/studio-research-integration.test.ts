@@ -373,3 +373,37 @@ test("research pricing qualification rejects missing search bounds and unsupport
     /calculated reservation/,
   );
 });
+
+test("a newsletter made from a post inherits its research and preserves idea links in the generated Sources section", () => {
+  let state = researchFixture();
+  const original = state.contents[0];
+  const idea = state.ideas[0];
+  idea.sources = ["An idea reference https://example.org/idea", "https://en.wikipedia.org/wiki/Excluded"];
+  idea.researchJobIds = ["cited"];
+  original.ideaId = idea.id;
+  state.settings.defaultConnections = { text: "text" };
+  state = applyCommand(state, DEMO_ACTOR, {
+    type: "content.newsletter", sourceKind: "content", sourceId: original.id, expectedRevision: original.revision,
+  }, { demo: true, now });
+  const draft = state.contents[0];
+  assert.deepEqual(draft.newsletterSource?.researchJobIds, ["cited"]);
+
+  // Existing drafts without the added provenance fields can use the unchanged source revision.
+  delete draft.newsletterSource!.researchJobIds;
+  delete draft.newsletterSource!.sourceReferences;
+  const input = generationInput(state, DEMO_ACTOR, {
+    contentId: draft.id, kind: "text", expectedRevision: draft.revision, idempotencyKey: "newsletter-provenance",
+  });
+  assert.deepEqual(input.researchJobIds, ["cited"]);
+  assert.deepEqual(JSON.parse(input.prompt).newsletterSourceLinks, ["https://example.com/source", "https://example.org/idea"]);
+
+  const research = state.jobs.find((entry) => entry.id === "cited")!;
+  const job: Job = {
+    ...research, ...input, id: "newsletter-writer", outputContract: "draft_v1",
+    researchSnapshots: [{ jobId: research.id, raw: research.result! }],
+  };
+  const body = "A useful newsletter with a sourced observation.\n\n## Sources\n- [Existing article](https://example.com/source)";
+  settleWrittenOutput(state, job, { completion: "complete", text: JSON.stringify({ body }) }, now);
+  assert.match(job.candidate?.body ?? "", /## Sources\n\n- https:\/\/example.org\/idea/);
+  assert.equal(job.candidate?.body?.match(/https:\/\/example.com\/source/g)?.length, 1);
+});
