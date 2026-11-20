@@ -178,6 +178,7 @@ export function applyWorkerReceipt(
             next.ideas.unshift({
               ...item,
               ...(j.researchUnavailable ? { sources: [], researchUnavailable: true } : {}),
+              ...(j.researchSourceCount !== undefined ? { researchSourceCount: j.researchSourceCount } : {}),
               id: crypto.randomUUID(),
               channel: j.channel,
               state: "pending",

@@ -1,6 +1,7 @@
 "use client";
 
 import { IDEA_TEXT_ALTERNATIVES } from "@/lib/studio/idea-alternatives";
+import { researchSourceMinimum } from "@/lib/studio/research-methodology";
 import { IdeasRequestBoard } from "./ideas-request-board";
 import type { IdeaStage } from "@/lib/studio/idea-board";
 import { useId, useRef, useState } from "react";
@@ -211,7 +212,9 @@ export function IdeasBrowser({
                   <p className="s-idea-detail-text">{selected.rejection}</p>
                 </>
               )}
-              {selected.researchUnavailable && <p role="status">Provisional idea · public evidence wasn’t available.</p>}
+              {selected.researchSourceCount !== undefined && selected.researchSourceCount < researchSourceMinimum
+                ? <p role="status">Provisional idea · {selected.researchSourceCount} usable public sources.</p>
+                : selected.researchUnavailable && <p role="status">Provisional idea · public evidence wasn’t available.</p>}
               {renderResearch?.(selected)}
               {!!selected.sources?.length && (
                 <>

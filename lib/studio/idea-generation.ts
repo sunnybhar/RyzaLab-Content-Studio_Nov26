@@ -1,5 +1,5 @@
 import {evidencePrompt} from "./evidence-prompt";
-import {researchMethodology} from "./research-methodology";
+import {researchMethodology, researchSourceKey} from "./research-methodology";
 import {eligibleEvidence,eligiblePipeline,containsExcludedSource} from "./source-policy";
 import {pipelineSnapshot} from "./pipeline";
 import { resolvedConnection } from "./solo-quality";
@@ -107,7 +107,13 @@ export function ideaJobInput(
   },
 ) {
   if(c.purpose&&c.quantity!==1)throw new StudioError(400,"Manual assistance develops one entered idea at a time.");
-  const webEvidence=eligibleEvidence(researchEvidence(state,actor,c.channel,c.researchJobIds));
+  const seenSources = new Set<string>();
+  const webEvidence = eligibleEvidence(researchEvidence(state, actor, c.channel, c.researchJobIds), (url) => {
+    const key = researchSourceKey(url);
+    if (seenSources.has(key)) return true;
+    seenSources.add(key);
+    return false;
+  });
   if(c.research && !webEvidence.length)throw new StudioError(409,"Run web research above, then choose a completed cited result before generating ideas.");
   const visible = filteredState(state, actor);
   const workflow = visible.workflows.find(

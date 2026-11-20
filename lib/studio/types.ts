@@ -98,6 +98,7 @@ export interface Idea {
   generationRunId?: string;
   selectedTextAlternativeId?: string;
   researchUnavailable?: true;
+  researchSourceCount?: number;
 }
 export type SlideLayer = {
   id: string;
@@ -415,6 +416,7 @@ export interface Job {
   dispatchStartedAt?: string;
   localVideoOperation?: string;
   researchUnavailable?: true;
+  researchSourceCount?: number;
 }
 export interface Notice {
   id: string;

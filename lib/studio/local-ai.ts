@@ -539,7 +539,9 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
         prepared = ideaJobInput(configured, DEMO_ACTOR, researched.command);
       } catch (error) {
         if (!publicEvidenceUnavailable(error)) throw error;
-        throw new StudioError(503, "Online research found no usable sources for this idea. Try a more specific public topic. No paid idea request was sent.");
+        prepared = ideaJobInput(configured, DEMO_ACTOR, {
+          ...parsed, research: false, researchJobIds: parsed.researchJobIds ?? [],
+        });
       }
     } else {
       prepared = ideaJobInput(configured, DEMO_ACTOR, parsed);
@@ -629,7 +631,13 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
       }
     }
   }
-  if (prepared.kind === "ideas" || (prepared.kind === "text" && !templateExport)) requireResearchCoverage(prepared.prompt);
+  if (prepared.kind === "text" && !templateExport) requireResearchCoverage(prepared.prompt);
+  const ideaSourceCount = prepared.kind === "ideas" ? researchCoverage(prepared.prompt) : undefined;
+  if (ideaSourceCount !== undefined && ideaSourceCount < researchSourceMinimum) {
+    const prompt = JSON.parse(prepared.prompt);
+    prompt.evidenceScope = `Only ${ideaSourceCount} distinct usable public sources were available. Return provisional idea angles and questions to investigate. Qualify any factual detail using only supplied evidence. Never invent citations, statistics, or outcomes.`;
+    prepared.prompt = JSON.stringify(prompt);
+  }
   const connection = configured.connections.find((c) => c.id === prepared.connectionId);
   if (!connection) throw new StudioError(409, "Select a validated model in AI Connections.");
   const key = withDatabase((db) => storedKey(db, connection.id));
@@ -637,6 +645,8 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
   const job = next.jobs.find((j) => j.idempotencyKey === prepared.idempotencyKey)!;
   job.state = "running";
   job.attempt = 1;
+  if (ideaSourceCount !== undefined) job.researchSourceCount = ideaSourceCount;
+  if (ideaSourceCount === 0) job.researchUnavailable = true;
   job.leaseId = crypto.randomUUID();
   job.dispatchStartedAt = new Date().toISOString();
   withDatabase((db) => write(db, currentRevision, next));

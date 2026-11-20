@@ -10,6 +10,7 @@ import { quote } from "../lib/studio/pricing";
 import { ideaJobInput } from "../lib/studio/idea-generation";
 import { retrievePublicReferences } from "../lib/studio/public-retrieval";
 import { generationInput } from "../lib/studio/generation";
+import { researchCoverage } from "../lib/studio/research-methodology";
 const now = "2026-11-03T01:00:00Z";
 function fixture() {
   let s = initialState(DEMO_ACTOR, true);
@@ -274,4 +275,24 @@ test("research is saved before idea enqueue and a stopped enqueue can reuse it w
  assert.equal(calls,1);assert.equal(replay.command.researchJobIds?.[0],saved.jobs[0].id);
  const generation=ideaJobInput(replay.state,DEMO_ACTOR,replay.command);
  assert.equal(JSON.parse(generation.prompt).webEvidence[0].jobId,saved.jobs[0].id);
+});
+
+test("a fresh idea attempt supplements same-topic research and uses distinct citations", async () => {
+  const c = input();
+  const withSources = async (offset: number) => {
+    const example = await refs();
+    return {
+      ...example,
+      citations: Array.from({ length: offset ? 6 : 5 }, (_, index) => ({
+        ...example.citations[0], url: `https://example.org/report-${offset + index}`,
+      })),
+    };
+  };
+  const first = await automaticIdeaResearch(fixture(), DEMO_ACTOR, c, async () => withSources(0), now);
+  const second = await automaticIdeaResearch(first.state, DEMO_ACTOR, { ...c, idempotencyKey: "fresh-attempt" },
+    async () => withSources(4), now);
+  assert.equal(second.command.researchJobIds?.length, 2);
+  const prepared = ideaJobInput(second.state, DEMO_ACTOR, second.command);
+  assert.equal(researchCoverage(prepared.prompt), 10);
+  assert.equal(JSON.parse(prepared.prompt).webEvidence.flatMap((item: { citations: unknown[] }) => item.citations).length, 10);
 });

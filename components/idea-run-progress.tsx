@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { researchSourceMinimum } from "@/lib/studio/research-methodology";
 import type { Job } from "@/lib/studio/types";
 export function IdeaRunProgress({
   job,
@@ -60,7 +61,9 @@ export function IdeaRunProgress({
   const stages = [
     [
       "1. Research",
-      job?.researchUnavailable
+      job?.researchSourceCount !== undefined
+        ? `${job.researchSourceCount} usable public sources`
+        : job?.researchUnavailable
         ? "No usable public evidence"
         : sourceCount
           ? `${sourceCount} saved research result(s)`
@@ -122,7 +125,7 @@ export function IdeaRunProgress({
           )}
         </div>
       )}
-      {job?.researchUnavailable && (
+      {(job?.researchUnavailable || (job?.researchSourceCount !== undefined && job.researchSourceCount < researchSourceMinimum)) && (
         <p role="status">These ideas are provisional. Verify factual claims and add sources before using them.</p>
       )}
       <ol>

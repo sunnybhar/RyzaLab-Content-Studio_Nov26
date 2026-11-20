@@ -102,6 +102,11 @@ export async function automaticIdeaResearch(
     { retrievalResult: result, now },
   );
   if(saveResearch && next!==state)await saveResearch(next);
+  const previousResearchIds = next.jobs.filter((job) =>
+    job.idempotencyKey !== researchKey && job.idempotencyKey?.startsWith("idea-research:") &&
+    job.createdBy === actor.email && job.channel === input.channel && job.prompt === query &&
+    job.kind === "research" && job.state === "succeeded" && job.connectionId === "public-reference-retrieval",
+  ).map((job) => job.id);
   const command = commandSchema.parse({
     ...input,
     research: true,
@@ -111,6 +116,7 @@ export async function automaticIdeaResearch(
           job.createdBy === actor.email && job.idempotencyKey === researchKey,
       )!.id,
       ...(input.researchJobIds || []),
+      ...previousResearchIds,
     ].filter((id, index, all) => all.indexOf(id) === index).slice(0, 5),
   }) as Input;
   return { state: next, command, existing: false };
