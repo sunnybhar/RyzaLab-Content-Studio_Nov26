@@ -6,9 +6,9 @@ import { newsletterStructureIssue, type NewsletterSection } from "@/lib/studio/n
 
 type Template = { id: string; name: string };
 type Library = { templates: Template[]; selected: string | null; outline: NewsletterSection[] };
-const endpoint = "/api/studio/local/newsletter";
+export const newsletterTemplateEndpoint = "/api/studio/local/newsletter";
 
-async function checked(response: Response) {
+export async function checkedNewsletterResponse(response: Response) {
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new Error(body?.error || "Newsletter template request failed.");
@@ -34,12 +34,12 @@ export function NewsletterTemplateExport({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const structureIssue = library.selected && text.trim() ? newsletterStructureIssue(library.outline, text) : undefined;
-  const libraryUrl = `${endpoint}?contentId=${encodeURIComponent(contentId)}`;
+  const libraryUrl = `${newsletterTemplateEndpoint}?contentId=${encodeURIComponent(contentId)}`;
 
   useEffect(() => {
     const controller = new AbortController();
     fetch(libraryUrl, { signal: controller.signal, cache: "no-store" })
-      .then(checked).then((response) => response.json())
+      .then(checkedNewsletterResponse).then((response) => response.json())
       .then((next) => { setLibrary(next); setLibraryLoaded(true); })
       .catch((cause) => { if (!controller.signal.aborted) setError(String(cause.message)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
@@ -62,25 +62,25 @@ export function NewsletterTemplateExport({
   async function upload(files: File[]) {
     const form = new FormData();
     for (const file of files) form.append("template", file);
-    const result = await (await checked(await fetch(endpoint, {
+    const result = await (await checkedNewsletterResponse(await fetch(newsletterTemplateEndpoint, {
       method: "POST", body: form, signal: AbortSignal.timeout(60000),
     }))).json();
-    setLibrary(await (await checked(await fetch(libraryUrl, { cache: "no-store" }))).json());
+    setLibrary(await (await checkedNewsletterResponse(await fetch(libraryUrl, { cache: "no-store" }))).json());
     setLibraryLoaded(true);
     setMessage(result.added ? `${result.added} template${result.added === 1 ? "" : "s"} added.` : "These templates are already in Studio.");
   }
 
   async function choose(templateId: string) {
-    await checked(await fetch(endpoint, {
+    await checkedNewsletterResponse(await fetch(newsletterTemplateEndpoint, {
       method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contentId, templateId: templateId || null }),
       signal: AbortSignal.timeout(15000),
     }));
-    setLibrary(await (await checked(await fetch(libraryUrl, { cache: "no-store" }))).json());
+    setLibrary(await (await checkedNewsletterResponse(await fetch(libraryUrl, { cache: "no-store" }))).json());
   }
 
   async function download(format: "pdf" | "docx") {
-    const response = await checked(await fetch(endpoint, {
+    const response = await checkedNewsletterResponse(await fetch(newsletterTemplateEndpoint, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ templateId: library.selected, title, text, format }),
       signal: AbortSignal.timeout(75000),

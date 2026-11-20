@@ -76,3 +76,13 @@
 .studio-v2 dialog.s-review-dialog.s-post-preview {
   width: min(760px, calc(100vw - 24px));
 }
+.studio-v2 .s-feed-title {
+  padding: 0 20px;
+}
+.studio-v2 .s-newsletter-preview-frame {
+  display: block;
+  width: 100%;
+  height: 65dvh;
+  margin-top: 12px;
+  border: 1px solid var(--s-line);
+}

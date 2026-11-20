@@ -47,7 +47,7 @@ test("local approval verifies saved media and rejects missing, mismatched or ext
     assert.equal(result.revision, 2);
     const approved = result.state.packages.find((item) => item.contentId === draft.id);
     assert.equal(approved?.media.imageUrl, url);
-    assert.deepEqual(approved?.assetManifest, [{
+    assert.deepEqual((approved as { assetManifest?: unknown } | undefined)?.assetManifest, [{
       id, path: url, mime: "image/png", size: bytes.length,
       etag: "431ced6916a2a21a156e38701afe55bbd7f88969fbbfc56d7fe099d47f265460",
     }]);
