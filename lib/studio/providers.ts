@@ -48,6 +48,7 @@ export async function runProvider(
   standardUsage?: ClaudeUsage;
   text?: string;
   bytes?: Uint8Array;
+  imageUsage?: { inputTokens: number; outputTokens: number };
   mime?: string;
   completion?: "complete" | "incomplete" | "refused";
   stopReason?:string;
@@ -225,7 +226,11 @@ export async function runProvider(
       );
     const bytes=Buffer.from(json.data[0].b64_json,"base64");
     if(bytes.length<9||bytes.length>50*1024*1024||!bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))throw new ProviderFailure(true,"Provider returned an invalid or oversized image payload. Check the existing outcome before any new paid request.");
-    return {bytes:new Uint8Array(bytes),mime:"image/png"};
+    const inputTokens = json.usage?.input_tokens;
+    const outputTokens = json.usage?.output_tokens;
+    const imageUsage = Number.isSafeInteger(inputTokens) && inputTokens >= 0 &&
+      Number.isSafeInteger(outputTokens) && outputTokens > 0 ? { inputTokens, outputTokens } : undefined;
+    return { bytes: new Uint8Array(bytes), mime: "image/png", ...(imageUsage ? { imageUsage } : {}) };
   }
   const text =
     connection.provider === "anthropic"

@@ -49,25 +49,41 @@ export function LocalMediaAssistant({
           onChange={(event) => { setPrompt(event.target.value); setEstimate(undefined); }}
         />
       </label>
+      {kind === "image" && <p>Studio reserves an estimate from your monthly budget and records reported usage when available. The final cost can vary.</p>}
       <div className="s-actions">
-        <button type="button" className="s-btn" disabled={disabled || busy || !!pending || (kind === "video" && prompt.trim().length < 12)}
-          onClick={() => void perform(async () => {
-            const quote = await request({ ...input, type: "media.quote" });
-            setEstimate({ ...quote, revision: content.revision, key: crypto.randomUUID() });
-          })}>
-          Estimate cost
-        </button>
-        {currentEstimate && (
+        {kind === "image" ? (
           <button type="button" className="s-btn s-primary" disabled={disabled || busy || !!pending}
             onClick={() => void perform(async () => {
-              await send({ ...input, type: "media.generate", maximum: currentEstimate.cost, idempotencyKey: currentEstimate.key });
+              const quote = await request({ ...input, type: "media.quote" });
+              const key = currentEstimate?.key ?? crypto.randomUUID();
+              setEstimate({ ...quote, revision: content.revision, key });
+              await send({ ...input, type: "media.generate", maximum: quote.cost, idempotencyKey: key });
               setEstimate(undefined);
             })}>
-            Generate {kind} · up to ${(currentEstimate.cost / 100).toFixed(2)}
+            {busy ? "Generating image…" : "Generate image"}
           </button>
+        ) : (
+          <>
+            <button type="button" className="s-btn" disabled={disabled || busy || !!pending || prompt.trim().length < 12}
+              onClick={() => void perform(async () => {
+                const quote = await request({ ...input, type: "media.quote" });
+                setEstimate({ ...quote, revision: content.revision, key: crypto.randomUUID() });
+              })}>
+              Estimate cost
+            </button>
+            {currentEstimate && (
+              <button type="button" className="s-btn s-primary" disabled={disabled || busy || !!pending}
+                onClick={() => void perform(async () => {
+                  await send({ ...input, type: "media.generate", maximum: currentEstimate.cost, idempotencyKey: currentEstimate.key });
+                  setEstimate(undefined);
+                })}>
+                Generate {kind} · up to ${(currentEstimate.cost / 100).toFixed(2)}
+              </button>
+            )}
+          </>
         )}
       </div>
-      {currentEstimate && <p>{currentEstimate.model}. The generation prompt is sent to your connected provider.</p>}
+      {kind === "video" && currentEstimate && <p>{currentEstimate.model}. The generation prompt is sent to your connected provider.</p>}
       {error && <p role="alert">{error}</p>}
       {jobs.slice(0, 5).map((job) => (
         <article className="s-version" key={job.id}>

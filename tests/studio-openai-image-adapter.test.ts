@@ -24,6 +24,7 @@ test("image adapter sends one fixed-size medium GPT Image request and retains PN
     assert.equal(body.size, "1024x1024");
     assert.equal(body.quality, "medium");
     return Response.json({
+      usage: { input_tokens: 26, output_tokens: 1449 },
       data: [
         {
           b64_json:
@@ -35,6 +36,7 @@ test("image adapter sends one fixed-size medium GPT Image request and retains PN
   try {
     const result = await runProvider(job, connection, "fixture-only");
     assert.equal(result.mime, "image/png");
+    assert.deepEqual(result.imageUsage, { inputTokens: 26, outputTokens: 1449 });
     assert.ok(result.bytes!.length > 8);
     assert.equal(calls, 1);
   } finally {

@@ -4469,6 +4469,11 @@ function Editor({
   const usedResearchFallback = local && state.jobs.some((job) =>
     job.id === c.generatedBy?.jobId && job.researchUnavailable,
   );
+  const templateCandidate = local && c.channel === "Newsletter" && c.state === "draft"
+    ? state.jobs.find((job) => job.contentId === c.id && job.kind === "text" &&
+      job.targetRevision === c.revision && job.outputStatus === "ready" && !job.appliedAt &&
+      job.candidate && job.prompt.includes('"newsletterTemplate":'))
+    : undefined;
   const dirty=draftSave.dirty;
   const defaultPublicQuery = !savedResearchIds?.length && !c.newsletterSource &&
     !c.newsletterSources?.length && c.title.length >= 5 ? c.title : "";
@@ -4482,13 +4487,13 @@ function Editor({
       ...options,
     };
   }
-  async function generateSavedDraft() {
+  async function generateSavedDraft(useExistingSources = false) {
     if (generationLock.current || readOnly || dirty || externalChange || busy) return;
     generationLock.current = true;
     setGeneratingDraft(true);
     setDraftGenerationError("");
     try {
-      await send(draftGenerationCommand({ publicQuery: defaultPublicQuery }));
+      await send(draftGenerationCommand({ publicQuery: useExistingSources ? "" : defaultPublicQuery }));
     } catch (error) {
       setDraftGenerationError(error instanceof Error ? error.message : "Draft generation failed. Check Generation activity.");
     } finally {
@@ -4809,10 +4814,29 @@ function Editor({
                 onChange={(e) => setText(e.target.value)}
               />
               {local && c.channel === "Newsletter" ? (
-                <NewsletterTemplateExport contentId={c.id} title={title} text={text}>
+                <NewsletterTemplateExport contentId={c.id} title={title} text={text}
+                  onAdapt={() => void generateSavedDraft(true)}
+                  adapting={generatingDraft}
+                  adaptDisabled={readOnly || dirty || externalChange || busy || c.state !== "draft"}
+                >
                   {documentDownloads}
                 </NewsletterTemplateExport>
               ) : documentDownloads}
+              {templateCandidate?.candidate && (
+                <details className="s-version" open>
+                  <summary>Review template revision</summary>
+                  <p style={{ whiteSpace: "pre-wrap" }}>{templateCandidate.candidate.body}</p>
+                  {templateCandidate.candidate.questions.length > 0 && (
+                    <ul>{templateCandidate.candidate.questions.map((question, index) => <li key={index}>{question}</li>)}</ul>
+                  )}
+                  <button type="button" className="s-btn" disabled={readOnly || dirty || externalChange || busy || generatingDraft}
+                    onClick={() => void run({
+                      type: "job.editDraft", jobId: templateCandidate.id, expectedRevision: c.revision,
+                    }, "Template revision opened for editing.")}>
+                    Use as working draft
+                  </button>
+                </details>
+              )}
               {c.pipelineSnapshot&&<details className="pipeline-origin"><summary>Existing Pipeline · {c.pipelineSnapshot.externalId||c.pipelineSnapshot.title}</summary><p>{c.pipelineSnapshot.angle}</p><p>Imported from {c.pipelineSnapshot.sourceFile} · {c.pipelineSnapshot.sheet}, row {c.pipelineSnapshot.row} · brief v{c.pipelineSnapshot.version}</p><p>Planned: {c.pipelineSnapshot.plannedDate||"Unscheduled"} {c.pipelineSnapshot.plannedTime} · {c.pipelineSnapshot.timezone}. This is not a publishing approval.</p>{c.pipelineSnapshot.sourceUrls.map(url=><p key={url}>{url}</p>)}</details>}
               <GenerationRulesStatus content={c} state={state}/>
               {local ? (

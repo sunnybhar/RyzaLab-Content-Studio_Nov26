@@ -61,6 +61,19 @@ export async function validateNewsletterTemplate(bytes: Uint8Array) {
   await openTemplate(bytes);
 }
 
+export async function newsletterWritingGuidance(bytes: Uint8Array) {
+  const { body } = await openTemplate(bytes);
+  const lines = Array.from(body.getElementsByTagNameNS(word, "p")).flatMap((paragraph) => {
+    const value = Array.from(paragraph.getElementsByTagNameNS(word, "t"))
+      .map((node) => node.textContent).join("").trim();
+    if (!value) return [];
+    const style = paragraph.getElementsByTagNameNS(word, "pStyle").item(0)?.getAttributeNS(word, "val");
+    return [/^heading/i.test(style || "") ? `## ${value}` : value];
+  });
+  if (!lines.length) throw new StudioError(400, "This newsletter template has no readable writing guidance.");
+  return lines.join("\n").slice(0, 12000);
+}
+
 export async function renderNewsletterTemplate(bytes: Uint8Array, title: string, text: string, now = new Date()) {
   const { zip, document, body } = await openTemplate(bytes);
   const original = Array.from(body.childNodes).filter((node): node is Element => node.nodeType === 1);

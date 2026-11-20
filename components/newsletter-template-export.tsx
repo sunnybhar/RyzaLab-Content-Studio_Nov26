@@ -15,12 +15,15 @@ async function checked(response: Response) {
 }
 
 export function NewsletterTemplateExport({
-  contentId, title, text, children,
+  contentId, title, text, children, onAdapt, adapting, adaptDisabled,
 }: {
   contentId: string;
   title: string;
   text: string;
   children: ReactNode;
+  onAdapt: () => void;
+  adapting: boolean;
+  adaptDisabled: boolean;
 }) {
   const [library, setLibrary] = useState<Library>({ templates: [], selected: null });
   const [busy, setBusy] = useState(false);
@@ -90,7 +93,7 @@ export function NewsletterTemplateExport({
       <h3>Newsletter template</h3>
       <label className="s-field">
         Upload Word templates
-        <input type="file" multiple accept=".docx" disabled={busy || loading}
+        <input type="file" multiple accept=".docx" disabled={busy || loading || adapting}
           onChange={(event) => {
             const files = Array.from(event.currentTarget.files || []);
             event.currentTarget.value = "";
@@ -99,7 +102,7 @@ export function NewsletterTemplateExport({
       </label>
       <label className="s-field">
         Template for this newsletter
-        <select value={library.selected ?? ""} disabled={busy || loading}
+        <select value={library.selected ?? ""} disabled={busy || loading || adapting}
           onChange={(event) => void perform(() => choose(event.target.value))}>
           <option value="">Standard layout</option>
           {library.templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
@@ -109,9 +112,13 @@ export function NewsletterTemplateExport({
       {message && <p role="status">{message}</p>}
       {library.selected ? (
         <>
+          <button type="button" className="s-btn" disabled={busy || adapting || adaptDisabled} onClick={onAdapt}>
+            {adapting ? "Writing with template…" : "Write with this template"}
+          </button>
+          <p>Studio uses the template’s sections and editorial instructions to revise the saved draft. Review the result before exporting.</p>
           <div className="s-actions">
-            <button type="button" className="s-btn" disabled={busy || !text.trim()} onClick={() => void perform(() => download("docx"))}>Download newsletter DOCX</button>
-            <button type="button" className="s-btn s-primary" disabled={busy || !text.trim()} onClick={() => void perform(() => download("pdf"))}>Download newsletter PDF</button>
+            <button type="button" className="s-btn" disabled={busy || adapting || !text.trim()} onClick={() => void perform(() => download("docx"))}>Download newsletter DOCX</button>
+            <button type="button" className="s-btn s-primary" disabled={busy || adapting || !text.trim()} onClick={() => void perform(() => download("pdf"))}>Download newsletter PDF</button>
           </div>
           <p>Uses the Word template’s embedded cover and styles. PDF export uses LibreOffice installed on this computer.</p>
         </>

@@ -25,6 +25,7 @@ import { DEMO_ACTOR } from "./seed";
 import type { Connection, StudioState } from "./types";
 import { resolvedConnection } from "./solo-quality";
 import { checkLocalVideo, LocalVideoFailed, localVideoModel, startLocalVideo } from "./local-video";
+import { newsletterWritingGuidance } from "./newsletter-template";
 import { settleUsageCost } from "./usage-cost";
 
 const providerSchema = z.enum(["anthropic", "openai", "google"]);
@@ -95,6 +96,14 @@ function saveKey(db: DatabaseSync, id: string, value: string) {
   db.prepare("INSERT OR REPLACE INTO credentials (id, ciphertext) VALUES (?, ?)")
     .run(id, [iv, cipher.getAuthTag(), ciphertext].map((part) => part.toString("base64")).join("."));
 }
+
+// Observed on a single 1024 × 1024 Medium generation. This is an estimate, not an API-enforced output limit.
+const localImageEstimate: Rate = {
+  provider: "openai", model: "gpt-image-2.6-sunburst", function: "image", currency: "USD",
+  inputCentsPerMillion: 500, outputCentsPerMillion: 3000, maxOutputTokens: 1449, maxInputBytes: 65536,
+  source: "https://openai.com/api/pricing/", verifiedAt: "2026-11-20", qualified: true,
+  qualificationEvidence: "One paid test reported 26 text input tokens and 1449 image output tokens.",
+};
 
 const localTextPricingSource =
   "https://github.com/BerriAI/litellm/blob/f508f3769e16f6f2c766a7ae96010916b648b71c/model_prices_and_context_window.json";
@@ -331,6 +340,10 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
       : connection.provider !== "openai" || !/^gpt-image-[a-z0-9.-]+$/i.test(connection.model)))
       throw new StudioError(409, "Choose a supported, validated connection for this function in AI Connections.");
     const fixedRates = effectiveRates(state).filter((rate) => rate.fixedCents && rate.function === input.kind);
+    const measured = input.kind === "image" && connection.provider === localImageEstimate.provider &&
+      connection.model === localImageEstimate.model &&
+      !fixedRates.some((rate) => rate.provider === connection.provider && rate.model === connection.model);
+    if (measured) fixedRates.push(localImageEstimate);
     if (!fixedRates.some((rate) => rate.provider === connection.provider && rate.model === connection.model))
       throw new StudioError(409, `Studio has no verified price for ${connection.model} at ${input.kind === "image" ? "1024 × 1024, medium quality" : "8 seconds, 720p landscape"}. No paid request was sent.`);
     const prepared = {
@@ -375,10 +388,15 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
     withDatabase((db) => write(db, revision, next));
     let operation: string | undefined;
     let image: Uint8Array | undefined;
+    let imageUsage: Awaited<ReturnType<typeof runProvider>>["imageUsage"];
     let problem: ProviderFailure | undefined;
     try {
       if (job.kind === "video") operation = await startLocalVideo(connection.model, input.prompt, key);
-      else image = (await runProvider(job, connection, key)).bytes;
+      else {
+        const result = await runProvider(job, connection, key);
+        image = result.bytes;
+        imageUsage = result.imageUsage;
+      }
     } catch (error) {
       problem = error instanceof ProviderFailure ? error : new ProviderFailure(true, "Media outcome is uncertain. The reservation is retained.");
     }
@@ -397,7 +415,16 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
         db.prepare("INSERT INTO local_media VALUES (?, ?, ?)").run(job.id, "image/png", image);
         finished.state = "succeeded";
         finished.result = `/api/studio/local?media=${job.id}`;
-        finished.error = "Quoted cost retained until reconciled.";
+        if (measured && imageUsage) {
+          finished.actual = Math.ceil((
+            imageUsage.inputTokens * localImageEstimate.inputCentsPerMillion +
+            imageUsage.outputTokens * localImageEstimate.outputCentsPerMillion
+          ) / 1_000_000);
+          finished.reserved = 0;
+          finished.costBasis = "provider_usage";
+        } else {
+          finished.error = "Quoted cost retained until reconciled.";
+        }
       } else {
         finished.state = "unknown";
         finished.error = "No usable media was returned. The reservation is retained.";
@@ -502,7 +529,19 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
         type: "preparation.authorize", contentId: draft.id, expectedRevision: parsed.expectedRevision, maxCents: policy.packageCap,
       });
     }
-    prepared = generationInput(configured, DEMO_ACTOR, parsed);
+    const templateBytes = draft?.channel === "Newsletter" && parsed.kind === "text" ? withDatabase((db) => {
+      const hasTemplates = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'newsletter_template_choices'").get();
+      if (!hasTemplates) return undefined;
+      return db.prepare(`
+        SELECT t.data FROM newsletter_template_choices c
+        JOIN newsletter_templates t ON t.id = c.template_id WHERE c.content_id = ?
+      `).get(draft.id)?.data;
+    }) : undefined;
+    const writing = {
+      ...parsed,
+      newsletterTemplate: templateBytes instanceof Uint8Array ? await newsletterWritingGuidance(templateBytes) : undefined,
+    };
+    prepared = generationInput(configured, DEMO_ACTOR, writing);
     const query = typeof publicQuery === "string" ? publicQuery.trim() : "";
     const hasLinks = Array.isArray(publicSourceUrls) && publicSourceUrls.length > 0;
     if (draft && parsed.kind === "text" && (query || hasLinks)) {
@@ -529,14 +568,14 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
         const evidence = researched.jobs.find((j) => j.idempotencyKey === input.idempotencyKey);
         if (evidence?.result && JSON.parse(evidence.result).citations?.length) {
           prepared = generationInput(configured, DEMO_ACTOR, {
-            ...parsed, researchJobIds: [...new Set([evidence.id, ...prepared.researchJobIds])].slice(0, 5),
+            ...writing, researchJobIds: [...new Set([evidence.id, ...prepared.researchJobIds])].slice(0, 5),
           });
         }
       } catch (error) {
         if (!publicEvidenceUnavailable(error)) throw error;
         researchUnavailable = true;
         prepared = generationInput(configured, DEMO_ACTOR, {
-          ...parsed,
+          ...writing,
           notes: [parsed.notes, "Fresh public research was unavailable. Write a working draft using the idea, supplied material, and saved references. Do not invent citations, statistics, or personal experiences. Flag factual details that need confirmation."].filter(Boolean).join("\n\n"),
         });
       }
