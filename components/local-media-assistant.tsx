@@ -37,17 +37,20 @@ export function LocalMediaAssistant({
     <section className="s-version" aria-label={kind === "image" ? "AI image generation" : "AI video generation"}>
       <h3>{kind === "image" ? "Generate an image" : "Generate a video clip"}</h3>
       <p>{kind === "image" ? "OpenAI GPT Image · 1024 × 1024" : "Gemini Veo 3.1 · 8 seconds · 720p landscape"}</p>
+      {kind === "image" && (
+        <p>{content.text.trim() ? "Uses the saved idea title and draft copy." : "Uses the saved title and any linked idea brief."}</p>
+      )}
       <label className="s-field">
-        {kind === "image" ? "Image brief" : "Video brief"}
+        {kind === "image" ? "Visual direction (optional)" : "Video brief"}
         <textarea
           value={prompt}
-          maxLength={12000}
+          maxLength={kind === "image" ? 1200 : 12000}
           disabled={busy}
           onChange={(event) => { setPrompt(event.target.value); setEstimate(undefined); }}
         />
       </label>
       <div className="s-actions">
-        <button type="button" className="s-btn" disabled={disabled || busy || !!pending || prompt.trim().length < 12}
+        <button type="button" className="s-btn" disabled={disabled || busy || !!pending || (kind === "video" && prompt.trim().length < 12)}
           onClick={() => void perform(async () => {
             const quote = await request({ ...input, type: "media.quote" });
             setEstimate({ ...quote, revision: content.revision, key: crypto.randomUUID() });
@@ -64,7 +67,7 @@ export function LocalMediaAssistant({
           </button>
         )}
       </div>
-      {currentEstimate && <p>{currentEstimate.model}. The prompt is sent to your connected provider.</p>}
+      {currentEstimate && <p>{currentEstimate.model}. The generation prompt is sent to your connected provider.</p>}
       {error && <p role="alert">{error}</p>}
       {jobs.slice(0, 5).map((job) => (
         <article className="s-version" key={job.id}>
