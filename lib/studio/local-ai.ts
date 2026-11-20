@@ -11,6 +11,7 @@ import { publicRetrievalTarget } from "./research-link";
 import { researchProfile } from "./research-profile";
 import { preparationFor } from "./preparation-budget";
 import { retrieveBroadReferences } from "./web-discovery";
+import { readPublicPage } from "./public-page";
 import { applyWorkerReceipt } from "./worker-receipt";
 import { applyCommand } from "./engine";
 import { generationInput } from "./generation";
@@ -139,6 +140,38 @@ function localRates(state: StudioState): Rate[] {
   }
   return rates;
 }
+
+const researchTimeoutMs = 45000;
+
+const retrieveLocalReferences: typeof retrieveBroadReferences = async (
+  query, request = fetch, now, profile, sourceUrls,
+) => {
+  const controller = new AbortController();
+  const deadline = Date.now() + researchTimeoutMs;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timedOut = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new StudioError(504, "Public research took longer than 45 seconds. No paid generation was started. Try a narrower topic or add a source link."));
+      controller.abort();
+    }, researchTimeoutMs);
+  });
+  const boundedFetch: typeof fetch = (input, options) =>
+    request(input, {
+      ...options,
+      signal: options?.signal
+        ? AbortSignal.any([options.signal, controller.signal])
+        : controller.signal,
+    });
+  try {
+    return await Promise.race([
+      timedOut,
+      retrieveBroadReferences(query, boundedFetch, now, profile, sourceUrls, (url) => readPublicPage(url, 0, deadline)),
+    ]);
+  } finally {
+    clearTimeout(timer);
+    controller.abort();
+  }
+};
 
 export async function localAI(withDatabase: Database, revision: number, unknown: unknown) {
   const command = z.object({ type: z.string() }).passthrough().parse(unknown);
@@ -343,7 +376,7 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
   async function retrieve(input: Extract<typeof parsed, {type: "research.retrieve"}>) {
     const { existing } = publicRetrievalTarget(state, DEMO_ACTOR, input);
     if (existing) return state;
-    const retrievalResult = await retrieveBroadReferences(
+    const retrievalResult = await retrieveLocalReferences(
       input.query, fetch, new Date().toISOString(), researchProfile(state, input.channel), input.sourceUrls,
     );
     return applyCommand(state, DEMO_ACTOR, input, { retrievalResult });
@@ -399,7 +432,7 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
   let prepared;
   if (parsed.type === "idea.generate") {
     if (parsed.automaticResearch) {
-      const researched = await automaticIdeaResearch(configured, DEMO_ACTOR, parsed, undefined, undefined, async (snapshot) => {
+      const researched = await automaticIdeaResearch(configured, DEMO_ACTOR, parsed, retrieveLocalReferences, undefined, async (snapshot) => {
         const saved = withDatabase((db) => write(db, currentRevision, restoreLocalConfiguration(structuredClone(snapshot))));
         currentRevision = saved.revision;
       });

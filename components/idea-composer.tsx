@@ -73,13 +73,13 @@ export function IdeaComposer({
   const working = busy || pending;
   async function checkStatus(clearRequestError=false){try{await refreshRef.current(clearRequestError);setLastChecked(Date.now());setSyncError("");if(clearRequestError)setError("");}catch{setSyncError("Status could not be refreshed. No new AI request was made.");}}
   useEffect(() => {
-    if (demo || !pending) return;
+    if (demo || !(pending || (busy && submitted))) return;
     const timer = setInterval(
       () => void checkStatus(),
       4000,
     );
     return () => clearInterval(timer);
-  }, [demo, pending]);
+  }, [demo, pending, busy, submitted]);
   const cards = submitted
     ? state.ideas.filter((i) =>
         demo

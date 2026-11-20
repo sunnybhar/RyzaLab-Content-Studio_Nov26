@@ -48,15 +48,15 @@ export function IdeaRunProgress({
         : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
   const headline = complete
     ? `${readyCount} of ${targetCount} ready`
-    : job?.state === "awaiting_confirmation"
+    : attention
+      ? "Request needs attention"
+      : job?.state === "awaiting_confirmation"
       ? "Waiting for your allowance confirmation"
       : job?.state === "running"
         ? "AI is generating your ideas"
         : job?.state === "queued"
           ? "Waiting for AI execution to start"
-          : attention
-            ? "Request needs attention"
-            : "Finding relevant public references";
+          : "Finding relevant public references";
   const stages = [
     [
       "1. Research",

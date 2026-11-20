@@ -41,7 +41,7 @@ async function saveLocalWorkspace(state: StudioState, revision: number | null) {
 
 async function loadLocalWorkspace(): Promise<LocalSnapshot> {
   const read = async () => readStudioResponse<Partial<LocalSnapshot>>(
-    await fetch(localEndpoint, { cache: "no-store" }),
+    await fetch(localEndpoint, { cache: "no-store", signal: AbortSignal.timeout(12000) }),
   );
   const existing = await read();
   if (existing.state && existing.revision !== undefined)
@@ -144,12 +144,19 @@ export function useStudio() {
     return () => data.subscription.unsubscribe();
   }, [refresh]);
   async function requestLocalAI<T>(command: Command) {
-    const response = await fetch(localEndpoint, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ revision: localRevision.current, command }),
-    });
-    return readStudioResponse<T>(response);
+    try {
+      const response = await fetch(localEndpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ revision: localRevision.current, command }),
+        signal: AbortSignal.timeout(150000),
+      });
+      return await readStudioResponse<T>(response);
+    } catch (error) {
+      if (error instanceof Error && error.name === "TimeoutError")
+        throw new Error("Studio stopped waiting for a response. Check the saved request in Generation activity before trying again.");
+      throw error;
+    }
   }
 
   async function send(command: Command) {
