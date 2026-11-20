@@ -766,9 +766,10 @@ export default function Workspace() {
     ideaId?: string,
     ideaTitle?: string,
     ideaChannel?: Channel,
+    initialFormat = "Text post",
   ) =>
     openForm(
-      "Create something worth sharing",
+      initialFormat === "Article" ? "Create LinkedIn article" : "Create something worth sharing",
       [
         {
           name: "title",
@@ -787,7 +788,7 @@ export default function Workspace() {
         {
           name: "format",
           label: "Format",
-          value: "Text post",
+          value: initialFormat,
           options: [
             "Text post",
             "Article",
@@ -809,7 +810,7 @@ export default function Workspace() {
         account: val(d, "account"),
         ideaId,
       }),
-      "Start with a clear idea. Your channel workflow will guide the draft.",
+      initialFormat === "Article" ? "Target 800–1,200 words of article copy." : "Start with a clear idea. Your channel workflow will guide the draft.",
       "Create draft",
     );
   async function useIdea(idea: Idea, format: string, account: string) {
@@ -1713,7 +1714,7 @@ export default function Workspace() {
                 <Grid2X2 size={15} />
                 All channels
               </button>
-              {CHANNELS.map((c) => (
+              {CHANNELS.map((c) => [
                 <button
                   key={c}
                   className={channel === c ? "s-selected" : ""}
@@ -1722,8 +1723,18 @@ export default function Workspace() {
                 >
                   <ChannelIcon channel={c} small />
                   {c}
-                </button>
-              ))}
+                </button>,
+                c === "LinkedIn" && (page === "Create" || page === "Ideas") &&
+                  allowed("content.create", { channel: "LinkedIn" }) && (
+                    <button key="create-linkedin-article" type="button" aria-label="Create LinkedIn article" onClick={() => {
+                      move("Create");
+                      setChannel("LinkedIn");
+                      newContent(undefined, undefined, "LinkedIn", "Article");
+                    }}>
+                      <FileText size={15} /> Article
+                    </button>
+                  ),
+              ])}
             </div>
           )}
           {page === "Home" && layout === "board" && (
