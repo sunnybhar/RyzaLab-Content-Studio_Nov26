@@ -1,7 +1,7 @@
 import {parseDocumentLayout} from "./document-layout";
 import {eligibleEvidence,eligibleReferences,eligibleSourceReferences} from "./source-policy";
 import {documentSections} from "./document-sections";
-import {isLongForm} from "./channel-writing";
+import {isLongForm, newsletterTemplateFromPrompt} from "./channel-writing";
 import {newsletterSources} from "./newsletter-bundle";
 import {draftSavePayload,savedOperation} from "./save-operation";
 import {importPipeline,pipelineSnapshot} from "./pipeline";
@@ -1849,6 +1849,7 @@ export function applyCommand(
     }
     case "job.prepareSavedDraft": {
       const job = jobFor(c.jobId);
+      if (newsletterTemplateFromPrompt(job.prompt)?.exportOnly) bad("This formatted copy is only available for newsletter export.");
       if (
         job.kind !== "text" ||
         job.state !== "succeeded" ||
@@ -1896,6 +1897,7 @@ export function applyCommand(
     }
     case "job.recoverIncomplete": {
       const job=jobFor(c.jobId);if(job.kind!=="text"||job.state!=="succeeded"||job.outputStatus!=="incomplete"||!job.result||!job.contentId||job.appliedAt)bad("Choose an unapplied incomplete writing response.");
+      if (newsletterTemplateFromPrompt(job.prompt)?.exportOnly) bad("This formatted copy is only available for newsletter export.");
       const d=content(job.contentId!);if(job.createdBy!==actor.email&&!can(s,actor,"users.manage"))bad("This response belongs to another creator.");
       if(d.deletedAt||d.state!=="draft"||d.revision!==c.expectedRevision||d.text.trim()||!job.targetIdentity||copyIdentity(d,s)!==job.targetIdentity||currentCopyAcceptance(d,s))bad("The editor changed or already has content. Nothing was overwritten; compare the saved response manually.");
       if(!researchSourcesCurrent(s,actor,job))bad("Research evidence or access changed. Compare the saved sources first.");
@@ -1905,6 +1907,7 @@ export function applyCommand(
     case "job.editDraft":
     case "job.applyDraft": {
       const job = jobFor(c.jobId);
+      if (newsletterTemplateFromPrompt(job.prompt)?.exportOnly) bad("This formatted copy is only available for newsletter export.");
       if (job.kind !== "text" || job.state !== "succeeded" || !job.candidate)
         bad("Select a complete saved writing candidate.");
       const d = content(job.contentId || "");

@@ -2,7 +2,7 @@
 import {ArticleImages} from "./article-images";
 import {NewsletterSources} from "./newsletter-sources";
 import {NewsletterComposer} from "./newsletter-composer";
-import { NewsletterTemplateExport } from "./newsletter-template-export";
+import { NewsletterTemplateExport, prepareNewsletterExport } from "./newsletter-template-export";
 import { LocalMediaAssistant } from "./local-media-assistant";
 import {ImageAssistant} from "./image-assistant";
 import {parseDocumentLayout} from "@/lib/studio/document-layout";
@@ -2911,6 +2911,7 @@ export default function Workspace() {
                     </div>
                     <h2>{c.title}</h2>
                     <ReviewPostPreview key={c.revision} content={c} local={local} AssetMedia={AssetMedia}
+                      onFormatExport={(templateId) => prepareNewsletterExport(send, c, templateId)}
                       returnToDraft={local && c.channel === "Newsletter" && allowed("content.edit", { channel: c.channel, account: c.account, contentId: c.id, assignedTo: c.assignedTo })
                         ? async () => {
                           const returned = await execute({ type: "content.returnToDraft", id: c.id, expectedRevision: c.revision }, "Newsletter returned to draft.");
@@ -4564,7 +4565,7 @@ function Editor({
   const templateCandidate = local && c.channel === "Newsletter" && c.state === "draft"
     ? state.jobs.find((job) => job.contentId === c.id && job.kind === "text" &&
       job.targetRevision === c.revision && job.outputStatus === "ready" && !job.appliedAt &&
-      job.candidate && job.prompt.includes('"newsletterTemplate":'))
+      job.candidate && job.prompt.includes('"newsletterTemplate":') && !job.prompt.includes('"templateExportId":'))
     : undefined;
   const dirty=draftSave.dirty;
   const defaultPublicQuery = !savedResearchIds?.length && !c.newsletterSource &&
@@ -4922,6 +4923,7 @@ function Editor({
                   generationBusy={Boolean(generatingDraft) || busy}
                   adaptingSince={generatingDraft?.kind === "template" ? generatingDraft.startedAt : undefined}
                   draftDirty={dirty}
+                  onFormatExport={(templateId) => prepareNewsletterExport(send, c, templateId)}
                   unsavedImage={media.imageUrl !== c.media.imageUrl || media.imageAlt !== c.media.imageAlt || media.imageCaption !== c.media.imageCaption}
                   savingDraft={draftSave.busy}
                   adaptError={draftGenerationError?.kind === "template" ? draftGenerationError.message : undefined}

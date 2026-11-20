@@ -178,11 +178,11 @@ export function useStudio() {
             update(result.state);
           }
           if (result.job?.state === "unknown" || result.job?.state === "failed" ||
-              (result.job?.state === "succeeded" && result.job.kind === "text" && !result.job.appliedAt) ||
+              (result.job?.state === "succeeded" && result.job.kind === "text" && !result.job.appliedAt && !(command.newsletterExportTemplateId && result.job.outputStatus === "ready")) ||
               result.job?.outputStatus === "invalid" || result.job?.outputStatus === "conflict" ||
               (result.job?.outputStatus === "incomplete" && !result.job.appliedAt))
             throw new Error(result.job.error || "Generation did not update the draft. Check Generation activity.");
-          return { state: result.state, actor: DEMO_ACTOR, mode: "demo" as const };
+          return { state: result.state, actor: DEMO_ACTOR, mode: "demo" as const, job: result.job };
         } catch (error) {
           if (error instanceof StudioResponseError && error.status === 409) await refresh();
           throw error;

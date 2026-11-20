@@ -465,7 +465,7 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
     }));
   }
 
-  const { publicQuery, publicSourceUrls, ...generationCommand } = command;
+  const { publicQuery, publicSourceUrls, newsletterExportTemplateId, ...generationCommand } = command;
   const parsed = commandSchema.parse(command.type === "content.generate" ? generationCommand : command);
   let currentRevision = revision;
   async function retrieve(input: Extract<typeof parsed, {type: "research.retrieve"}>) {
@@ -527,6 +527,7 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
 
   let configured = configureLocalState(state);
   let prepared;
+  let templateExport = false;
   if (parsed.type === "idea.generate") {
     if (parsed.automaticResearch || !parsed.researchJobIds?.length || researchCoverage(ideaJobInput(configured, DEMO_ACTOR, parsed).prompt) < researchSourceMinimum) {
       try {
@@ -555,15 +556,27 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
       const hasTemplates = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'newsletter_template_choices'").get();
       if (!hasTemplates) return undefined;
       return db.prepare(`
-        SELECT t.data FROM newsletter_template_choices c
+        SELECT t.id, t.data FROM newsletter_template_choices c
         JOIN newsletter_templates t ON t.id = c.template_id WHERE c.content_id = ?
-      `).get(draft.id)?.data;
+      `).get(draft.id);
     }) : undefined;
+    if (newsletterExportTemplateId !== undefined) {
+      if (typeof newsletterExportTemplateId !== "string" || newsletterExportTemplateId !== templateBytes?.id || !draft?.text.trim())
+        throw new StudioError(409, "Save the newsletter copy and select its Word template before formatting.");
+      templateExport = true;
+    }
     const writing = {
       ...parsed,
-      newsletterTemplate: templateBytes instanceof Uint8Array ? await newsletterWritingGuidance(templateBytes) : undefined,
+      newsletterTemplate: templateBytes?.data instanceof Uint8Array ? await newsletterWritingGuidance(templateBytes.data) : undefined,
+      templateExportId: templateExport ? String(templateBytes!.id) : undefined,
     };
     prepared = generationInput(configured, DEMO_ACTOR, writing);
+    if (templateExport && draft) {
+      const cached = state.jobs.find((job) => job.kind === "text" && job.contentId === draft.id && job.targetRevision === draft.revision &&
+        job.outputStatus === "ready" && job.state === "succeeded" && job.candidate?.body &&
+        job.prompt.includes(`"templateExportId":${JSON.stringify(writing.templateExportId)}`));
+      if (cached) return { ...current, job: cached };
+    }
     const newsletter = draft?.channel === "Newsletter" && parsed.kind === "text";
     const requestedQuery = typeof publicQuery === "string" ? publicQuery.trim() : "";
     const title = draft?.title.trim() ?? "";
@@ -581,7 +594,7 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
       });
     }
 
-    if (draft && parsed.kind === "text" && (newsletter || requestedQuery || hasLinks ||
+    if (draft && parsed.kind === "text" && !templateExport && (newsletter || requestedQuery || hasLinks ||
       researchCoverage(prepared.prompt) < researchSourceMinimum)) {
       // Check the monthly budget before spending time on public retrieval.
       enqueue(configured, prepared);
@@ -616,7 +629,7 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
       }
     }
   }
-  if (prepared.kind === "ideas" || prepared.kind === "text") requireResearchCoverage(prepared.prompt);
+  if (prepared.kind === "ideas" || (prepared.kind === "text" && !templateExport)) requireResearchCoverage(prepared.prompt);
   const connection = configured.connections.find((c) => c.id === prepared.connectionId);
   if (!connection) throw new StudioError(409, "Select a validated model in AI Connections.");
   const key = withDatabase((db) => storedKey(db, connection.id));

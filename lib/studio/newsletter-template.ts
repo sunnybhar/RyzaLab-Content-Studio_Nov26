@@ -1,6 +1,6 @@
 import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
 import JSZip from "jszip";
-import { newsletterBlocks, newsletterHeading, type NewsletterSection } from "./newsletter-outline";
+import { newsletterBlocks, newsletterHeading, newsletterStructureIssue, type NewsletterSection } from "./newsletter-outline";
 import { StudioError } from "./permissions";
 
 export const newsletterTemplateLimit = 8 * 1024 * 1024;
@@ -170,6 +170,8 @@ async function embedNewsletterImage(zip: JSZip, document: Document, image: Newsl
 export async function renderNewsletterTemplate(bytes: Uint8Array, title: string, text: string, now = new Date(), image?: NewsletterImage) {
   const { zip, document, body } = await openTemplate(bytes);
   const sections = templateSections(body);
+  const issue = newsletterStructureIssue(sections.map((section) => section.outline), text);
+  if (issue) throw new StudioError(409, `The newsletter does not yet match the template. ${issue}`);
   const original = elements(body);
   const titleAt = original.findIndex((p) => p.localName === "p" &&
     (pStyle(p)?.toLowerCase() === "title" || /^\[(?:headline|title)\b/i.test(pText(p).trim()) ||

@@ -1,5 +1,6 @@
 "use client";
 
+import type { Command, Content, Job } from "@/lib/studio/types";
 import { DraftGenerationProgress } from "./draft-generation-progress";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -35,8 +36,18 @@ export async function downloadTemplatedNewsletter(contentId: string, templateId:
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+export async function prepareNewsletterExport(send: (command: Command) => Promise<unknown>, draft: Content, templateId: string) {
+  const result = await send({
+    type: "content.generate", contentId: draft.id, kind: "text", expectedRevision: draft.revision,
+    idempotencyKey: crypto.randomUUID(), newsletterExportTemplateId: templateId,
+  }) as { job?: Job };
+  if (result.job?.outputStatus !== "ready" || !result.job.candidate?.body)
+    throw new Error("Studio could not format this newsletter for download. The saved draft is still available.");
+  return result.job.candidate.body;
+}
+
 export function NewsletterTemplateExport({
-  contentId, title, text, children, onAdapt, generationBusy, adaptingSince, adaptDisabled, draftDirty, savingDraft, adaptError, unsavedImage,
+  contentId, title, text, children, onAdapt, generationBusy, adaptingSince, adaptDisabled, draftDirty, savingDraft, adaptError, unsavedImage, onFormatExport,
 }: {
   contentId: string;
   title: string;
@@ -50,9 +61,11 @@ export function NewsletterTemplateExport({
   savingDraft: boolean;
   adaptError?: string;
   unsavedImage: boolean;
+  onFormatExport: (templateId: string) => Promise<string>;
 }) {
   const [library, setLibrary] = useState<Library>({ templates: [], selected: null, outline: [] });
   const [busy, setBusy] = useState(false);
+  const [formatting, setFormatting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [libraryLoaded, setLibraryLoaded] = useState(false);
   const [message, setMessage] = useState("");
@@ -104,6 +117,17 @@ export function NewsletterTemplateExport({
   }
 
 
+  async function download(format: "docx" | "pdf") {
+    if (!library.selected) return;
+    setFormatting(Boolean(structureIssue));
+    try {
+      const formatted = structureIssue ? await onFormatExport(library.selected) : text;
+      await downloadTemplatedNewsletter(contentId, library.selected, title, formatted, format);
+    } finally {
+      setFormatting(false);
+    }
+  }
+
   return (
     <section className="s-version" aria-label="Newsletter template">
       <h3>Newsletter template</h3>
@@ -135,6 +159,7 @@ export function NewsletterTemplateExport({
           )}
           {adaptingSince != null && <DraftGenerationProgress label={savingDraft ? "Saving draft…" : "Writing with this template…"} startedAt={adaptingSince} />}
           {adaptError && <p role="alert">{adaptError}</p>}
+          {formatting && <DraftGenerationProgress label="Formatting newsletter for download…" />}
           {library.outline.length > 0 && (
             <details>
               <summary>Template sections</summary>
@@ -143,11 +168,12 @@ export function NewsletterTemplateExport({
               ))}</ol>
             </details>
           )}
-          {structureIssue && <p>Export keeps your existing section order and applies the template’s cover and styles. Matching sections and tables use the template’s layout.</p>}
+          {structureIssue && <p>Studio will adapt the existing copy to the template’s sections and tables for the download. This uses your writing connection and keeps the editor draft intact.</p>}
           <div className="s-actions">
-            <button type="button" className="s-btn" disabled={busy || generationBusy || unsavedImage || !text.trim()} onClick={() => void perform(() => downloadTemplatedNewsletter(contentId, library.selected!, title, text, "docx"))}>Download newsletter DOCX</button>
-            <button type="button" className="s-btn s-primary" disabled={busy || generationBusy || unsavedImage || !text.trim()} onClick={() => void perform(() => downloadTemplatedNewsletter(contentId, library.selected!, title, text, "pdf"))}>Download newsletter PDF</button>
+            <button type="button" className="s-btn" disabled={busy || generationBusy || unsavedImage || Boolean(structureIssue && draftDirty) || !text.trim()} onClick={() => void perform(() => download("docx"))}>Download newsletter DOCX</button>
+            <button type="button" className="s-btn s-primary" disabled={busy || generationBusy || unsavedImage || Boolean(structureIssue && draftDirty) || !text.trim()} onClick={() => void perform(() => download("pdf"))}>Download newsletter PDF</button>
           </div>
+          {structureIssue && draftDirty && <p role="status">Save the draft before formatting it for download.</p>}
           {unsavedImage && <p role="status">Save the draft to export changes to the main image.</p>}
           <p>Export includes the template cover and the saved Studio main image. PDF export uses LibreOffice.</p>
         </>

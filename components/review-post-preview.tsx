@@ -1,15 +1,17 @@
 "use client";
 
 import { useState, type ComponentType } from "react";
+import { newsletterStructureIssue, type NewsletterSection } from "@/lib/studio/newsletter-outline";
 import type { Content } from "@/lib/studio/types";
 import { checkedNewsletterResponse, downloadTemplatedNewsletter, newsletterTemplateEndpoint } from "./newsletter-template-export";
 import { PostPreview } from "./post-preview";
 
 export function ReviewPostPreview({
-  content, local, AssetMedia, returnToDraft,
+  content, local, AssetMedia, returnToDraft, onFormatExport,
 }: {
   content: Content;
   local: boolean;
+  onFormatExport: (templateId: string) => Promise<string>;
   returnToDraft?: () => Promise<boolean>;
   AssetMedia: ComponentType<{ source: string; kind?: "image" | "video" | "audio" }>;
 }) {
@@ -28,9 +30,10 @@ export function ReviewPostPreview({
         `${newsletterTemplateEndpoint}?contentId=${encodeURIComponent(id)}`,
         { cache: "no-store", signal: AbortSignal.timeout(15000) },
       ));
-      const { selected } = await response.json();
+      const { selected, outline } = await response.json() as { selected: string | null; outline?: NewsletterSection[] };
       if (!selected) throw new Error("Select a Word template for this newsletter in Create.");
-      await downloadTemplatedNewsletter(id, selected, title, text, "docx");
+      const formatted = newsletterStructureIssue(outline ?? [], text) ? await onFormatExport(selected) : text;
+      await downloadTemplatedNewsletter(id, selected, title, formatted, "docx");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not download this newsletter.");
     } finally {

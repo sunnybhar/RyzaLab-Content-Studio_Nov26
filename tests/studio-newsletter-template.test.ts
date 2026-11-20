@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import JSZip from "jszip";
+import { initialState, DEMO_ACTOR } from "../lib/studio/seed";
+import { settleWrittenOutput } from "../lib/studio/draft-candidates";
+import { copyIdentity } from "../lib/studio/solo-quality";
+import type { Job } from "../lib/studio/types";
 import { newsletterWritingGuidance, renderNewsletterTemplate } from "../lib/studio/newsletter-template";
 
 test("template export preserves existing copy and uses matching Word table styles", async () => {
@@ -23,11 +27,7 @@ test("template export preserves existing copy and uses matching Word table style
   const { sections } = await newsletterWritingGuidance(bytes);
   assert.deepEqual(sections, [{ heading: "What changed" }, { heading: "What to check", columns: ["Check", "Result"] }]);
 
-  const custom = await renderNewsletterTemplate(bytes, "New issue",
-    "## My opening\nMy wording stays exactly here.\n\n| Action | Outcome |\n| --- | --- |\n| Save | Keep existing copy |\n\n## Sources\n- https://example.org/source");
-  const customXml = await (await JSZip.loadAsync(custom)).file("word/document.xml")!.async("string");
-  assert.match(customXml, /My opening.*My wording stays exactly here.*<w:tbl>.*Action.*Outcome.*Keep existing copy.*Sources.*https:\/\/example.org\/source/s);
-  assert.doesNotMatch(customXml, /What changed|What to check|Internal notes|\[Sample/);
+  await assert.rejects(() => renderNewsletterTemplate(bytes, "New issue", "## My opening\nMy wording stays exactly here."), /does not yet match the template/);
 
   const result = await renderNewsletterTemplate(bytes, "New issue",
     "Subtitle: A practical guide\n\n## What changed\nDetails.\n## What to check\n| Check | Result |\n| --- | --- |\n| Local controls | Still work |");
@@ -57,4 +57,25 @@ test("a saved Studio PNG is embedded alongside the template artwork", async () =
   const document = await output.file("word/document.xml")!.async("string");
   assert.match(document, /New issue[\s\S]*descr="The &lt;new&gt; image"[\s\S]*Issue photo\.[\s\S]*The newsletter body\./);
   assert.match(document, /r:embed="rIdStudioImage1"/);
+});
+
+test("template export adaptation validates structure and keeps the newsletter revision intact", () => {
+  const state = initialState(DEMO_ACTOR, true);
+  const draft = state.contents[0];
+  Object.assign(draft, { channel: "Newsletter", format: "Newsletter", state: "review", text: "Saved wording and meaning." });
+  const job = {
+    kind: "text", channel: "Newsletter", contentId: draft.id, createdBy: DEMO_ACTOR.email,
+    targetRevision: draft.revision, targetIdentity: copyIdentity(draft, state), outputContract: "draft_v1",
+    prompt: JSON.stringify({ templateExportId: "family", newsletterTemplate: { sections: [{ heading: "The checklist" }] } }),
+  } as Job;
+  const original = structuredClone(draft);
+  settleWrittenOutput(state, job, { completion: "complete", text: JSON.stringify({ body: "## The checklist\nSaved wording and meaning." }) }, new Date().toISOString());
+  assert.equal(job.outputStatus, "ready");
+  assert.match(job.candidate?.body ?? "", /The checklist/);
+  assert.equal(job.appliedAt, undefined);
+  assert.deepEqual(draft, original);
+  settleWrittenOutput(state, job, { completion: "complete", text: JSON.stringify({ body: draft.text }) }, new Date().toISOString());
+  assert.equal(job.outputStatus, "conflict");
+  assert.match(job.error || "", /The checklist/);
+  assert.deepEqual(draft, original);
 });

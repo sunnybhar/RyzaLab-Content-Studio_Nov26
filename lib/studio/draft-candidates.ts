@@ -148,6 +148,17 @@ export function settleWrittenOutput(
     }
     if(job.candidate.imageCaptions?.some(image=>!(image.imageId==="hero"&&c.media.imageUrl)&&!c.media.sectionImages?.some(existing=>existing.id===image.imageId))){job.outputStatus="invalid";job.error="The candidate referenced an image that was not supplied. Original copy and assets were preserved.";return;}
     const template = c.channel === "Newsletter" ? newsletterTemplateFromPrompt(job.prompt) : undefined;
+    if (template?.exportOnly) {
+      const issue = newsletterStructureIssue(template.sections, job.candidate.body);
+      if (issue || c.revision !== job.targetRevision || copyIdentity(c, state) !== job.targetIdentity) {
+        job.outputStatus = "conflict";
+        job.error = issue || "The draft changed during formatting. Export the current revision again.";
+      } else {
+        job.outputStatus = "ready";
+        job.error = undefined;
+      }
+      return;
+    }
     if (template) {
       const issue = newsletterStructureIssue(template.sections, job.candidate.body);
       if (issue) job.candidate.questions.push(issue);

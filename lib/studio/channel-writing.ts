@@ -34,16 +34,18 @@ export function writingWordCount(text: string) {
 export function channelWritingContract(channel?: Channel, prompt?: string) {
   const format = writingFormat(prompt);
   const target = writingWordTarget(channel, format);
+  if (target && newsletterTemplateFromPrompt(prompt || "")?.exportOnly) return "NEWSLETTER EXPORT: preserve the saved newsletter’s meaning and approximate length. Follow the template’s section and table structure with minimal edits. Use only the facts, examples and citations already supported by the copy.";
   if (target) {
     return `${target.label.toUpperCase()}: write ${target.min.toLocaleString("en-US")}–${target.max.toLocaleString("en-US")} words of original substantive copy, excluding the Sources bibliography (about ${target.min / 200}–${target.max / 200} minutes at 200 words per minute). Use the selected template for structure, sections, tables and design; the Studio word range takes precedence over the template’s length guidance. Use the supplied evidence for practical insights, comparisons and qualified numbers. Include an introduction, readable Markdown section headings and a Sources section. Distinguish facts, inference and uncertainty. Never invent data, sources, quotes, access or experience. Return one complete piece with an optional imageBrief.`;
   }
   return "SOCIAL POST: write one concise platform-appropriate post; for LinkedIn default to 180–250 words unless the user requests another length. Do not put a Sources bibliography or research report in the post body. Keep provenance in the separate sources field for editorial checking. No invented claims or personal experience.";
 }
 
-export function newsletterTemplateFromPrompt(prompt: string): { sections: NewsletterSection[] } | undefined {
+export function newsletterTemplateFromPrompt(prompt: string): { sections: NewsletterSection[]; exportOnly: boolean } | undefined {
   try {
-    const template = JSON.parse(prompt).newsletterTemplate;
-    if (Array.isArray(template?.sections)) return template;
+    const data = JSON.parse(prompt);
+    if (Array.isArray(data.newsletterTemplate?.sections))
+      return { sections: data.newsletterTemplate.sections, exportOnly: Boolean(data.templateExportId) };
   } catch {
     // Older jobs may store plain text prompts.
   }
