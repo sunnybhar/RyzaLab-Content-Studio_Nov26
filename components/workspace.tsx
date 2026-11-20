@@ -2841,9 +2841,9 @@ export default function Workspace() {
                         renderAsset={(source, kind) => <AssetMedia source={source} kind={kind} />}
                         openDraft={() => openContent(c)}
                         requestChanges={() => reject("package.reject", c.id)}
-                        recordPriceException={() => openForm(
+                        recordPriceException={(wording) => openForm(
                           "Scoped founder price exception",
-                          [{ name: "wording", label: "Exact content line", required: true, type: "textarea" },
+                          [{ name: "wording", label: "Exact content line", value: wording, required: true, type: "textarea" },
                            { name: "reason", label: "Reason and evidence", required: true }],
                           (d) => ({ type: "exception.record", contentId: c.id, expectedRevision: c.revision, wording: val(d, "wording"), reason: val(d, "reason") }),
                           "This applies only to the quoted wording in this exact revision. It cannot waive misinformation or misrepresentation.",

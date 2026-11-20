@@ -2,6 +2,7 @@ import { completeChecks } from "./stage-fixture";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { initialState, DEMO_ACTOR } from "../lib/studio/seed";
+import { packageReadiness } from "../lib/studio/solo-quality";
 import { applyCommand } from "../lib/studio/engine";
 function fixture() {
   const state = initialState(DEMO_ACTOR, true);
@@ -81,7 +82,8 @@ test("human confirmation rejects a package changed after the person published", 
 test("founder price exception is exact-revision scoped and cannot waive misinformation checks", () => {
   let state = fixture();
   state.contents[0].text = "Book a free intro call.";
-  assert.throws(() => approve(state), /founder exception/);
+  assert.deepEqual(packageReadiness(state.contents[0], state, true).priceLines, ["Book a free intro call."]);
+  assert.throws(() => approve(state), /founder exception.*Book a free intro call/);
   state = applyCommand(state, DEMO_ACTOR, {
     type: "exception.record",
     contentId: state.contents[0].id,
@@ -89,6 +91,7 @@ test("founder price exception is exact-revision scoped and cannot waive misinfor
     wording: "Book a free intro call.",
     reason: "Founder confirms the offer and authorizes this exact CTA.",
   });
+  assert.deepEqual(packageReadiness(state.contents[0], state, true).priceLines, []);
   assert.equal(approve(state).packages.length, 1);
   state.contents[0].text =
     "Nothing ever leaves your home.\nBook a free intro call.";
@@ -126,4 +129,11 @@ test("repeated calendar submits reuse the exact package and instant while calend
     /permission/,
   );
   assert.deepEqual(state.packages[0], original);
+});
+
+test("non-commercial uses of free do not block approval", () => {
+  const state = fixture();
+  state.contents[0].text = "Feel free to inspect hands-free controls. The dashboard is free of clutter. See https://example.com/free.";
+  assert.deepEqual(packageReadiness(state.contents[0], state, true).priceLines, []);
+  assert.equal(approve(state).packages.length, 1);
 });

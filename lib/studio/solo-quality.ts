@@ -3,7 +3,7 @@ import {unplacedSectionImages} from "./document-sections";
 import {hasWritingFollowup} from "./writing-followup";
 import type { Content, StudioState } from "./types";
 import { currentWorkflow, hasVisuals } from "./stages";
-import { contentWording } from "./content-wording";
+import { contentWording, unresolvedPriceLines } from "./content-wording";
 import { review } from "../brand";
 import { StudioError } from "./permissions";
 import { confirmationMarkers } from "./input-requirements";
@@ -76,6 +76,8 @@ export function packageReadiness(c: Content, s: StudioState, singleReview = fals
     acceptance = currentCopyAcceptance(c, s),
     identity = copyIdentity(c, s);
   const blockers = copyBlockers(c);
+  const priceLines = unresolvedPriceLines(c, s);
+  if (priceLines.length) blockers.push("Price/free wording needs a scoped founder exception or a wording edit.");
   if(unplacedSectionImages(c.text,c.media).length)blockers.push("A section image lost its heading. Reassign or remove it before final review.");
   if (!singleReview && !acceptance) blockers.push("Review and approve the current copy first.");
   if (
@@ -124,6 +126,7 @@ export function packageReadiness(c: Content, s: StudioState, singleReview = fals
     ready: blockers.length === 0,
     blockers: [...new Set(blockers)],
     acceptance,
+    priceLines,
     agent,
     visual: hasVisuals(c),
     checks: [

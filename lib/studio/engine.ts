@@ -48,7 +48,7 @@ import {
 } from "./idea-generation";
 import { demoPreset, type ChannelPreset } from "./presets";
 import { ideaJobInput } from "./idea-generation";
-import { contentWording } from "./content-wording";
+import { contentWording, unresolvedPriceLines } from "./content-wording";
 import { inputRequirements } from "./input-requirements";
 import { BUDGET_CATEGORIES } from "./budget-categories";
 import { publicRetrievalTarget, researchJobInput, researchEvidence, researchSourcesCurrent } from "./research-link";
@@ -1161,24 +1161,10 @@ export function applyCommand(
           "Resolve blocking factual claims and confirmation placeholders before approval. " +
             [...blockers, ...placeholders].slice(0, 8).join(" "),
         );
-      const priceLines = all
-        .split("\n")
-        .filter((line) => /\bfree\b|\$\s*\d/i.test(line));
-      const missingPriceException = priceLines.some(
-          (line) =>
-            !(s.exceptions || []).some(
-              (e) =>
-                e.contentId === d.id &&
-                e.revision === d.revision &&
-                e.ruleVersion === s.settings.protectedVersion &&
-                e.wording === line.trim(),
-            ),
-        );
-      if (missingPriceException) editorialIssues.push("Price/free wording has no scoped founder exception.");
-      if (missingPriceException && !manualOverride)
-        bad(
-          "Price/free wording requires a scoped founder exception for each exact line in this revision.",
-        );
+      const priceLines = unresolvedPriceLines(d, s);
+      if (priceLines.length) editorialIssues.push("Price/free wording has no scoped founder exception.");
+      if (priceLines.length && !manualOverride)
+        bad(`Price/free wording requires a scoped founder exception for each exact line in this revision. First flagged line: “${priceLines[0].slice(0, 300)}”`);
       if (!manualOverride && d.media.scenes.length && d.media.scenes.some((x) => !x.sourceUrl))
         bad(
           "Video approval requires completed scene media, not only a script.",

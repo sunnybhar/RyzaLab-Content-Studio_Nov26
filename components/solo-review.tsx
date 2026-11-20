@@ -25,6 +25,7 @@ export function SoloReview({
   send,
   renderAsset,
   requestChanges,
+  recordPriceException,
   refresh,
   demo,
   onApproved,
@@ -39,7 +40,7 @@ export function SoloReview({
     kind?: "image" | "video" | "audio",
   ) => ReactNode;
   openDraft: () => void;
-  recordPriceException: () => void;
+  recordPriceException: (wording: string) => void;
   requestChanges: () => void;
   refresh: () => Promise<void>;
   demo: boolean;
@@ -289,6 +290,25 @@ export function SoloReview({
           covers the displayed content and media.
         </p>
       </details>
+      {readiness.priceLines.length > 0 && (
+        <section aria-label="Price or free wording to review">
+          <h4>Price or free wording to review</h4>
+          <p>Edit the flagged wording or record a founder exception for this revision.</p>
+          <ul>
+            {readiness.priceLines.map((wording) => (
+              <li key={wording}>
+                <p>{wording}</p>
+                {wording.length <= 2000 && can(state, actor, "policy.manage") && (
+                  <button type="button" className="s-btn" disabled={busy}
+                    onClick={() => recordPriceException(wording)}>
+                    Record exception for this line
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {allowed && (
         <>
           <details open={override || undefined}>
