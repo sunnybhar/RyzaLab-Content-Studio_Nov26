@@ -16,6 +16,7 @@ export function NewsletterComposer({
   demo,
   initialSource,
   startOpen = false,
+  focusRequest,
 }: {
   state: StudioState;
   send: (command: Command) => Promise<{ state: StudioState }>;
@@ -24,12 +25,17 @@ export function NewsletterComposer({
   demo: boolean;
   initialSource?: string;
   startOpen?: boolean;
+  focusRequest?: string;
 }) {
   const requestKey = useRef(crypto.randomUUID());
   const panel = useRef<HTMLDetailsElement>(null);
+  const titleInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (initialSource) panel.current?.scrollIntoView({ block: "start" });
-  }, [initialSource]);
+    if (!focusRequest || !panel.current) return;
+    panel.current.open = true;
+    panel.current.scrollIntoView({ block: "start" });
+    titleInput.current?.focus({ preventScroll: true });
+  }, [focusRequest]);
   const [selected, setSelected] = useState<string[]>(initialSource ? [initialSource] : []),
     [group, setGroup] = useState(sourceGroups.find(({ id }) => initialSource?.startsWith(id + ":"))?.id ?? "pipeline"),
     [title, setTitle] = useState(""),
@@ -174,6 +180,7 @@ export function NewsletterComposer({
       <label className="s-field">
         Newsletter title
         <input
+          ref={titleInput}
           aria-label="Combined newsletter title"
           value={title}
           maxLength={200}

@@ -891,9 +891,13 @@ export default function Workspace() {
   function pipelineOpen(brief:PipelineBrief){setPage("Create");setSelected(null);setPipelineFocus(brief.id);setChannel(brief.channel);setSearch("");}
   function openNewsletterComposer(source?: string) {
     if (!allowed("content.create", { channel: "Newsletter", account: "RyzaLab" }) || readOnly) return false;
-    move("Create");
+    const keepSelection = !source && page === "Create" && !activeContent;
+    if (!keepSelection) move("Create");
     setChannel("Newsletter");
-    setNewsletterSelection({ key: crypto.randomUUID(), source });
+    setNewsletterSelection({
+      key: crypto.randomUUID(),
+      source: keepSelection ? newsletterSelection?.source : source,
+    });
     return true;
   }
   function openArticleFromPost(post: Content) {
@@ -1700,9 +1704,10 @@ export default function Workspace() {
                   <Plus size={16} /> Add member
                 </button>
               ) : (
-                ["Home", "Create", "Library"].includes(page) && (
+                ["Home", "Create", "Library"].includes(page) &&
+                !(page === "Create" && channel === "Newsletter" && activeContent) && (
                   <button
-                    disabled={readOnly}
+                    disabled={readOnly || (channel === "Newsletter" && (busy || !allowed("content.create", { channel: "Newsletter", account: "RyzaLab" })))}
                     className="s-btn s-primary"
                     onClick={() => channel === "Newsletter" ? openNewsletterComposer() : newContent()}
                   >
@@ -2900,7 +2905,7 @@ export default function Workspace() {
               <>
                 {notice.startsWith("Submitted for review")&&<div className="s-info-strip" role="status">Submitted for review — now under review.<button className="s-btn" onClick={()=>move("Reviews")}>View in Reviews</button></div>}
                 <ExistingPipeline key={`create:${pipelineFocus}`} initialId={pipelineFocus} state={state} channel={channel} disabled={readOnly||busy} onIdeas={pipelineIdeas} onWrite={(b,c)=>void pipelineWrite(b,c)} onImport={pipelineImport}/>
-                {allowed("content.create",{channel:"Newsletter",account:"RyzaLab"})&&<NewsletterComposer key={newsletterSelection?.key} initialSource={newsletterSelection?.source} startOpen={channel === "Newsletter"} state={state} send={send} disabled={readOnly||busy} demo={mode==="demo"} open={id=>{setNewsletterSelection(undefined);setSelected(id);setChannel("Newsletter");setSearch("");setNotice("Combined newsletter outline saved. Write manually or explicitly request AI drafting.");}}/>}
+                {allowed("content.create",{channel:"Newsletter",account:"RyzaLab"})&&<NewsletterComposer key={newsletterSelection?.source} focusRequest={newsletterSelection?.key} initialSource={newsletterSelection?.source} startOpen={channel === "Newsletter"} state={state} send={send} disabled={readOnly||busy} demo={mode==="demo"} open={id=>{setNewsletterSelection(undefined);setSelected(id);setChannel("Newsletter");setSearch("");setNotice("Combined newsletter outline saved. Write manually or explicitly request AI drafting.");}}/>}
                 <div className="s-toolbar">
                   <div className="s-inline">
                     <h2>Your workbench</h2>

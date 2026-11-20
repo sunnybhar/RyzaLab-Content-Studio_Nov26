@@ -21,7 +21,7 @@ fixture.pipelineBriefs = [1, 2].map((index) => ({
   historical: false, sheet: "Calendar", row: index + 1, sourceFile: "Calendar.xlsx",
   importedAt: post.updatedAt, updatedAt: post.updatedAt, importedBy: DEMO_ACTOR.email,
 }));
-const script=await build({stdin:{contents:`import React,{useState}from'react';import{createRoot}from'react-dom/client';import{NewsletterComposer}from'./components/newsletter-composer';import{NewsletterSources}from'./components/newsletter-sources';import{applyCommand}from'./lib/studio/engine';window.calls=[];function App(){const[state,setState]=useState(${JSON.stringify(fixture)}),[opened,setOpened]=useState('');async function send(c){window.calls.push(c);const next=applyCommand(state,${JSON.stringify(DEMO_ACTOR)},c,{demo:true});setState(next);return{state:next};}return opened?<><p>Newsletter draft opened</p><NewsletterSources content={state.contents.find(c=>c.id===opened)}/></>:<NewsletterComposer state={state} send={send} open={setOpened} disabled={false} demo={true} initialSource="pipeline:brief-1"/>};createRoot(document.getElementById('app')).render(<App/>);`,resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'iife',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
+const script=await build({stdin:{contents:`import React,{useState}from'react';import{createRoot}from'react-dom/client';import{NewsletterComposer}from'./components/newsletter-composer';import{NewsletterSources}from'./components/newsletter-sources';import{applyCommand}from'./lib/studio/engine';window.calls=[];function App(){const[state,setState]=useState(${JSON.stringify(fixture)}),[opened,setOpened]=useState(''),[focusRequest,setFocusRequest]=useState('');async function send(c){window.calls.push(c);const next=applyCommand(state,${JSON.stringify(DEMO_ACTOR)},c,{demo:true});setState(next);return{state:next};}return opened?<><p>Newsletter draft opened</p><NewsletterSources content={state.contents.find(c=>c.id===opened)}/></>:<><button onClick={()=>setFocusRequest(crypto.randomUUID())}>Create Brand Newsletter</button><div style={{height:1400}}/><NewsletterComposer focusRequest={focusRequest} state={state} send={send} open={setOpened} disabled={false} demo={true} initialSource="pipeline:brief-1"/></>};createRoot(document.getElementById('app')).render(<App/>);`,resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,format:'iife',jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
 const browser = await chromium.launch({ executablePath: "/usr/bin/chromium", args: ["--no-sandbox"] });
 try {
   const page = await browser.newPage({ acceptDownloads: true });
@@ -32,7 +32,16 @@ try {
     body: '<div id="app"></div><script>' + script.outputFiles[0].text + '</script>',
   }));
   await page.goto("http://localhost:31341/");
-  await page.getByLabel("Combined newsletter title", { exact: true }).fill("Home systems: a combined issue");
+  const title = page.getByLabel("Combined newsletter title", { exact: true });
+  const shortcut = page.getByRole("button", { name: "Create Brand Newsletter", exact: true });
+  await shortcut.click();
+  assert.ok(await title.evaluate(input => document.activeElement === input && input.getBoundingClientRect().bottom <= innerHeight));
+  await title.fill("Home systems: a combined issue");
+  await page.getByText("Combine sources into a newsletter", { exact: true }).click();
+  await shortcut.click();
+  assert.equal(await title.inputValue(), "Home systems: a combined issue");
+  assert.ok(await title.evaluate(input => document.activeElement === input));
+  assert.equal(await page.evaluate(() => (window as any).calls.length), 0);
   const create = page.getByRole("button", { name: "Create Brand Newsletter draft" });
   assert.equal(await create.isEnabled(), false);
   assert.equal(await page.getByRole("checkbox", { name: /Pipeline brief 1/ }).isChecked(), true);
