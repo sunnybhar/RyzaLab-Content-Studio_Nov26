@@ -775,11 +775,21 @@ export function applyCommand(
       });
       break;
     }
+    case "idea.chooseTextAlternative": {
+      const idea = s.ideas.find((item) => item.id === c.ideaId);
+      const draft = content(c.contentId, "package.approve");
+      if (!idea || draft.ideaId !== idea.id || !draft.ideaTextAlternative || draft.deletedAt || !draft.text.trim())
+        bad("Choose a completed text alternative for this idea.");
+      need("read", { channel: idea.channel });
+      idea.selectedTextAlternativeId = draft.id;
+      break;
+    }
     case "idea.use": {
       const selectedIdea=s.ideas.find(i=>i.id===c.id);if(selectedIdea?.pipelineBriefId)pipelineSnapshot(s,actor,selectedIdea.pipelineBriefId);
       const idea = s.ideas.find((i) => i.id === c.id);
       if (!idea) bad("Idea not found.");
       need("read", { channel: idea.channel });
+      if (c.textAlternative && c.format !== "Text post") bad("A text alternative must be a text post.");
       if(idea.state==="rejected")bad("Revise or copy this rejected idea before writing from it.");
       if (idea.state !== "approved") {
         if(can(s,actor,"idea.review",{channel:idea.channel}))idea.state="approved";
@@ -789,7 +799,7 @@ export function applyCommand(
       need("content.create", { channel: targetChannel, account: c.account||"RyzaLab" });
       const existing = s.contents.find(
         (d) =>
-          d.ideaId === idea.id && d.createdBy === actor.email && !d.deletedAt && d.channel===targetChannel && d.format===c.format && d.account===(c.account||"RyzaLab"),
+          d.ideaId === idea.id && d.createdBy === actor.email && !d.deletedAt && d.channel===targetChannel && d.format===c.format && d.ideaTextAlternative === c.textAlternative && d.account===(c.account||"RyzaLab"),
       );
       if (existing) {
         content(existing.id);
@@ -805,6 +815,7 @@ export function applyCommand(
         metadata: "",
         media: structuredClone(EMPTY_MEDIA),
         ideaId: idea.id,
+        ...(c.textAlternative ? {ideaTextAlternative: c.textAlternative} : {}),
         pipelineBriefId:idea.pipelineBriefId,pipelineSnapshot:idea.pipelineSnapshot,
         researchJobIds: idea.researchJobIds,
         assignedTo: actor.email,
@@ -822,7 +833,7 @@ export function applyCommand(
       };
       s.contents.unshift(d);
       const policy = soloPolicy(s);
-      if (policy?.autoDraft)
+      if (policy?.autoDraft && !c.textAlternative)
         d.initialWriting = {
           id: id(),
           actor: actor.email,

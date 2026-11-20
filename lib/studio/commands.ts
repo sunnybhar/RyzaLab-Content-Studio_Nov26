@@ -165,7 +165,8 @@ export const commandSchema = z.discriminatedUnion("type", [
     decision: z.enum(["approved", "rejected"]),
     reason: z.string().max(2000).optional(),
   }),
-  command("idea.use", { id, targetChannel: z.enum(["LinkedIn","Instagram","Reddit","YouTube","Newsletter"]).optional(), format: short, account: z.string().max(200) }),
+  command("idea.use", { id, targetChannel: z.enum(["LinkedIn","Instagram","Reddit","YouTube","Newsletter"]).optional(), format: short, account: z.string().max(200), textAlternative: z.enum(["story", "practical", "perspective"]).optional() }),
+  command("idea.chooseTextAlternative", { ideaId: id, contentId: id }),
   command("content.generate", {
     contentId: id,
     kind: z.enum(["text", "review"]),

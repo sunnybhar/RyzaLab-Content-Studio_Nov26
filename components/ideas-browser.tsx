@@ -1,5 +1,6 @@
 "use client";
 
+import { IDEA_TEXT_ALTERNATIVES } from "@/lib/studio/idea-alternatives";
 import { IdeasRequestBoard } from "./ideas-request-board";
 import type { IdeaStage } from "@/lib/studio/idea-board";
 import { useId, useRef, useState } from "react";
@@ -67,14 +68,13 @@ export function IdeasBrowser({
   onApprove: (idea: Idea) => Promise<boolean>;
   onReject: (idea: Idea) => void;
   onReuse: (idea: Idea, mode: "revise" | "copy") => Promise<boolean>;
-  onGenerateAlternatives?: (idea: Idea, format: string, account: string, count: number) => Promise<void>;
-  onChooseAlternative?: (draft: Content) => void;
+  onGenerateAlternatives?: (idea: Idea, account: string) => Promise<void>;
+  onChooseAlternative?: (draft: Content) => Promise<boolean>;
   onNewsletter?: (idea: Idea) => Promise<boolean>;
 }) {
   const [selectedId, setSelectedId] = useState<string>();
   const [format, setFormat] = useState("Text post");
   const [account, setAccount] = useState("RyzaLab");
-  const [alternativeCount, setAlternativeCount] = useState(3);
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const selected = allIdeas.find((idea) => idea.id === selectedId);
@@ -130,8 +130,10 @@ export function IdeasBrowser({
     selected &&
     contents.find(
       (content) =>
-        content.ideaId === selected.id &&
-        (!targetChannel||content.channel===targetChannel) && content.format===format && content.account===account.trim() &&
+        content.ideaId === selected.id && !content.ideaTextAlternative &&
+        (!targetChannel || content.channel === targetChannel) &&
+        content.format === (onGenerateAlternatives ? targetChannel === "Newsletter" ? "Newsletter" : "Text post" : format) &&
+        content.account === account.trim() &&
         content.createdBy === actorEmail &&
         !content.deletedAt,
     );
@@ -217,6 +219,7 @@ export function IdeasBrowser({
               )}
               {selected.state !== "rejected" && (
                 <div className="s-idea-create-options">
+                  {!onGenerateAlternatives && (
                   <label>
                     Draft format
                     <select
@@ -237,6 +240,7 @@ export function IdeasBrowser({
                       ))}
                     </select>
                   </label>
+                  )}
                   <label>
                     Account / publication
                     <input
@@ -248,32 +252,29 @@ export function IdeasBrowser({
               )}
               {onGenerateAlternatives && selected.state !== "rejected" && (
                 <section className="s-version" aria-label="Draft alternatives">
-                  <h3>Draft alternatives</h3>
-                  <label className="s-field">
-                    Number of drafts
-                    <select value={alternativeCount} disabled={busy} onChange={(event) => setAlternativeCount(Number(event.target.value))}>
-                      <option value={3}>3</option><option value={4}>4</option>
-                    </select>
-                  </label>
-                  <p>Generate different formats from this idea and its saved sources. Each draft uses the monthly AI budget.</p>
+                  <h3>Compare three text posts</h3>
+                  <p>Get a story-led post, a practical guide, and a point of view from this idea. Each uses the monthly AI budget.</p>
                   <button type="button" className="s-btn"
                     disabled={busy || !account.trim() || !canUse(selected, account.trim())}
-                    onClick={() => void onGenerateAlternatives(selected, format, account.trim(), alternativeCount)}>
-                    {busy ? "Generating drafts…" : `Generate ${alternativeCount} drafts`}
+                    onClick={() => void onGenerateAlternatives(selected, account.trim())}>
+                    {busy ? "Generating posts…" : "Generate 3 text posts"}
                   </button>
                   {contents.filter((draft) =>
-                    draft.ideaId === selected.id && draft.createdBy === actorEmail && !draft.deletedAt &&
+                    draft.ideaId === selected.id && draft.createdBy === actorEmail && !draft.deletedAt && draft.ideaTextAlternative &&
                     draft.channel === (targetChannel ?? selected.channel) && draft.account === account.trim() && draft.text.trim(),
-                  ).map((draft) => (
-                    <details className="s-version" key={draft.id}>
-                      <summary>{draft.format} · {draft.state.replaceAll("_", " ")}</summary>
-                      <p style={{ whiteSpace: "pre-wrap" }}>{draft.text}</p>
-                      <button type="button" className="s-btn" disabled={busy}
-                        onClick={() => { close(); onChooseAlternative?.(draft); }}>
-                        Open {draft.format} for final review
-                      </button>
-                    </details>
-                  ))}
+                  ).map((draft) => {
+                    const label = IDEA_TEXT_ALTERNATIVES[draft.ideaTextAlternative!].label;
+                    return (
+                      <details className="s-version" key={draft.id}>
+                        <summary>{label}{selected.selectedTextAlternativeId === draft.id ? " · Selected for final review" : ""}</summary>
+                        <p style={{ whiteSpace: "pre-wrap" }}>{draft.text}</p>
+                        <button type="button" className="s-btn" disabled={busy}
+                          onClick={async () => { if (await onChooseAlternative?.(draft)) close(); }}>
+                          Choose {label.toLowerCase()} for final review
+                        </button>
+                      </details>
+                    );
+                  })}
                 </section>
               )}
               {error && (
@@ -303,7 +304,7 @@ export function IdeasBrowser({
                       !canUse(selected, account.trim())
                     }
                     onClick={async () => {
-                      if (await onUse(selected, format, account.trim()))
+                      if (await onUse(selected, onGenerateAlternatives ? "Text post" : format, account.trim()))
                         close();
                     }}
                   >
@@ -311,7 +312,7 @@ export function IdeasBrowser({
                       ? "Open linked draft"
                       : automaticWriting
                         ? "Use idea & prepare draft with AI"
-                        : "Use idea & open draft"}
+                        : onGenerateAlternatives ? "Create draft" : "Use idea & open draft"}
                   </button>
                 )}
                 {selected.state === "pending" && (

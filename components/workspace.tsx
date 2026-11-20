@@ -13,6 +13,7 @@ import {ExistingPipeline} from "./existing-pipeline";
 import type {PipelineBrief} from "@/lib/studio/pipeline";
 
 import {activeStudioView, ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active-channels";
+import { IDEA_TEXT_ALTERNATIVES, type IdeaTextAlternative } from "@/lib/studio/idea-alternatives";
 import {ideaStage} from "@/lib/studio/idea-board";
 import {GenerationRulesStatus} from "./generation-rules-status";
 import {isLongForm} from "@/lib/studio/channel-writing";
@@ -795,11 +796,12 @@ export default function Workspace() {
         type: "idea.use", id: idea.id, targetChannel:channel==="All channels"?idea.channel:channel, format:(channel==="Newsletter"?"Newsletter":format), account,
       });
       const draft = result.state.contents.find(
-        (item) => item.ideaId === idea.id && item.createdBy === actor!.email && !item.deletedAt && item.channel===(channel==="All channels"?idea.channel:channel) && item.format===(channel==="Newsletter"?"Newsletter":format) && item.account===(account||"RyzaLab"),
+        (item) => item.ideaId === idea.id && !item.ideaTextAlternative && item.createdBy === actor!.email && !item.deletedAt && item.channel===(channel==="All channels"?idea.channel:channel) && item.format===(channel==="Newsletter"?"Newsletter":format) && item.account===(account||"RyzaLab"),
       );
       if (!draft) throw new Error("The linked draft could not be found. Refresh the workspace and try again.");
       setPage("Create");
       setSelected(draft.id);
+      setChannel(draft.channel);
       setSearch("");
       setNotice("Draft ready to edit.");
       return true;
@@ -808,47 +810,38 @@ export default function Workspace() {
       return false;
     } finally { setBusy(false); }
   }
-  async function generateIdeaAlternatives(idea: Idea, preferred: string, account: string, count: number) {
+  async function generateIdeaAlternatives(idea: Idea, account: string) {
     if (!local || busy) return;
     const targetChannel = channel === "All channels" ? idea.channel : channel;
-    const formats = [...new Set([
-      targetChannel === "Newsletter" ? "Newsletter" : preferred,
-      "Text post", "Carousel", "Video", "Blog",
-    ])].slice(0, count);
-    const guidance: Record<string, string> = {
-      "Text post": "Write a standalone social post with a concise hook and practical takeaway.",
-      Carousel: "Write a carousel caption and a sequence of short, distinct slides. Populate the slides field.",
-      Video: "Write a short video script with a hook, scene cues and closing line. Generate text only.",
-      Image: "Write an image-led post with a caption and an image concept. Generate text only.",
-      Blog: "Write a cohesive blog with a clear takeaway and well-structured sections.",
-      Newsletter: "Write newsletter copy with an opening, useful sections and a practical conclusion.",
-    };
+    const alternatives = Object.entries(IDEA_TEXT_ALTERNATIVES) as [IdeaTextAlternative, (typeof IDEA_TEXT_ALTERNATIVES)[IdeaTextAlternative]][];
     let ready = 0;
     setBusy(true);
     setLocalError("");
     try {
-      for (const format of formats) {
-        const created = await send({ type: "idea.use", id: idea.id, targetChannel, format, account });
+      for (const [variant, { label, instruction }] of alternatives) {
+        const created = await send({
+          type: "idea.use", id: idea.id, targetChannel, format: "Text post", account, textAlternative: variant,
+        });
         const draft = created.state.contents.find((entry) =>
           entry.ideaId === idea.id && entry.createdBy === actor!.email && !entry.deletedAt &&
-          entry.channel === targetChannel && entry.format === format && entry.account === account,
+          entry.channel === targetChannel && entry.ideaTextAlternative === variant && entry.account === account,
         );
-        if (!draft) throw new Error(`Could not open the ${format} draft.`);
+        if (!draft) throw new Error(`Could not open the ${label} draft.`);
         if (!draft.text.trim()) {
           const generated = await send({
             type: "content.generate", kind: "text", contentId: draft.id,
             expectedRevision: draft.revision, idempotencyKey: crypto.randomUUID(),
-            notes: guidance[format] || `Write one complete ${format} in its usual format.`,
+            notes: `Write a standalone text post for ${targetChannel}. ${instruction} Return publishable-length written copy as a working draft.`,
           });
           if (!generated.state.contents.find((entry) => entry.id === draft.id)?.text.trim())
-            throw new Error(`The ${format} model response did not produce usable draft copy.`);
+            throw new Error(`The ${label} model response did not produce usable copy.`);
         }
         ready++;
       }
-      setNotice(`${ready} drafts ready to compare. Choose one for final review.`);
+      setNotice("Three text posts are ready. Compare them and choose one for final review.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Draft generation stopped.";
-      setLocalError(`${ready} of ${formats.length} drafts are ready. ${message}`);
+      setLocalError(`${ready} of 3 posts are ready. ${message}`);
     } finally {
       setBusy(false);
     }
@@ -2057,11 +2050,12 @@ export default function Workspace() {
                   canUse={(idea, account) => allowed("content.create", { channel:channel==="All channels"?idea.channel:channel, account }) && (idea.state !== "pending" || allowed("idea.review", { channel: idea.channel }) || (idea.createdBy===actor.email && allowed("idea.edit",{channel:idea.channel})))}
                   canReuse={(idea) => allowed("idea.edit", { channel: idea.channel })}
                   onGenerateAlternatives={local ? generateIdeaAlternatives : undefined}
-                  onChooseAlternative={local ? (draft) => {
-                    setPage("Create");
-                    setSelected(draft.id);
-                    setSearch("");
-                    setNotice("Draft selected. Submit it for review when it is ready.");
+                  onChooseAlternative={local ? async (draft) => {
+                    const chosen = await execute({
+                      type: "idea.chooseTextAlternative", ideaId: draft.ideaId, contentId: draft.id,
+                    }, "Post selected. Submit it for review when it is ready.");
+                    if (chosen) { setPage("Create"); setSelected(draft.id); setSearch(""); }
+                    return chosen;
                   } : undefined}
                   onUse={useIdea}
                   onNewsletter={allowed("content.create", {channel: "Newsletter", account: "RyzaLab"}) ? (idea) => createNewsletter("idea", idea.id) : undefined}
@@ -4441,9 +4435,12 @@ function Editor({
   queue: (kind?: FunctionKind) => void;
   newsletter?: () => Promise<boolean>;
 }) {
+  const [generatingDraft, setGeneratingDraft] = useState(false);
+  const [draftGenerationError, setDraftGenerationError] = useState("");
+  const generationLock = useRef(false);
   const writingInFlight = state.settings.reviewPolicy?.mode === "two_step" && state.jobs.some((job) => job.contentId === c.id && job.kind === "text" && job.outputContract === "draft_v1" && ["queued", "running"].includes(job.state));
   // Prevent local edits while the worker may apply a result to the saved revision.
-  const readOnly = editorReadOnly || Boolean(writingInFlight) || (state.settings.reviewPolicy?.mode === "two_step" && busy);
+  const readOnly = editorReadOnly || generatingDraft || Boolean(writingInFlight) || (state.settings.reviewPolicy?.mode === "two_step" && busy);
   const [writeFormat,setWriteFormat]=useState(c.format);
   const [title, setTitle] = useState(c.title);
   const [text, setText] = useState(c.text);
@@ -4472,6 +4469,32 @@ function Editor({
     job.id === c.generatedBy?.jobId && job.researchUnavailable,
   );
   const dirty=draftSave.dirty;
+  const defaultPublicQuery = !savedResearchIds?.length && !c.newsletterSource &&
+    !c.newsletterSources?.length && c.title.length >= 5 ? c.title : "";
+  function draftGenerationCommand(options: { notes?: string; publicQuery?: string; publicSourceUrls?: string[] } = {}): Command {
+    return {
+      type: "content.generate",
+      kind: "text",
+      contentId: c.id,
+      expectedRevision: c.revision,
+      idempotencyKey: crypto.randomUUID(),
+      ...options,
+    };
+  }
+  async function generateSavedDraft() {
+    if (generationLock.current || readOnly || dirty || externalChange || busy) return;
+    generationLock.current = true;
+    setGeneratingDraft(true);
+    setDraftGenerationError("");
+    try {
+      await send(draftGenerationCommand({ publicQuery: defaultPublicQuery }));
+    } catch (error) {
+      setDraftGenerationError(error instanceof Error ? error.message : "Draft generation failed. Check Generation activity.");
+    } finally {
+      generationLock.current = false;
+      setGeneratingDraft(false);
+    }
+  }
   const requirements = inputRequirements({...c, title, text, metadata, media});
   function jumpToRequirement(item: ReturnType<typeof inputRequirements>[number]) {
     setTab(item.tab);
@@ -4707,33 +4730,36 @@ function Editor({
               <NewsletterSources content={c}/>
               {c.newsletterSource && <details className="s-version"><summary>Newsletter source · {c.newsletterSource.channel} · {c.newsletterSource.title}</summary><p>Saved source snapshot{c.newsletterSource.revision ? ` · revision ${c.newsletterSource.revision}` : ""}. Use this as reference for manual writing or AI adaptation.</p><div style={{whiteSpace:"pre-wrap"}}>{c.newsletterSource.text}</div><p>{c.newsletterSource.metadata}</p></details>}
               {local && c.state === "draft" && (
-                <button
-                  type="button"
-                  className="s-btn s-primary"
-                  disabled={readOnly || busy || dirty || externalChange}
-                  onClick={() => form(
-                    "Generate draft",
-                    [
-                      field("notes", "Instructions and source material", "", "textarea"),
-                      field("publicQuery", "Public research topic (optional with saved sources)", !savedResearchIds?.length && c.title.length >= 5 ? c.title : ""),
-                      field("publicSourceUrls", "Public source links (one HTTPS URL per line)", "", "textarea"),
-                    ],
-                    (data) => ({
-                      type: "content.generate",
-                      contentId: c.id,
-                      kind: "text",
-                      expectedRevision: c.revision,
-                      notes: val(data, "notes"),
-                      publicQuery: val(data, "publicQuery"),
-                      publicSourceUrls: val(data, "publicSourceUrls").split(/\r?\n/).map(link => link.trim()).filter(Boolean),
-                      idempotencyKey: crypto.randomUUID(),
-                    }),
-                    "Studio uses the idea and saved sources. If you enter a public topic, it also searches for fresh sources. If search finds nothing usable, Studio still writes a working draft. The model request uses your monthly AI budget.",
-                    "Generate draft",
-                  )}
-                >
-                  Generate draft
-                </button>
+                <>
+                  <div className="s-actions">
+                    <button type="button" className="s-btn s-primary"
+                      disabled={readOnly || busy || dirty || externalChange}
+                      onClick={() => void generateSavedDraft()}>
+                      {generatingDraft ? "Generating draft…" : "Generate draft"}
+                    </button>
+                    <button type="button" className="s-btn"
+                      disabled={readOnly || busy || dirty || externalChange}
+                      onClick={() => form(
+                        "Generate with instructions",
+                        [
+                          field("notes", "Instructions and source material", "", "textarea"),
+                          field("publicQuery", "Public research topic (optional)", defaultPublicQuery),
+                          field("publicSourceUrls", "Public source links (one HTTPS URL per line)", "", "textarea"),
+                        ],
+                        (data) => draftGenerationCommand({
+                          notes: val(data, "notes"),
+                          publicQuery: val(data, "publicQuery"),
+                          publicSourceUrls: val(data, "publicSourceUrls").split(/\r?\n/).map(link => link.trim()).filter(Boolean),
+                        }),
+                        "Studio uses your saved sources and instructions. The model request uses your monthly AI budget.",
+                        "Generate draft",
+                      )}>
+                      Add instructions or sources
+                    </button>
+                  </div>
+                  {generatingDraft && <p role="status">Generating copy with your writing model. It will appear here when saved.</p>}
+                  {draftGenerationError && <p role="alert">{draftGenerationError}</p>}
+                </>
               )}
               {local && c.text.trim() && (c.state === "draft" || c.state === "review") && (
                 <button

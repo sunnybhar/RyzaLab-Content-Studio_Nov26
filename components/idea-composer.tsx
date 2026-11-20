@@ -401,7 +401,7 @@ export function IdeaComposer({
               disabled={working}
               onClick={() => void openIdea(idea)}
             >
-              Use idea and open writing
+              {local ? "Create draft" : "Use idea and open writing"}
             </button>
           </article>
         ))}

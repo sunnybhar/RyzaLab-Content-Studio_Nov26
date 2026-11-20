@@ -96,6 +96,7 @@ export interface Idea {
   audience?: string;
   format?: string;
   generationRunId?: string;
+  selectedTextAlternativeId?: string;
   researchUnavailable?: true;
 }
 export type SlideLayer = {
@@ -251,6 +252,7 @@ export interface Content {
   metadata: string;
   media: MediaProject;
   ideaId?: string;
+  ideaTextAlternative?: import("./idea-alternatives").IdeaTextAlternative;
   newsletterSources?: import("./newsletter-bundle").NewsletterSourceSnapshot[];
   newsletterOutline?: string;
   newsletterRequestKey?: string;

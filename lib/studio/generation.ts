@@ -69,7 +69,8 @@ export function generationInput(
       );
   }
   if(c.pipelineBriefId)pipelineSnapshot(state,actor,c.pipelineBriefId);
-  const idea = state.ideas.find((i) => i.id === c.ideaId);
+  const sourceIdeaId = c.newsletterSource?.kind === "idea" ? c.newsletterSource.id : undefined;
+  const idea = state.ideas.find((i) => i.id === (c.ideaId ?? sourceIdeaId));
   const researchJobIds = input.researchJobIds ?? c.researchJobIds ?? idea?.researchJobIds ?? [];
   const webEvidence = eligibleEvidence(researchEvidence(state,actor,c.channel,researchJobIds));
   if(researchJobIds.length&&!webEvidence.length)throw new StudioError(409,"The selected evidence contains only excluded sources. Research again using non-Wikipedia sources before writing.");
