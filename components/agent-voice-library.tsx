@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import type { Actor, Channel, Command, StudioState } from "@/lib/studio/types";
+import { voiceArchiveEntries, voiceArchiveText } from "@/lib/studio/voice-archive";
 import { can } from "@/lib/studio/permissions";
 export function AgentVoiceLibrary({
   state,
@@ -37,6 +38,51 @@ export function AgentVoiceLibrary({
     pending.current = undefined;
     setMessage("");
   }
+  async function importArchive(archive: File) {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    let saved = 0;
+    const skipped: string[] = [];
+    try {
+      for await (const entry of voiceArchiveEntries(archive)) {
+        try {
+          if (!entry.bytes) throw new Error(entry.error);
+          const { fileName, bytes } = entry;
+          const defaultTitle = fileName.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim() || "Original content";
+          let title = defaultTitle, text: string | undefined;
+          let file: { fileName: string; byteSize: number; base64: string } | undefined;
+          if (/\.(?:docx|pdf)$/i.test(fileName)) {
+            const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
+            file = { fileName, byteSize: bytes.length, base64: btoa(binary) };
+          } else {
+            const document = voiceArchiveText(fileName, bytes);
+            title = document.title || title;
+            text = document.text;
+            if (!text || text.length > 60000)
+              throw new Error("Use readable text of at most 60,000 characters.");
+          }
+          const meta = new TextEncoder().encode(JSON.stringify([target, contentType, title, fileName]));
+          const fingerprint = new Uint8Array(meta.length + bytes.length);
+          fingerprint.set(meta);
+          fingerprint.set(bytes, meta.length);
+          const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", fingerprint));
+          const requestKey = "archive:" + Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
+          await send({ type: "agentVoice.create", title: title.slice(0, 200), contentType, channel: target, text, file, requestKey });
+          saved++;
+        } catch (cause) {
+          skipped.push(`${entry.fileName}: ${cause instanceof Error ? cause.message : "Could not save."}`);
+        }
+      }
+      setMessage(`${saved} voice example${saved === 1 ? "" : "s"} imported or already saved.`);
+      if (skipped.length) setError(`Skipped ${skipped.length} document${skipped.length === 1 ? "" : "s"}. ${skipped.join(" ")}`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not open this ZIP.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function download(
     entry: NonNullable<StudioState["agentVoiceExamples"]>[number],
   ) {
@@ -64,6 +110,20 @@ export function AgentVoiceLibrary({
         voice, tone, structure and format. Add multiple examples by pasting text
         or uploading files. New AI requests use up to six latest matching channel or shared examples, up to 2,000 characters each.
       </p>
+      <label className="s-field">
+        Import posts from ZIP
+        <input
+          type="file"
+          accept=".zip,application/zip"
+          disabled={!allowed || busy}
+          onChange={(event) => {
+            const archive = event.currentTarget.files?.[0];
+            event.currentTarget.value = "";
+            if (archive) void importArchive(archive);
+          }}
+        />
+      </label>
+      <p>Each document becomes one voice example using the content type and brand-wide setting below. Media files are skipped.</p>
       <form
         onSubmit={async (event) => {
           event.preventDefault();

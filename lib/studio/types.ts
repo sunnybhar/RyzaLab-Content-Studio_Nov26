@@ -410,6 +410,7 @@ export interface Job {
   leaseId?: string;
   leaseUntil?: string;
   dispatchStartedAt?: string;
+  localVideoOperation?: string;
 }
 export interface Notice {
   id: string;

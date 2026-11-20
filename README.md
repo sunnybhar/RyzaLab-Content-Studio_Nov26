@@ -25,7 +25,13 @@ Under **AI & budgets**, set a **Monthly AI budget** in **Spending** and add a wr
 
 The default writing connection also handles ideas and review unless you set separate models. Workflows that require independent review still need a reviewer from a different provider. Paid jobs use the one monthly budget and reserve an estimate before dispatch. Studio sends the relevant instructions and references to the selected provider. Public queries and URLs go to the research services. Unknown costs retain the reservation, and uncertain requests are never automatically retried.
 
-Anthropic, OpenAI, and Gemini text models need verified pricing. A qualified token-based writing rate can cover ideas and review for the same model. The existing Claude Sonnet 5.5 rate is included. Other models require a qualified rate from the workspace or `STUDIO_RATE_CARD`. Local media generation still requires additional support.
+Anthropic, OpenAI, and Gemini text models need verified pricing. A qualified token-based writing rate can cover ideas and review for the same model. The existing Claude Sonnet 5.5 rate is included. Other models require a qualified rate from the workspace or `STUDIO_RATE_CARD`.
+
+### Images, video, and voice examples
+
+In **AI Connections**, add a separate **Image** connection for OpenAI GPT Image or a **Video** connection for Gemini Veo 3.1. Add a qualified fixed-price rate for the exact 1024 × 1024 medium image or 8-second 720p landscape video preset through the server rate registry. In a saved draft, use **Write** for images and **Video & audio** for clips. Get an estimate before generating. Video requests continue on the provider; use **Check video progress** to retrieve that same request. Results are saved in the local SQLite database for preview, download, or attachment to the draft. The existing per-post ceiling still applies.
+
+To bring in older posts, open **Agent Rules → RyzaLab tone and original content voice → Import posts from ZIP**. Each supported document is saved as its own example. Images and other non-document files in the archive are skipped. Imported examples are kept in the workspace database.
 
 ## Supabase-backed development
 

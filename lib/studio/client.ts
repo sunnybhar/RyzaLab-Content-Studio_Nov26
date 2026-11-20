@@ -155,7 +155,7 @@ export function useStudio() {
   async function send(command: Command) {
     try {
       setError("");
-      if (local && ["connection.save", "connection.validate", "connection.disconnect", "connection.delete", "content.generate", "idea.generate", "research.retrieve"].includes(command.type)) {
+      if (local && ["connection.save", "connection.validate", "connection.disconnect", "connection.delete", "content.generate", "idea.generate", "research.retrieve", "agentVoice.create", "media.generate", "media.check"].includes(command.type)) {
         try {
           const result = await requestLocalAI<LocalSnapshot & { job?: Job }>(command);
           if (result.revision >= localRevision.current) {

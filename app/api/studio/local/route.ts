@@ -19,7 +19,7 @@ function allowed(request: Request) {
     host !== null &&
     hosts.has(host) &&
     (!site || site === "same-origin" || site === "none") &&
-    (request.method === "GET" || request.headers.get("origin") === `http://${host}`)
+    (["GET", "HEAD"].includes(request.method) || request.headers.get("origin") === `http://${host}`)
   );
 }
 
@@ -30,6 +30,7 @@ function withDatabase<T>(run: (database: DatabaseSync) => T): T {
   try {
     database.exec(`
       PRAGMA busy_timeout = 5000;
+      CREATE TABLE IF NOT EXISTS local_media (id TEXT PRIMARY KEY, mime TEXT NOT NULL, bytes BLOB NOT NULL);
       CREATE TABLE IF NOT EXISTS credentials (id TEXT PRIMARY KEY, ciphertext TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS workspace (
         id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -46,6 +47,32 @@ function withDatabase<T>(run: (database: DatabaseSync) => T): T {
 export function GET(request: Request) {
   if (!allowed(request)) return new Response(null, { status: 404 });
   try {
+    const media = new URL(request.url).searchParams.get("media");
+    if (media !== null) {
+      if (!/^[0-9a-f-]{36}$/i.test(media)) return new Response(null, { status: 404 });
+      const row = withDatabase((db) =>
+        db.prepare("SELECT mime, bytes FROM local_media WHERE id = ?").get(media),
+      );
+      if (!row || !(row.bytes instanceof Uint8Array)) return new Response(null, { status: 404 });
+      const bytes = Uint8Array.from(row.bytes);
+      const mediaHeaders = { ...headers, "Content-Type": String(row.mime), "X-Content-Type-Options": "nosniff", "Accept-Ranges": "bytes" };
+      const range = request.headers.get("range");
+      if (!range)
+        return new Response(bytes, { headers: { ...mediaHeaders, "Content-Length": String(bytes.length) } });
+      const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+      const start = match?.[1] ? Number(match[1]) : Math.max(0, bytes.length - Number(match?.[2]));
+      const end = match?.[1] && match[2] ? Math.min(bytes.length - 1, Number(match[2])) : bytes.length - 1;
+      if (!match || (!match[1] && !match[2]) || start > end || start >= bytes.length)
+        return new Response(null, { status: 416, headers: { ...mediaHeaders, "Content-Range": `bytes */${bytes.length}` } });
+      return new Response(bytes.slice(start, end + 1), {
+        status: 206,
+        headers: {
+          ...mediaHeaders,
+          "Content-Length": String(end - start + 1),
+          "Content-Range": `bytes ${start}-${end}/${bytes.length}`,
+        },
+      });
+    }
     const row = withDatabase((db) =>
       db.prepare("SELECT revision, state FROM workspace WHERE id = 1").get(),
     );

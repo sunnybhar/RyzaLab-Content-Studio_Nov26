@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
+import { extractAgentFile } from "./agent-file-extract";
 import { commandSchema } from "./commands";
 import { automaticIdeaResearch } from "./automatic-idea-research";
 import { ideaJobInput } from "./idea-generation";
@@ -20,6 +21,8 @@ import { ProviderFailure, runProvider, validateConnection } from "./providers";
 import { RESEARCH_PRICE } from "./research-budget";
 import { DEMO_ACTOR } from "./seed";
 import type { Connection, StudioState } from "./types";
+import { resolvedConnection } from "./solo-quality";
+import { checkLocalVideo, LocalVideoFailed, localVideoModel, startLocalVideo } from "./local-video";
 import { settleUsageCost } from "./usage-cost";
 
 const providerSchema = z.enum(["anthropic", "openai", "google"]);
@@ -29,7 +32,7 @@ const connectionInput = z.object({
   expectedUpdatedAt: z.string().optional(),
   title: z.string().trim().min(1).max(100),
   provider: providerSchema,
-  function: textFunctions,
+  function: z.enum(["text", "ideas", "review", "image", "video"]),
   model: z.string().regex(/^[A-Za-z0-9_.:/-]{1,150}$/),
   key: z.string().trim().min(1).max(1024).optional(),
 });
@@ -123,6 +126,16 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
   const current = withDatabase(workspace);
   if (revision !== current.revision) throw new StudioError(409, "The local workspace changed. Refresh before retrying.");
   const { state } = current;
+  if (command.type === "agentVoice.create") {
+    const input = commandSchema.parse(command);
+    if (input.type !== "agentVoice.create") throw new StudioError(400, "Invalid voice example.");
+    requirePermission(state, DEMO_ACTOR, "workflow.edit", {
+      channel: input.channel === "Shared" ? undefined : input.channel,
+    });
+    const extractedText = input.file ? await extractAgentFile(input.file) : undefined;
+    const next = applyCommand(state, DEMO_ACTOR, { ...input, extractedText });
+    return next === state ? current : withDatabase((db) => write(db, revision, next));
+  }
   if (command.type === "connection.models") {
     const input = connectionInput.pick({ provider: true, function: true, key: true }).extend({connectionId: z.string().optional()}).parse(command);
     requirePermission(state, DEMO_ACTOR, "connections.manage", { function: input.function });
@@ -148,7 +161,12 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
     if (!input?.key && (!existing || existing.provider !== connection.provider || !existing.hasKey))
       throw new StudioError(400, "Enter the API key for this provider.");
     const key = input?.key || withDatabase((db) => storedKey(db, id));
-    await validateConnection(connection, key);
+    if (connection.function === "video") {
+      if (connection.provider !== "google" || !localVideoModel.test(connection.model))
+        throw new StudioError(400, "Video requires a Gemini Veo 3.1 connection.");
+      if (!(await discoverModels(connection.provider, key)).includes(connection.model))
+        throw new StudioError(400, "This Veo model was not returned for your account.");
+    } else await validateConnection(connection, key);
     if (existing) Object.assign(existing, connection);
     else state.connections.push(connection);
     state.settings.defaultConnections ??= {};
@@ -166,6 +184,137 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
       const saved = write(db, revision, next);
       db.prepare("DELETE FROM credentials WHERE id = ?").run(z.string().parse(command.id));
       return saved;
+    }));
+  }
+
+  if (command.type === "media.check") {
+    const job = state.jobs.find((entry) => entry.id === command.jobId && entry.kind === "video");
+    if (!job || job.createdBy !== DEMO_ACTOR.email) throw new StudioError(404, "Video request not found.");
+    if (job.state !== "running" || !job.localVideoOperation) return { ...current, job };
+    const key = withDatabase((db) => storedKey(db, job.connectionId));
+    let bytes: Buffer | undefined;
+    let failure: string | undefined;
+    try {
+      bytes = await checkLocalVideo(job.localVideoOperation, key);
+    } catch (error) {
+      if (error instanceof LocalVideoFailed) failure = error.message;
+      else throw new StudioError(502, error instanceof ProviderFailure ? error.message :
+        "The video could not be downloaded. Check the same request again.");
+    }
+    if (!bytes && !failure) return { ...withDatabase(workspace), job };
+    return withDatabase((db) => transaction(db, () => {
+      const latest = workspace(db);
+      const finished = latest.state.jobs.find((entry) => entry.id === job.id);
+      if (!finished || finished.state !== "running") return { ...latest, job: finished };
+      if (bytes) {
+        db.prepare("INSERT INTO local_media VALUES (?, ?, ?)").run(job.id, "video/mp4", bytes);
+        finished.state = "succeeded";
+        finished.result = `/api/studio/local?media=${job.id}`;
+        finished.error = "Quoted cost retained until reconciled.";
+      } else {
+        finished.state = "unknown";
+        finished.error = failure;
+      }
+      latest.state.version++;
+      return { ...write(db, latest.revision, latest.state), job: finished };
+    }));
+  }
+
+  if (command.type === "media.quote" || command.type === "media.generate") {
+    const input = z.object({
+      kind: z.enum(["image", "video"]),
+      contentId: z.string(),
+      expectedRevision: z.number().int().positive(),
+      prompt: z.string().trim().min(12).max(12000),
+      maximum: z.number().int().positive().optional(),
+      idempotencyKey: z.uuid().optional(),
+    }).parse(command);
+    const draft = state.contents.find((item) => item.id === input.contentId && !item.deletedAt);
+    if (!draft || draft.revision !== input.expectedRevision || draft.state !== "draft")
+      throw new StudioError(409, "Save and reopen the current draft before generating media.");
+    const scope = { channel: draft.channel, contentId: draft.id, account: draft.account, assignedTo: draft.assignedTo, function: input.kind };
+    requirePermission(state, DEMO_ACTOR, "content.edit", scope);
+    requirePermission(state, DEMO_ACTOR, "job.create", scope);
+    const connectionId = resolvedConnection(state, draft.channel, input.kind);
+    const connection = state.connections.find((item) => item.id === connectionId && item.function === input.kind);
+    if (!connection || (input.kind === "video"
+      ? connection.provider !== "google" || !localVideoModel.test(connection.model)
+      : connection.provider !== "openai" || !/^gpt-image-[a-z0-9.-]+$/i.test(connection.model)))
+      throw new StudioError(409, "Choose a supported, validated connection for this function in AI Connections.");
+    const fixedRates = effectiveRates(state).filter((rate) => rate.fixedCents && rate.function === input.kind);
+    if (!fixedRates.some((rate) => rate.provider === connection.provider && rate.model === connection.model))
+      throw new StudioError(409, "A verified fixed price for this exact image or 8-second video preset is needed before generation.");
+    const prepared = {
+      type: "job.enqueue", kind: input.kind, channel: draft.channel, contentId: draft.id,
+      connectionId, prompt: input.prompt, estimate: input.maximum, idempotencyKey: input.idempotencyKey, confirmed: true,
+    };
+    const priced = quote(state, prepared, fixedRates);
+    if (command.type === "media.quote") return { cost: priced.cost, model: connection.model };
+    if (!input.maximum || !input.idempotencyKey || priced.cost > input.maximum)
+      throw new StudioError(409, "Get and confirm the current estimate before generating.");
+    const previous = state.jobs.find((entry) => entry.idempotencyKey === input.idempotencyKey && entry.createdBy === DEMO_ACTOR.email);
+    if (previous) {
+      if (previous.contentId !== draft.id || previous.kind !== input.kind || previous.prompt !== input.prompt)
+        throw new StudioError(409, "This request ID belongs to different media.");
+      return { ...current, job: previous };
+    }
+    if (state.jobs.some((entry) => entry.contentId === draft.id && entry.kind === input.kind &&
+      ["queued", "running", "unknown", "awaiting_confirmation"].includes(entry.state)))
+      throw new StudioError(409, "Check or reconcile the existing media request first.");
+    const key = withDatabase((db) => storedKey(db, connection.id));
+    let configured = structuredClone(state);
+    configured.settings.requestCap ||= state.settings.monthlyCap;
+    Object.assign(configured.connections.find((entry) => entry.id === connection.id)!, {
+      maxRequestCost: (connection as Connection & { maxRequestCost?: number }).maxRequestCost || priced.cost,
+    });
+    const policy = configured.settings.reviewPolicy;
+    const preparation = preparationFor(configured, draft, DEMO_ACTOR.email, new Date().toISOString());
+    if (policy && !preparation?.functions.includes(input.kind))
+      configured = applyCommand(configured, DEMO_ACTOR, {
+        type: "preparation.authorize", contentId: draft.id, expectedRevision: draft.revision,
+        maxCents: preparation?.maxCents || policy.packageCap, includeImages: input.kind === "image",
+      });
+    const next = applyCommand(configured, DEMO_ACTOR, prepared, {
+      quotedCost: priced.cost, pricingSnapshot: priced.pricingSnapshot,
+    });
+    next.settings.requestCap = state.settings.requestCap;
+    next.connections = state.connections;
+    const job = next.jobs.find((entry) => entry.idempotencyKey === input.idempotencyKey)!;
+    job.state = "running";
+    job.attempt = 1;
+    job.dispatchStartedAt = new Date().toISOString();
+    withDatabase((db) => write(db, revision, next));
+    let operation: string | undefined;
+    let image: Uint8Array | undefined;
+    let problem: ProviderFailure | undefined;
+    try {
+      if (job.kind === "video") operation = await startLocalVideo(connection.model, input.prompt, key);
+      else image = (await runProvider(job, connection, key)).bytes;
+    } catch (error) {
+      problem = error instanceof ProviderFailure ? error : new ProviderFailure(true, "Media outcome is uncertain. The reservation is retained.");
+    }
+    return withDatabase((db) => transaction(db, () => {
+      const latest = workspace(db);
+      const finished = latest.state.jobs.find((entry) => entry.id === job.id);
+      if (!finished || finished.state !== "running")
+        throw new StudioError(409, "The recorded media job changed. Check its outcome before retrying.");
+      if (problem) {
+        finished.state = problem.ambiguous ? "unknown" : "failed";
+        finished.error = problem.message;
+        if (!problem.ambiguous) finished.reserved = 0;
+      } else if (operation) {
+        finished.localVideoOperation = operation;
+      } else if (image) {
+        db.prepare("INSERT INTO local_media VALUES (?, ?, ?)").run(job.id, "image/png", image);
+        finished.state = "succeeded";
+        finished.result = `/api/studio/local?media=${job.id}`;
+        finished.error = "Quoted cost retained until reconciled.";
+      } else {
+        finished.state = "unknown";
+        finished.error = "No usable media was returned. The reservation is retained.";
+      }
+      latest.state.version++;
+      return { ...write(db, latest.revision, latest.state), job: finished };
     }));
   }
 

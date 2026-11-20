@@ -2,6 +2,7 @@
 import {ArticleImages} from "./article-images";
 import {NewsletterSources} from "./newsletter-sources";
 import {NewsletterComposer} from "./newsletter-composer";
+import { LocalMediaAssistant } from "./local-media-assistant";
 import {ImageAssistant} from "./image-assistant";
 import {parseDocumentLayout} from "@/lib/studio/document-layout";
 import {ReviewHistory} from "./review-history";
@@ -2730,6 +2731,7 @@ export default function Workspace() {
                 busy={busy}
                 mode={mode as "demo" | "live"}
                 local={local}
+                quoteMedia={(command) => requestLocalAI<{ cost: number; model: string }>(command)}
                 run={execute}
                 back={() => {setSelected(null);setSearch("");setChannel(activeContent.channel);}}
                 form={openForm}
@@ -3530,7 +3532,7 @@ export default function Workspace() {
                     <p>Connect a provider for a specific creative function.</p>
                   </div>
                   <ConnectionEditor
-                    functions={FUNCTIONS.filter((kind) => (!local || ["text", "ideas", "review"].includes(kind)) && allowed("connections.manage", { function: kind }))}
+                    functions={FUNCTIONS.filter((kind) => (!local || ["text", "ideas", "review", "image", "video"].includes(kind)) && allowed("connections.manage", { function: kind }))}
                     demo={mode === "demo" && !local}
                     save={send}
                     discover={discoverAccountModels}
@@ -4353,6 +4355,7 @@ function Editor({
   busy,
   mode,
   local,
+  quoteMedia,
   run,
   back,
   form,
@@ -4370,6 +4373,7 @@ function Editor({
   busy: boolean;
   mode: "demo" | "live";
   local: boolean;
+  quoteMedia: (command: Command) => Promise<{ cost: number; model: string }>;
   run: (c: Command, m?: string) => Promise<boolean>;
   back: () => void;
   form: (
@@ -4719,7 +4723,16 @@ function Editor({
               {isLongForm(c.channel,c.format)&&<section aria-label={/blog/i.test(c.format)?"Download blog":"Download newsletter"} className="s-actions"><button className="s-btn" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined,imageAlt:media.imageAlt,imageCaption:media.imageCaption,sectionImages:includeNewsletterImage?media.sectionImages:undefined,onExported:result=>setExportPages(result.pages)}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} DOCX</button><button className="s-btn s-primary" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined,imageAlt:media.imageAlt,imageCaption:media.imageCaption,sectionImages:includeNewsletterImage?media.sectionImages:undefined,onExported:result=>setExportPages(result.pages)}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} PDF</button>{(media.imageUrl||media.sectionImages?.length)&&<label><input type="checkbox" checked={includeNewsletterImage} onChange={e=>setIncludeNewsletterImage(e.target.checked)}/> Include attached images</label>}<p>Downloads use the content above automatically. No copy/paste or image is required.</p>{exportPages&&<p>Last PDF: {exportPages} pages in the selected layout.</p>}{documentLayoutFile&&!documentLayout&&<p>The uploaded layout is reference guidance. Export uses the default design until valid layout JSON settings are saved in Agent Rules.</p>}</section>}
               {c.pipelineSnapshot&&<details className="pipeline-origin"><summary>Existing Pipeline · {c.pipelineSnapshot.externalId||c.pipelineSnapshot.title}</summary><p>{c.pipelineSnapshot.angle}</p><p>Imported from {c.pipelineSnapshot.sourceFile} · {c.pipelineSnapshot.sheet}, row {c.pipelineSnapshot.row} · brief v{c.pipelineSnapshot.version}</p><p>Planned: {c.pipelineSnapshot.plannedDate||"Unscheduled"} {c.pipelineSnapshot.plannedTime} · {c.pipelineSnapshot.timezone}. This is not a publishing approval.</p>{c.pipelineSnapshot.sourceUrls.map(url=><p key={url}>{url}</p>)}</details>}
               <GenerationRulesStatus content={c} state={state}/>
-              <ImageAssistant content={c} state={state} actor={actor} dirty={dirty||externalChange} readOnly={readOnly} busy={busy} run={run} refresh={refresh} progressJob={progressJob} AssetMedia={AssetMedia}/>
+              {local ? (
+                <LocalMediaAssistant
+                  kind="image" content={c} jobs={state.jobs.filter((job) => job.contentId === c.id && job.kind === "image")}
+                  disabled={readOnly || dirty || externalChange || busy || c.state !== "draft"}
+                  request={quoteMedia} send={send}
+                  attach={(imageUrl, imagePrompt) => updateMedia({ imageUrl, imagePrompt, imageAlt: "AI-generated concept illustration", imageCaption: "AI-generated concept illustration." })}
+                />
+              ) : (
+                <ImageAssistant content={c} state={state} actor={actor} dirty={dirty||externalChange} readOnly={readOnly} busy={busy} run={run} refresh={refresh} progressJob={progressJob} AssetMedia={AssetMedia}/>
+              )}
               <ArticleImages text={text} media={media} update={updateMedia} disabled={readOnly} AssetMedia={AssetMedia}/>
               {media.imageUrl&&<section className="s-version" aria-label="Attached main image"><AssetMedia source={media.imageUrl}/><p>{media.imageAlt||"AI-generated concept illustration"}</p><button className="s-btn" disabled={readOnly} onClick={()=>updateMedia({imageUrl:undefined,imageAlt:undefined,imageCaption:undefined})}>Remove main image</button><p>Save after removing. The stored original remains available in image request history.</p></section>}
 
@@ -5086,7 +5099,18 @@ function Editor({
           )}
           {tab === "Video & audio" && (
             <div className="s-media-editor">
-              <div className="s-actions"><button className="s-btn" disabled={readOnly || dirty} onClick={() => queue("video")}>AI video assistance</button><button className="s-btn" disabled={readOnly || dirty} onClick={() => queue("audio")}>AI audio assistance</button></div>
+              {local ? (
+                <LocalMediaAssistant
+                  kind="video" content={c} jobs={state.jobs.filter((job) => job.contentId === c.id && job.kind === "video")}
+                  disabled={readOnly || dirty || externalChange || busy || c.state !== "draft"}
+                  request={quoteMedia} send={send}
+                  attach={(sourceUrl, script) => updateMedia({
+                    scenes: [...media.scenes, { id: key(), title: "Generated clip", script, duration: 8, sourceUrl, preserveAudio: true }],
+                  })}
+                />
+              ) : (
+                <div className="s-actions"><button className="s-btn" disabled={readOnly || dirty} onClick={() => queue("video")}>AI video assistance</button><button className="s-btn" disabled={readOnly || dirty} onClick={() => queue("audio")}>AI audio assistance</button></div>
+              )}
               <div className="s-info-strip">
                 <Video size={17} />
                 <span>
