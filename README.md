@@ -4,7 +4,7 @@ Founder-first editorial workspace for ideas, nine content channels, versioned ag
 
 ## Local workspace in VS Code
 
-Open the GitHub checkout in VS Code. With Node.js 24, run these commands from the integrated terminal:
+Open the GitHub checkout in VS Code. With Node.js 24 LTS or 25.6.0, run these commands from the integrated terminal:
 
 ```sh
 npm ci
