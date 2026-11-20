@@ -813,15 +813,16 @@ export default function Workspace() {
       initialFormat === "Article" ? "Target 800–1,200 words of article copy." : "Start with a clear idea. Your channel workflow will guide the draft.",
       "Create draft",
     );
-  async function useIdea(idea: Idea, format: string, account: string) {
+  async function useIdea(idea: Idea, format: string, account: string, targetChannel = channel === "All channels" ? idea.channel : channel) {
+    const targetFormat = targetChannel === "Newsletter" ? "Newsletter" : format;
     setBusy(true);
     setLocalError("");
     try {
       const result = await send({
-        type: "idea.use", id: idea.id, targetChannel:channel==="All channels"?idea.channel:channel, format:(channel==="Newsletter"?"Newsletter":format), account,
+        type: "idea.use", id: idea.id, targetChannel, format: targetFormat, account,
       });
       const draft = result.state.contents.find(
-        (item) => item.ideaId === idea.id && !item.ideaTextAlternative && item.createdBy === actor!.email && !item.deletedAt && item.channel===(channel==="All channels"?idea.channel:channel) && item.format===(channel==="Newsletter"?"Newsletter":format) && item.account===(account||"RyzaLab"),
+        (item) => item.ideaId === idea.id && !item.ideaTextAlternative && item.createdBy === actor!.email && !item.deletedAt && item.channel === targetChannel && item.format === targetFormat && item.account===(account||"RyzaLab"),
       );
       if (!draft) throw new Error("The linked draft could not be found. Refresh the workspace and try again.");
       setPage("Create");
@@ -4080,7 +4081,7 @@ export default function Workspace() {
           </footer>
         </main>
       </div>
-      {ideaComposer&&<IdeaComposer mode={ideaComposer} initialBriefId={pipelineIdea?.id} initialChannel={pipelineIdea?.channel||(channel==="All channels"?"LinkedIn":channel)} state={state} actor={actor} demo={mode==="demo" && !local} local={local} send={send} refresh={(force=false)=>refresh(!force)} close={()=>setIdeaComposer(null)} openContent={idea=>useIdea(idea,idea.channel==="Newsletter"?"Newsletter":"Text post","RyzaLab")} onSaved={setNotice}/>}
+      {ideaComposer&&<IdeaComposer mode={ideaComposer} initialBriefId={pipelineIdea?.id} initialChannel={pipelineIdea?.channel||(channel==="All channels"?"LinkedIn":channel)} state={state} actor={actor} demo={mode==="demo" && !local} local={local} send={send} refresh={(force=false)=>refresh(!force)} close={()=>setIdeaComposer(null)} openContent={(idea, format) => useIdea(idea, format ?? "Text post", "RyzaLab", idea.channel)} onSaved={setNotice}/>}
       {queueTarget && (
         <QueueRequest
           state={state}

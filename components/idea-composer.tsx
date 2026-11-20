@@ -39,7 +39,7 @@ export function IdeaComposer({
   send: (command: Command) => Promise<unknown>;
   refresh: (force?:boolean) => Promise<void>;
   close: () => void;
-  openContent: (idea: Idea) => Promise<boolean>;
+  openContent: (idea: Idea, format?: "Article") => Promise<boolean>;
 }) {
   const resumed=!demo?state.jobs.find(j=>j.kind==="ideas"&&!j.contentId&&j.channel===initialChannel&&j.createdBy===actor.email&&j.ideaPurpose===(mode==="manual"?"manual_assistance":undefined)&&["queued","running","awaiting_confirmation","unknown"].includes(j.state)):undefined;
   let resumeInput:{topic?:string;audience?:string;sourceText?:string;quantity?:number;pipeline?:{id?:string}}={};try{resumeInput=resumed?JSON.parse(resumed.prompt):{};}catch{}
@@ -153,11 +153,11 @@ export function IdeaComposer({
       setBusy(false);
     }
   }
-  async function openIdea(idea: Idea) {
+  async function openIdea(idea: Idea, format?: "Article") {
     setBusy(true);
     setError("");
     try {
-      if (await openContent(idea)) close();
+      if (await openContent(idea, format)) close();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not open writing.");
     } finally {
@@ -403,6 +403,11 @@ export function IdeaComposer({
             >
               {local ? "Create draft" : "Use idea and open writing"}
             </button>
+            {idea.channel === "LinkedIn" && (
+              <button type="button" className="s-btn" disabled={working} onClick={() => void openIdea(idea, "Article")}>
+                Create article draft
+              </button>
+            )}
           </article>
         ))}
       <IdeaEvidence
