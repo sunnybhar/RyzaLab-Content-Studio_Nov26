@@ -3933,7 +3933,7 @@ export default function Workspace() {
           </footer>
         </main>
       </div>
-      {ideaComposer&&<IdeaComposer mode={ideaComposer} initialBriefId={pipelineIdea?.id} initialChannel={pipelineIdea?.channel||(channel==="All channels"?"LinkedIn":channel)} state={state} actor={actor} demo={mode==="demo" && !local} send={send} refresh={(force=false)=>refresh(!force)} close={()=>setIdeaComposer(null)} openContent={idea=>useIdea(idea,idea.channel==="Newsletter"?"Newsletter":"Text post","RyzaLab")} onSaved={setNotice}/>}
+      {ideaComposer&&<IdeaComposer mode={ideaComposer} initialBriefId={pipelineIdea?.id} initialChannel={pipelineIdea?.channel||(channel==="All channels"?"LinkedIn":channel)} state={state} actor={actor} demo={mode==="demo" && !local} local={local} send={send} refresh={(force=false)=>refresh(!force)} close={()=>setIdeaComposer(null)} openContent={idea=>useIdea(idea,idea.channel==="Newsletter"?"Newsletter":"Text post","RyzaLab")} onSaved={setNotice}/>}
       {queueTarget && (
         <QueueRequest
           state={state}

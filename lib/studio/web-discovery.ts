@@ -130,6 +130,7 @@ export async function retrieveBroadReferences(
   profile: ResearchProfile = researchProfileSchema.parse({}),
   sourceUrls: string[] = [],
   pageReader?: typeof readPublicPage,
+  quick = false,
 ) {
   const supplied = [
     ...new Set(sourceUrls.map((value) => publicPageUrl(value).href)),
@@ -148,13 +149,16 @@ export async function retrieveBroadReferences(
       400,
       "A supplied link is excluded by the research source policy. Remove it or update Source Preferences; Wikipedia cannot be enabled.",
     );
-  const started=Date.now(), deadline=started+65000;
+  const started=Date.now(), deadline=started+(quick ? 50000 : 65000);
   const plan=investigationPlan(query,profile),limit=profile.depth==="focused"?6:profile.depth==="deep"?12:20;
-  const initial=await discoverWeb(plan.searches[0].query,request,6000);
+  const search = (item: (typeof plan.searches)[number]) => discoverWeb(item.query, request, 6000);
+  const initialSearch = search(plan.searches[0]);
+  const follow = () => Promise.all(plan.searches.slice(1).map(async (item) => ({ search: item, result: await search(item) })));
+  const [initial, followups] = quick
+    ? await Promise.all([initialSearch, follow()])
+    : [await initialSearch, await follow()] as const;
   let requests=2,bytes=initial.bytes;
   const gaps=[...initial.gaps],found=[...initial.citations];
-  // Specialist discovery first; then pursue original, independent and contrary evidence concurrently.
-  const followups=await Promise.all(plan.searches.slice(1).map(async search=>({search,result:await discoverWeb(search.query,request,6000)})));
   for(const {search,result} of followups){requests+=2;bytes+=result.bytes;found.push(...result.citations);gaps.push(...result.gaps.map(g=>search.purpose+": "+g));}
   const direct = new Set(supplied),
     byDomain = new Map<string, number>();
@@ -190,8 +194,10 @@ export async function retrieveBroadReferences(
   const reader = pageReader || readPublicPage;
   for (let index = 0; index < candidates.length; index += 3) {
     const batch = await Promise.all(
-      candidates.slice(index, index + 3).map(async (c) => {
-        if ((request !== fetch && !pageReader) || bytes > 5 * 1024 * 1024 || Date.now()+12000>deadline) {
+      candidates.slice(index, index + 3).map(async (c, offset) => {
+        if ((request !== fetch && !pageReader) || bytes > 5 * 1024 * 1024 ||
+            Date.now() + (quick ? 7000 : 12000) > deadline ||
+            (quick && index + offset >= Math.max(6, supplied.length))) {
           if (!c.citedText) {
             gaps.push(
               `Supplied source at ${host(c.url)} was not read within this retrieval invocation/budget.`,
@@ -240,7 +246,7 @@ export async function retrieveBroadReferences(
     );
     citations.push(...(batch.filter(Boolean) as Record<string, unknown>[]));
   }
-  if (citations.length < 3) {
+  if (citations.length < 3 && (!quick || Date.now() + 12000 < deadline)) {
     requests++;
     try {
       const scholarly = await retrievePublicReferences(query, request, now);

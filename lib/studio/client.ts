@@ -149,7 +149,7 @@ export function useStudio() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ revision: localRevision.current, command }),
-        signal: AbortSignal.timeout(150000),
+        signal: AbortSignal.timeout(170000),
       });
       return await readStudioResponse<T>(response);
     } catch (error) {

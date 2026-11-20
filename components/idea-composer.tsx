@@ -21,6 +21,7 @@ export function IdeaComposer({
   state,
   actor,
   demo,
+  local = false,
   send,
   refresh,
   close,
@@ -34,6 +35,7 @@ export function IdeaComposer({
   state: StudioState;
   actor: Actor;
   demo: boolean;
+  local?: boolean;
   send: (command: Command) => Promise<unknown>;
   refresh: (force?:boolean) => Promise<void>;
   close: () => void;
@@ -104,7 +106,7 @@ export function IdeaComposer({
     retry.current = null;
     setError("");
   }
-  async function generate() {
+  async function generate(usePublicResearch = true) {
     if (title.trim().length < 5) {
       setError("Enter a public topic of at least five characters.");
       return;
@@ -117,6 +119,7 @@ export function IdeaComposer({
       channel,
       mode,
       selectedResearch,
+      usePublicResearch,
     });
     if (!retry.current || retry.current.signature !== signature)
       retry.current = { signature, key: crypto.randomUUID() };
@@ -129,15 +132,15 @@ export function IdeaComposer({
       await send({
         type: "idea.generate",
         pipelineBriefId,
-        automaticResearch: !selectedResearch.length,
+        automaticResearch: usePublicResearch && !selectedResearch.length,
         researchJobIds:selectedResearch,
         purpose: mode === "manual" ? "manual_assistance" : undefined,
         channel,
         topic: title.trim(),
         audience: audience.trim() || "Selected channel audience",
         quantity: mode === "manual" ? 1 : quantity,
-        research: !demo,
-        sourceText: brief,
+        research: !demo && usePublicResearch,
+        sourceText: usePublicResearch ? brief : [brief, "Provisional brainstorming only. Suggest angles and questions to verify; do not claim public research or invent citations."].filter(Boolean).join("\n\n"),
         idempotencyKey: key,
       });
       retry.current = null;
@@ -237,6 +240,14 @@ export function IdeaComposer({
       </p>
       {!!selectedResearch.length&&<p role="status">Using {selectedResearch.length} saved research result(s). Generating ideas will reuse these sources without another public search.</p>}
       {submitted&&<IdeaRunProgress job={job} busy={busy} startedAt={startedAt} sourceCount={evidenceIds.length} readyCount={mode==="manual"?(proposal?1:0):cards.length} targetCount={mode==="manual"?1:quantity} lastChecked={lastChecked} syncError={syncError} requestError={error} refresh={()=>checkStatus(true)} confirm={confirmRequest}/>}
+      {local && !working && !job && !selectedResearch.length &&
+        /Public research took longer|No relevant non-Wikipedia evidence was retrieved/.test(error) && (
+          <div className="s-actions">
+            <button type="button" className="s-btn" onClick={() => void generate(false)}>
+              Generate provisional ideas without public research
+            </button>
+          </div>
+        )}
       {relevanceWarning&&<p className="s-alert s-error" role="alert">These saved references do not match the current topic/audience well. They are retained for audit; inspect the ideas before using them. This request will not be regenerated automatically.</p>}
       {!!state.pipelineBriefs?.length&&<label className="s-field">Existing Pipeline<select aria-label="Existing Pipeline" value={pipelineBriefId||""} disabled={working} onChange={e=>{const b=state.pipelineBriefs?.find(b=>b.id===e.target.value);setPipelineBriefId(b?.id);if(b){editTitle(b.title);setBrief([b.angle,b.sourceUrls.join("\n")].filter(Boolean).join("\n\n"));setAudience(b.audience);}else{editTitle("");setBrief("");setAudience("");}}}><option value="">Start from a new topic</option>{state.pipelineBriefs.map(b=><option key={b.id} value={b.id}>{b.title} · {b.plannedDate||"Unscheduled"} · {b.channel}</option>)}</select></label>}
       <details className="s-version"><summary>Use saved research or add source links</summary><ResearchPanel state={state} actor={actor} channel={channel} selected={selectedResearch} onSelected={setSelectedResearch} run={async command=>{try{await send(command);setError("");return true;}catch(e){setError(e instanceof Error?e.message:"Research could not complete. Saved sources remain available.");return false;}}} refresh={refresh} disabled={working} demo={demo}/></details>

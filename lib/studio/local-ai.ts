@@ -141,7 +141,7 @@ function localRates(state: StudioState): Rate[] {
   return rates;
 }
 
-const researchTimeoutMs = 45000;
+const researchTimeoutMs = 60000;
 
 const retrieveLocalReferences: typeof retrieveBroadReferences = async (
   query, request = fetch, now, profile, sourceUrls,
@@ -151,7 +151,7 @@ const retrieveLocalReferences: typeof retrieveBroadReferences = async (
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timedOut = new Promise<never>((_, reject) => {
     timer = setTimeout(() => {
-      reject(new StudioError(504, "Public research took longer than 45 seconds. No paid generation was started. Try a narrower topic or add a source link."));
+      reject(new StudioError(504, "Public research took longer than 60 seconds. No paid generation was started. Try a narrower topic or add a source link."));
       controller.abort();
     }, researchTimeoutMs);
   });
@@ -165,7 +165,11 @@ const retrieveLocalReferences: typeof retrieveBroadReferences = async (
   try {
     return await Promise.race([
       timedOut,
-      retrieveBroadReferences(query, boundedFetch, now, profile, sourceUrls, (url) => readPublicPage(url, 0, deadline)),
+      retrieveBroadReferences(
+        query, boundedFetch, now, profile, sourceUrls,
+        (url) => readPublicPage(url, 0, Math.min(deadline, Date.now() + 7000)),
+        true,
+      ),
     ]);
   } finally {
     clearTimeout(timer);
