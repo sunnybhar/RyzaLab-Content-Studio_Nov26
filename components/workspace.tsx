@@ -472,6 +472,7 @@ export default function Workspace() {
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [pipelineIdea,setPipelineIdea]=useState<{id:string;channel:Channel}|null>(null);
   const [pipelineFocus,setPipelineFocus]=useState("");
+  const [newsletterSelection, setNewsletterSelection] = useState<{ key: string; source?: string }>();
   const [calendarImportOpen,setCalendarImportOpen]=useState(false);
   const [ideaComposer,setIdeaComposer]=useState<"generate"|"manual"|null>(null);
   const [busy, setBusy] = useState(false);
@@ -683,6 +684,7 @@ export default function Workspace() {
   }
   function move(next: Page) {
     setPage(next);
+    setNewsletterSelection(undefined);
     setSelected(null);
     setMenuOpen(false);
     setSearch("");
@@ -816,7 +818,8 @@ export default function Workspace() {
     );
   };
   async function useIdea(idea: Idea, format: string, account: string, targetChannel = channel === "All channels" ? idea.channel : channel) {
-    const targetFormat = targetChannel === "Newsletter" ? "Newsletter" : format;
+    if (targetChannel === "Newsletter") return openNewsletterComposer(`idea:${idea.id}`);
+    const targetFormat = format;
     setBusy(true);
     setLocalError("");
     try {
@@ -876,21 +879,22 @@ export default function Workspace() {
   }
   function pipelineIdeas(brief:PipelineBrief,mode:"generate"|"manual",target:Channel){setPipelineIdea({id:brief.id,channel:target});setIdeaComposer(mode);}
   async function pipelineWrite(brief:PipelineBrief,target:Channel){
+    if (target === "Newsletter") {
+      openNewsletterComposer(`pipeline:${brief.id}`);
+      return;
+    }
     setBusy(true);setLocalError("");
     const requestKey=crypto.randomUUID();
     try{const result=await send({type:"pipeline.draft",briefId:brief.id,channel:target,requestKey});const draft=result.state.contents.find(d=>d.pipelineRequestKey===requestKey&&d.createdBy===actor!.email);if(!draft)throw new Error("Could not open the linked draft. Refresh and check Create.");setPage("Create");setSelected(draft.id);setChannel(target);setSearch("");setNotice("Draft created from the pipeline brief. No AI request or publishing started.");}catch(e){setLocalError((e as Error).message);}finally{setBusy(false);}
   }
   function pipelineImport(){setPage("Calendar");setSelected(null);setCalendarImportOpen(true);}
   function pipelineOpen(brief:PipelineBrief){setPage("Create");setSelected(null);setPipelineFocus(brief.id);setChannel(brief.channel);setSearch("");}
-  async function createNewsletter(sourceKind: "idea" | "content", sourceId: string, expectedRevision?: number) {
-    setBusy(true); setLocalError("");
-    try {
-      const result = await send({type: "content.newsletter", sourceKind, sourceId, expectedRevision});
-      const draft = result.state.contents.find(item => !item.deletedAt && item.createdBy === actor!.email && item.newsletterSource?.kind === sourceKind && item.newsletterSource.id === sourceId && item.newsletterSource.revision === expectedRevision);
-      if (!draft) throw new Error("Newsletter draft could not be opened.");
-      setPage("Create"); setSelected(draft.id); setChannel("All channels"); setSearch(""); setNotice("Newsletter draft ready — write manually or use AI. No AI request started."); return true;
-    } catch (e) { setLocalError(e instanceof Error ? e.message : "Newsletter draft could not be created."); return false; }
-    finally { setBusy(false); }
+  function openNewsletterComposer(source?: string) {
+    if (!allowed("content.create", { channel: "Newsletter", account: "RyzaLab" }) || readOnly) return false;
+    move("Create");
+    setChannel("Newsletter");
+    setNewsletterSelection({ key: crypto.randomUUID(), source });
+    return true;
   }
   const scheduleForm = (contentId?: string, initialPackageId?: string, exactPackage?: Package) => {
     const packages = (exactPackage ? [exactPackage] : activePackages).filter((p) => {
@@ -1692,9 +1696,9 @@ export default function Workspace() {
                   <button
                     disabled={readOnly}
                     className="s-btn s-primary"
-                    onClick={() => newContent()}
+                    onClick={() => channel === "Newsletter" ? openNewsletterComposer() : newContent()}
                   >
-                    <Plus size={16} /> Create content
+                    <Plus size={16} /> {channel === "Newsletter" ? "Create Brand Newsletter" : "Create content"}
                   </button>
                 )
               )}
@@ -2096,7 +2100,7 @@ export default function Workspace() {
                     return chosen;
                   } : undefined}
                   onUse={useIdea}
-                  onNewsletter={allowed("content.create", {channel: "Newsletter", account: "RyzaLab"}) ? (idea) => createNewsletter("idea", idea.id) : undefined}
+                  onNewsletter={allowed("content.create", {channel: "Newsletter", account: "RyzaLab"}) ? (idea) => openNewsletterComposer(`idea:${idea.id}`) : undefined}
                   onApprove={(idea) => execute({ type: "idea.review", id: idea.id, decision: "approved" }, "Idea approved — find it in Ideas → Approved. Use idea opens its draft.")}
                   onReject={(idea) => reject("idea.review", idea.id)}
                   onReuse={(idea, mode) => execute({ type: "idea.reuse", id: idea.id, mode })}
@@ -2878,14 +2882,14 @@ export default function Workspace() {
                 onError={setLocalError}
                 refresh={(force=false) => refresh(!force)}
                 progressJob={progressAuthorizedJob}
-                newsletter={allowed("content.create", {channel: "Newsletter", account: "RyzaLab"}) ? () => createNewsletter("content", activeContent.id, activeContent.revision) : undefined}
+                newsletter={allowed("content.create", {channel: "Newsletter", account: "RyzaLab"}) ? () => openNewsletterComposer(`content:${activeContent.id}`) : undefined}
                 queue={(kind = "text") => { setQueueKind(kind); setQueueTarget(activeContent); }}
               />
             ) : (
               <>
                 {notice.startsWith("Submitted for review")&&<div className="s-info-strip" role="status">Submitted for review — now under review.<button className="s-btn" onClick={()=>move("Reviews")}>View in Reviews</button></div>}
                 <ExistingPipeline key={`create:${pipelineFocus}`} initialId={pipelineFocus} state={state} channel={channel} disabled={readOnly||busy} onIdeas={pipelineIdeas} onWrite={(b,c)=>void pipelineWrite(b,c)} onImport={pipelineImport}/>
-                {allowed("content.create",{channel:"Newsletter",account:"RyzaLab"})&&<NewsletterComposer state={state} send={send} disabled={readOnly||busy} demo={mode==="demo"} open={id=>{setSelected(id);setChannel("Newsletter");setSearch("");setNotice("Combined newsletter outline saved. Write manually or explicitly request AI drafting.");}}/>}
+                {allowed("content.create",{channel:"Newsletter",account:"RyzaLab"})&&<NewsletterComposer key={newsletterSelection?.key} initialSource={newsletterSelection?.source} startOpen={channel === "Newsletter"} state={state} send={send} disabled={readOnly||busy} demo={mode==="demo"} open={id=>{setNewsletterSelection(undefined);setSelected(id);setChannel("Newsletter");setSearch("");setNotice("Combined newsletter outline saved. Write manually or explicitly request AI drafting.");}}/>}
                 <div className="s-toolbar">
                   <div className="s-inline">
                     <h2>Your workbench</h2>
@@ -4539,7 +4543,7 @@ function Editor({
   refresh: (force?:boolean) => Promise<void>;
   progressJob?:(jobId:string)=>Promise<unknown>;
   queue: (kind?: FunctionKind) => void;
-  newsletter?: () => Promise<boolean>;
+  newsletter?: () => boolean;
 }) {
   const [generatingDraft, setGeneratingDraft] = useState<{ kind: "draft" | "template"; startedAt: number }>();
   const [draftGenerationError, setDraftGenerationError] = useState<{ kind: "draft" | "template"; message: string }>();
@@ -4776,7 +4780,7 @@ function Editor({
         </button>
         <div className="s-actions">
           <button className="s-btn" onClick={() => setPostPreview(true)}>Preview post</button>
-          {newsletter && ["LinkedIn", "Reddit"].includes(c.channel) && <button className="s-btn" disabled={busy || dirty || externalChange} onClick={() => void newsletter()}>Create newsletter from this</button>}
+          {newsletter && c.channel !== "Newsletter" && <button className="s-btn" disabled={busy || dirty || externalChange} onClick={() => void newsletter()}>Use in Brand Newsletter</button>}
           <Badge>{c.channel}</Badge>
           <Badge>Revision {c.revision}</Badge>
           <Badge tone={dirty ? "amber" : "green"}>

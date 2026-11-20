@@ -130,7 +130,7 @@ export function ExistingPipeline({
                   disabled={disabled}
                   onClick={() => onWrite(brief, actual)}
                 >
-                  Write directly
+                  {actual === "Newsletter" ? "Use brief in Brand Newsletter" : "Write directly"}
                 </button>
               </div>
             </>

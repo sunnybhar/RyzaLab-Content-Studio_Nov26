@@ -72,7 +72,7 @@ export function IdeasBrowser({
   onReuse: (idea: Idea, mode: "revise" | "copy") => Promise<boolean>;
   onGenerateAlternatives?: (idea: Idea, account: string) => Promise<void>;
   onChooseAlternative?: (draft: Content) => Promise<boolean>;
-  onNewsletter?: (idea: Idea) => Promise<boolean>;
+  onNewsletter?: (idea: Idea) => boolean;
 }) {
   const [selectedId, setSelectedId] = useState<string>();
   const [format, setFormat] = useState("Text post");
@@ -289,15 +289,15 @@ export function IdeasBrowser({
                 </div>
               )}
               <div className="s-card-actions">
-                {onNewsletter && (
+                {onNewsletter && selected.state !== "rejected" && (
                   <button
                     className="s-btn"
                     disabled={busy}
-                    onClick={async () => {
-                      if (await onNewsletter(selected)) close();
+                    onClick={() => {
+                      if (onNewsletter(selected)) close();
                     }}
                   >
-                    Create newsletter from this idea
+                    Use idea in Brand Newsletter
                   </button>
                 )}
                 {selected.state !== "rejected" && (

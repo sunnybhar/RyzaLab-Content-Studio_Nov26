@@ -95,6 +95,9 @@ export function generationInput(
     newsletterSource: c.newsletterSource?{...c.newsletterSource,metadata:eligibleSourceText(c.newsletterSource.metadata)}:null,
     newsletterSources:(c.newsletterSources||[]).map(({file,...source},index)=>({...source,metadata:eligibleSourceText(source.metadata),referenceId:`newsletter-source:${index+1}`})),
     newsletterOutline:c.newsletterOutline||null,
+    ...(c.newsletterSources?.length ? {
+      newsletterSynthesis: "Write one coherent newsletter around the combined outline. Read every selected source. Connect their distinct useful insights, reconcile overlaps and differences, and attribute factual claims to supporting evidence. If a selected source cannot support a meaningful section, explain the gap in the questions field for the editor.",
+    } : {}),
     ...(newsletterProvenance ? {
       newsletterSourceLinks: newsletterLinks([
         ...webEvidence.flatMap((item) => item.citations.map((citation) => citation.url)),
