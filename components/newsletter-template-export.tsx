@@ -16,6 +16,10 @@ export async function checkedNewsletterResponse(response: Response) {
   return response;
 }
 
+export function newsletterFilename(title: string, format: "pdf" | "docx") {
+  return (title.trim().replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-").slice(0, 100) || "newsletter") + "." + format;
+}
+
 export function NewsletterTemplateExport({
   contentId, title, text, children, onAdapt, adapting, adaptDisabled,
 }: {
@@ -88,7 +92,7 @@ export function NewsletterTemplateExport({
     const url = URL.createObjectURL(await response.blob());
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = (title.trim().replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-").slice(0, 100) || "newsletter") + "." + format;
+    anchor.download = newsletterFilename(title, format);
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ComponentType } from "react";
 import type { Content } from "@/lib/studio/types";
-import { checkedNewsletterResponse, newsletterTemplateEndpoint } from "./newsletter-template-export";
+import { checkedNewsletterResponse, newsletterFilename, newsletterTemplateEndpoint } from "./newsletter-template-export";
 import { PostPreview } from "./post-preview";
 
 export function ReviewPostPreview({
@@ -26,6 +26,7 @@ function SavedPostPreview({ content, local, AssetMedia, onClose }: Parameters<ty
   const templatedNewsletter = local && channel === "Newsletter";
   const [preview, setPreview] = useState<{ url?: string; error?: string }>();
   const [showReader, setShowReader] = useState(false);
+  const filename = newsletterFilename(title, "docx");
 
   useEffect(() => {
     if (!templatedNewsletter) return;
@@ -45,7 +46,7 @@ function SavedPostPreview({ content, local, AssetMedia, onClose }: Parameters<ty
         const response = await checkedNewsletterResponse(await fetch(newsletterTemplateEndpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ templateId: selected, title, text, format: "pdf" }),
+          body: JSON.stringify({ templateId: selected, title, text, format: "docx" }),
           signal,
         }));
         const blob = await response.blob();
@@ -67,8 +68,11 @@ function SavedPostPreview({ content, local, AssetMedia, onClose }: Parameters<ty
   const documentPreview = templatedNewsletter && !showReader && (
     preview?.url ? (
       <>
-        <a className="s-btn" href={preview.url} target="_blank" rel="noreferrer">Open PDF in new tab</a>
-        <iframe className="s-newsletter-preview-frame" title="Newsletter template PDF" src={preview.url} />
+        <p>Open the Word document to see the newsletter in the template selected in Create.</p>
+        <div className="s-actions">
+          <a className="s-btn s-primary" href={preview.url} download={filename}>Download newsletter DOCX</a>
+          <button type="button" className="s-btn" onClick={() => setShowReader(true)}>Show reading preview</button>
+        </div>
       </>
     ) : preview?.error ? (
       <>
