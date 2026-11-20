@@ -808,6 +808,51 @@ export default function Workspace() {
       return false;
     } finally { setBusy(false); }
   }
+  async function generateIdeaAlternatives(idea: Idea, preferred: string, account: string, count: number) {
+    if (!local || busy) return;
+    const targetChannel = channel === "All channels" ? idea.channel : channel;
+    const formats = [...new Set([
+      targetChannel === "Newsletter" ? "Newsletter" : preferred,
+      "Text post", "Carousel", "Video", "Blog",
+    ])].slice(0, count);
+    const guidance: Record<string, string> = {
+      "Text post": "Write a standalone social post with a concise hook and practical takeaway.",
+      Carousel: "Write a carousel caption and a sequence of short, distinct slides. Populate the slides field.",
+      Video: "Write a short video script with a hook, scene cues and closing line. Generate text only.",
+      Image: "Write an image-led post with a caption and an image concept. Generate text only.",
+      Blog: "Write a cohesive blog with a clear takeaway and well-structured sections.",
+      Newsletter: "Write newsletter copy with an opening, useful sections and a practical conclusion.",
+    };
+    let ready = 0;
+    setBusy(true);
+    setLocalError("");
+    try {
+      for (const format of formats) {
+        const created = await send({ type: "idea.use", id: idea.id, targetChannel, format, account });
+        const draft = created.state.contents.find((entry) =>
+          entry.ideaId === idea.id && entry.createdBy === actor!.email && !entry.deletedAt &&
+          entry.channel === targetChannel && entry.format === format && entry.account === account,
+        );
+        if (!draft) throw new Error(`Could not open the ${format} draft.`);
+        if (!draft.text.trim()) {
+          const generated = await send({
+            type: "content.generate", kind: "text", contentId: draft.id,
+            expectedRevision: draft.revision, idempotencyKey: crypto.randomUUID(),
+            notes: guidance[format] || `Write one complete ${format} in its usual format.`,
+          });
+          if (!generated.state.contents.find((entry) => entry.id === draft.id)?.text.trim())
+            throw new Error(`The ${format} model response did not produce usable draft copy.`);
+        }
+        ready++;
+      }
+      setNotice(`${ready} drafts ready to compare. Choose one for final review.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Draft generation stopped.";
+      setLocalError(`${ready} of ${formats.length} drafts are ready. ${message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
   function pipelineIdeas(brief:PipelineBrief,mode:"generate"|"manual",target:Channel){setPipelineIdea({id:brief.id,channel:target});setIdeaComposer(mode);}
   async function pipelineWrite(brief:PipelineBrief,target:Channel){
     setBusy(true);setLocalError("");
@@ -2011,6 +2056,13 @@ export default function Workspace() {
                   canReview={(idea) => allowed("idea.review", { channel: idea.channel })}
                   canUse={(idea, account) => allowed("content.create", { channel:channel==="All channels"?idea.channel:channel, account }) && (idea.state !== "pending" || allowed("idea.review", { channel: idea.channel }) || (idea.createdBy===actor.email && allowed("idea.edit",{channel:idea.channel})))}
                   canReuse={(idea) => allowed("idea.edit", { channel: idea.channel })}
+                  onGenerateAlternatives={local ? generateIdeaAlternatives : undefined}
+                  onChooseAlternative={local ? (draft) => {
+                    setPage("Create");
+                    setSelected(draft.id);
+                    setSearch("");
+                    setNotice("Draft selected. Submit it for review when it is ready.");
+                  } : undefined}
                   onUse={useIdea}
                   onNewsletter={allowed("content.create", {channel: "Newsletter", account: "RyzaLab"}) ? (idea) => createNewsletter("idea", idea.id) : undefined}
                   onApprove={(idea) => execute({ type: "idea.review", id: idea.id, decision: "approved" }, "Idea approved — find it in Ideas → Approved. Use idea opens its draft.")}
@@ -4414,6 +4466,11 @@ function Editor({
   function applyWorking(values:DraftValues){setWriteFormat(values.format);setTitle(values.title);setText(values.text);setMetadata(values.metadata);setCollection(values.collection);setMedia(values.media);}
   const draftSave=useDraftSave({content:c,actor,mode,values:{title,text,metadata,collection,media,format:writeFormat},apply:applyWorking,send,refresh:()=>refresh(true),onError});
   const externalChange=draftSave.conflict;
+  const linkedIdea = state.ideas.find((idea) => idea.id === c.ideaId);
+  const savedResearchIds = c.researchJobIds ?? linkedIdea?.researchJobIds;
+  const usedResearchFallback = local && state.jobs.some((job) =>
+    job.id === c.generatedBy?.jobId && job.researchUnavailable,
+  );
   const dirty=draftSave.dirty;
   const requirements = inputRequirements({...c, title, text, metadata, media});
   function jumpToRequirement(item: ReturnType<typeof inputRequirements>[number]) {
@@ -4658,7 +4715,7 @@ function Editor({
                     "Generate draft",
                     [
                       field("notes", "Instructions and source material", "", "textarea"),
-                      field("publicQuery", "Public research topic (clear to skip)", c.title.length >= 5 ? c.title : ""),
+                      field("publicQuery", "Public research topic (optional with saved sources)", !savedResearchIds?.length && c.title.length >= 5 ? c.title : ""),
                       field("publicSourceUrls", "Public source links (one HTTPS URL per line)", "", "textarea"),
                     ],
                     (data) => ({
@@ -4671,7 +4728,7 @@ function Editor({
                       publicSourceUrls: val(data, "publicSourceUrls").split(/\r?\n/).map(link => link.trim()).filter(Boolean),
                       idempotencyKey: crypto.randomUUID(),
                     }),
-                    "Studio searches for the public topic and uses the selected sources and saved draft to generate copy with your model. The model request may use part of your monthly AI budget.",
+                    "Studio uses the idea and saved sources. If you enter a public topic, it also searches for fresh sources. If search finds nothing usable, Studio still writes a working draft. The model request uses your monthly AI budget.",
                     "Generate draft",
                   )}
                 >
@@ -4711,6 +4768,9 @@ function Editor({
                 </details>
               )}
               {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} recoverJob={progressJob} demo={mode === "demo"} />}
+              {usedResearchFallback && (
+                <p role="status">Working draft · fresh public research was unavailable. Check factual claims before approval.</p>
+              )}
               <HighlightedTextarea
                 aria-label="Content text"
                 aria-describedby={requirements.length ? "draft-needs-input" : undefined}

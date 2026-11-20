@@ -41,6 +41,8 @@ export function IdeasBrowser({
   onReuse,
   onNewsletter,
   renderResearch,
+  onGenerateAlternatives,
+  onChooseAlternative,
 }: {
   renderResearch?: (idea: Idea) => import("react").ReactNode;
   targetChannel?:Channel;
@@ -65,11 +67,14 @@ export function IdeasBrowser({
   onApprove: (idea: Idea) => Promise<boolean>;
   onReject: (idea: Idea) => void;
   onReuse: (idea: Idea, mode: "revise" | "copy") => Promise<boolean>;
+  onGenerateAlternatives?: (idea: Idea, format: string, account: string, count: number) => Promise<void>;
+  onChooseAlternative?: (draft: Content) => void;
   onNewsletter?: (idea: Idea) => Promise<boolean>;
 }) {
   const [selectedId, setSelectedId] = useState<string>();
   const [format, setFormat] = useState("Text post");
   const [account, setAccount] = useState("RyzaLab");
+  const [alternativeCount, setAlternativeCount] = useState(3);
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const selected = allIdeas.find((idea) => idea.id === selectedId);
@@ -240,6 +245,36 @@ export function IdeasBrowser({
                     />
                   </label>
                 </div>
+              )}
+              {onGenerateAlternatives && selected.state !== "rejected" && (
+                <section className="s-version" aria-label="Draft alternatives">
+                  <h3>Draft alternatives</h3>
+                  <label className="s-field">
+                    Number of drafts
+                    <select value={alternativeCount} disabled={busy} onChange={(event) => setAlternativeCount(Number(event.target.value))}>
+                      <option value={3}>3</option><option value={4}>4</option>
+                    </select>
+                  </label>
+                  <p>Generate different formats from this idea and its saved sources. Each draft uses the monthly AI budget.</p>
+                  <button type="button" className="s-btn"
+                    disabled={busy || !account.trim() || !canUse(selected, account.trim())}
+                    onClick={() => void onGenerateAlternatives(selected, format, account.trim(), alternativeCount)}>
+                    {busy ? "Generating drafts…" : `Generate ${alternativeCount} drafts`}
+                  </button>
+                  {contents.filter((draft) =>
+                    draft.ideaId === selected.id && draft.createdBy === actorEmail && !draft.deletedAt &&
+                    draft.channel === (targetChannel ?? selected.channel) && draft.account === account.trim() && draft.text.trim(),
+                  ).map((draft) => (
+                    <details className="s-version" key={draft.id}>
+                      <summary>{draft.format} · {draft.state.replaceAll("_", " ")}</summary>
+                      <p style={{ whiteSpace: "pre-wrap" }}>{draft.text}</p>
+                      <button type="button" className="s-btn" disabled={busy}
+                        onClick={() => { close(); onChooseAlternative?.(draft); }}>
+                        Open {draft.format} for final review
+                      </button>
+                    </details>
+                  ))}
+                </section>
               )}
               {error && (
                 <div className="s-alert s-error" role="alert">

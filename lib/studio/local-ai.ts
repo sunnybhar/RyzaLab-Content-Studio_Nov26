@@ -142,6 +142,14 @@ function localRates(state: StudioState): Rate[] {
   return rates;
 }
 
+function publicEvidenceUnavailable(error: unknown) {
+  return error instanceof StudioError && (
+    (error.code === 504 && error.message.startsWith("Public research took longer")) ||
+    (error.code === 503 && error.message.startsWith("No relevant non-Wikipedia evidence")) ||
+    (error.code === 422 && error.message.startsWith("The retrieved references did not match"))
+  );
+}
+
 const researchTimeoutMs = 60000;
 
 const retrieveLocalReferences: typeof retrieveBroadReferences = async (
@@ -310,7 +318,7 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
       throw new StudioError(409, "Choose a supported, validated connection for this function in AI Connections.");
     const fixedRates = effectiveRates(state).filter((rate) => rate.fixedCents && rate.function === input.kind);
     if (!fixedRates.some((rate) => rate.provider === connection.provider && rate.model === connection.model))
-      throw new StudioError(409, "A verified fixed price for this exact image or 8-second video preset is needed before generation.");
+      throw new StudioError(409, `Studio has no verified price for ${connection.model} at ${input.kind === "image" ? "1024 × 1024, medium quality" : "8 seconds, 720p landscape"}. No paid request was sent.`);
     const prepared = {
       type: "job.enqueue", kind: input.kind, channel: draft.channel, contentId: draft.id,
       connectionId, prompt: input.prompt, estimate: input.maximum, idempotencyKey: input.idempotencyKey, confirmed: true,
@@ -458,12 +466,7 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
         configured = researched.state;
         prepared = ideaJobInput(configured, DEMO_ACTOR, researched.command);
       } catch (error) {
-        const noPublicEvidence = error instanceof StudioError && (
-          (error.code === 504 && error.message.startsWith("Public research took longer")) ||
-          (error.code === 503 && error.message.startsWith("No relevant non-Wikipedia evidence")) ||
-          (error.code === 422 && error.message.startsWith("The retrieved references did not match"))
-        );
-        if (!noPublicEvidence) throw error;
+        if (!publicEvidenceUnavailable(error)) throw error;
         researchUnavailable = true;
         prepared = ideaJobInput(configured, DEMO_ACTOR, {
           ...parsed,
@@ -501,21 +504,27 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
         idempotencyKey: `writing-research:${parsed.idempotencyKey}`,
       });
       if (input.type !== "research.retrieve") throw new StudioError(400, "Invalid research request.");
-      const researched = await retrieve(input);
-      if (researched !== state) {
-        const saved = withDatabase((db) => write(db, currentRevision, researched));
-        currentRevision = saved.revision;
-      }
-      const evidence = researched.jobs.find((j) => j.idempotencyKey === input.idempotencyKey);
-      if (evidence?.result && JSON.parse(evidence.result).citations?.length) {
+      try {
+        const researched = await retrieve(input);
+        if (researched !== state) {
+          const saved = withDatabase((db) => write(db, currentRevision, researched));
+          currentRevision = saved.revision;
+        }
         configured.jobs = researched.jobs;
         configured.version = Math.max(configured.version, researched.version);
+        const evidence = researched.jobs.find((j) => j.idempotencyKey === input.idempotencyKey);
+        if (evidence?.result && JSON.parse(evidence.result).citations?.length) {
+          prepared = generationInput(configured, DEMO_ACTOR, {
+            ...parsed, researchJobIds: [...new Set([evidence.id, ...prepared.researchJobIds])].slice(0, 5),
+          });
+        }
+      } catch (error) {
+        if (!publicEvidenceUnavailable(error)) throw error;
+        researchUnavailable = true;
         prepared = generationInput(configured, DEMO_ACTOR, {
-          ...parsed, researchJobIds: [...new Set([evidence.id, ...prepared.researchJobIds])].slice(0, 5),
+          ...parsed,
+          notes: [parsed.notes, "Fresh public research was unavailable. Write a working draft using the idea, supplied material, and saved references. Do not invent citations, statistics, or personal experiences. Flag factual details that need confirmation."].filter(Boolean).join("\n\n"),
         });
-      } else {
-        configured.jobs = researched.jobs;
-        configured.version = Math.max(configured.version, researched.version);
       }
     }
   }
