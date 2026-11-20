@@ -45,6 +45,7 @@ export async function runProvider(
   key: string,
 ): Promise<{
   usage?: ClaudeUsage;
+  standardUsage?: ClaudeUsage;
   text?: string;
   bytes?: Uint8Array;
   mime?: string;
@@ -267,9 +268,23 @@ export async function runProvider(
       : connection.provider === "openai"
         ? json.status === "completed"
         : json.candidates?.[0]?.finishReason === "STOP";
+  const standardUsage = connection.provider === "openai" && json.usage
+    ? claudeUsage({
+        input_tokens: json.usage.input_tokens,
+        output_tokens: json.usage.output_tokens,
+        cache_read_input_tokens: json.usage.input_tokens_details?.cached_tokens,
+      })
+    : connection.provider === "google" && json.usageMetadata
+      ? claudeUsage({
+          input_tokens: json.usageMetadata.promptTokenCount,
+          output_tokens: json.usageMetadata.candidatesTokenCount + (json.usageMetadata.thoughtsTokenCount ?? 0),
+          cache_read_input_tokens: json.usageMetadata.cachedContentTokenCount,
+        })
+      : undefined;
   return {
     stopReason:String(json.stop_reason||json.candidates?.[0]?.finishReason||json.status||"unknown").slice(0,100),
     usage: connection.provider==="anthropic"?claudeUsage(json.usage):undefined,
+    ...(standardUsage ? {standardUsage} : {}),
     completion: refusal
       ? "refused"
       : truncated || ((job.outputContract || job.kind === "ideas") && !terminal)

@@ -454,7 +454,7 @@ function FieldInput({ item }: { item: Field }) {
 }
 
 export default function Workspace() {
-  const { state:storedState, actor, mode, local, loading, error, send, refresh, signOut } =
+  const { state:storedState, actor, mode, local, loading, error, send, refresh, signOut, requestLocalAI } =
     useStudio();
   const state=useMemo(()=>storedState?activeStudioView(storedState):null,[storedState]);
   const [page, setPage] = useState<Page>("Home");
@@ -1026,6 +1026,7 @@ export default function Workspace() {
     return result;
   }
   async function discoverAccountModels(input: Record<string, unknown>) {
+    if (local) return (await requestLocalAI<{ models: string[] }>({ ...input, type: "connection.models" })).models;
     const session = await supabase?.auth.getSession();
     const token = session?.data.session?.access_token;
     if (!token) throw new Error("Sign in to load provider account models.");
@@ -1049,6 +1050,10 @@ export default function Workspace() {
     const result=await response.json();if(!response.ok)throw new Error(result.error||"Queued request needs attention.");await refresh();return result;
   }
   async function validateAI(id: string) {
+    if (local) {
+      await execute({ type: "connection.validate", id }, "Model access checked.");
+      return;
+    }
     if (mode === "demo") {
       setLocalError(
         "Provider validation requires a live workspace and stored provider credentials.",
@@ -2723,6 +2728,7 @@ export default function Workspace() {
                 readOnly={readOnly}
                 busy={busy}
                 mode={mode as "demo" | "live"}
+                local={local}
                 run={execute}
                 back={() => {setSelected(null);setSearch("");setChannel(activeContent.channel);}}
                 form={openForm}
@@ -3523,15 +3529,15 @@ export default function Workspace() {
                     <p>Connect a provider for a specific creative function.</p>
                   </div>
                   <ConnectionEditor
-                    functions={FUNCTIONS.filter((kind) => allowed("connections.manage", { function: kind }))}
-                    demo={mode === "demo"}
+                    functions={FUNCTIONS.filter((kind) => (!local || kind === "text") && allowed("connections.manage", { function: kind }))}
+                    demo={mode === "demo" && !local}
                     save={send}
                     discover={discoverAccountModels}
                   />
                 </div>
                 {state.connections.map((c) => (
                   <div className="s-list-row s-connection-row" key={c.id}>
-                    <ConnectionEditor connection={c} demo={mode === "demo"} disabled={!allowed("connections.manage", {function: c.function})} save={send} discover={discoverAccountModels} />
+                    <ConnectionEditor connection={c} demo={mode === "demo" && !local} disabled={!allowed("connections.manage", {function: c.function})} save={send} discover={discoverAccountModels} />
                     <span className="s-provider-icon">
                       <Sparkles size={20} />
                     </span>
@@ -4345,6 +4351,7 @@ function Editor({
   readOnly: editorReadOnly,
   busy,
   mode,
+  local,
   run,
   back,
   form,
@@ -4361,6 +4368,7 @@ function Editor({
   readOnly: boolean;
   busy: boolean;
   mode: "demo" | "live";
+  local: boolean;
   run: (c: Command, m?: string) => Promise<boolean>;
   back: () => void;
   form: (
@@ -4636,6 +4644,29 @@ function Editor({
             <div className="s-writing">
               <NewsletterSources content={c}/>
               {c.newsletterSource && <details className="s-version"><summary>Newsletter source · {c.newsletterSource.channel} · {c.newsletterSource.title}</summary><p>Saved source snapshot{c.newsletterSource.revision ? ` · revision ${c.newsletterSource.revision}` : ""}. Use this as reference for manual writing or AI adaptation.</p><div style={{whiteSpace:"pre-wrap"}}>{c.newsletterSource.text}</div><p>{c.newsletterSource.metadata}</p></details>}
+              {local && c.state === "draft" && (
+                <button
+                  type="button"
+                  className="s-btn s-primary"
+                  disabled={readOnly || busy || dirty || externalChange}
+                  onClick={() => form(
+                    "Generate draft",
+                    [field("notes", "Instructions and source material", "", "textarea")],
+                    (data) => ({
+                      type: "content.generate",
+                      contentId: c.id,
+                      kind: "text",
+                      expectedRevision: c.revision,
+                      notes: val(data, "notes"),
+                      idempotencyKey: crypto.randomUUID(),
+                    }),
+                    "Studio sends the saved draft and selected references to your AI provider. This request may use part of your monthly AI budget.",
+                    "Generate draft",
+                  )}
+                >
+                  Generate draft
+                </button>
+              )}
               {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} recoverJob={progressJob} demo={mode === "demo"} />}
               <HighlightedTextarea
                 aria-label="Content text"

@@ -33,7 +33,7 @@ export function claudeUsage(raw: unknown): ClaudeUsage | undefined {
   };
 }
 /** Usage-priced token cost, rounded up to cents. Never described as an invoice. */
-export function usageCost(job: Job, usage: ClaudeUsage) {
+export function usageCost(job: Job, usage: ClaudeUsage, standardRates = false) {
   const parsed = rateSchema.safeParse(job.pricingSnapshot);
   // Pricing snapshots include quote metadata; extract the card fields explicitly.
   const snapshot = job.pricingSnapshot as Record<string, unknown> | undefined;
@@ -45,7 +45,7 @@ export function usageCost(job: Job, usage: ClaudeUsage) {
   const rate = parsed.success ? parsed : rateSchema.safeParse(card);
   if (
     !rate.success ||
-    rate.data.provider !== "anthropic" ||
+    (!standardRates && rate.data.provider !== "anthropic") ||
     !["text", "ideas", "review"].includes(job.kind) ||
     usage.cacheReadTokens ||
     usage.cacheCreationTokens ||
@@ -61,9 +61,9 @@ export function usageCost(job: Job, usage: ClaudeUsage) {
   return cents;
 }
 
-export function settleUsageCost(job: Job, usage: ClaudeUsage) {
+export function settleUsageCost(job: Job, usage: ClaudeUsage, standardRates = false) {
   job.providerUsage = usage;
-  const cost = usageCost(job, usage),
+  const cost = usageCost(job, usage, standardRates),
     snapshot = job.pricingSnapshot as
       { maxInputBytes?: number; maxOutputTokens?: number } | undefined;
   if (cost === undefined) return;

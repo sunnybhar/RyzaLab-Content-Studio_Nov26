@@ -1,3 +1,6 @@
+import { localAI } from "@/lib/studio/local-ai";
+import { StudioError } from "@/lib/studio/permissions";
+import { ZodError } from "zod";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -27,6 +30,7 @@ function withDatabase<T>(run: (database: DatabaseSync) => T): T {
   try {
     database.exec(`
       PRAGMA busy_timeout = 5000;
+      CREATE TABLE IF NOT EXISTS credentials (id TEXT PRIMARY KEY, ciphertext TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS workspace (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         revision INTEGER NOT NULL,
@@ -88,5 +92,22 @@ export async function PUT(request: Request) {
     return Response.json({ revision: (revision ?? 0) + 1 }, { headers });
   } catch {
     return Response.json({ error: "Could not save the local Studio database." }, { status: 500, headers });
+  }
+}
+
+export async function POST(request: Request) {
+  if (!allowed(request)) return new Response(null, { status: 404 });
+  if (!request.headers.get("content-type")?.startsWith("application/json"))
+    return Response.json({ error: "Expected a JSON command." }, { status: 415, headers });
+  try {
+    const body = await request.json();
+    if (!Number.isSafeInteger(body?.revision) || body.revision < 1)
+      return Response.json({ error: "Refresh your local workspace first." }, { status: 409, headers });
+    return Response.json(await localAI(withDatabase, body.revision, body.command), { headers });
+  } catch (error) {
+    const status = error instanceof StudioError ? error.code : error instanceof ZodError || error instanceof SyntaxError ? 400 : 500;
+    const message = error instanceof StudioError ? error.message :
+      status === 400 ? "Invalid local AI request." : "Local AI operation failed. Check Generation activity before retrying.";
+    return Response.json({ error: message }, { status, headers });
   }
 }

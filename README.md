@@ -11,9 +11,17 @@ npm ci
 npm run dev:local
 ```
 
-Open http://localhost:3005. Studio runs on the loopback interface with no sign-in or Supabase configuration. Workspace data is stored in `.studio-local/studio.sqlite` inside your checkout. Git ignores that directory. To back up the database file, stop the dev server first and then copy it. The first launch copies existing browser workspace data from the same browser profile and localhost address when the database is empty.
+Open http://localhost:3005. Studio runs on the loopback interface with no sign-in or Supabase configuration. Workspace data is stored in `.studio-local/studio.sqlite` inside your checkout. Git ignores that directory. To back up the workspace, stop the dev server first and copy the entire `.studio-local` directory. It may contain your encrypted API credentials and their local encryption key. Keep the backup private. The first launch copies existing browser workspace data from the same browser profile and localhost address when the database is empty.
 
 Use the local workspace for drafting, reviews, approvals, and exports. Browser preferences remain in the browser. Hosted integrations and private asset uploads still use the Supabase-backed workflow below. Moving workspace data to a later hosted deployment requires a separate import.
+
+### Generate drafts locally
+
+Under **AI & budgets**, set a **Monthly AI budget** in **Spending** and add a writing connection under **AI Connections**. Enter the provider API key and select an exact model. Saving checks account access, keeps the key encrypted in the local workspace, and selects the first writing connection as the default. Use **Use as default** to switch the model for channels without an override.
+
+Create and save a draft, then choose **Generate draft**. Studio sends the draft, instructions, and applicable references and voice examples to the selected provider. It checks pricing and reserves an estimated maximum against your budget before calling the provider. Unknown costs retain the reservation. An uncertain dispatch is never retried automatically.
+
+Local writing supports Anthropic, OpenAI, and Gemini models with a verified writing rate. The existing Claude Sonnet 5.5 rate is included. Other models require a qualified rate from the workspace or `STUDIO_RATE_CARD`. Local generation currently covers written drafts.
 
 ## Supabase-backed development
 

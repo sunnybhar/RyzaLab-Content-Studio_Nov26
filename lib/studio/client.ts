@@ -12,6 +12,7 @@ import type {
   StudioResponse,
   FunctionKind,
   Connection,
+  Job,
 } from "./types";
 import { generationInput } from "./generation";
 import { initialState, DEMO_ACTOR } from "./seed";
@@ -142,9 +143,34 @@ export function useStudio() {
     });
     return () => data.subscription.unsubscribe();
   }, [refresh]);
+  async function requestLocalAI<T>(command: Command) {
+    const response = await fetch(localEndpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ revision: localRevision.current, command }),
+    });
+    return readStudioResponse<T>(response);
+  }
+
   async function send(command: Command) {
     try {
       setError("");
+      if (local && ["connection.save", "connection.validate", "connection.disconnect", "connection.delete", "content.generate"].includes(command.type)) {
+        try {
+          const result = await requestLocalAI<LocalSnapshot & { job?: Job }>(command);
+          if (result.revision >= localRevision.current) {
+            localRevision.current = result.revision;
+            update(result.state);
+          }
+          if (result.job?.state === "unknown" || result.job?.state === "failed" ||
+              (result.job?.state === "succeeded" && !result.job.appliedAt))
+            throw new Error(result.job.error || "Generation did not update the draft. Check Generation activity.");
+          return { state: result.state, actor: DEMO_ACTOR, mode: "demo" as const };
+        } catch (error) {
+          if (error instanceof StudioResponseError && error.status === 409) await refresh();
+          throw error;
+        }
+      }
       if (mode === "demo") {
         const previous = latest.current;
         const expectedRevision = localRevision.current;
@@ -273,5 +299,5 @@ export function useStudio() {
       await refresh();
     }
   }
-  return { state, actor, mode, local, loading, error, send, refresh, signOut };
+  return { state, actor, mode, local, loading, error, send, refresh, signOut, requestLocalAI };
 }
