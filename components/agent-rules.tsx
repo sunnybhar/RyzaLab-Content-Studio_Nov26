@@ -15,9 +15,11 @@ export function AgentRules({
   state,
   actor,
   send,
+  local = false,
 }: {
   state: StudioState;
   actor: Actor;
+  local?: boolean;
   send: (command: Command) => Promise<unknown>;
 }) {
   const [channel, setChannel] = useState<Channel>("LinkedIn"),
@@ -495,6 +497,7 @@ export function AgentRules({
         state={state}
         actor={actor}
         channel={channel}
+        local={local}
         send={send}
       />
     </section>

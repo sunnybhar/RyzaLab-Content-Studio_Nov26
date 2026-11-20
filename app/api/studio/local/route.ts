@@ -1,3 +1,4 @@
+import { localVoicePdfLimit } from "@/lib/studio/voice-archive";
 import { localAI } from "@/lib/studio/local-ai";
 import { StudioError } from "@/lib/studio/permissions";
 import { ZodError } from "zod";
@@ -124,10 +125,25 @@ export async function PUT(request: Request) {
 
 export async function POST(request: Request) {
   if (!allowed(request)) return new Response(null, { status: 404 });
-  if (!request.headers.get("content-type")?.startsWith("application/json"))
-    return Response.json({ error: "Expected a JSON command." }, { status: 415, headers });
+  const contentType = request.headers.get("content-type") || "";
   try {
-    const body = await request.json();
+    let body;
+    if (contentType.startsWith("multipart/form-data")) {
+      const length = Number(request.headers.get("content-length") || 0);
+      if (length > localVoicePdfLimit + 65536)
+        return Response.json({ error: "PDF exceeds 128 MB." }, { status: 413, headers });
+      const form = await request.formData();
+      const payload = form.get("payload");
+      const pdf = form.get("pdf");
+      body = typeof payload === "string" ? JSON.parse(payload) : null;
+      if (body?.command?.type !== "agentVoice.create" || !(pdf instanceof Blob) || pdf.size > localVoicePdfLimit)
+        return Response.json({ error: "Choose a valid PDF up to 128 MB." }, { status: 400, headers });
+      body.command.archivePdf = new Uint8Array(await pdf.arrayBuffer());
+    } else if (contentType.startsWith("application/json")) {
+      body = await request.json();
+    } else {
+      return Response.json({ error: "Expected a JSON command or PDF upload." }, { status: 415, headers });
+    }
     if (!Number.isSafeInteger(body?.revision) || body.revision < 1)
       return Response.json({ error: "Refresh your local workspace first." }, { status: 409, headers });
     return Response.json(await localAI(withDatabase, body.revision, body.command), { headers });

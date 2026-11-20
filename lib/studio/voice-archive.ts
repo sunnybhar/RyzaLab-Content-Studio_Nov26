@@ -1,8 +1,9 @@
 import type { JSZipObject, JSZipStreamHelper } from "jszip";
 
 export const voiceDocumentLimit = 262144;
+export const localVoicePdfLimit = 128 * 1024 * 1024;
 
-function extractEntry(entry: JSZipObject): Promise<Uint8Array> {
+function extractEntry(entry: JSZipObject, limit: number): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     // JSZip exposes this browser stream, but omits it from JSZipObject's declaration.
     const document = entry as JSZipObject & {
@@ -13,9 +14,9 @@ function extractEntry(entry: JSZipObject): Promise<Uint8Array> {
     let size = 0;
     stream.on("data", (chunk: Uint8Array) => {
       size += chunk.byteLength;
-      if (size > voiceDocumentLimit) {
+      if (size > limit) {
         stream.pause();
-        reject(new Error("Document exceeds 256 KB."));
+        reject(new Error(limit === localVoicePdfLimit ? "PDF exceeds 128 MB." : "Document exceeds 256 KB."));
         return;
       }
       chunks.push(chunk);
@@ -31,7 +32,7 @@ function extractEntry(entry: JSZipObject): Promise<Uint8Array> {
   });
 }
 
-export async function* voiceArchiveEntries(file: File) {
+export async function* voiceArchiveEntries(file: File, local = false) {
   if (!file.size || file.size > 256 * 1024 * 1024)
     throw new Error("Choose a nonempty ZIP up to 256 MB. Split larger archives into smaller ZIPs.");
   const { default: JSZip } = await import("jszip");
@@ -46,7 +47,7 @@ export async function* voiceArchiveEntries(file: File) {
   for (const entry of documents) {
     const fileName = entry.name.split("/").at(-1)!;
     try {
-      yield { fileName, bytes: await extractEntry(entry) };
+      yield { fileName, bytes: await extractEntry(entry, local && /\.pdf$/i.test(fileName) ? localVoicePdfLimit : voiceDocumentLimit) };
     } catch (cause) {
       yield { fileName, error: cause instanceof Error ? cause.message : "Could not read the document." };
     }

@@ -3,7 +3,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
-import { extractAgentFile } from "./agent-file-extract";
+import { extractAgentFile, extractVoicePdf } from "./agent-file-extract";
+import { localVoicePdfLimit } from "./voice-archive";
 import { commandSchema } from "./commands";
 import { automaticIdeaResearch } from "./automatic-idea-research";
 import { ideaJobInput } from "./idea-generation";
@@ -183,11 +184,21 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
   if (revision !== current.revision) throw new StudioError(409, "The local workspace changed. Refresh before retrying.");
   const { state } = current;
   if (command.type === "agentVoice.create") {
-    const input = commandSchema.parse(command);
+    const { archivePdf, ...voiceCommand } = command;
+    const input = commandSchema.parse(voiceCommand);
     if (input.type !== "agentVoice.create") throw new StudioError(400, "Invalid voice example.");
     requirePermission(state, DEMO_ACTOR, "workflow.edit", {
       channel: input.channel === "Shared" ? undefined : input.channel,
     });
+    if (archivePdf !== undefined) {
+      if (input.text || input.file || !(archivePdf instanceof Uint8Array) ||
+          archivePdf.length > localVoicePdfLimit ||
+          Buffer.from(archivePdf.subarray(0, 5)).toString("ascii") !== "%PDF-")
+        throw new StudioError(400, "Choose a valid PDF up to 128 MB.");
+      const text = await extractVoicePdf(archivePdf);
+      const next = applyCommand(state, DEMO_ACTOR, { ...input, text });
+      return next === state ? current : withDatabase((db) => write(db, revision, next));
+    }
     const extractedText = input.file ? await extractAgentFile(input.file) : undefined;
     const next = applyCommand(state, DEMO_ACTOR, { ...input, extractedText });
     return next === state ? current : withDatabase((db) => write(db, revision, next));

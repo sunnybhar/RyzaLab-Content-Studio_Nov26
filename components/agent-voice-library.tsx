@@ -1,17 +1,19 @@
 "use client";
 import { useRef, useState } from "react";
 import type { Actor, Channel, Command, StudioState } from "@/lib/studio/types";
-import { voiceArchiveEntries, voiceArchiveText } from "@/lib/studio/voice-archive";
+import { voiceArchiveEntries, voiceArchiveText, voiceDocumentLimit } from "@/lib/studio/voice-archive";
 import { can } from "@/lib/studio/permissions";
 export function AgentVoiceLibrary({
   state,
   actor,
   channel,
   send,
+  local = false,
 }: {
   state: StudioState;
   actor: Actor;
   channel: Channel;
+  local?: boolean;
   send: (command: Command) => Promise<unknown>;
 }) {
   const [title, setTitle] = useState(""),
@@ -45,16 +47,23 @@ export function AgentVoiceLibrary({
     let saved = 0;
     const skipped: string[] = [];
     try {
-      for await (const entry of voiceArchiveEntries(archive)) {
+      for await (const entry of voiceArchiveEntries(archive, local)) {
         try {
           if (!entry.bytes) throw new Error(entry.error);
           const { fileName, bytes } = entry;
           const defaultTitle = fileName.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim() || "Original content";
           let title = defaultTitle, text: string | undefined;
           let file: { fileName: string; byteSize: number; base64: string } | undefined;
+          let archivePdf: Blob | undefined;
           if (/\.(?:docx|pdf)$/i.test(fileName)) {
-            const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
-            file = { fileName, byteSize: bytes.length, base64: btoa(binary) };
+            if (local && /\.pdf$/i.test(fileName) && bytes.length > voiceDocumentLimit) {
+              archivePdf = new Blob([Uint8Array.from(bytes)], { type: "application/pdf" });
+            } else {
+              const chunks: string[] = [];
+              for (let offset = 0; offset < bytes.length; offset += 8192)
+                chunks.push(String.fromCharCode(...bytes.subarray(offset, offset + 8192)));
+              file = { fileName, byteSize: bytes.length, base64: btoa(chunks.join("")) };
+            }
           } else {
             const document = voiceArchiveText(fileName, bytes);
             title = document.title || title;
@@ -68,7 +77,7 @@ export function AgentVoiceLibrary({
           fingerprint.set(bytes, meta.length);
           const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", fingerprint));
           const requestKey = "archive:" + Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
-          await send({ type: "agentVoice.create", title: title.slice(0, 200), contentType, channel: target, text, file, requestKey });
+          await send({ type: "agentVoice.create", title: title.slice(0, 200), contentType, channel: target, text, file, requestKey, ...(archivePdf ? {archivePdf} : {}) });
           saved++;
         } catch (cause) {
           skipped.push(`${entry.fileName}: ${cause instanceof Error ? cause.message : "Could not save."}`);
@@ -123,7 +132,7 @@ export function AgentVoiceLibrary({
           }}
         />
       </label>
-      <p>Each document becomes one voice example using the content type and brand-wide setting below. Media files are skipped.</p>
+      <p>Each document becomes one voice example using the content type and brand-wide setting below. Media files are skipped. {local && "Local ZIP imports extract text from PDFs up to 128 MB."}</p>
       <form
         onSubmit={async (event) => {
           event.preventDefault();

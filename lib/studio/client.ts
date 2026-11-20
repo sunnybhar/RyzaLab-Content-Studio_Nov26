@@ -145,10 +145,18 @@ export function useStudio() {
   }, [refresh]);
   async function requestLocalAI<T>(command: Command) {
     try {
+      const { archivePdf, ...metadata } = command;
+      const payload = { revision: localRevision.current, command: metadata };
+      let body: string | FormData = JSON.stringify(payload);
+      if (archivePdf instanceof Blob) {
+        body = new FormData();
+        body.set("payload", JSON.stringify(payload));
+        body.set("pdf", archivePdf, "post.pdf");
+      }
       const response = await fetch(localEndpoint, {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ revision: localRevision.current, command }),
+        ...(typeof body === "string" ? { headers: { "content-type": "application/json" } } : {}),
+        body,
         signal: AbortSignal.timeout(170000),
       });
       return await readStudioResponse<T>(response);

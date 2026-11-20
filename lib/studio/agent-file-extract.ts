@@ -9,28 +9,42 @@ export async function extractAgentFile(file: StoredAgentFile) {
     const { extractRawText } = await import("mammoth");
     text = (await extractRawText({ buffer: data })).value;
   } else if (/\.pdf$/i.test(file.fileName)) {
-    const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    const task = getDocument({
-      data: new Uint8Array(data),
-      isEvalSupported: false,
-      useSystemFonts: true,
-    });
-    try {
-      const pdf = await task.promise;
-      if (pdf.numPages > 20)
-        throw new StudioError(400, "Use a PDF of at most 20 pages.");
-      for (let page = 1; page <= pdf.numPages; page++) {
-        const content = await (await pdf.getPage(page)).getTextContent();
-        text +=
-          content.items
-            .map((item) => ("str" in item ? item.str : ""))
-            .join(" ") + "\n";
-        if (text.length > 60000) break;
-      }
-    } finally {
-      await task.destroy();
-    }
+    return cleanExtractedText(await readPdfText(data));
   } else text = data.toString("utf8");
+  return cleanExtractedText(text);
+}
+
+async function readPdfText(data: Uint8Array) {
+  let text = "";
+  const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const task = getDocument({
+    data: new Uint8Array(data),
+    isEvalSupported: false,
+    useSystemFonts: true,
+  });
+  try {
+    const pdf = await task.promise;
+    if (pdf.numPages > 20)
+      throw new StudioError(400, "Use a PDF of at most 20 pages.");
+    for (let page = 1; page <= pdf.numPages; page++) {
+      const content = await (await pdf.getPage(page)).getTextContent();
+      text +=
+        content.items
+          .map((item) => ("str" in item ? item.str : ""))
+          .join(" ") + "\n";
+      if (text.length > 60000) break;
+    }
+  } finally {
+    await task.destroy();
+  }
+  return text;
+}
+
+export async function extractVoicePdf(data: Uint8Array) {
+  return cleanExtractedText(await readPdfText(data));
+}
+
+function cleanExtractedText(text: string) {
   text = text.replace(/\u0000/g, "").trim();
   if (!text)
     throw new StudioError(

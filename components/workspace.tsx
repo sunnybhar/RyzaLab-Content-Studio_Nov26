@@ -3480,7 +3480,7 @@ export default function Workspace() {
               </div>
             </>
           )}
-          {page==="Agent Rules"&&<AgentRules state={state} actor={actor} send={send}/>}
+          {page==="Agent Rules"&&<AgentRules state={state} actor={actor} send={send} local={local}/>}
           {page === "AI & budgets" && (
             <div className="s-budget-layout">
               {allowed("settings.manage") && (() => {
