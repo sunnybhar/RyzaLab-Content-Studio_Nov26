@@ -105,7 +105,7 @@ export function quote(
   if (!card)
     throw new StudioError(
       503,
-      "No qualified provider/model pricing is registered for this function. Evaluate a sample and configure the server rate card before paid generation.",
+      `No qualified ${input.kind} rate is registered for ${connection.model} on “${connection.title}”. No paid request was sent.`,
     );
   if (
     input.kind === "research" &&

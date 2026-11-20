@@ -94,9 +94,28 @@ function saveKey(db: DatabaseSync, id: string, value: string) {
     .run(id, [iv, cipher.getAuthTag(), ciphertext].map((part) => part.toString("base64")).join("."));
 }
 
+const localTextPricingSource =
+  "https://github.com/BerriAI/litellm/blob/f508f3769e16f6f2c766a7ae96010916b648b71c/model_prices_and_context_window.json";
+
+const localTextPricing = [
+  { provider: "openai", model: "gpt-6.2-astra", inputCentsPerMillion: 800, outputCentsPerMillion: 4000 },
+  { provider: "anthropic", model: "claude-opus-5-5", inputCentsPerMillion: 400, outputCentsPerMillion: 2000 },
+] as const;
+
 function localRates(state: StudioState): Rate[] {
   const rates: Rate[] = [
     ...effectiveRates(state),
+    ...localTextPricing.map((rate): Rate => ({
+      ...rate,
+      function: "text",
+      currency: "USD",
+      maxInputBytes: 65536,
+      maxOutputTokens: 4096,
+      source: localTextPricingSource,
+      verifiedAt: "2026-11-19",
+      qualified: true,
+      qualificationEvidence: "Standard tool-free rates cross-checked against the pinned public LiteLLM registry.",
+    })),
     {
       provider: "anthropic",
       model: RESEARCH_PRICE.model,

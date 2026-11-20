@@ -25,7 +25,7 @@ Under **AI & budgets**, set a **Monthly AI budget** in **Spending** and add a wr
 
 The default writing connection also handles ideas and review unless you set separate models. Workflows that require independent review still need a reviewer from a different provider. Paid jobs use the one monthly budget and reserve an estimate before dispatch. Studio sends the relevant instructions and references to the selected provider. Public queries and URLs go to the research services. Unknown costs retain the reservation, and uncertain requests are never automatically retried.
 
-Anthropic, OpenAI, and Gemini text models need verified pricing. A qualified token-based writing rate can cover ideas and review for the same model. The existing Claude Sonnet 5.5 rate is included. Other models require a qualified rate from the workspace or `STUDIO_RATE_CARD`.
+Anthropic, OpenAI, and Gemini text models need verified pricing. A qualified token-based writing rate can cover ideas and review for the same model. Local estimates include the existing Claude Sonnet 5.5 rate and standard text rates for OpenAI GPT-6.2 Astra and Claude Opus 5.5 from a pinned public pricing registry. Other models require a qualified rate from the workspace or `STUDIO_RATE_CARD`.
 
 ### Images, video, and voice examples
 
