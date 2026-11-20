@@ -4,7 +4,13 @@ import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
 import { commandSchema } from "./commands";
-import { settleWrittenOutput } from "./draft-candidates";
+import { automaticIdeaResearch } from "./automatic-idea-research";
+import { ideaJobInput } from "./idea-generation";
+import { publicRetrievalTarget } from "./research-link";
+import { researchProfile } from "./research-profile";
+import { preparationFor } from "./preparation-budget";
+import { retrieveBroadReferences } from "./web-discovery";
+import { applyWorkerReceipt } from "./worker-receipt";
 import { applyCommand } from "./engine";
 import { generationInput } from "./generation";
 import { discoverModels } from "./model-discovery";
@@ -85,8 +91,8 @@ function saveKey(db: DatabaseSync, id: string, value: string) {
     .run(id, [iv, cipher.getAuthTag(), ciphertext].map((part) => part.toString("base64")).join("."));
 }
 
-function writingRates(state: StudioState): Rate[] {
-  return [
+function localRates(state: StudioState): Rate[] {
+  const rates: Rate[] = [
     ...effectiveRates(state),
     {
       provider: "anthropic",
@@ -102,6 +108,14 @@ function writingRates(state: StudioState): Rate[] {
       qualified: true,
     },
   ];
+  // The local text adapters use the same tool-free token rates for ideas and review.
+  for (const rate of rates.filter((card) => card.function === "text" && card.fixedCents === undefined)) {
+    for (const kind of ["ideas", "review"] as const) {
+      if (rates.some((card) => card.provider === rate.provider && card.model === rate.model && card.function === kind)) continue;
+      rates.push({ ...rate, function: kind });
+    }
+  }
+  return rates;
 }
 
 export async function localAI(withDatabase: Database, revision: number, unknown: unknown) {
@@ -155,35 +169,129 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
     }));
   }
 
-  const parsed = commandSchema.parse(command);
-  if (parsed.type !== "content.generate" || parsed.kind !== "text")
-    throw new StudioError(400, "Local AI currently generates written drafts.");
+  const { publicQuery, publicSourceUrls, ...generationCommand } = command;
+  const parsed = commandSchema.parse(command.type === "content.generate" ? generationCommand : command);
+  let currentRevision = revision;
+  async function retrieve(input: Extract<typeof parsed, {type: "research.retrieve"}>) {
+    const { existing } = publicRetrievalTarget(state, DEMO_ACTOR, input);
+    if (existing) return state;
+    const retrievalResult = await retrieveBroadReferences(
+      input.query, fetch, new Date().toISOString(), researchProfile(state, input.channel), input.sourceUrls,
+    );
+    return applyCommand(state, DEMO_ACTOR, input, { retrievalResult });
+  }
+  if (parsed.type === "research.retrieve") {
+    const next = await retrieve(parsed);
+    return next === state ? current : withDatabase((db) => write(db, revision, next));
+  }
+  if (parsed.type !== "content.generate" && parsed.type !== "idea.generate")
+    throw new StudioError(400, "Unsupported local AI request.");
+
+  const kind = parsed.type === "idea.generate" ? "ideas" : parsed.kind;
+  const contentId = parsed.type === "content.generate" ? parsed.contentId : undefined;
   const previousJob = state.jobs.find((j) => j.idempotencyKey === parsed.idempotencyKey && j.createdBy === DEMO_ACTOR.email);
   if (previousJob) {
-    if (previousJob.contentId !== parsed.contentId || previousJob.kind !== parsed.kind)
-      throw new StudioError(409, "This generation request belongs to another draft.");
+    if (previousJob.contentId !== contentId || previousJob.kind !== kind)
+      throw new StudioError(409, "This generation request belongs to another draft or function.");
     return { ...current, job: previousJob };
   }
-  const prepared = generationInput(state, DEMO_ACTOR, parsed);
-  const priced = quote(state, prepared, writingRates(state));
-  const connection = state.connections.find((c) => c.id === prepared.connectionId)!;
+
+  function configureLocalState(source: StudioState) {
+    const next = structuredClone(source);
+    const defaults = next.settings.defaultConnections ??= {};
+    if (defaults.text) {
+      defaults.ideas ??= defaults.text;
+      defaults.review ??= defaults.text;
+    }
+    next.settings.qualifiedRates = localRates(source);
+    next.settings.requestCap ||= next.settings.monthlyCap;
+    for (const connection of next.connections) {
+      if (!textFunctions.safeParse(connection.function).success) continue;
+      connection.supportedFunctions = [...textFunctions.options];
+      const allowance = connection as Connection & { maxRequestCost?: number };
+      allowance.maxRequestCost ||= next.settings.monthlyCap;
+    }
+    return next;
+  }
+  function restoreLocalConfiguration(next: StudioState) {
+    next.settings.defaultConnections = state.settings.defaultConnections;
+    next.settings.qualifiedRates = state.settings.qualifiedRates;
+    next.settings.requestCap = state.settings.requestCap;
+    next.connections = state.connections;
+    return next;
+  }
+  function enqueue(inputState: StudioState, prepared: ReturnType<typeof generationInput> | ReturnType<typeof ideaJobInput>) {
+    const priced = quote(inputState, prepared);
+    return applyCommand(inputState, DEMO_ACTOR, {...prepared, confirmed: true}, {
+      quotedCost: priced.cost, pricingSnapshot: priced.pricingSnapshot, canonicalGeneration: prepared.kind !== "ideas",
+    });
+  }
+
+  let configured = configureLocalState(state);
+  let prepared;
+  if (parsed.type === "idea.generate") {
+    if (parsed.automaticResearch) {
+      const researched = await automaticIdeaResearch(configured, DEMO_ACTOR, parsed, undefined, undefined, async (snapshot) => {
+        const saved = withDatabase((db) => write(db, currentRevision, restoreLocalConfiguration(structuredClone(snapshot))));
+        currentRevision = saved.revision;
+      });
+      configured = researched.state;
+      prepared = ideaJobInput(configured, DEMO_ACTOR, researched.command);
+    } else {
+      prepared = ideaJobInput(configured, DEMO_ACTOR, parsed);
+    }
+  } else {
+    const draft = configured.contents.find((item) => item.id === parsed.contentId);
+    const policy = configured.settings.reviewPolicy;
+    if (draft && policy && !preparationFor(configured, draft, DEMO_ACTOR.email, new Date().toISOString())) {
+      configured = applyCommand(configured, DEMO_ACTOR, {
+        type: "preparation.authorize", contentId: draft.id, expectedRevision: parsed.expectedRevision, maxCents: policy.packageCap,
+      });
+    }
+    prepared = generationInput(configured, DEMO_ACTOR, parsed);
+    const query = typeof publicQuery === "string" ? publicQuery.trim() : "";
+    const hasLinks = Array.isArray(publicSourceUrls) && publicSourceUrls.length > 0;
+    if (draft && parsed.kind === "text" && (query || hasLinks)) {
+      // Check the monthly budget before spending time on public retrieval.
+      enqueue(configured, prepared);
+      const input = commandSchema.parse({
+        type: "research.retrieve",
+        channel: draft.channel,
+        contentId: draft.id,
+        expectedRevision: parsed.expectedRevision,
+        query: query || draft.title,
+        sourceUrls: publicSourceUrls,
+        idempotencyKey: `writing-research:${parsed.idempotencyKey}`,
+      });
+      if (input.type !== "research.retrieve") throw new StudioError(400, "Invalid research request.");
+      const researched = await retrieve(input);
+      if (researched !== state) {
+        const saved = withDatabase((db) => write(db, currentRevision, researched));
+        currentRevision = saved.revision;
+      }
+      const evidence = researched.jobs.find((j) => j.idempotencyKey === input.idempotencyKey);
+      if (evidence?.result && JSON.parse(evidence.result).citations?.length) {
+        configured.jobs = researched.jobs;
+        configured.version = Math.max(configured.version, researched.version);
+        prepared = generationInput(configured, DEMO_ACTOR, {
+          ...parsed, researchJobIds: [...new Set([evidence.id, ...prepared.researchJobIds])].slice(0, 5),
+        });
+      } else {
+        configured.jobs = researched.jobs;
+        configured.version = Math.max(configured.version, researched.version);
+      }
+    }
+  }
+  const connection = configured.connections.find((c) => c.id === prepared.connectionId);
+  if (!connection) throw new StudioError(409, "Select a validated model in AI Connections.");
   const key = withDatabase((db) => storedKey(db, connection.id));
-  const requestCap = state.settings.requestCap;
-  const allowance = (connection as Connection & {maxRequestCost?: number}).maxRequestCost;
-  const budgetState = structuredClone(state);
-  budgetState.settings.requestCap ||= budgetState.settings.monthlyCap;
-  const budgetConnection = budgetState.connections.find((c) => c.id === connection.id)!;
-  Object.assign(budgetConnection, { maxRequestCost: allowance || priced.cost });
-  const next = applyCommand(budgetState, DEMO_ACTOR, {...prepared, confirmed: true}, {
-    quotedCost: priced.cost, pricingSnapshot: priced.pricingSnapshot, canonicalGeneration: true,
-  });
-  next.settings.requestCap = requestCap;
-  const nextConnection = next.connections.find((c) => c.id === connection.id)!;
-  Object.assign(nextConnection, { maxRequestCost: allowance });
+  const next = restoreLocalConfiguration(enqueue(configured, prepared));
   const job = next.jobs.find((j) => j.idempotencyKey === prepared.idempotencyKey)!;
   job.state = "running";
   job.attempt = 1;
-  withDatabase((db) => write(db, revision, next));
+  job.leaseId = crypto.randomUUID();
+  job.dispatchStartedAt = new Date().toISOString();
+  withDatabase((db) => write(db, currentRevision, next));
 
   let output: Awaited<ReturnType<typeof runProvider>> | undefined;
   let problem: ProviderFailure | undefined;
@@ -197,22 +305,20 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
     const result = latest.state.jobs.find((j) => j.id === job.id);
     if (!result || result.state !== "running")
       throw new StudioError(409, "The recorded request changed. Check its outcome before generating again.");
-    if (problem) {
-      result.state = problem.ambiguous ? "unknown" : "failed";
-      result.error = problem.message;
-      if (!problem.ambiguous) result.reserved = 0;
-    } else {
-      result.state = "succeeded";
-      result.result = output?.text;
-      result.providerCompletion = output?.completion;
-      result.providerStopReason = output?.stopReason;
-      settleWrittenOutput(latest.state, result, output || {}, new Date().toISOString());
-      if (output?.usage) settleUsageCost(result, output.usage);
-      else if (output?.standardUsage) settleUsageCost(result, output.standardUsage, true);
-      if (result.reserved && !result.error)
-        result.error = "Provider completed. The quoted allowance remains reserved until the cost is reconciled.";
-    }
-    latest.state.version++;
-    return { ...write(db, latest.revision, latest.state), job: result };
+    const now = new Date().toISOString();
+    const settled = applyWorkerReceipt(latest.state, {
+      version: 1, jobId: job.id, leaseId: job.leaseId!, receivedAt: now,
+      ...(problem
+        ? { problem: { ambiguous: problem.ambiguous, message: problem.message } }
+        : { outcome: {
+            text: output?.text?.slice(0, 200000),
+            completion: output?.completion,
+            stopReason: output?.stopReason,
+            usage: output?.usage,
+          } }),
+    });
+    const finished = settled.jobs.find((j) => j.id === job.id)!;
+    if (output?.standardUsage) settleUsageCost(finished, output.standardUsage, true);
+    return { ...write(db, latest.revision, settled), job: finished };
   }));
 }

@@ -155,7 +155,7 @@ export function useStudio() {
   async function send(command: Command) {
     try {
       setError("");
-      if (local && ["connection.save", "connection.validate", "connection.disconnect", "connection.delete", "content.generate"].includes(command.type)) {
+      if (local && ["connection.save", "connection.validate", "connection.disconnect", "connection.delete", "content.generate", "idea.generate", "research.retrieve"].includes(command.type)) {
         try {
           const result = await requestLocalAI<LocalSnapshot & { job?: Job }>(command);
           if (result.revision >= localRevision.current) {
@@ -163,7 +163,9 @@ export function useStudio() {
             update(result.state);
           }
           if (result.job?.state === "unknown" || result.job?.state === "failed" ||
-              (result.job?.state === "succeeded" && !result.job.appliedAt))
+              (result.job?.state === "succeeded" && result.job.kind === "text" && !result.job.appliedAt) ||
+              result.job?.outputStatus === "invalid" || result.job?.outputStatus === "conflict" ||
+              (result.job?.outputStatus === "incomplete" && !result.job.appliedAt))
             throw new Error(result.job.error || "Generation did not update the draft. Check Generation activity.");
           return { state: result.state, actor: DEMO_ACTOR, mode: "demo" as const };
         } catch (error) {

@@ -15,13 +15,17 @@ Open http://localhost:3005. Studio runs on the loopback interface with no sign-i
 
 Use the local workspace for drafting, reviews, approvals, and exports. Browser preferences remain in the browser. Hosted integrations and private asset uploads still use the Supabase-backed workflow below. Moving workspace data to a later hosted deployment requires a separate import.
 
-### Generate drafts locally
+### Research, ideas, writing, and review locally
 
 Under **AI & budgets**, set a **Monthly AI budget** in **Spending** and add a writing connection under **AI Connections**. Enter the provider API key and select an exact model. Saving checks account access, keeps the key encrypted in the local workspace, and selects the first writing connection as the default. Use **Use as default** to switch the model for channels without an override.
 
-Create and save a draft, then choose **Generate draft**. Studio sends the draft, instructions, and applicable references and voice examples to the selected provider. It checks pricing and reserves an estimated maximum against your budget before calling the provider. Unknown costs retain the reservation. An uncertain dispatch is never retried automatically.
+- In **Ideas**, choose **Generate with agent**. Studio searches public sources for the topic and saves generated ideas with their references. Use **Use saved research or add source links** to supply your own links.
+- In **Create**, open a saved draft and choose **Generate draft**. Edit the public search topic or add public links before generating. Clear the public topic and links to write using only saved references and your instructions.
+- Open a saved draft with copy and choose **Run AI review** to see findings on that revision. Final approval stays with you.
 
-Local writing supports Anthropic, OpenAI, and Gemini models with a verified writing rate. The existing Claude Sonnet 5.5 rate is included. Other models require a qualified rate from the workspace or `STUDIO_RATE_CARD`. Local generation currently covers written drafts.
+The default writing connection also handles ideas and review unless you set separate models. Workflows that require independent review still need a reviewer from a different provider. Paid jobs use the one monthly budget and reserve an estimate before dispatch. Studio sends the relevant instructions and references to the selected provider. Public queries and URLs go to the research services. Unknown costs retain the reservation, and uncertain requests are never automatically retried.
+
+Anthropic, OpenAI, and Gemini text models need verified pricing. A qualified token-based writing rate can cover ideas and review for the same model. The existing Claude Sonnet 5.5 rate is included. Other models require a qualified rate from the workspace or `STUDIO_RATE_CARD`. Local media generation still requires additional support.
 
 ## Supabase-backed development
 

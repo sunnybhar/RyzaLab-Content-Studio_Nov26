@@ -80,6 +80,7 @@ import { VerificationPack } from "./verification-pack";
 import {IdeaComposer} from "./idea-composer";
 import {IdeaEvidence} from "./idea-evidence";
 import { researchEvidence } from "@/lib/studio/research-link";
+import { copyIdentity } from "@/lib/studio/solo-quality";
 import { PostPreview } from "./post-preview";
 import { HighlightedTextarea } from "./highlighted-textarea";
 import { ReviewContentEditor } from "./review-content-editor";
@@ -3529,7 +3530,7 @@ export default function Workspace() {
                     <p>Connect a provider for a specific creative function.</p>
                   </div>
                   <ConnectionEditor
-                    functions={FUNCTIONS.filter((kind) => (!local || kind === "text") && allowed("connections.manage", { function: kind }))}
+                    functions={FUNCTIONS.filter((kind) => (!local || ["text", "ideas", "review"].includes(kind)) && allowed("connections.manage", { function: kind }))}
                     demo={mode === "demo" && !local}
                     save={send}
                     discover={discoverAccountModels}
@@ -3930,7 +3931,7 @@ export default function Workspace() {
           </footer>
         </main>
       </div>
-      {ideaComposer&&<IdeaComposer mode={ideaComposer} initialBriefId={pipelineIdea?.id} initialChannel={pipelineIdea?.channel||(channel==="All channels"?"LinkedIn":channel)} state={state} actor={actor} demo={mode==="demo"} send={send} refresh={(force=false)=>refresh(!force)} close={()=>setIdeaComposer(null)} openContent={idea=>useIdea(idea,idea.channel==="Newsletter"?"Newsletter":"Text post","RyzaLab")} onSaved={setNotice}/>}
+      {ideaComposer&&<IdeaComposer mode={ideaComposer} initialBriefId={pipelineIdea?.id} initialChannel={pipelineIdea?.channel||(channel==="All channels"?"LinkedIn":channel)} state={state} actor={actor} demo={mode==="demo" && !local} send={send} refresh={(force=false)=>refresh(!force)} close={()=>setIdeaComposer(null)} openContent={idea=>useIdea(idea,idea.channel==="Newsletter"?"Newsletter":"Text post","RyzaLab")} onSaved={setNotice}/>}
       {queueTarget && (
         <QueueRequest
           state={state}
@@ -4651,21 +4652,59 @@ function Editor({
                   disabled={readOnly || busy || dirty || externalChange}
                   onClick={() => form(
                     "Generate draft",
-                    [field("notes", "Instructions and source material", "", "textarea")],
+                    [
+                      field("notes", "Instructions and source material", "", "textarea"),
+                      field("publicQuery", "Public research topic (clear to skip)", c.title.length >= 5 ? c.title : ""),
+                      field("publicSourceUrls", "Public source links (one HTTPS URL per line)", "", "textarea"),
+                    ],
                     (data) => ({
                       type: "content.generate",
                       contentId: c.id,
                       kind: "text",
                       expectedRevision: c.revision,
                       notes: val(data, "notes"),
+                      publicQuery: val(data, "publicQuery"),
+                      publicSourceUrls: val(data, "publicSourceUrls").split(/\r?\n/).map(link => link.trim()).filter(Boolean),
                       idempotencyKey: crypto.randomUUID(),
                     }),
-                    "Studio sends the saved draft and selected references to your AI provider. This request may use part of your monthly AI budget.",
+                    "Studio searches for the public topic and uses the selected sources and saved draft to generate copy with your model. The model request may use part of your monthly AI budget.",
                     "Generate draft",
                   )}
                 >
                   Generate draft
                 </button>
+              )}
+              {local && c.text.trim() && (c.state === "draft" || c.state === "review") && (
+                <button
+                  type="button"
+                  className="s-btn"
+                  disabled={readOnly || busy || dirty || externalChange}
+                  onClick={() => void run({
+                    type: "content.generate",
+                    contentId: c.id,
+                    kind: "review",
+                    expectedRevision: c.revision,
+                    idempotencyKey: crypto.randomUUID(),
+                  }, "AI review saved. Final approval is yours.")}
+                >
+                  Run AI review
+                </button>
+              )}
+              {local && c.agentReview && (
+                <details className="s-version" open>
+                  <summary>AI review · {c.agentReview.model}</summary>
+                  {(dirty || c.agentReview.identity !== copyIdentity(c, state)) && (
+                    <p>This review is for an earlier version. Save your changes and run it again for the current draft.</p>
+                  )}
+                  <p>{c.agentReview.summary}</p>
+                  {c.agentReview.issues.length > 0 && (
+                    <ul>
+                      {c.agentReview.issues.map((issue, index) => (
+                        <li key={index}>{issue.message}</li>
+                      ))}
+                    </ul>
+                  )}
+                </details>
               )}
               {state.settings.reviewPolicy?.mode === "two_step" && <DraftAssistant content={c} state={state} actor={actor} dirty={dirty || externalChange} readOnly={editorReadOnly} busy={busy} run={run} refresh={refresh} recoverJob={progressJob} demo={mode === "demo"} />}
               <HighlightedTextarea
