@@ -32,6 +32,7 @@ try {
     .getByRole("heading", { name: "Your campaign command center" })
     .waitFor();
   await navigate("Calendar");
+  await page.locator(".s-channel-tabs").getByRole("button", { name: /Newsletter$/ }).click();
   await page
     .getByText("Upload content calendar / download template", { exact: true })
     .click();
@@ -134,6 +135,17 @@ try {
     .getByRole("button", { name: "Confirm import · 2 selected" })
     .click();
   await importer.getByText(/Imported 2 new briefs/).waitFor();
+  const datedBrief = page.locator(".s-calendar-grid").getByRole("button", { name: /Browser imported construction brief/ });
+  await datedBrief.waitFor();
+  assert.equal(await page.locator(".s-channel-tabs").getByRole("button", { name: "All channels", exact: true }).getAttribute("aria-pressed"), "true");
+  await page.getByRole("button", { name: "Previous month" }).click();
+  await page.getByText(/No imported briefs match this month and channel/).waitFor();
+  await page.getByLabel("Jump to imported month").selectOption("2026-11");
+  await datedBrief.waitFor();
+  await page.getByRole("button", { name: "Agenda", exact: true }).click();
+  await page.getByRole("region", { name: "Imported calendar briefs" })
+    .getByRole("button", { name: rows[0][1] }).waitFor();
+  await page.getByRole("button", { name: "Month", exact: true }).click();
   let state = await saved();
   assert.equal(state.pipelineBriefs.length, 2);
   assert.equal(state.pipelineBriefs[0].plannedAt, "2026-11-10T17:15:00.000Z");

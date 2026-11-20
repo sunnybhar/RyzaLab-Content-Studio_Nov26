@@ -9,6 +9,8 @@ import type {
   StudioState,
 } from "@/lib/studio/types";
 import {eligibleEvidence,jobHasExcludedSupport} from "@/lib/studio/source-policy";
+import { approvalAssetUses, inlineMediaUrl, studioAssetUrl } from "@/lib/studio/assets";
+import { localMediaUrl } from "@/lib/studio/local-media-url";
 import { can } from "@/lib/studio/permissions";
 import { currentWorkflow } from "@/lib/studio/stages";
 import { copyIdentity, packageReadiness } from "@/lib/studio/solo-quality";
@@ -25,6 +27,8 @@ export function SoloReview({
   send,
   renderAsset,
   requestChanges,
+  openDraft,
+  local = false,
   recordPriceException,
   refresh,
   demo,
@@ -44,6 +48,7 @@ export function SoloReview({
   requestChanges: () => void;
   refresh: () => Promise<void>;
   demo: boolean;
+  local?: boolean;
   onApproved?: (pkg: Package, state: StudioState) => void;
   progressJob?: (id: string) => Promise<unknown>;
 }) {
@@ -67,6 +72,10 @@ export function SoloReview({
   );
   const automatedWorkPending=state.jobs.some(j=>j.contentId===content.id&&["queued","running"].includes(j.state));
   const issues = [...readiness.blockers];
+  const invalidMedia = approvalAssetUses(content).some(({ url }) =>
+    !(demo && inlineMediaUrl.test(url)) && !(local ? localMediaUrl.test(url) : studioAssetUrl.test(url)),
+  );
+  if (invalidMedia) issues.push("Replace or remove the external media attachment in the full editor before approving.");
   if (content.automaticReview?.error && !readiness.agent)
     issues.push(content.automaticReview.error);
   let sources: ReturnType<typeof researchEvidence> = [];
@@ -311,6 +320,7 @@ export function SoloReview({
       )}
       {allowed && (
         <>
+          {invalidMedia && <button type="button" className="s-btn" onClick={openDraft}>Open full editor to fix media</button>}
           <details open={override || undefined}>
             <summary>Override checks and continue</summary>
             <p>
@@ -342,6 +352,7 @@ export function SoloReview({
             disabled={
               busy ||
               !workflow ||
+              invalidMedia ||
               (!override && !readiness.ready) ||
               (override && reason.trim().length < 5)
             }

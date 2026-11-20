@@ -181,13 +181,17 @@ export function CalendarImport({
           expectedVersion: existing(r.data!)?.version,
         })),
       });
-      const receipt = (
-        response as { state: StudioState }
-      ).state.pipelineImports?.find((i) => i.requestKey === key.current);
+      const saved = (response as { state: StudioState }).state;
+      const receipt = saved.pipelineImports?.find((i) => i.requestKey === key.current);
       setMessage(
         `Imported ${receipt?.created || 0} new briefs; updated ${receipt?.updated || 0}; ${receipt?.skipped || 0} existing duplicates skipped. No content generated or published.`,
       );
-      onImported(chosen.find((r) => r.data?.plannedDate)?.data?.plannedDate);
+      const identities = new Set(chosen.map((row) => pipelineIdentity(fileName, row.data!)));
+      const dates = (saved.pipelineBriefs || [])
+        .filter((brief) => identities.has(brief.identity))
+        .flatMap((brief) => brief.plannedDate ? [brief.plannedDate] : [])
+        .sort();
+      onImported(dates[0]);
       setStep(0);
       setBook(undefined);
     } catch (e) {

@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
@@ -14,6 +14,8 @@ import { preparationFor } from "./preparation-budget";
 import { retrieveBroadReferences } from "./web-discovery";
 import { readPublicPage } from "./public-page";
 import { applyWorkerReceipt } from "./worker-receipt";
+import { approvalAssetUses, approvalMimeMatches, inlineMediaUrl } from "./assets";
+import { localMediaUrl } from "./local-media-url";
 import { applyCommand } from "./engine";
 import { generationInput } from "./generation";
 import { discoverModels } from "./model-discovery";
@@ -200,6 +202,33 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
   const current = withDatabase(workspace);
   if (revision !== current.revision) throw new StudioError(409, "The local workspace changed. Refresh before retrying.");
   const { state } = current;
+  if (command.type === "package.approve") {
+    const approval = commandSchema.parse(command);
+    if (approval.type !== "package.approve") throw new StudioError(400, "Invalid approval request.");
+    return withDatabase((db) => transaction(db, () => {
+      const latest = workspace(db);
+      if (latest.revision !== revision) throw new StudioError(409, "The local workspace changed. Reopen Review.");
+      const draft = latest.state.contents.find((item) => item.id === approval.contentId);
+      const manifest = [];
+      const verifiedLocalAssetUrls = new Set<string>();
+      for (const { kind, url } of draft ? approvalAssetUses(draft) : []) {
+        if (inlineMediaUrl.test(url)) continue;
+        const id = localMediaUrl.exec(url)?.[1];
+        if (!id) throw new StudioError(400, "Replace or remove the external media attachment in the full editor before approving.");
+        const row = db.prepare("SELECT mime, bytes FROM local_media WHERE id = ?").get(id);
+        if (!row || !(row.bytes instanceof Uint8Array) || !row.bytes.length || !approvalMimeMatches(kind, String(row.mime)))
+          throw new StudioError(400, "A local media attachment is missing or has the wrong type. Reattach it in the full editor before approving.");
+        if (verifiedLocalAssetUrls.has(url)) continue;
+        verifiedLocalAssetUrls.add(url);
+        manifest.push({ id, path: url, mime: row.mime, size: row.bytes.length, etag: createHash("sha256").update(row.bytes).digest("hex") });
+      }
+      const next = applyCommand(latest.state, DEMO_ACTOR, approval, {
+        demo: true, assetManifest: manifest, verifiedLocalAssetUrls,
+      });
+      return write(db, revision, next);
+    }));
+  }
+
   if (command.type === "agentVoice.create") {
     const { archivePdf, ...voiceCommand } = command;
     const input = commandSchema.parse(voiceCommand);

@@ -11,12 +11,11 @@ export interface StoredAssetInfo {
   version?: string;
   etag?: string;
 }
-export async function verifyApprovalAssets(
-  content: Content,
-  find: (id: string) => Promise<AssetRecord | null>,
-  info: (path: string) => Promise<StoredAssetInfo | null>,
-) {
-  const uses = [
+export const studioAssetUrl = /^\/api\/studio\/assets\?id=([0-9a-f-]{36})$/i;
+export const inlineMediaUrl = /^data:(image\/(png|jpeg|webp)|video\/mp4|audio\/(mpeg|wav));base64,/i;
+
+export function approvalAssetUses(content: Content) {
+  return [
     { url: content.media.imageUrl, kind: "image" },
     ...(content.media.sectionImages||[]).map(image=>({url:image.url,kind:"image"})),
     ...content.media.slides.map((s) => ({ url: s.image, kind: "image" })),
@@ -24,7 +23,19 @@ export async function verifyApprovalAssets(
       { url: s.sourceUrl, kind: "scene" },
       { url: s.audioUrl, kind: "audio" },
     ]),
-  ].filter((x) => x.url);
+  ].filter((use): use is { url: string; kind: string } => Boolean(use.url));
+}
+export function approvalMimeMatches(kind: string, mime: string) {
+  const image = ["image/png", "image/jpeg", "image/webp"];
+  if (kind === "audio") return ["audio/mpeg", "audio/wav"].includes(mime);
+  return image.includes(mime) || (kind === "scene" && mime === "video/mp4");
+}
+export async function verifyApprovalAssets(
+  content: Content,
+  find: (id: string) => Promise<AssetRecord | null>,
+  info: (path: string) => Promise<StoredAssetInfo | null>,
+) {
+  const uses = approvalAssetUses(content);
   const manifests: {
     id: string;
     path: string;
@@ -34,9 +45,7 @@ export async function verifyApprovalAssets(
     size: number;
   }[] = [];
   for (const use of uses) {
-    const id = /^\/api\/studio\/assets\?id=([0-9a-f-]{36})$/i.exec(
-      use.url!,
-    )?.[1];
+    const id = studioAssetUrl.exec(use.url)?.[1];
     if (!id)
       throw new StudioError(400, "Upload immutable media before approval.");
     const asset = await find(id);
@@ -60,15 +69,7 @@ export async function verifyApprovalAssets(
         400,
         "Stored media size or type does not match the upload record.",
       );
-    const image = ["image/png", "image/jpeg", "image/webp"],
-      audio = ["audio/mpeg", "audio/wav"];
-    const allowed =
-      use.kind === "image"
-        ? image
-        : use.kind === "audio"
-          ? audio
-          : [...image, "video/mp4"];
-    if (!allowed.includes(stored.contentType))
+    if (!approvalMimeMatches(use.kind, stored.contentType))
       throw new StudioError(
         400,
         "The uploaded media type does not match its use in this package.",

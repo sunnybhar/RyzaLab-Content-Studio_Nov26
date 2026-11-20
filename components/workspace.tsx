@@ -11,7 +11,7 @@ import {useDraftSave,DraftSaveStatus} from "./draft-save-controller";
 import type {DraftValues} from "@/lib/studio/draft-recovery";
 import {CalendarImport} from "./calendar-import";
 import {ExistingPipeline} from "./existing-pipeline";
-import type {PipelineBrief} from "@/lib/studio/pipeline";
+import { visiblePipeline, type PipelineBrief } from "@/lib/studio/pipeline";
 
 import {activeStudioView, ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active-channels";
 import { IDEA_TEXT_ALTERNATIVES, type IdeaTextAlternative } from "@/lib/studio/idea-alternatives";
@@ -707,6 +707,24 @@ export default function Workspace() {
   const admin = founder || roles.includes("administrator");
   const readOnly = roles.length === 0 || roles.every((r) => r === "viewer");
   const liveContents = state.contents.filter((c) => !c.deletedAt);
+  const calendarMonth = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
+  const importedBriefs = page === "Calendar" ? visiblePipeline(state, actor) : [];
+  const importedMonths = new Map<string, number>();
+  for (const brief of importedBriefs) {
+    if (!brief.plannedDate) continue;
+    const key = brief.plannedDate.slice(0, 7);
+    importedMonths.set(key, (importedMonths.get(key) ?? 0) + 1);
+  }
+  const filteredBriefs = importedBriefs.filter((brief) => channel === "All channels" || brief.channel === channel);
+  const monthBriefs = filteredBriefs.filter((brief) => brief.plannedDate?.startsWith(calendarMonth))
+    .sort((a, b) => `${a.plannedDate} ${a.plannedTime ?? ""}`.localeCompare(`${b.plannedDate} ${b.plannedTime ?? ""}`));
+  const unscheduledBriefs = filteredBriefs.filter((brief) => !brief.plannedDate);
+  function showImportedMonth(date: string) {
+    const [year, monthNumber] = date.split("-").map(Number);
+    setMonth(new Date(year, monthNumber - 1, 1));
+    setChannel("All channels");
+    setSearch("");
+  }
   const matches = (c: { channel: Channel; title: string }) =>
     (channel === "All channels" || c.channel === channel) &&
     (!search || c.title.toLowerCase().includes(search.toLowerCase()));
@@ -2069,8 +2087,51 @@ export default function Workspace() {
           )}
           {page === "Calendar" && (
             <>
-              <details className="s-panel" open={calendarImportOpen} onToggle={e=>setCalendarImportOpen(e.currentTarget.open)}><summary>Upload content calendar / download template</summary><CalendarImport state={state} actor={actor} send={send} onImported={date=>{if(date){const [y,m]=date.split("-").map(Number);setMonth(new Date(y,m-1,1));}setNotice("Calendar import saved. Find the same briefs in Existing Pipeline under Ideas and Create.");}}/></details>
-              {!!state.pipelineBriefs?.length&&<section className="s-panel"><div className="s-section-heading"><div><h2>Imported pipeline</h2><p>Planned briefs and historical records. These are not approved publication schedules.</p></div><span>{state.pipelineBriefs.filter(b=>!b.plannedDate).length} unscheduled</span></div><div className="pipeline-calendar">{state.pipelineBriefs.filter(b=>(channel==="All channels"||b.channel===channel)&&(!b.plannedDate||b.plannedDate.startsWith(`${month.getFullYear()}-${String(month.getMonth()+1).padStart(2,"0")}`))).slice(0,30).map(b=><button key={b.id} onClick={()=>pipelineOpen(b)}><small>{b.plannedDate||"Unscheduled"} {b.plannedTime} · {b.channel}{b.historical?" · Historical":""}</small><strong>{b.title}</strong><small>Open brief → Ideas or writing</small></button>)}</div></section>}
+              <details className="s-panel" open={calendarImportOpen} onToggle={(event) => setCalendarImportOpen(event.currentTarget.open)}>
+                <summary>Upload content calendar / download template</summary>
+                <CalendarImport state={state} actor={actor} send={send} onImported={(date) => {
+                  if (date) {
+                    showImportedMonth(date);
+                    setCalendarView("Month");
+                  } else {
+                    setChannel("All channels");
+                  }
+                  setNotice("Calendar import saved. Find the same briefs in Existing Pipeline under Ideas and Create.");
+                }} />
+              </details>
+              {importedBriefs.length > 0 && (
+                <section className="s-panel" aria-label="Imported pipeline">
+                  <div className="s-section-heading">
+                    <div>
+                      <h2>Imported pipeline</h2>
+                      <p>{monthBriefs.length} dated this month · {unscheduledBriefs.length} unscheduled</p>
+                    </div>
+                    {importedMonths.size > 0 && (
+                      <label>
+                        Jump to imported month
+                        <select value="" onChange={(event) => showImportedMonth(event.target.value)}>
+                          <option value="">Choose a month</option>
+                          {[...importedMonths].sort(([a], [b]) => a.localeCompare(b)).map(([key, count]) => {
+                            const [year, index] = key.split("-").map(Number);
+                            const label = new Date(year, index - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+                            return <option key={key} value={key}>{label} · {count} {count === 1 ? "brief" : "briefs"}</option>;
+                          })}
+                        </select>
+                      </label>
+                    )}
+                  </div>
+                  {!monthBriefs.length && importedMonths.size > 0 && <p>No imported briefs match this month and channel. Choose an imported month to show its briefs across all channels.</p>}
+                  <div className="pipeline-calendar">
+                    {[...(calendarView === "Month" ? monthBriefs : []), ...unscheduledBriefs].slice(0, 30).map((brief) => (
+                      <button key={brief.id} onClick={() => pipelineOpen(brief)}>
+                        <small>{brief.plannedDate || "Unscheduled"} {brief.plannedTime} · {brief.channel}{brief.historical ? " · Historical" : ""}</small>
+                        <strong>{brief.title}</strong>
+                        <small>Open brief → Ideas or writing</small>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               <div className="s-calendar-toolbar">
                 <div className="s-inline">
@@ -2215,7 +2276,7 @@ export default function Workspace() {
                           >
                             {d.getDate()} <Plus size={12} />
                           </button>
-                          {(state.pipelineBriefs||[]).filter(b=>b.plannedDate===`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`&&(channel==="All channels"||b.channel===channel)).map(b=><button className="s-calendar-event s-planning-event pipeline-calendar-event" key={b.id} onClick={()=>pipelineOpen(b)}><span>{b.plannedTime||"Date only"} · {b.channel}{b.historical?" · History":" · Brief"}</span><strong>{b.title}</strong></button>)}
+                          {filteredBriefs.filter(b=>b.plannedDate===`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`).map(b=><button className="s-calendar-event s-planning-event pipeline-calendar-event" key={b.id} onClick={()=>pipelineOpen(b)}><span>{b.plannedTime||"Date only"} · {b.channel}{b.historical?" · History":" · Brief"}</span><strong>{b.title}</strong></button>)}
                           {(state.planningTasks || [])
                             .filter(
                               (t) =>
@@ -2286,6 +2347,19 @@ export default function Workspace() {
                 </section>
               ) : (
                 <section className="s-panel">
+                  {monthBriefs.length > 0 && (
+                    <section aria-label="Imported calendar briefs">
+                      <h3>Imported calendar briefs</h3>
+                      {monthBriefs.map((brief) => (
+                        <div className="s-schedule-row" key={brief.id}>
+                          <div className="s-schedule-main">
+                            <button className="s-link-button" onClick={() => pipelineOpen(brief)}>{brief.title}</button>
+                            <p>{brief.plannedDate} · {brief.plannedTime || "Date only"} · {brief.channel}{brief.historical ? " · Historical" : " · Planned brief"}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </section>
+                  )}
                   {state.schedules
                     .filter((s) => {
                       const c = state.contents.find(
@@ -2833,7 +2907,7 @@ export default function Workspace() {
                     <h2>{c.title}</h2>
                     <ReviewContentEditor AssetMedia={AssetMedia} content={c} canEdit={allowed("content.edit", {channel:c.channel,account:c.account,contentId:c.id,assignedTo:c.assignedTo})} send={send} onEditing={editing=>setReviewEditing(editing ? c.id : null)} openDraft={()=>openContent(c)} />
                     {reviewEditing === c.id ? <p>Save and submit your changes above to continue the review.</p> : (
-                      <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send} refresh={() => refresh(true)} progressJob={progressAuthorizedJob} demo={mode === "demo"}
+                      <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send} refresh={() => refresh(true)} progressJob={progressAuthorizedJob} demo={mode === "demo"} local={local}
                         onApproved={(pkg, approvedState) => {
                           document.querySelector<HTMLDialogElement>(".s-review-dialog[open]")?.close();
                           setReadyPackage(pkg);

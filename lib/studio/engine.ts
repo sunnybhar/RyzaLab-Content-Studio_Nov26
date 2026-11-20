@@ -48,6 +48,7 @@ import {
 } from "./idea-generation";
 import { demoPreset, type ChannelPreset } from "./presets";
 import { ideaJobInput } from "./idea-generation";
+import { approvalAssetUses, inlineMediaUrl, studioAssetUrl } from "./assets";
 import { contentWording, unresolvedPriceLines } from "./content-wording";
 import { inputRequirements } from "./input-requirements";
 import { BUDGET_CATEGORIES } from "./budget-categories";
@@ -64,6 +65,7 @@ export type ExecutionContext = {
   quotedCost?: number;
   pricingSnapshot?: unknown;
   assetManifest?: unknown[];
+  verifiedLocalAssetUrls?: ReadonlySet<string>;
   canonicalGeneration?: boolean;
   preset?: ChannelPreset;
 };
@@ -1181,27 +1183,9 @@ export function applyCommand(
           409,
           "Workflow or protected rules changed. Review the current versions before approving.",
         );
-      const assets = [
-        d.media.imageUrl,
-        ...(d.media.sectionImages||[]).map(image=>image.url),
-        ...d.media.slides.map((x) => x.image),
-        ...d.media.scenes.flatMap((x) => [x.sourceUrl, x.audioUrl]),
-      ].filter(Boolean) as string[];
-      if (
-        assets.some(
-          (url) =>
-            !/^\/api\/studio\/assets\?id=[0-9a-f-]{36}$/i.test(url) &&
-            !(
-              ctx.demo &&
-              /^data:(image\/(png|jpeg|webp)|video\/mp4|audio\/(mpeg|wav));base64,/i.test(
-                url,
-              )
-            ),
-        )
-      )
-        bad(
-          "Approval requires immutable uploaded Studio media, not mutable external URLs.",
-        );
+      if (approvalAssetUses(d).some(({ url }) =>
+        !studioAssetUrl.test(url) && !ctx.verifiedLocalAssetUrls?.has(url) && !(ctx.demo && inlineMediaUrl.test(url)),
+      )) bad("Approval requires immutable uploaded Studio media, not mutable external URLs.");
       const twoStep = soloPolicy(s);
       researchEvidence(s,actor,d.channel,d.researchJobIds);
       const readiness = twoStep || c.singleReview ? packageReadiness(d, s, Boolean(c.singleReview)) : undefined;
