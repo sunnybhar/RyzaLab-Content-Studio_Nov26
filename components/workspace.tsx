@@ -4920,6 +4920,7 @@ function Editor({
                   generationBusy={Boolean(generatingDraft) || busy}
                   adaptingSince={generatingDraft?.kind === "template" ? generatingDraft.startedAt : undefined}
                   draftDirty={dirty}
+                  unsavedImage={media.imageUrl !== c.media.imageUrl || media.imageAlt !== c.media.imageAlt || media.imageCaption !== c.media.imageCaption}
                   savingDraft={draftSave.busy}
                   adaptError={draftGenerationError?.kind === "template" ? draftGenerationError.message : undefined}
                   returnToDraft={!editorReadOnly && !dirty && !externalChange && (c.state === "review" || c.state === "changes")

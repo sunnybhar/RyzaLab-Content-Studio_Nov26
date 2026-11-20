@@ -6,6 +6,7 @@ import { z } from "zod";
 import { allowedLocalRequest } from "@/lib/studio/local-request";
 import { newsletterPdf } from "@/lib/studio/newsletter-pdf";
 import { newsletterTemplateLimit, newsletterTemplateOutline, renderNewsletterTemplate, validateNewsletterTemplate } from "@/lib/studio/newsletter-template";
+import { localMediaUrl } from "@/lib/studio/local-media-url";
 import { StudioError } from "@/lib/studio/permissions";
 import type { StudioState } from "@/lib/studio/types";
 
@@ -17,6 +18,7 @@ const contentId = z.string().min(1).max(150);
 const selection = z.object({ contentId, templateId: id.nullable() });
 const exportInput = z.object({
   templateId: id,
+  contentId: contentId.optional(),
   format: z.enum(["docx", "pdf"]),
   title: z.string().trim().min(1).max(200),
   text: z.string().trim().min(1).max(60000),
@@ -138,10 +140,26 @@ export async function POST(request: Request) {
       return Response.json({ added }, { headers });
     }
     const input = exportInput.parse(await request.json());
-    const original = templates((db) => db.prepare("SELECT data FROM newsletter_templates WHERE id = ?").get(input.templateId));
+    const { original, image } = templates((db) => {
+      const original = db.prepare("SELECT data FROM newsletter_templates WHERE id = ?").get(input.templateId);
+      if (!input.contentId) return { original };
+      const workspace = db.prepare("SELECT state FROM workspace WHERE id = 1").get();
+      const state: StudioState | undefined = workspace ? JSON.parse(String(workspace.state)) : undefined;
+      const draft = state?.contents.find((item) => item.id === input.contentId && item.channel === "Newsletter" && !item.deletedAt);
+      if (!draft) throw new StudioError(404, "The newsletter draft could not be found.");
+      const selected = db.prepare("SELECT template_id FROM newsletter_template_choices WHERE content_id = ?").get(draft.id);
+      if (selected?.template_id !== input.templateId)
+        throw new StudioError(409, "The selected newsletter template changed. Refresh and try the export again.");
+      const mediaId = localMediaUrl.exec(draft.media.imageUrl || "")?.[1];
+      if (!mediaId) return { original };
+      const row = db.prepare("SELECT mime, bytes FROM local_media WHERE id = ?").get(mediaId);
+      if (row?.mime !== "image/png" || !(row.bytes instanceof Uint8Array))
+        throw new StudioError(409, "The attached image could not be loaded. Reattach the image and save the newsletter before exporting.");
+      return { original, image: { bytes: row.bytes, alt: draft.media.imageAlt, caption: draft.media.imageCaption } };
+    });
     if (!original || !(original.data instanceof Uint8Array))
       throw new StudioError(404, "Newsletter template not found.");
-    const docx = await renderNewsletterTemplate(original.data, input.title, input.text);
+    const docx = await renderNewsletterTemplate(original.data, input.title, input.text, new Date(), image);
     const body = input.format === "pdf" ? await newsletterPdf(docx) : docx;
     return new Response(Uint8Array.from(body), { headers: {
       ...headers,

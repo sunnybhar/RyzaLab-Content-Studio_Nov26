@@ -21,10 +21,10 @@ export function newsletterFilename(title: string, format: "pdf" | "docx") {
   return (title.trim().replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-").slice(0, 100) || "newsletter") + "." + format;
 }
 
-export async function downloadTemplatedNewsletter(templateId: string, title: string, text: string, format: "pdf" | "docx") {
+export async function downloadTemplatedNewsletter(contentId: string, templateId: string, title: string, text: string, format: "pdf" | "docx") {
   const response = await checkedNewsletterResponse(await fetch(newsletterTemplateEndpoint, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ templateId, title, text, format }),
+    body: JSON.stringify({ contentId, templateId, title, text, format }),
     signal: AbortSignal.timeout(75000),
   }));
   const url = URL.createObjectURL(await response.blob());
@@ -36,7 +36,7 @@ export async function downloadTemplatedNewsletter(templateId: string, title: str
 }
 
 export function NewsletterTemplateExport({
-  contentId, title, text, children, onAdapt, generationBusy, adaptingSince, adaptDisabled, draftDirty, savingDraft, adaptError, returnToDraft,
+  contentId, title, text, children, onAdapt, generationBusy, adaptingSince, adaptDisabled, draftDirty, savingDraft, adaptError, returnToDraft, unsavedImage,
 }: {
   contentId: string;
   title: string;
@@ -50,6 +50,7 @@ export function NewsletterTemplateExport({
   savingDraft: boolean;
   adaptError?: string;
   returnToDraft?: () => void;
+  unsavedImage: boolean;
 }) {
   const [library, setLibrary] = useState<Library>({ templates: [], selected: null, outline: [] });
   const [busy, setBusy] = useState(false);
@@ -153,10 +154,11 @@ export function NewsletterTemplateExport({
             </>
           )}
           <div className="s-actions">
-            <button type="button" className="s-btn" disabled={busy || generationBusy || !!structureIssue || !text.trim()} onClick={() => void perform(() => downloadTemplatedNewsletter(library.selected!, title, text, "docx"))}>Download newsletter DOCX</button>
-            <button type="button" className="s-btn s-primary" disabled={busy || generationBusy || !!structureIssue || !text.trim()} onClick={() => void perform(() => downloadTemplatedNewsletter(library.selected!, title, text, "pdf"))}>Download newsletter PDF</button>
+            <button type="button" className="s-btn" disabled={busy || generationBusy || !!structureIssue || unsavedImage || !text.trim()} onClick={() => void perform(() => downloadTemplatedNewsletter(contentId, library.selected!, title, text, "docx"))}>Download newsletter DOCX</button>
+            <button type="button" className="s-btn s-primary" disabled={busy || generationBusy || !!structureIssue || unsavedImage || !text.trim()} onClick={() => void perform(() => downloadTemplatedNewsletter(contentId, library.selected!, title, text, "pdf"))}>Download newsletter PDF</button>
           </div>
-          <p>Uses the Word template’s embedded cover and styles. PDF export uses LibreOffice installed on this computer.</p>
+          {unsavedImage && <p role="status">Save the draft to export changes to the main image.</p>}
+          <p>Export includes the template cover and the saved Studio main image. PDF export uses LibreOffice.</p>
         </>
       ) : libraryLoaded ? children : null}
     </section>

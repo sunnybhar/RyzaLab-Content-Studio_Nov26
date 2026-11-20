@@ -30,7 +30,7 @@ export function ReviewPostPreview({
       ));
       const { selected } = await response.json();
       if (!selected) throw new Error("Select a Word template for this newsletter in Create.");
-      await downloadTemplatedNewsletter(selected, title, text, "docx");
+      await downloadTemplatedNewsletter(id, selected, title, text, "docx");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not download this newsletter.");
     } finally {

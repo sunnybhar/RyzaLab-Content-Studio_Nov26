@@ -105,7 +105,69 @@ export async function newsletterWritingGuidance(bytes: Uint8Array) {
   return { guidance: lines.join("\n").slice(0, 12000), sections: templateSections(body).map((section) => section.outline) };
 }
 
-export async function renderNewsletterTemplate(bytes: Uint8Array, title: string, text: string, now = new Date()) {
+type NewsletterImage = { bytes: Uint8Array; alt?: string; caption?: string };
+
+async function embedNewsletterImage(zip: JSZip, document: Document, image: NewsletterImage) {
+  const bytes = Buffer.from(image.bytes);
+  if (bytes.length < 33 || bytes.length > 50 * 1024 * 1024 ||
+      !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ||
+      bytes.toString("ascii", 12, 16) !== "IHDR")
+    throw new StudioError(409, "The attached Studio image is not a readable PNG.");
+  const width = bytes.readUInt32BE(16), height = bytes.readUInt32BE(20);
+  if (!width || !height) throw new StudioError(409, "The attached image has invalid dimensions.");
+  const scale = Math.min(5.8 * 914400 / width, 3.5 * 914400 / height);
+  const cx = Math.max(1, Math.round(width * scale)), cy = Math.max(1, Math.round(height * scale));
+  const packageRelationships = "http://schemas.openxmlformats.org/package/2006/relationships";
+  const officeRelationships = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+  const wp = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing";
+  const relPath = "word/_rels/document.xml.rels";
+  const rels = parsePart(await zip.file(relPath)?.async("string") ?? `<Relationships xmlns="${packageRelationships}"/>`);
+  const usedIds = new Set(elements(rels.documentElement!).map((item) => item.getAttribute("Id")));
+  let index = 1;
+  while (usedIds.has(`rIdStudioImage${index}`) || zip.file(`word/media/studio-image-${index}.png`)) index++;
+  const id = `rIdStudioImage${index}`;
+  const path = `media/studio-image-${index}.png`;
+  const relationship = rels.createElementNS(packageRelationships, "Relationship");
+  relationship.setAttribute("Id", id);
+  relationship.setAttribute("Type", `${officeRelationships}/image`);
+  relationship.setAttribute("Target", path);
+  rels.documentElement!.appendChild(relationship);
+  const serializer = new XMLSerializer();
+  zip.file(relPath, serializer.serializeToString(rels));
+  zip.file(`word/${path}`, bytes);
+
+  const types = parsePart(await zip.file("[Content_Types].xml")!.async("string"));
+  const entry = types.createElementNS(types.documentElement!.namespaceURI, "Override");
+  entry.setAttribute("PartName", `/word/${path}`);
+  entry.setAttribute("ContentType", "image/png");
+  types.documentElement!.appendChild(entry);
+  zip.file("[Content_Types].xml", serializer.serializeToString(types));
+
+  const docIds = new Set(Array.from(document.getElementsByTagNameNS(wp, "docPr")).map((element) => element.getAttribute("id")));
+  let drawingId = 1;
+  while (docIds.has(String(drawingId))) drawingId++;
+  const drawing = parsePart(`
+    <w:p xmlns:w="${word}" xmlns:wp="${wp}" xmlns:r="${officeRelationships}"
+      xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+      xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+      <w:pPr><w:jc w:val="center"/></w:pPr>
+      <w:r><w:drawing><wp:inline>
+        <wp:extent cx="${cx}" cy="${cy}"/>
+        <wp:docPr id="${drawingId}" name="Studio main image"/>
+        <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+          <pic:pic><pic:nvPicPr><pic:cNvPr id="${drawingId}" name="Studio main image"/><pic:cNvPicPr/></pic:nvPicPr>
+            <pic:blipFill><a:blip r:embed="${id}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>
+            <pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>
+          </pic:pic>
+        </a:graphicData></a:graphic>
+      </wp:inline></w:drawing></w:r>
+    </w:p>`);
+  const properties = drawing.getElementsByTagNameNS(wp, "docPr").item(0);
+  if (image.alt) properties?.setAttribute("descr", image.alt);
+  return document.importNode(drawing.documentElement!, true);
+}
+
+export async function renderNewsletterTemplate(bytes: Uint8Array, title: string, text: string, now = new Date(), image?: NewsletterImage) {
   const { zip, document, body } = await openTemplate(bytes);
   const sections = templateSections(body);
   const issue = newsletterStructureIssue(sections.map((section) => section.outline), text);
@@ -157,6 +219,7 @@ export async function renderNewsletterTemplate(bytes: Uint8Array, title: string,
   const before = titleAt >= 0 ? original.slice(0, titleAt) : original;
   const date = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "long", day: "numeric" }).format(now);
   const readTime = Math.max(1, Math.ceil(text.trim().split(/\s+/).length / 200));
+  const issueImage = image ? await embedNewsletterImage(zip, document, image) : undefined;
   while (body.firstChild) body.removeChild(body.firstChild);
   for (const item of before) {
     if (item.localName !== "p") continue;
@@ -180,6 +243,11 @@ export async function renderNewsletterTemplate(bytes: Uint8Array, title: string,
     const byline = original.slice(titleAt + 1, titleAt + 5).find((item) =>
       item.localName === "p" && /^By\s+.+\[X\]\s+min read/i.test(pText(item).trim()));
     if (byline) body.appendChild(replaceText(byline, pText(byline).replace(/\[X\]/i, String(readTime))));
+  }
+
+  if (issueImage) {
+    body.appendChild(issueImage);
+    if (image?.caption) body.appendChild(paragraph(image.caption, "Caption"));
   }
 
   const blocks = newsletterBlocks(text);
