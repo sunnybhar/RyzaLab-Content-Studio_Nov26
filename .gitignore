@@ -13,3 +13,5 @@ test-results/
 # Private operator backup archives
 *.rzlbackup
 .studio-backups/
+
+.studio-local/

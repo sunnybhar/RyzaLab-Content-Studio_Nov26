@@ -1,7 +1,7 @@
 "use client";
 import {refreshGate} from "./refresh-policy";
 import {clearRecovery} from "./draft-recovery";
-import {readStudioResponse} from "./response";
+import {StudioResponseError, readStudioResponse} from "./response";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { supabase, configured } from "../supabase";
@@ -17,14 +17,60 @@ import { generationInput } from "./generation";
 import { initialState, DEMO_ACTOR } from "./seed";
 import { applyCommand } from "./engine";
 import { requirePermission } from "./permissions";
+const browserStorageKey = "ryzalab-studio-v2";
+const localEndpoint = "/api/studio/local";
+type LocalSnapshot = { state: StudioState; revision: number };
+
+function readBrowserWorkspace(): StudioState | null {
+  try {
+    return JSON.parse(localStorage.getItem(browserStorageKey) || "null");
+  } catch {
+    return null;
+  }
+}
+
+async function saveLocalWorkspace(state: StudioState, revision: number | null) {
+  const response = await fetch(localEndpoint, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ state, revision }),
+  });
+  return readStudioResponse<{ revision: number }>(response);
+}
+
+async function loadLocalWorkspace(): Promise<LocalSnapshot> {
+  const read = async () => readStudioResponse<Partial<LocalSnapshot>>(
+    await fetch(localEndpoint, { cache: "no-store" }),
+  );
+  const existing = await read();
+  if (existing.state && existing.revision !== undefined)
+    return { state: existing.state, revision: existing.revision };
+
+  const saved = readBrowserWorkspace();
+  const state = saved ?? initialState(DEMO_ACTOR);
+  if (!saved) state.members[0].roles = ["founder", "administrator"];
+  try {
+    return { state, ...await saveLocalWorkspace(state, null) };
+  } catch (error) {
+    if (!(error instanceof StudioResponseError) || error.status !== 409) throw error;
+    const concurrent = await read();
+    if (concurrent.state && concurrent.revision !== undefined)
+      return { state: concurrent.state, revision: concurrent.revision };
+    throw error;
+  }
+}
+
 export function useStudio() {
   const [state, setState] = useState<StudioState | null>(null),
     [actor, setActor] = useState<Actor | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
   const pathname = usePathname();
+  const local = process.env.NODE_ENV === "development" &&
+    process.env.NEXT_PUBLIC_STUDIO_LOCAL === "1" && pathname === "/studio";
+  const localRevision = useRef(0);
   const mode: "live" | "demo" =
-      pathname === "/preview" || !configured ? "demo" : "live",
+      local || pathname === "/preview" || !configured ? "demo" : "live",
     latest = useRef<StudioState | null>(null);
   const pendingRefresh=useRef<Promise<void>|null>(null);
   const refreshPolicy=useRef(refreshGate());
@@ -42,14 +88,15 @@ export function useStudio() {
       try {
         if (!background) setError("");
         if (mode === "demo") {
-          let saved: StudioState | null = null;
-          try {
-            saved = JSON.parse(
-              localStorage.getItem("ryzalab-studio-v2") || "null",
-            );
-          } catch {}
-          const s = saved || initialState(DEMO_ACTOR, true);
-          update(s);
+          if (local) {
+            const snapshot = await loadLocalWorkspace();
+            if (snapshot.revision >= localRevision.current) {
+              localRevision.current = snapshot.revision;
+              update(snapshot.state);
+            }
+          } else {
+            update(readBrowserWorkspace() || initialState(DEMO_ACTOR, true));
+          }
           setActor(DEMO_ACTOR);
           return;
         }
@@ -84,7 +131,7 @@ export function useStudio() {
       })();pendingRefresh.current=work;
       try{await work;}finally{if(pendingRefresh.current===work)pendingRefresh.current=null;}
     },
-    [mode],
+    [local, mode],
   );
   useEffect(() => {
     refresh();
@@ -100,6 +147,7 @@ export function useStudio() {
       setError("");
       if (mode === "demo") {
         const previous = latest.current;
+        const expectedRevision = localRevision.current;
         if (!previous) throw new Error("Workspace is not loaded.");
         let next: StudioState;
         if (command.type === "connection.save") {
@@ -169,8 +217,21 @@ export function useStudio() {
               canonicalGeneration: command.type === "content.generate",
             },
           );
-        localStorage.setItem("ryzalab-studio-v2", JSON.stringify(next));
-        update(next);
+        if (local) {
+          try {
+            const saved = await saveLocalWorkspace(next, expectedRevision);
+            if (saved.revision >= localRevision.current) {
+              localRevision.current = saved.revision;
+              update(next);
+            }
+          } catch (error) {
+            if (error instanceof StudioResponseError && error.status === 409) await refresh();
+            throw error;
+          }
+        } else {
+          localStorage.setItem(browserStorageKey, JSON.stringify(next));
+          update(next);
+        }
         return { state: next, actor: DEMO_ACTOR, mode: "demo" as const };
       }
       const { data } = await supabase!.auth.getSession();
@@ -203,13 +264,14 @@ export function useStudio() {
     }
   }
   async function signOut() {
+    if (local) return;
     try{clearRecovery(localStorage,actor?.id);}catch{}
     if (supabase && mode === "live") await supabase.auth.signOut();
     else {
       latest.current=null;
-      localStorage.removeItem("ryzalab-studio-v2");
+      localStorage.removeItem(browserStorageKey);
       await refresh();
     }
   }
-  return { state, actor, mode, loading, error, send, refresh, signOut };
+  return { state, actor, mode, local, loading, error, send, refresh, signOut };
 }

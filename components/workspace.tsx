@@ -447,7 +447,7 @@ function FieldInput({ item }: { item: Field }) {
 }
 
 export default function Workspace() {
-  const { state:storedState, actor, mode, loading, error, send, refresh, signOut } =
+  const { state:storedState, actor, mode, local, loading, error, send, refresh, signOut } =
     useStudio();
   const state=useMemo(()=>storedState?activeStudioView(storedState):null,[storedState]);
   const [page, setPage] = useState<Page>("Home");
@@ -1382,7 +1382,7 @@ export default function Workspace() {
           <span className="s-workspace-mark">R</span>
           <span>
             <strong>RyzaLab workspace</strong>
-            <small>{mode === "demo" ? "Demo workspace" : "Content team"}</small>
+            <small>{local ? "Local workspace" : mode === "demo" ? "Demo workspace" : "Content team"}</small>
           </span>
           <ChevronDown size={14} />
         </div>
@@ -1530,7 +1530,7 @@ export default function Workspace() {
               </small>
             </div>
             {mode === "demo" && (
-              <Badge tone="amber">Demo mode · saved on this device</Badge>
+              <Badge tone="amber">{local ? "Local workspace · SQLite" : "Demo mode · saved on this device"}</Badge>
             )}
             <button
               className="s-icon-button s-bell"
@@ -2625,7 +2625,7 @@ export default function Workspace() {
                 <dd>{roles.join(", ") || "Member"}</dd>
                 <dt>Workspace mode</dt>
                 <dd>
-                  {mode === "demo"
+                  {local ? "Local workspace · SQLite" : mode === "demo"
                     ? "Preview — local to this browser"
                     : "Live workspace"}
                 </dd>
@@ -2698,7 +2698,9 @@ export default function Workspace() {
                   Expand sidebar
                 </label>
               </fieldset>
-              {mode === "demo" ? (
+              {local ? (
+                <p>Workspace data is saved to a database on this computer.</p>
+              ) : mode === "demo" ? (
                 <p>
                   You are using the preview identity. No live account is signed
                   in. <a href="/studio">Open live sign-in</a>

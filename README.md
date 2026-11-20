@@ -2,7 +2,20 @@
 
 Founder-first editorial workspace for ideas, nine content channels, versioned agent workflows, human review, immutable approved packages, Google Docs/DOCX, editable media, calendar tasks, scoped profiles and manual publication. No Notion or automated social posting. The public root opens the labelled `/preview` review experience. `/studio` is the configured live entry. This is an implementation/preview checkpoint, **not a claim that all production integrations are ready**.
 
-## Local use in VS Code
+## Local workspace in VS Code
+
+Open the GitHub checkout in VS Code. With Node.js 24, run these commands from the integrated terminal:
+
+```sh
+npm ci
+npm run dev:local
+```
+
+Open http://localhost:3005. Studio runs on the loopback interface with no sign-in or Supabase configuration. Workspace data is stored in `.studio-local/studio.sqlite` inside your checkout. Git ignores that directory. To back up the database file, stop the dev server first and then copy it. The first launch copies existing browser workspace data from the same browser profile and localhost address when the database is empty.
+
+Use the local workspace for drafting, reviews, approvals, and exports. Browser preferences remain in the browser. Hosted integrations and private asset uploads still use the Supabase-backed workflow below. Moving workspace data to a later hosted deployment requires a separate import.
+
+## Supabase-backed development
 
 Node.js22+; Node24 LTS recommended. Open this folder, then:
 
