@@ -17,6 +17,7 @@ import {GenerationRulesStatus} from "./generation-rules-status";
 import {isLongForm} from "@/lib/studio/channel-writing";
 import { AuthorizedJobProgress } from "./authorized-job-progress";
 import { JobCost } from "./job-cost";
+import { budgetMonth } from "@/lib/studio/time";
 import {BudgetSection} from "./budget-section";
 import {AgentRules} from "./agent-rules";
 import { ReleaseNotes } from "./release-notes";
@@ -714,10 +715,6 @@ export default function Workspace() {
     .sort((a, b) => a.at.localeCompare(b.at));
   const activeContent = state.contents.find(
     (c) => c.id === selected && !c.deletedAt,
-  );
-  const totalSpend = storedState!.jobs.reduce(
-    (a, j) => a + (j.actual || j.reserved || 0),
-    0,
   );
   const activePackages = state.packages.filter(
     (p) => !state.contents.find((c) => c.id === p.contentId)?.deletedAt,
@@ -3474,110 +3471,63 @@ export default function Workspace() {
           {page==="Agent Rules"&&<AgentRules state={state} actor={actor} send={send}/>}
           {page === "AI & budgets" && (
             <div className="s-budget-layout">
+              {allowed("settings.manage") && (() => {
+                const monthlyCap = state.settings.monthlyCap;
+                const period = budgetMonth(new Date().toISOString(), state.settings.timezone);
+                let spent = 0;
+                let committed = 0;
+                for (const job of storedState!.jobs) {
+                  if (job.period !== period) continue;
+                  spent += job.actual ?? 0;
+                  committed += job.actual == null ? job.reserved : 0;
+                }
+                return (
+                  <section className="s-panel">
+                    <div className="s-section-heading"><h2>Spending</h2></div>
+                    <form
+                      key={monthlyCap}
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void execute({
+                          type: "settings.monthlyBudget",
+                          monthlyCap: cents(new FormData(event.currentTarget), "monthlyCap"),
+                          expectedMonthlyCap: monthlyCap,
+                        }, "Monthly AI budget saved.");
+                      }}
+                    >
+                      <label className="s-field">
+                        Monthly AI budget ($)
+                        <input name="monthlyCap" type="number" min="0" max="1000000" step="0.01"
+                          required defaultValue={(monthlyCap / 100).toFixed(2)} disabled={busy || readOnly} />
+                      </label>
+                      <button className="s-btn s-primary" type="submit" disabled={busy || readOnly}>Save budget</button>
+                    </form>
+                    <div className="s-stats s-budget-stats">
+                      <Stat label="Spent" number={money(spent)} icon={<Zap size={19} />} note="Recorded this month" />
+                      <Stat label="Committed to queued work" number={money(committed)} icon={<Clock3 size={19} />} note="Includes unresolved charges" />
+                      <Stat label="Remaining" number={money(Math.max(0, monthlyCap - spent - committed))} icon={<ShieldCheck size={19} />} note="Available this month" />
+                    </div>
+                  </section>
+                );
+              })()}
               {!founder && admin && <section className="s-panel"><div className="s-section-heading"><div><h2>Founder access</h2><p>Grant founder access in People & access to configure review and preparation. No additional email setting or API key is required.</p></div><button className="s-btn" onClick={() => move("People")}>Open People & access</button></div></section>}
               <BudgetSection title="Review and preparation"><SoloPolicySettings state={state} actor={actor} send={send} ready /></BudgetSection>
               <BudgetSection title="Bounded research and writing"><BoundedWorkflowSetup state={state} request={body=>researchSetupRequest(body,true)} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"text"})} demo={mode==="demo"} /></BudgetSection>
               <BudgetSection title="LinkedIn and Newsletter sample pack"><VerificationPack state={state} actor={actor} request={body=>researchSetupRequest(body,"verification")} refresh={refresh} openDraft={id=>{setPage("Create");setSelected(id);setChannel("All channels");setSearch("");}} disabled={!allowed("settings.manage")} demo={mode==="demo"} /></BudgetSection>
               <BudgetSection title="Advanced: native Claude server search"><ResearchSetup state={state} request={researchSetupRequest} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"research"})} demo={mode==="demo"} /></BudgetSection>
               <BudgetSection title="Verified pricing"><PricingManager request={pricingRequest} demo={mode === "demo"} disabled={!allowed("settings.manage")} changed={refresh}/></BudgetSection>
-              <BudgetSection title="Budget overview">
-              <div className="s-stats s-budget-stats">
-                <Stat
-                  label="Monthly budget"
-                  number={money(state.settings.monthlyCap)}
-                  icon={<Zap size={19} />}
-                  note="Hard spending limit"
-                />
-                <Stat
-                  label="Spent & reserved"
-                  number={money(totalSpend)}
-                  icon={<Clock3 size={19} />}
-                  note="Includes queued reservations"
-                />
-                <Stat
-                  label="Per-request cap"
-                  number={money(state.settings.requestCap)}
-                  icon={<ShieldCheck size={19} />}
-                  note="Maximum estimated cost"
-                />
-              </div>
-              <div className="s-info-strip">
-                <ShieldCheck size={17} />
-                <span>
-                  {mode === "demo"
-                    ? "Demo mode never runs paid providers or stores API keys."
-                    : "Connections are unverified until a real provider check completes. Paid work is queued and respects spending limits."}
-                </span>
-              </div>
-                  </BudgetSection>
-              <BudgetSection title="Set up by function"><section className="s-panel"><div className="s-section-heading"><div><h2>Set up by function</h2><p>Choose a provider and its account model for each type of work.</p></div></div><div className="s-actions">{FUNCTIONS.map((kind) => <ConnectionEditor key={kind} initialFunction={kind} demo={mode === "demo"} disabled={!allowed("connections.manage", {function: kind})} save={send} discover={discoverAccountModels} />)}</div></section></BudgetSection>
               <BudgetSection title="AI connections"><section className="s-panel">
                 <div className="s-section-heading">
                   <div>
                     <h2>AI connections</h2>
                     <p>Connect a provider for a specific creative function.</p>
                   </div>
-                  <button
-                    disabled={!admin}
-                    className="s-btn s-primary"
-                    onClick={() =>
-                      openForm(
-                        "Add AI connection",
-                        [
-                          {
-                            ...field("title", "Connection name"),
-                            required: true,
-                          },
-                          {
-                            name: "provider",
-                            label: "Provider",
-                            options: ["anthropic", "openai", "google"],
-                          },
-                          {
-                            name: "function",
-                            label: "Function",
-                            options: FUNCTIONS,
-                          },
-                          {
-                            ...field("model", "Model identifier"),
-                            required: true,
-                          },
-                          {
-                            ...field(
-                              "maxRequestCost",
-                              "Local budget reservation allowance ($)",
-                              0,
-                              "number",
-                            ),
-                            hint: "A budget allowance is separate from verified provider pricing. Paid generation stays blocked until qualified pricing and execution are configured.",
-                          },
-                          {
-                            name: "key",
-                            label: "API key",
-                            type: "password",
-                            required: mode === "live",
-                            hint:
-                              mode === "demo"
-                                ? "Keys are discarded in demo mode."
-                                : "Encrypted on the server. Never shown or stored in the browser.",
-                          },
-                        ],
-                        (d) => ({
-                          type: "connection.save",
-                          title: val(d, "title"),
-                          provider: val(d, "provider"),
-                          function: val(d, "function"),
-                          model: val(d, "model"),
-                          key: val(d, "key"),
-                          maxRequestCost: cents(d, "maxRequestCost"),
-                        }),
-                        "Saving credentials does not validate provider access.",
-                        "Save connection",
-                      )
-                    }
-                  >
-                    <Plus size={15} /> Add connection
-                  </button>
+                  <ConnectionEditor
+                    functions={FUNCTIONS.filter((kind) => allowed("connections.manage", { function: kind }))}
+                    demo={mode === "demo"}
+                    save={send}
+                    discover={discoverAccountModels}
+                  />
                 </div>
                 {state.connections.map((c) => (
                   <div className="s-list-row s-connection-row" key={c.id}>
@@ -3721,14 +3671,10 @@ export default function Workspace() {
                   </Empty>
                 )}
               </section></BudgetSection>
-              <BudgetSection title="Spending & workspace settings"><section className="s-panel s-recent-panel">
+              <BudgetSection title="Workspace settings"><section className="s-panel s-recent-panel">
                 <div className="s-section-heading">
                   <div>
-                    <h2>Spending & workspace settings</h2>
-                    <p>
-                      All amounts are in US dollars. A zero cap blocks paid
-                      requests.
-                    </p>
+                    <h2>Workspace settings</h2>
                   </div>
                   <button
                     disabled={!admin}
@@ -3748,64 +3694,6 @@ export default function Workspace() {
                             value: "90",
                             options: ["90"],
                             hint: "Content is retained for the required 90-day recovery period.",
-                          },
-                          field(
-                            "monthlyCap",
-                            "Monthly cap ($)",
-                            state.settings.monthlyCap / 100,
-                            "number",
-                          ),
-                          field(
-                            "requestCap",
-                            "Per-request cap ($)",
-                            state.settings.requestCap / 100,
-                            "number",
-                          ),
-                          field(
-                            "confirmationThreshold",
-                            "Confirmation threshold ($)",
-                            state.settings.confirmationThreshold / 100,
-                            "number",
-                          ),
-                          {
-                            name: "functionCaps",
-                            label: "Per-function caps (JSON, US cents)",
-                            type: "textarea",
-                            value: JSON.stringify(
-                              state.settings.functionCaps,
-                              null,
-                              2,
-                            ),
-                          },
-                          {
-                            name: "userCaps",
-                            label: "Per-user caps (JSON, US cents)",
-                            type: "textarea",
-                            value: JSON.stringify(
-                              state.settings.userCaps,
-                              null,
-                              2,
-                            ),
-                          },
-                          {
-                            name: "channelCaps",
-                            label: "Per-channel caps (JSON, US cents)",
-                            type: "textarea",
-                            value: JSON.stringify(
-                              state.settings.channelCaps || {},
-                              null,
-                              2,
-                            ),
-                          },
-                          {
-                            name: "accountCaps",
-                            label: "Per-account caps (JSON, US cents)",
-                            type: "textarea",
-                            value: JSON.stringify(
-                              state.settings.accountCaps || {},
-                              null,
-                              2,
-                            ),
                           },
                           {
                             name: "emailEnabled",
@@ -3829,23 +3717,7 @@ export default function Workspace() {
                           type: "settings.save",
                           timezone: val(d, "timezone"),
                           trashDays: Number(val(d, "trashDays")),
-                          monthlyCap: cents(d, "monthlyCap"),
-                          requestCap: cents(d, "requestCap"),
-                          confirmationThreshold: cents(
-                            d,
-                            "confirmationThreshold",
-                          ),
                           currency: "USD",
-                          functionCaps: JSON.parse(
-                            val(d, "functionCaps") || "{}",
-                          ),
-                          userCaps: JSON.parse(val(d, "userCaps") || "{}"),
-                          channelCaps: JSON.parse(
-                            val(d, "channelCaps") || "{}",
-                          ),
-                          accountCaps: JSON.parse(
-                            val(d, "accountCaps") || "{}",
-                          ),
                           emailEnabled: val(d, "emailEnabled") === "Enabled",
                           docsMode: val(d, "docsMode"),
                         }),
@@ -3856,12 +3728,6 @@ export default function Workspace() {
                   </button>
                 </div>
                 <div className="s-settings-grid">
-                  <div>
-                    <span>Confirmation required above</span>
-                    <strong>
-                      {money(state.settings.confirmationThreshold)}
-                    </strong>
-                  </div>
                   <div>
                     <span>Workspace timezone</span>
                     <strong>{state.settings.timezone}</strong>

@@ -27,9 +27,6 @@ export function SoloPolicySettings({
     ((policy?.packageCap ?? 50) / 100).toFixed(2),
   );
   const [budgetCategory,setBudgetCategory] = useState<BudgetCategory>(policy?.budgetCategory||inferBudgetCategory(policy?.packageCap||50));
-  const [monthlyCap, setMonthlyCap] = useState(
-    state.settings.monthlyCap > 0 ? (state.settings.monthlyCap / 100).toFixed(2) : "",
-  );
   const [independent, setIndependent] = useState(
     policy?.requireIndependentReview ?? false,
   );
@@ -61,11 +58,14 @@ export function SoloPolicySettings({
     event.preventDefault();
     if (!ready || !founder || activeJobs || pending) return;
     const perPackage = cents(packageCap);
-    const perMonth = cents(monthlyCap);
-    if (!perPackage || perPackage > 200 || !perMonth) {
+    if (!perPackage || perPackage > 200) {
       setError(
-        "Choose a package cap up to $2.00 and your own positive monthly limit, with at most two decimals.",
+        "Choose a package cap up to $2.00, with at most two decimals.",
       );
+      return;
+    }
+    if (!editMonthlyCap) {
+      setError("Set your monthly AI budget in Spending before enabling automated preparation.");
       return;
     }
     setError("");
@@ -77,7 +77,7 @@ export function SoloPolicySettings({
         expectedMonthlyCap: editMonthlyCap,
         packageCap: perPackage,
         budgetCategory,
-        monthlyCap: perMonth,
+        monthlyCap: editMonthlyCap,
         requireIndependentReview: independent,
         autoDraft: automaticWriting,
         autoReview: automaticReview,
@@ -109,9 +109,6 @@ export function SoloPolicySettings({
             onClick={() => {
               setPackageCap(((policy?.packageCap ?? 50) / 100).toFixed(2));
               setBudgetCategory(policy?.budgetCategory||inferBudgetCategory(policy?.packageCap||50));
-              setMonthlyCap(
-                state.settings.monthlyCap > 0 ? (state.settings.monthlyCap / 100).toFixed(2) : "",
-              );
               setIndependent(policy?.requireIndependentReview ?? false);
               setAutomaticReview(policy?.autoReview ?? true);
               setAutomaticCorrection(policy?.autoCorrect??false);
@@ -160,7 +157,7 @@ export function SoloPolicySettings({
             final package and publishes it. Provider setup and qualified pricing
             are still required.
           </p>
-          <p>Plan $0.50–$2.00 per post. This is a ceiling for the whole package, not a fixed price or a quality tier. Choose your own monthly budget based on planned posts and revisions.</p>
+          <p>Plan $0.50–$2.00 per post. This is a ceiling for the whole package, not a fixed price or a quality tier. Set your monthly AI budget in Spending.</p>
           <label className="s-field">Package category<select aria-label="Package category" value={budgetCategory} onChange={event=>{const selected=event.target.value as BudgetCategory;setBudgetCategory(selected);if(selected!=="custom")setPackageCap((BUDGET_CATEGORIES.find(category=>category.id===selected)!.cents/100).toFixed(2));}}>{BUDGET_CATEGORIES.map(category=><option key={category.id} value={category.id}>{category.label}{category.id!=="custom" ? ` — $${(category.cents/100).toFixed(2)} cap` : " — choose up to $2.00"}</option>)}</select></label><p>{BUDGET_CATEGORIES.find(category=>category.id===budgetCategory)?.description}</p>
 
           <div className="s-form-grid">
@@ -174,18 +171,6 @@ export function SoloPolicySettings({
                 required
                 value={packageCap}
                 onChange={(event) => {setPackageCap(event.target.value);setBudgetCategory("custom");}}
-              />
-            </label>
-            <label className="s-field">
-              Monthly limit ($)
-              <input
-                type="number"
-                min="0.01"
-                max="1000000"
-                step="0.01"
-                required
-                value={monthlyCap}
-                onChange={(event) => setMonthlyCap(event.target.value)}
               />
             </label>
           </div>

@@ -1701,6 +1701,13 @@ export function applyCommand(
         m.revoked = true;
         break;
       }
+    case "settings.monthlyBudget": {
+      need("settings.manage");
+      if (c.expectedMonthlyCap !== s.settings.monthlyCap)
+        throw new StudioError(409, "Monthly budget changed. Refresh before saving.");
+      s.settings.monthlyCap = c.monthlyCap;
+      break;
+    }
     case "settings.save": {
       need("settings.manage");
       try {

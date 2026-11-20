@@ -8,19 +8,20 @@ import {
 } from "@/lib/studio/types";
 export function ConnectionEditor({
   connection,
-  initialFunction = "text",
+  functions = FUNCTIONS,
   save,
   discover,
   demo,
   disabled = false,
 }: {
   connection?: Connection;
-  initialFunction?: FunctionKind;
+  functions?: readonly FunctionKind[];
   save: (command: Command) => Promise<unknown>;
   discover: (input: Record<string, unknown>) => Promise<string[]>;
   demo: boolean;
   disabled?: boolean;
 }) {
+  const initialFunction = functions.includes("text") ? "text" : functions[0] ?? "text";
   const dialog = useRef<HTMLDialogElement>(null);
   const [title, setTitle] = useState("");
   const [provider, setProvider] = useState<Connection["provider"]>("anthropic");
@@ -42,20 +43,20 @@ export function ConnectionEditor({
   }
   return (
     <>
-      <button className="s-btn" disabled={disabled} onClick={open}>
-        {connection ? "Edit connection" : `Set up ${initialFunction}`}
+      <button className={connection ? "s-btn" : "s-btn s-primary"} disabled={disabled || !functions.length} onClick={open}>
+        {connection ? "Edit connection" : "Add connection"}
       </button>
       <dialog
         ref={dialog}
         className="s-review-dialog"
-        aria-label={connection ? "Edit AI connection" : "Set up AI connection"}
+        aria-label={connection ? "Edit AI connection" : "Add AI connection"}
         onClose={() => setKey("")}
         onCancel={(e) => {
           if (busy) e.preventDefault();
         }}
       >
         <header className="s-review-dialog-heading">
-          <h2>{connection ? "Edit AI connection" : "Set up AI connection"}</h2>
+          <h2>{connection ? "Edit AI connection" : "Add AI connection"}</h2>
           <button
             className="s-btn"
             disabled={busy}
@@ -115,7 +116,7 @@ export function ConnectionEditor({
               disabled={busy || !!connection}
               onChange={(e) => setKind(e.target.value as FunctionKind)}
             >
-              {FUNCTIONS.map((f) => (
+              {functions.map((f) => (
                 <option key={f}>{f}</option>
               ))}
             </select>
@@ -196,24 +197,27 @@ export function ConnectionEditor({
           >
             Load account models
           </button>
+          {models.length > 0 && (
+            <label className="s-field">
+              Account models
+              <select
+                value={models.includes(model) ? model : ""}
+                disabled={busy}
+                onChange={(e) => setModel(e.target.value)}
+              >
+                <option value="">Select an account model</option>
+                {models.map((id) => <option key={id}>{id}</option>)}
+              </select>
+            </label>
+          )}
           <label className="s-field">
             Model identifier
-            <select
-              value={models.includes(model) ? model : ""}
-              disabled={busy || !models.length}
-              onChange={(e) => setModel(e.target.value)}
-            >
-              <option value="">Select an account model</option>
-              {models.map((id) => (
-                <option key={id}>{id}</option>
-              ))}
-            </select>
             <input
               required
               value={model}
               disabled={busy}
-              pattern="[A-Za-z0-9_.:/\-]{1,150}"
-              placeholder="Or enter exact API model ID"
+              pattern="[A-Za-z0-9_.:\/\-]{1,150}"
+              placeholder="Enter exact API model ID"
               onChange={(e) => setModel(e.target.value)}
             />
           </label>
