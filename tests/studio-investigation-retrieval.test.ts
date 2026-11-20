@@ -136,3 +136,34 @@ test("comprehensive research examines fifteen distinct results across six search
     { url: result.citations[0].url + "?utm_source=duplicate#details" }] }] });
   assert.throws(() => requireResearchCoverage(insufficient), /9 of 10 required/);
 });
+
+test("sparse nursery-camera headline coverage triggers alternate baby-monitor searches", async () => {
+  const searches: string[] = [];
+  const request: typeof fetch = async (input) => {
+    const url = new URL(String(input));
+    const query = url.searchParams.get("q") ?? "";
+    searches.push(query);
+    const start = query.includes("remote access") ? 3
+      : query.includes("non WiFi") ? 7
+      : query.includes("retention delete") ? 11 : 0;
+    const items = Array.from({ length: start ? 4 : 3 }, (_, offset) => {
+      const index = start + offset;
+      return `<item><title>Baby monitor privacy review ${index}</title><link>https://publication${index}.example.org/monitor-review</link><description>Independent baby monitor review ${index} compares privacy controls, video storage, account security, and vendor support.</description></item>`;
+    }).join("");
+    return new Response(`<rss><channel>${items}</channel></rss>`);
+  };
+  const result = await retrieveBroadReferences(
+    "Before you buy a discounted nursery camera, ask where the footage goes",
+    request, "2026-11-20T02:00:00Z", researchProfileSchema.parse({}), [],
+    async (url) => ({
+      url, title: "Baby monitor privacy review", bytes: 500, requests: 1, publishedAt: "2026-01-01",
+      author: "Test author", sourceKind: "article_text",
+      text: `Baby monitor privacy and storage testing from ${url}, with practical observations and limitations.`,
+    }), true, true,
+  );
+  assert.equal(result.retrieval.plan?.searches.length, 9);
+  assert.ok(searches.some((query) => query.includes("baby monitor local storage cloud recording")));
+  assert.ok(searches.every((query) => !query.includes("discounted")));
+  assert.equal(result.citations.length, 15);
+  assert.doesNotThrow(() => requireResearchCoverage(JSON.stringify({ webEvidence: [{ citations: result.citations }] })));
+});

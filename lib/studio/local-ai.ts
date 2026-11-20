@@ -572,6 +572,15 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
       ? publicSourceUrls.filter((url) => typeof url !== "string" || !isRyzaLabSource(url))
       : publicSourceUrls;
     const hasLinks = Array.isArray(sourceUrls) && sourceUrls.length > 0;
+    if (draft && parsed.kind === "text") {
+      const attempts = configured.jobs.filter((job) => job.contentId === draft.id &&
+        job.kind === "research" && job.state === "succeeded" && job.connectionId === "public-reference-retrieval" &&
+        job.prompt === query && job.createdBy === DEMO_ACTOR.email).map((job) => job.id);
+      if (attempts.length) prepared = generationInput(configured, DEMO_ACTOR, {
+        ...writing, researchJobIds: [...new Set([...prepared.researchJobIds, ...attempts])].slice(0, 5),
+      });
+    }
+
     if (draft && parsed.kind === "text" && (newsletter || requestedQuery || hasLinks ||
       researchCoverage(prepared.prompt) < researchSourceMinimum)) {
       // Check the monthly budget before spending time on public retrieval.

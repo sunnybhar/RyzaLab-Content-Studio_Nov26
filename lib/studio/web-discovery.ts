@@ -1,5 +1,5 @@
-import { researchSourceKey, researchSourceTarget } from "./research-methodology";
-import {investigationPlan} from "./research-plan";
+import { researchSourceKey, researchSourceMinimum, researchSourceTarget } from "./research-methodology";
+import {comprehensiveSearchAngles, investigationPlan} from "./research-plan";
 import { readPublicPage, publicPageUrl } from "./public-page";
 import {
   researchProfileSchema,
@@ -28,6 +28,7 @@ export async function discoverWeb(
   request: typeof fetch = fetch,
   timeoutMs=10000,
   resultLimit = 3,
+  relevanceQueries = [query],
 ) {
   if (query.trim().length < 5 || new TextEncoder().encode(query).length > 2000)
     throw new StudioError(400, "Enter a public question of 5–2000 bytes.");
@@ -104,7 +105,7 @@ export async function discoverWeb(
           source.hostname.endsWith("bing.com") ||
           excerpt.length < 40 ||
           !title ||
-          !articleCandidate(source.href, title, excerpt, query)
+          !relevanceQueries.some((topic) => articleCandidate(source.href, title, excerpt, topic))
         )
           continue;
         if (!citations.some((c) => c.url === source.href))
@@ -171,9 +172,15 @@ export async function retrieveBroadReferences(
   const started=Date.now(), deadline=started+(quick ? 50000 : 65000);
   const plan = investigationPlan(query, comprehensive ? { ...profile, depth: "extended" } : profile);
   const limit = comprehensive ? researchSourceTarget : profile.depth === "focused" ? 6 : profile.depth === "deep" ? 12 : 20;
-  if (comprehensive) plan.searches[3] = { purpose: "expert and video coverage", query: `${query} expert demonstration video YouTube trade magazine blog` };
+  const angles = comprehensive ? comprehensiveSearchAngles(query) : undefined;
+  if (angles) plan.searches = angles.initial.map((item, index) => index === 0 && profile.preferredDomains.length
+    ? { ...item, query: `${item.query} (${profile.preferredDomains.slice(0, 3).map((domain) => `site:${domain}`).join(" OR ")})` }
+    : item);
+  const relevanceQueries = angles?.relevance ?? [query];
+  const relevant = (candidate: { url: string; title: string; citedText: string }) =>
+    relevanceQueries.some((topic) => articleCandidate(candidate.url, candidate.title, candidate.citedText, topic));
   const search = (item: (typeof plan.searches)[number]) => {
-    const discovery = discoverWeb(item.query, request, 6000, comprehensive ? 8 : 3);
+    const discovery = discoverWeb(item.query, request, 6000, comprehensive ? 8 : 3, relevanceQueries);
     return quick
       ? withinResearchStep(discovery, 13000, "Web and news discovery").catch(() => ({
           citations: [], bytes: 0, gaps: ["Web and news discovery did not finish."],
@@ -194,11 +201,37 @@ export async function retrieveBroadReferences(
     groups.push(result.citations);
     gaps.push(...result.gaps.map((gap) => search.purpose + ": " + gap));
   }
+  if (angles) {
+    const seen = new Set<string>();
+    const domains = new Map<string, number>();
+    const passages = new Set<string>();
+    for (const citation of groups.flat()) {
+      if (excluded(citation.url) || !relevant(citation)) continue;
+      const key = researchSourceKey(citation.url);
+      const domain = host(citation.url);
+      const count = domains.get(domain) ?? 0;
+      const passage = citation.citedText.toLowerCase().replace(/\W+/g, " ").trim();
+      if (seen.has(key) || passages.has(passage) || count >= 2) continue;
+      seen.add(key);
+      passages.add(passage);
+      domains.set(domain, count + 1);
+    }
+    if (seen.size < researchSourceMinimum) {
+      plan.searches.push(...angles.followup);
+      for (const result of await Promise.all(angles.followup.map(search))) {
+        requests += 2;
+        bytes += result.bytes;
+        groups.push(result.citations);
+        gaps.push(...result.gaps);
+      }
+    }
+  }
   const found = comprehensive
     ? Array.from({ length: Math.max(...groups.map((group) => group.length)) }, (_, index) =>
         groups.flatMap((group) => group[index] ? [group[index]] : [])).flat()
     : groups.flat();
   const distinctCandidateUrls = new Set<string>();
+  const distinctCandidatePassages = new Set<string>();
   const direct = new Set(supplied),
     byDomain = new Map<string, number>();
   const candidates = [
@@ -211,10 +244,12 @@ export async function retrieveBroadReferences(
     ...found,
   ]
     .filter((c) => {
-      if (excluded(c.url) || (!direct.has(c.url) && !articleCandidate(c.url, c.title, c.citedText, query))) return false;
+      if (excluded(c.url) || (!direct.has(c.url) && !relevant(c))) return false;
       const key = researchSourceKey(c.url);
-      if (distinctCandidateUrls.has(key)) return false;
+      const passage = c.citedText.toLowerCase().replace(/\W+/g, " ").trim();
+      if (distinctCandidateUrls.has(key) || (comprehensive && passage && distinctCandidatePassages.has(passage))) return false;
       distinctCandidateUrls.add(key);
+      if (passage) distinctCandidatePassages.add(passage);
       return true;
     })
     .filter((c) => {
@@ -289,10 +324,10 @@ export async function retrieveBroadReferences(
   if (citations.length < (comprehensive ? limit : 3) && (!quick || Date.now() + 12000 < deadline)) {
     requests++;
     try {
-      const lookup = retrievePublicReferences(query, request, now);
+      const lookup = retrievePublicReferences(angles?.scholarlyQuery ?? query, request, now);
       const scholarly = quick ? await withinResearchStep(lookup, 12000, "Scholarly search") : await lookup;
       bytes += scholarly.retrieval.responseBytes;
-      citations.push(...scholarly.citations.filter((c) => !excluded(c.url)));
+      citations.push(...scholarly.citations.filter((c) => !excluded(c.url) && (!angles || relevant(c))));
     } catch {
       gaps.push("No additional accessible scholarly abstracts available.");
     }
@@ -317,7 +352,7 @@ export async function retrieveBroadReferences(
     );
   return publicResearchSchema.parse({
     version: 2,
-    summary: `Retrieved ${unique.length} source extracts with ${new Set(unique.map((c) => host(String(c.url)))).size} domains. Depth: ${profile.depth}. Inspect relevance and evidence limits before relying on them.`,
+    summary: `Retrieved ${unique.length} source extracts with ${new Set(unique.map((c) => host(String(c.url)))).size} domains. Depth: ${plan.depth}. Inspect relevance and evidence limits before relying on them.`,
     citations: unique,
     status: "retrieved_references",
     scope: "public_reference_apis",
