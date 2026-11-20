@@ -1,4 +1,4 @@
-import { requireResearchCoverage, researchCoverage, researchSourceMinimum } from "./research-methodology";
+import { applyWritingResearchCoverage, researchCoverage, researchSourceMinimum } from "./research-methodology";
 import { isRyzaLabSource } from "./source-policy";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -626,12 +626,13 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
         }
       } catch (error) {
         if (!publicEvidenceUnavailable(error)) throw error;
-        if (!researchCoverage(prepared.prompt))
-          throw new StudioError(503, `Online search found no usable ${newsletter ? "independent " : ""}sources for this ${newsletter ? "newsletter" : "draft"}. Try a more specific research topic or add an accessible external article. No paid writing request was sent.`);
       }
     }
   }
-  if (prepared.kind === "text" && !templateExport) requireResearchCoverage(prepared.prompt);
+  const writingCoverage = prepared.kind === "text" && !templateExport
+    ? applyWritingResearchCoverage(prepared.prompt)
+    : undefined;
+  if (writingCoverage) prepared.prompt = writingCoverage.prompt;
   const ideaSourceCount = prepared.kind === "ideas" ? researchCoverage(prepared.prompt) : undefined;
   if (ideaSourceCount !== undefined && ideaSourceCount < researchSourceMinimum) {
     const prompt = JSON.parse(prepared.prompt);
@@ -645,7 +646,7 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
   const job = next.jobs.find((j) => j.idempotencyKey === prepared.idempotencyKey)!;
   job.state = "running";
   job.attempt = 1;
-  if (ideaSourceCount !== undefined) job.researchSourceCount = ideaSourceCount;
+  job.researchSourceCount = writingCoverage?.sourceCount ?? ideaSourceCount;
   if (ideaSourceCount === 0) job.researchUnavailable = true;
   job.leaseId = crypto.randomUUID();
   job.dispatchStartedAt = new Date().toISOString();

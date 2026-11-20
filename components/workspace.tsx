@@ -17,7 +17,7 @@ import {activeStudioView, ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active
 import { IDEA_TEXT_ALTERNATIVES, type IdeaTextAlternative } from "@/lib/studio/idea-alternatives";
 import {ideaStage} from "@/lib/studio/idea-board";
 import {GenerationRulesStatus} from "./generation-rules-status";
-import {isLongForm, writingWordCount, writingWordTarget} from "@/lib/studio/channel-writing";
+import {isLongForm, writingFormatLabel, writingWordCount, writingWordTarget} from "@/lib/studio/channel-writing";
 import { AuthorizedJobProgress } from "./authorized-job-progress";
 import { JobCost } from "./job-cost";
 import { budgetMonth } from "@/lib/studio/time";
@@ -767,9 +767,10 @@ export default function Workspace() {
     ideaTitle?: string,
     ideaChannel?: Channel,
     initialFormat = "Text post",
-  ) =>
+  ) => {
+    const initialChannel = ideaChannel || (channel === "All channels" ? "LinkedIn" : channel);
     openForm(
-      initialFormat === "Article" ? "Create LinkedIn article" : "Create something worth sharing",
+      initialFormat === "Article" ? "Create Blog Article" : "Create something worth sharing",
       [
         {
           name: "title",
@@ -781,14 +782,14 @@ export default function Workspace() {
         {
           name: "channel",
           label: "Channel",
-          value:
-            ideaChannel || (channel === "All channels" ? "LinkedIn" : channel),
+          value: initialChannel,
           options: CHANNELS,
         },
         {
           name: "format",
           label: "Format",
           value: initialFormat,
+          optionLabels: Object.fromEntries(["Text post", "Article", "Newsletter"].map(format => [format, writingFormatLabel(format, initialChannel)])),
           options: [
             "Text post",
             "Article",
@@ -813,6 +814,7 @@ export default function Workspace() {
       initialFormat === "Article" ? "Target 800–1,200 words of article copy." : "Start with a clear idea. Your channel workflow will guide the draft.",
       "Create draft",
     );
+  };
   async function useIdea(idea: Idea, format: string, account: string, targetChannel = channel === "All channels" ? idea.channel : channel) {
     const targetFormat = targetChannel === "Newsletter" ? "Newsletter" : format;
     setBusy(true);
@@ -1727,12 +1729,12 @@ export default function Workspace() {
                 </button>,
                 c === "LinkedIn" && (page === "Create" || page === "Ideas") &&
                   allowed("content.create", { channel: "LinkedIn" }) && (
-                    <button key="create-linkedin-article" type="button" aria-label="Create LinkedIn article" onClick={() => {
+                    <button key="create-linkedin-article" type="button" aria-label="Create Blog Article" onClick={() => {
                       move("Create");
                       setChannel("LinkedIn");
                       newContent(undefined, undefined, "LinkedIn", "Article");
                     }}>
-                      <FileText size={15} /> Article
+                      <FileText size={15} /> Blog Article
                     </button>
                   ),
               ])}
@@ -4817,8 +4819,8 @@ function Editor({
               onChange={(e) => setTitle(e.target.value)}
             />
             <p>
-              {c.format} · {c.channel} {c.account ? `· ${c.account}` : ""}
-            </p><label className="s-field">Write as<select aria-label="Write as" value={writeFormat} disabled={readOnly||draftSave.busy} onChange={e=>setWriteFormat(e.target.value)}>{[...new Set([c.format,"Text post","Article","Blog","Newsletter","Carousel","Image","Video","Audio"])].map(value=><option key={value} value={value}>{c.channel === "LinkedIn" && value === "Article" ? "LinkedIn article" : value}</option>)}</select></label><p className="s-muted">Changing format preserves your text. Save first, then explicitly revise with AI to adapt it. LinkedIn article: 800–1,200 words · Newsletter: 1,600–3,000 words. Estimated current read: {Math.max(1,Math.ceil(text.trim().split(/\s+/).filter(Boolean).length/200))} min.</p>
+              {writingFormatLabel(c.format, c.channel)} · {c.channel} {c.account ? `· ${c.account}` : ""}
+            </p><label className="s-field">Write as<select aria-label="Write as" value={writeFormat} disabled={readOnly||draftSave.busy} onChange={e=>setWriteFormat(e.target.value)}>{[...new Set([c.format,"Text post","Article","Blog","Newsletter","Carousel","Image","Video","Audio"])].map(value=><option key={value} value={value}>{writingFormatLabel(value, c.channel)}</option>)}</select></label><p className="s-muted">Changing format preserves your text. Save first, then explicitly revise with AI to adapt it. Blog Article: 800–1,200 words · Brand Newsletter: 1,600–3,000 words. Estimated current read: {Math.max(1,Math.ceil(text.trim().split(/\s+/).filter(Boolean).length/200))} min.</p>
           </div>
           <div className="s-view-tabs s-editor-tabs">
             {[

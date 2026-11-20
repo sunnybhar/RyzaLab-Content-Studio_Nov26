@@ -292,7 +292,7 @@ export function IdeaComposer({
               </button>
               {idea.channel === "LinkedIn" && (
                 <button type="button" className="s-btn" disabled={working} onClick={() => void openIdea(idea, "Article")}>
-                  Create article draft
+                  Create Blog Article
                 </button>
               )}
             </article>

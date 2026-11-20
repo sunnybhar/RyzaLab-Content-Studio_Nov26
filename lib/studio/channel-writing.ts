@@ -1,5 +1,12 @@
 import type { NewsletterSection } from "./newsletter-outline";
 import type { Channel } from "./types";
+export function writingFormatLabel(format: string, channel?: Channel) {
+  if (format === "Text post" && channel === "LinkedIn") return "LinkedIn Post";
+  if (format === "Article") return "Blog Article";
+  if (format === "Newsletter") return "Brand Newsletter";
+  return format;
+}
+
 export function writingFormat(prompt?: string) {
   try {
     return JSON.parse(prompt || "{}").format as string | undefined;

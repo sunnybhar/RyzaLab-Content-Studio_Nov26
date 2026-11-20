@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { jsPDF } from "jspdf";
 import { investigationPlan } from "../lib/studio/research-plan";
-import { requireResearchCoverage } from "../lib/studio/research-methodology";
+import { applyWritingResearchCoverage } from "../lib/studio/research-methodology";
 import { researchProfileSchema } from "../lib/studio/research-profile";
 import { retrieveBroadReferences } from "../lib/studio/web-discovery";
 import { publicPdfEvidence } from "../lib/studio/pdf-evidence";
@@ -131,10 +131,16 @@ test("comprehensive research examines fifteen distinct results across six search
   assert.equal(result.citations.length, 15);
   assert.equal(result.retrieval.coverage?.sourcesRead, 15);
   const prompt = JSON.stringify({ webEvidence: [{ citations: result.citations }] });
-  assert.doesNotThrow(() => requireResearchCoverage(prompt));
-  const insufficient = JSON.stringify({ webEvidence: [{ citations: [...result.citations.slice(0, 9),
+  assert.deepEqual(applyWritingResearchCoverage(prompt), { prompt, sourceCount: 15 });
+  const insufficient = JSON.stringify({ webEvidence: [{ citations: [...result.citations.slice(0, 4),
     { url: result.citations[0].url + "?utm_source=duplicate#details" }] }] });
-  assert.throws(() => requireResearchCoverage(insufficient), /9 of 10 required/);
+  const limited = applyWritingResearchCoverage(insufficient);
+  assert.equal(limited.sourceCount, 4);
+  assert.match(JSON.parse(limited.prompt).evidenceScope, /Complete the requested draft/);
+  assert.deepEqual(JSON.parse(limited.prompt).webEvidence, JSON.parse(insufficient).webEvidence);
+  const noEvidence = applyWritingResearchCoverage(JSON.stringify({ evidenceScope: "Provided references only." }));
+  assert.equal(noEvidence.sourceCount, 0);
+  assert.match(JSON.parse(noEvidence.prompt).evidenceScope, /Omit unsupported factual assertions/);
 });
 
 test("sparse nursery-camera headline coverage triggers alternate baby-monitor searches", async () => {
@@ -165,5 +171,5 @@ test("sparse nursery-camera headline coverage triggers alternate baby-monitor se
   assert.ok(searches.some((query) => query.includes("baby monitor local storage cloud recording")));
   assert.ok(searches.every((query) => !query.includes("discounted")));
   assert.equal(result.citations.length, 15);
-  assert.doesNotThrow(() => requireResearchCoverage(JSON.stringify({ webEvidence: [{ citations: result.citations }] })));
+  assert.equal(applyWritingResearchCoverage(JSON.stringify({ webEvidence: [{ citations: result.citations }] })).sourceCount, 15);
 });

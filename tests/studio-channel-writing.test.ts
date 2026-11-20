@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { channelWritingContract, writingWordCount, writingWordTarget } from "../lib/studio/channel-writing";
+import { channelWritingContract, writingFormatLabel, writingWordCount, writingWordTarget } from "../lib/studio/channel-writing";
 
 test("LinkedIn articles and newsletters have distinct word targets while LinkedIn posts keep their existing target", () => {
   assert.match(channelWritingContract("LinkedIn", '{"format":"Text post"}'), /180–250 words/);
@@ -10,4 +10,11 @@ test("LinkedIn articles and newsletters have distinct word targets while LinkedI
   assert.match(newsletter, /1,600–3,000 words/);
   assert.match(newsletter, /takes precedence over the template/);
   assert.equal(writingWordCount("## Takeaway\nOne useful decision.\n\n## Sources\n- https://example.org/article"), 4);
+});
+
+test("writing labels preserve the existing saved format values", () => {
+  assert.equal(writingFormatLabel("Text post", "LinkedIn"), "LinkedIn Post");
+  assert.equal(writingFormatLabel("Article", "LinkedIn"), "Blog Article");
+  assert.equal(writingFormatLabel("Newsletter", "Newsletter"), "Brand Newsletter");
+  assert.equal(writingFormatLabel("Text post", "Reddit"), "Text post");
 });

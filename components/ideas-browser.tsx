@@ -1,5 +1,6 @@
 "use client";
 
+import { writingFormatLabel } from "@/lib/studio/channel-writing";
 import { IDEA_TEXT_ALTERNATIVES } from "@/lib/studio/idea-alternatives";
 import { researchSourceMinimum } from "@/lib/studio/research-methodology";
 import { IdeasRequestBoard } from "./ideas-request-board";
@@ -241,7 +242,7 @@ export function IdeasBrowser({
                         "Newsletter",
                         "Audio",
                       ]).map((option) => (
-                        <option key={option} value={option}>{linkedInFormat && option === "Article" ? "LinkedIn article · 800–1,200 words" : option}</option>
+                        <option key={option} value={option}>{writingFormatLabel(option, targetChannel ?? selected.channel)}</option>
                       ))}
                     </select>
                   </label>

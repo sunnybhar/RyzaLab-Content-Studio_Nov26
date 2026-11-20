@@ -1,4 +1,5 @@
 "use client";
+import { researchSourceMinimum } from "@/lib/studio/research-methodology";
 import type { Content, StudioState } from "@/lib/studio/types";
 export function GenerationRulesStatus({
   content,
@@ -19,6 +20,10 @@ export function GenerationRulesStatus({
   let researchVersion:{fileName:string;uploadedAt:string}|undefined;
   try{const value=JSON.parse(job.prompt).researchMethodology?.resourceVersion;if(typeof value?.fileName==="string"&&typeof value?.uploadedAt==="string")researchVersion=value;}catch{}
   return (
+    <>
+    {job.state === "succeeded" && job.researchSourceCount !== undefined && job.researchSourceCount < researchSourceMinimum && (
+      <p role="status">Limited research coverage · {job.researchSourceCount} usable public {job.researchSourceCount === 1 ? "source" : "sources"} found. Review factual claims before publishing.</p>
+    )}
     <details className="s-review-policy">
       <summary>Agent Rules used for this writing request</summary>
       <p>
@@ -65,5 +70,6 @@ export function GenerationRulesStatus({
         does not guarantee that the AI followed every instruction.
       </p>
     </details>
+    </>
   );
 }
