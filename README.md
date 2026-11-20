@@ -33,6 +33,12 @@ In **AI Connections**, add a separate **Image** connection for OpenAI GPT Image 
 
 To bring in older posts, open **Agent Rules → RyzaLab tone and original content voice → Import posts from ZIP**. Each supported document is saved as its own example. Images and other non-document files in the archive are skipped. Imported examples are kept in the workspace database.
 
+### Export a newsletter using your Word template
+
+On a local draft in **Create → Newsletter**, upload your `.docx` files in **Newsletter template**, then select one for the draft and download DOCX or PDF. Templates and selections live in the local SQLite database. The exporter keeps embedded cover art, the document's headers, footers, and Word styles. It replaces the template's example body and editorial prompts with your current newsletter copy.
+
+For a PDF using an uploaded template, install [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/) on the same computer. Studio looks for the standard macOS application or a `soffice` command. Set `STUDIO_SOFFICE_PATH` to the executable for a custom installation. DOCX and standard-layout exports are available independently.
+
 ## Supabase-backed development
 
 Node.js22+; Node24 LTS recommended. Open this folder, then:

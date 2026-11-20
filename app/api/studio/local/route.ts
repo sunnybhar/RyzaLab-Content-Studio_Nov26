@@ -1,3 +1,4 @@
+import { allowedLocalRequest } from "@/lib/studio/local-request";
 import { localVoicePdfLimit } from "@/lib/studio/voice-archive";
 import { localAI } from "@/lib/studio/local-ai";
 import { StudioError } from "@/lib/studio/permissions";
@@ -8,21 +9,7 @@ import { DatabaseSync } from "node:sqlite";
 
 export const runtime = "nodejs";
 
-const hosts = new Set(["localhost:3005", "127.0.0.1:3005"]);
 const headers = { "Cache-Control": "no-store" };
-
-function allowed(request: Request) {
-  const host = request.headers.get("host");
-  const site = request.headers.get("sec-fetch-site");
-  return (
-    process.env.NODE_ENV === "development" &&
-    process.env.NEXT_PUBLIC_STUDIO_LOCAL === "1" &&
-    host !== null &&
-    hosts.has(host) &&
-    (!site || site === "same-origin" || site === "none") &&
-    (["GET", "HEAD"].includes(request.method) || request.headers.get("origin") === `http://${host}`)
-  );
-}
 
 function withDatabase<T>(run: (database: DatabaseSync) => T): T {
   const directory = join(process.cwd(), ".studio-local");
@@ -46,7 +33,7 @@ function withDatabase<T>(run: (database: DatabaseSync) => T): T {
 }
 
 export function GET(request: Request) {
-  if (!allowed(request)) return new Response(null, { status: 404 });
+  if (!allowedLocalRequest(request)) return new Response(null, { status: 404 });
   try {
     const media = new URL(request.url).searchParams.get("media");
     if (media !== null) {
@@ -87,7 +74,7 @@ export function GET(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  if (!allowed(request)) return new Response(null, { status: 404 });
+  if (!allowedLocalRequest(request)) return new Response(null, { status: 404 });
   if (!request.headers.get("content-type")?.startsWith("application/json"))
     return Response.json({ error: "Expected a JSON workspace." }, { status: 415, headers });
 
@@ -124,7 +111,7 @@ export async function PUT(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!allowed(request)) return new Response(null, { status: 404 });
+  if (!allowedLocalRequest(request)) return new Response(null, { status: 404 });
   const contentType = request.headers.get("content-type") || "";
   try {
     let body;

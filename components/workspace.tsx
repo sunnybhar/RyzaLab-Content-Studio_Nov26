@@ -2,6 +2,7 @@
 import {ArticleImages} from "./article-images";
 import {NewsletterSources} from "./newsletter-sources";
 import {NewsletterComposer} from "./newsletter-composer";
+import { NewsletterTemplateExport } from "./newsletter-template-export";
 import { LocalMediaAssistant } from "./local-media-assistant";
 import {ImageAssistant} from "./image-assistant";
 import {parseDocumentLayout} from "@/lib/studio/document-layout";
@@ -4495,6 +4496,7 @@ function Editor({
       setGeneratingDraft(false);
     }
   }
+  const documentDownloads = isLongForm(c.channel,c.format)&&<section aria-label={/blog/i.test(c.format)?"Download blog":"Download newsletter"} className="s-actions"><button className="s-btn" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined,imageAlt:media.imageAlt,imageCaption:media.imageCaption,sectionImages:includeNewsletterImage?media.sectionImages:undefined,onExported:result=>setExportPages(result.pages)}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} DOCX</button><button className="s-btn s-primary" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined,imageAlt:media.imageAlt,imageCaption:media.imageCaption,sectionImages:includeNewsletterImage?media.sectionImages:undefined,onExported:result=>setExportPages(result.pages)}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} PDF</button>{(media.imageUrl||media.sectionImages?.length)&&<label><input type="checkbox" checked={includeNewsletterImage} onChange={e=>setIncludeNewsletterImage(e.target.checked)}/> Include attached images</label>}<p>Downloads use the content above automatically. No copy/paste or image is required.</p>{exportPages&&<p>Last PDF: {exportPages} pages in the selected layout.</p>}{documentLayoutFile&&!documentLayout&&<p>The uploaded layout is reference guidance. Export uses the default design until valid layout JSON settings are saved in Agent Rules.</p>}</section>;
   const requirements = inputRequirements({...c, title, text, metadata, media});
   function jumpToRequirement(item: ReturnType<typeof inputRequirements>[number]) {
     setTab(item.tab);
@@ -4806,7 +4808,11 @@ function Editor({
                 value={text}
                 onChange={(e) => setText(e.target.value)}
               />
-              {isLongForm(c.channel,c.format)&&<section aria-label={/blog/i.test(c.format)?"Download blog":"Download newsletter"} className="s-actions"><button className="s-btn" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined,imageAlt:media.imageAlt,imageCaption:media.imageCaption,sectionImages:includeNewsletterImage?media.sectionImages:undefined,onExported:result=>setExportPages(result.pages)}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} DOCX</button><button className="s-btn s-primary" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined,imageAlt:media.imageAlt,imageCaption:media.imageCaption,sectionImages:includeNewsletterImage?media.sectionImages:undefined,onExported:result=>setExportPages(result.pages)}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} PDF</button>{(media.imageUrl||media.sectionImages?.length)&&<label><input type="checkbox" checked={includeNewsletterImage} onChange={e=>setIncludeNewsletterImage(e.target.checked)}/> Include attached images</label>}<p>Downloads use the content above automatically. No copy/paste or image is required.</p>{exportPages&&<p>Last PDF: {exportPages} pages in the selected layout.</p>}{documentLayoutFile&&!documentLayout&&<p>The uploaded layout is reference guidance. Export uses the default design until valid layout JSON settings are saved in Agent Rules.</p>}</section>}
+              {local && c.channel === "Newsletter" ? (
+                <NewsletterTemplateExport contentId={c.id} title={title} text={text}>
+                  {documentDownloads}
+                </NewsletterTemplateExport>
+              ) : documentDownloads}
               {c.pipelineSnapshot&&<details className="pipeline-origin"><summary>Existing Pipeline · {c.pipelineSnapshot.externalId||c.pipelineSnapshot.title}</summary><p>{c.pipelineSnapshot.angle}</p><p>Imported from {c.pipelineSnapshot.sourceFile} · {c.pipelineSnapshot.sheet}, row {c.pipelineSnapshot.row} · brief v{c.pipelineSnapshot.version}</p><p>Planned: {c.pipelineSnapshot.plannedDate||"Unscheduled"} {c.pipelineSnapshot.plannedTime} · {c.pipelineSnapshot.timezone}. This is not a publishing approval.</p>{c.pipelineSnapshot.sourceUrls.map(url=><p key={url}>{url}</p>)}</details>}
               <GenerationRulesStatus content={c} state={state}/>
               {local ? (
