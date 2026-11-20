@@ -224,7 +224,7 @@ async function main() {
       fullPage: true,
     });
     await page
-      .getByRole("button", { name: "Midnight Teal", exact: true })
+      .getByRole("button", { name: "Midnight Blue", exact: true })
       .click();
     await navigate("Home");
     await page
@@ -736,6 +736,14 @@ async function main() {
     // Saving demo provider metadata discards the entered credential; checking access
     // reports that real validation is unavailable rather than marking it validated.
     await navigate("AI & budgets");
+    const spending = page.locator('[data-budget-section="Spending"] > summary');
+    const monthlyBudget = page.getByLabel("Monthly AI budget ($)", { exact: true });
+    assert.equal(await monthlyBudget.count(), 0);
+    await spending.click();
+    await monthlyBudget.waitFor();
+    await spending.click();
+    await monthlyBudget.waitFor({ state: "detached" });
+    assert.equal(await page.getByText("Bounded research and writing", { exact: true }).count(), 0);
     await page.locator('[data-budget-section="AI connections"] > summary').click();
     await page
       .getByRole("button", { name: "Add connection", exact: true })

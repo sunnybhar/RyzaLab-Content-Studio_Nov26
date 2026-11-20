@@ -77,8 +77,6 @@ import { ReviewCard } from "./review-card";
 import { SoloReview } from "./solo-review";
 import { DraftAssistant } from "./draft-assistant";
 import { VerificationPack } from "./verification-pack";
-import { BoundedWorkflowSetup } from "./bounded-workflow-setup";
-import { ResearchSetup } from "./research-setup";
 import {IdeaComposer} from "./idea-composer";
 import {IdeaEvidence} from "./idea-evidence";
 import { researchEvidence } from "@/lib/studio/research-link";
@@ -1036,12 +1034,12 @@ export default function Workspace() {
     if (!response.ok) throw new Error(result.error || "Could not load account models.");
     return result.models as string[];
   }
-  async function researchSetupRequest(body: unknown, bounded: boolean | "verification"=false) {
-    if(mode === "demo")throw new Error("Research account checks require live Studio.");
+  async function verificationRequest(body: unknown) {
+    if(mode === "demo")throw new Error("Verification requires live Studio.");
     const session=await supabase?.auth.getSession(),token=session?.data.session?.access_token;
-    if(!token)throw new Error("Sign in to check research setup.");
-    const response=await fetch(bounded==="verification"?"/api/studio/verification":bounded?"/api/studio/research/bounded-setup":"/api/studio/research/setup",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify(body),signal:AbortSignal.timeout(175000)});
-    const result=await response.json();if(!response.ok)throw new Error(result.error||"Research setup failed.");
+    if(!token)throw new Error("Sign in to run verification.");
+    const response=await fetch("/api/studio/verification",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify(body),signal:AbortSignal.timeout(175000)});
+    const result=await response.json();if(!response.ok)throw new Error(result.error||"Verification failed.");
     if(result.state)await refresh();return result;
   }
   async function progressAuthorizedJob(jobId:string) {
@@ -3487,8 +3485,7 @@ export default function Workspace() {
                   committed += job.actual == null ? job.reserved : 0;
                 }
                 return (
-                  <section className="s-panel">
-                    <div className="s-section-heading"><h2>Spending</h2></div>
+                  <BudgetSection title="Spending">
                     <form
                       key={monthlyCap}
                       onSubmit={(event) => {
@@ -3512,14 +3509,12 @@ export default function Workspace() {
                       <Stat label="Committed to queued work" number={money(committed)} icon={<Clock3 size={19} />} note="Includes unresolved charges" />
                       <Stat label="Remaining" number={money(Math.max(0, monthlyCap - spent - committed))} icon={<ShieldCheck size={19} />} note="Available this month" />
                     </div>
-                  </section>
+                  </BudgetSection>
                 );
               })()}
               {!founder && admin && <section className="s-panel"><div className="s-section-heading"><div><h2>Founder access</h2><p>Grant founder access in People & access to configure review and preparation. No additional email setting or API key is required.</p></div><button className="s-btn" onClick={() => move("People")}>Open People & access</button></div></section>}
               <BudgetSection title="Review and preparation"><SoloPolicySettings state={state} actor={actor} send={send} ready /></BudgetSection>
-              <BudgetSection title="Bounded research and writing"><BoundedWorkflowSetup state={state} request={body=>researchSetupRequest(body,true)} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"text"})} demo={mode==="demo"} /></BudgetSection>
-              <BudgetSection title="LinkedIn and Newsletter sample pack"><VerificationPack state={state} actor={actor} request={body=>researchSetupRequest(body,"verification")} refresh={refresh} openDraft={id=>{setPage("Create");setSelected(id);setChannel("All channels");setSearch("");}} disabled={!allowed("settings.manage")} demo={mode==="demo"} /></BudgetSection>
-              <BudgetSection title="Advanced: native Claude server search"><ResearchSetup state={state} request={researchSetupRequest} disabled={!allowed("settings.manage")||!allowed("connections.manage",{function:"research"})} demo={mode==="demo"} /></BudgetSection>
+              <BudgetSection title="LinkedIn and Newsletter sample pack"><VerificationPack state={state} actor={actor} request={verificationRequest} refresh={refresh} openDraft={id=>{setPage("Create");setSelected(id);setChannel("All channels");setSearch("");}} disabled={!allowed("settings.manage")} demo={mode==="demo"} /></BudgetSection>
               <BudgetSection title="Verified pricing"><PricingManager request={pricingRequest} demo={mode === "demo"} disabled={!allowed("settings.manage")} changed={refresh}/></BudgetSection>
               <BudgetSection title="AI connections"><section className="s-panel">
                 <div className="s-section-heading">
@@ -3585,7 +3580,20 @@ export default function Workspace() {
                       function: c.function,
                     }) && (
                       <div className="s-actions s-connection-actions">
-                        {c.function === "research" && c.status === "validated" && <button className="s-btn s-small-btn" disabled={busy || state.settings.defaultConnections?.research === c.id} onClick={()=>void execute({type:"connection.default",id:c.id},"Research default selected. Explicit channel overrides still take precedence.")}>{state.settings.defaultConnections?.research === c.id ? "Research default" : "Use as Research default"}</button>}
+                        {c.status === "validated" && (
+                          <button
+                            className="s-btn s-small-btn"
+                            disabled={busy || state.settings.defaultConnections?.[c.function] === c.id}
+                            onClick={() => void execute(
+                              { type: "connection.default", id: c.id },
+                              "Default model saved. Channel-specific selections take precedence.",
+                            )}
+                          >
+                            {state.settings.defaultConnections?.[c.function] === c.id
+                              ? "Default model"
+                              : "Use as default"}
+                          </button>
+                        )}
                         <button
                           className="s-btn s-small-btn"
                           disabled={busy || c.status === "disconnected"}
