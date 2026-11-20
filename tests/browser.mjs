@@ -736,15 +736,13 @@ async function main() {
     // Saving demo provider metadata discards the entered credential; checking access
     // reports that real validation is unavailable rather than marking it validated.
     await navigate("AI & budgets");
-    const spending = page.locator('[data-budget-section="Spending"] > summary');
     const monthlyBudget = page.getByLabel("Monthly AI budget ($)", { exact: true });
     assert.equal(await monthlyBudget.count(), 0);
-    await spending.click();
+    await page.getByRole("button", { name: "Edit monthly limit" }).click();
     await monthlyBudget.waitFor();
-    await spending.click();
+    await page.keyboard.press("Escape");
     await monthlyBudget.waitFor({ state: "detached" });
-    assert.equal(await page.getByText("Bounded research and writing", { exact: true }).count(), 0);
-    await page.locator('[data-budget-section="AI connections"] > summary').click();
+    await page.getByRole("tab", { name: "AI connections" }).click();
     await page
       .getByRole("button", { name: "Add connection", exact: true })
       .click();
@@ -779,7 +777,7 @@ async function main() {
       "unverified",
     );
     await closeError();
-    await page.locator('[data-budget-section="Generation activity"] > summary').click();
+    await page.getByRole("tab", { name: "Generation activity" }).click();
     await page
       .getByRole("button", { name: "Queue request", exact: true })
       .click();

@@ -1,4 +1,5 @@
 "use client";
+import { BudgetPagedList } from "./budget-section";
 import { useRef, useState } from "react";
 import { validResearchReservation } from "@/lib/studio/research-budget";
 import type { Rate } from "@/lib/studio/pricing";
@@ -91,7 +92,7 @@ export function PricingManager({
           the selected model and function have a qualified entry.
         </p>
       )}
-      {rates.map((rate) => (
+      <BudgetPagedList rows={rates.map((rate) => (
         <div
           className="s-list-row"
           key={`${rate.provider}/${rate.model}/${rate.function}`}
@@ -164,7 +165,7 @@ export function PricingManager({
             </button>
           </div>
         </div>
-      ))}
+      ))} />
       <dialog
         ref={dialog}
         className="s-review-dialog"

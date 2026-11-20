@@ -21,7 +21,7 @@ import {blogArticleLengthIssue, isLongForm, writingFormatLabel, writingWordCount
 import { AuthorizedJobProgress } from "./authorized-job-progress";
 import { JobCost } from "./job-cost";
 import { budgetMonth } from "@/lib/studio/time";
-import {BudgetSection} from "./budget-section";
+import { BudgetPagedList, SpendingDashboard } from "./budget-section";
 import {AgentRules} from "./agent-rules";
 import { ReleaseNotes } from "./release-notes";
 import { MemberAccessEditor } from "./member-access-editor";
@@ -3651,51 +3651,49 @@ export default function Workspace() {
             </>
           )}
           {page==="Agent Rules"&&<AgentRules state={state} actor={actor} send={send} local={local}/>}
-          {page === "AI & budgets" && (
-            <div className="s-budget-layout">
-              {allowed("settings.manage") && (() => {
-                const monthlyCap = state.settings.monthlyCap;
-                const period = budgetMonth(new Date().toISOString(), state.settings.timezone);
-                let spent = 0;
-                let committed = 0;
-                for (const job of storedState!.jobs) {
-                  if (job.period !== period) continue;
-                  spent += job.actual ?? 0;
-                  committed += job.actual == null ? job.reserved : 0;
-                }
-                return (
-                  <BudgetSection title="Spending">
-                    <form
-                      key={monthlyCap}
-                      onSubmit={(event) => {
-                        event.preventDefault();
-                        void execute({
-                          type: "settings.monthlyBudget",
-                          monthlyCap: cents(new FormData(event.currentTarget), "monthlyCap"),
-                          expectedMonthlyCap: monthlyCap,
-                        }, "Monthly AI budget saved.");
-                      }}
-                    >
-                      <label className="s-field">
-                        Monthly AI budget ($)
-                        <input name="monthlyCap" type="number" min="0" max="1000000" step="0.01"
-                          required defaultValue={(monthlyCap / 100).toFixed(2)} disabled={busy || readOnly} />
-                      </label>
-                      <button className="s-btn s-primary" type="submit" disabled={busy || readOnly}>Save budget</button>
-                    </form>
-                    <div className="s-stats s-budget-stats">
-                      <Stat label="Spent" number={money(spent)} icon={<Zap size={19} />} note="Recorded this month" />
-                      <Stat label="Committed to queued work" number={money(committed)} icon={<Clock3 size={19} />} note="Includes unresolved charges" />
-                      <Stat label="Remaining" number={money(Math.max(0, monthlyCap - spent - committed))} icon={<ShieldCheck size={19} />} note="Available this month" />
-                    </div>
-                  </BudgetSection>
-                );
-              })()}
-              {!founder && admin && <section className="s-panel"><div className="s-section-heading"><div><h2>Founder access</h2><p>Grant founder access in People & access to configure review and preparation. No additional email setting or API key is required.</p></div><button className="s-btn" onClick={() => move("People")}>Open People & access</button></div></section>}
-              <BudgetSection title="Review and preparation"><SoloPolicySettings state={state} actor={actor} send={send} ready /></BudgetSection>
-              <BudgetSection title="LinkedIn and Newsletter sample pack"><VerificationPack state={state} actor={actor} request={verificationRequest} refresh={refresh} openDraft={id=>{setPage("Create");setSelected(id);setChannel("All channels");setSearch("");}} disabled={!allowed("settings.manage")} demo={mode==="demo"} /></BudgetSection>
-              <BudgetSection title="Verified pricing"><PricingManager request={pricingRequest} demo={mode === "demo"} disabled={!allowed("settings.manage")} changed={refresh}/></BudgetSection>
-              <BudgetSection title="AI connections"><section className="s-panel">
+          {page === "AI & budgets" && (() => {
+            const canManageBudget = allowed("settings.manage");
+            const monthlyCap = state.settings.monthlyCap;
+            const period = budgetMonth(new Date().toISOString(), state.settings.timezone);
+            let spent = 0;
+            let reserved = 0;
+            if (canManageBudget) {
+              for (const job of storedState!.jobs) {
+                if (job.period !== period) continue;
+                spent += job.actual ?? 0;
+                reserved += job.actual == null ? job.reserved : 0;
+              }
+            }
+            return (
+              <SpendingDashboard
+                summary={canManageBudget && (
+                  <section className="s-stats s-budget-stats" aria-label="This month's AI spending">
+                    <Stat label="Recorded this month" number={money(spent)} icon={<Zap size={19} />} />
+                    <Stat label="Reserved" number={money(reserved)} icon={<Clock3 size={19} />} note="Includes unresolved charges" />
+                    <Stat label="Monthly limit" number={money(monthlyCap)} icon={<ShieldCheck size={19} />} />
+                  </section>
+                )}
+                sections={[
+                  ...(canManageBudget ? [{ title: "Spending", content: (
+                    <section className="s-panel">
+                      <div className="s-section-heading">
+                        <div><h2>Spending</h2><p>Available this month · {money(Math.max(0, monthlyCap - spent - reserved))}</p></div>
+                        <button type="button" className="s-btn s-primary" disabled={busy || readOnly}
+                          onClick={() => openForm(
+                            "Edit monthly limit",
+                            [{ ...field("monthlyCap", "Monthly AI budget ($)", (monthlyCap / 100).toFixed(2), "number"),
+                              min: 0, max: 1000000, step: 0.01, required: true }],
+                            data => ({ type: "settings.monthlyBudget", monthlyCap: cents(data, "monthlyCap"), expectedMonthlyCap: monthlyCap }),
+                            undefined,
+                            "Save budget",
+                          )}>
+                          Edit monthly limit
+                        </button>
+                      </div>
+                    </section>
+                  ) }] : []),
+                  { title: "AI connections", content: (
+<section className="s-panel">
                 <div className="s-section-heading">
                   <div>
                     <h2>AI connections</h2>
@@ -3708,7 +3706,7 @@ export default function Workspace() {
                     discover={discoverAccountModels}
                   />
                 </div>
-                {state.connections.map((c) => (
+                <BudgetPagedList rows={state.connections.map((c) => (
                   <div className="s-list-row s-connection-row" key={c.id}>
                     <ConnectionEditor connection={c} demo={mode === "demo" && !local} disabled={!allowed("connections.manage", {function: c.function})} save={send} discover={discoverAccountModels} />
                     <span className="s-provider-icon">
@@ -3855,99 +3853,25 @@ export default function Workspace() {
                       </div>
                     )}
                   </div>
-                ))}
+                ))} />
                 {!state.connections.length && (
                   <Empty icon={Zap} title="Bring your own creative tools">
                     Add a provider connection when you are ready. Your workspace
                     works without one.
                   </Empty>
                 )}
-              </section></BudgetSection>
-              <BudgetSection title="Workspace settings"><section className="s-panel s-recent-panel">
-                <div className="s-section-heading">
-                  <div>
-                    <h2>Workspace settings</h2>
-                  </div>
-                  <button
-                    disabled={!admin}
-                    className="s-btn"
-                    onClick={() =>
-                      openForm(
-                        "Workspace settings",
-                        [
-                          field(
-                            "timezone",
-                            "Timezone",
-                            state.settings.timezone,
-                          ),
-                          {
-                            name: "trashDays",
-                            label: "Trash retention (days)",
-                            value: "90",
-                            options: ["90"],
-                            hint: "Content is retained for the required 90-day recovery period.",
-                          },
-                          {
-                            name: "emailEnabled",
-                            label: "Email notifications",
-                            options: ["Disabled", "Enabled"],
-                            value: state.settings.emailEnabled
-                              ? "Enabled"
-                              : "Disabled",
-                          },
-                          {
-                            name: "docsMode",
-                            label: "Google Docs sync",
-                            options: founder
-                              ? ["manual", "automatic"]
-                              : [state.settings.docsMode],
-                            value: state.settings.docsMode,
-                            hint: "Founder-controlled. Automatic mode checks linked, manually fetched documents periodically; conflicting or approved versions require human import.",
-                          },
-                        ],
-                        (d) => ({
-                          type: "settings.save",
-                          timezone: val(d, "timezone"),
-                          trashDays: Number(val(d, "trashDays")),
-                          currency: "USD",
-                          emailEnabled: val(d, "emailEnabled") === "Enabled",
-                          docsMode: val(d, "docsMode"),
-                        }),
-                      )
-                    }
-                  >
-                    Edit settings
-                  </button>
-                </div>
-                <div className="s-settings-grid">
-                  <div>
-                    <span>Workspace timezone</span>
-                    <strong>{state.settings.timezone}</strong>
-                  </div>
-                  <div>
-                    <span>Trash retention</span>
-                    <strong>{state.settings.trashDays} days</strong>
-                  </div>
-                  <div>
-                    <span>Google Docs</span>
-                    <strong>Manual fetch</strong>
-                  </div>
-                  <div>
-                    <span>Email notifications</span>
-                    <strong>
-                      {state.settings.emailEnabled
-                        ? "Enabled · delivery needs configuration"
-                        : "Disabled"}
-                    </strong>
-                  </div>
-                </div>
-              </section></BudgetSection>
-              <BudgetSection title="Generation activity"><section className="s-panel s-recent-panel">
+              </section>
+                  ) },
+                  { title: "Verified pricing", content: (
+<PricingManager request={pricingRequest} demo={mode === "demo"} disabled={!allowed("settings.manage")} changed={refresh}/>
+                  ) },
+                  { title: "Generation activity", content: (
+<section className="s-panel s-recent-panel">
                 <div className="s-section-heading">
                   <div>
                     <h2>Generation activity</h2>
                     <p>
-                      Track current requests and your 10 most recent results.
+                      Find requests by status or search the history.
                     </p>
                   </div>
                   <button
@@ -3958,7 +3882,7 @@ export default function Workspace() {
                     <Plus size={15} /> Queue request
                   </button>
                 </div>
-                <GenerationActivity jobs={state.jobs} renderJob={(j) => (
+                <GenerationActivity jobs={state.jobs} formatCost={money} renderJob={(j) => (
                     <div className="s-job-row" key={j.id}>
                       <div>
                         <strong>
@@ -4050,9 +3974,99 @@ export default function Workspace() {
                       )}
                     </div>
                   )} />
-              </section></BudgetSection>
-            </div>
-          )}
+              </section>
+                  ) },
+                  { title: "Review and preparation", content: (
+<>{!founder && admin && <section className="s-panel"><div className="s-section-heading"><div><h2>Founder access</h2><p>Grant founder access in People & access to configure review and preparation. No additional email setting or API key is required.</p></div><button className="s-btn" onClick={() => move("People")}>Open People & access</button></div></section>}<SoloPolicySettings state={state} actor={actor} send={send} ready /></>
+                  ) },
+                  { title: "LinkedIn and Newsletter sample pack", content: (
+<VerificationPack state={state} actor={actor} request={verificationRequest} refresh={refresh} openDraft={id=>{setPage("Create");setSelected(id);setChannel("All channels");setSearch("");}} disabled={!allowed("settings.manage")} demo={mode==="demo"} />
+                  ) },
+                  { title: "Workspace settings", content: (
+<section className="s-panel s-recent-panel">
+                <div className="s-section-heading">
+                  <div>
+                    <h2>Workspace settings</h2>
+                  </div>
+                  <button
+                    disabled={!admin}
+                    className="s-btn"
+                    onClick={() =>
+                      openForm(
+                        "Workspace settings",
+                        [
+                          field(
+                            "timezone",
+                            "Timezone",
+                            state.settings.timezone,
+                          ),
+                          {
+                            name: "trashDays",
+                            label: "Trash retention (days)",
+                            value: "90",
+                            options: ["90"],
+                            hint: "Content is retained for the required 90-day recovery period.",
+                          },
+                          {
+                            name: "emailEnabled",
+                            label: "Email notifications",
+                            options: ["Disabled", "Enabled"],
+                            value: state.settings.emailEnabled
+                              ? "Enabled"
+                              : "Disabled",
+                          },
+                          {
+                            name: "docsMode",
+                            label: "Google Docs sync",
+                            options: founder
+                              ? ["manual", "automatic"]
+                              : [state.settings.docsMode],
+                            value: state.settings.docsMode,
+                            hint: "Founder-controlled. Automatic mode checks linked, manually fetched documents periodically; conflicting or approved versions require human import.",
+                          },
+                        ],
+                        (d) => ({
+                          type: "settings.save",
+                          timezone: val(d, "timezone"),
+                          trashDays: Number(val(d, "trashDays")),
+                          currency: "USD",
+                          emailEnabled: val(d, "emailEnabled") === "Enabled",
+                          docsMode: val(d, "docsMode"),
+                        }),
+                      )
+                    }
+                  >
+                    Edit settings
+                  </button>
+                </div>
+                <div className="s-settings-grid">
+                  <div>
+                    <span>Workspace timezone</span>
+                    <strong>{state.settings.timezone}</strong>
+                  </div>
+                  <div>
+                    <span>Trash retention</span>
+                    <strong>{state.settings.trashDays} days</strong>
+                  </div>
+                  <div>
+                    <span>Google Docs</span>
+                    <strong>Manual fetch</strong>
+                  </div>
+                  <div>
+                    <span>Email notifications</span>
+                    <strong>
+                      {state.settings.emailEnabled
+                        ? "Enabled · delivery needs configuration"
+                        : "Disabled"}
+                    </strong>
+                  </div>
+                </div>
+              </section>
+                  ) },
+                ]}
+              />
+            );
+          })()}
           {page === "Notifications" && (
             <section className="s-panel">
               {state.notices
@@ -4493,7 +4507,7 @@ function Stat({
   label: string;
   number: string | number;
   icon: ReactNode;
-  note: string;
+  note?: string;
   onClick?: () => void;
 }) {
   return (
@@ -4503,9 +4517,7 @@ function Stat({
         <i>{icon}</i>
       </div>
       <strong>{number}</strong>
-      <small>
-        <span /> {note}
-      </small>
+      {note && <small><span /> {note}</small>}
     </button>
   );
 }

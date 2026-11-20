@@ -4318,26 +4318,15 @@
 .studio-v2 .s-sidebar > .s-btn.s-active,
 .studio-v2 .s-sidebar .s-user.s-active { background: var(--s-raised); color: var(--s-accent); box-shadow: inset 3px 0 var(--s-accent); }
 
-/* AI & budgets keeps configuration readable without opening every form. */
-.studio-v2 .s-budget-layout { display: grid; gap: 24px; }
-.studio-v2 .s-budget-section { margin: 0; min-width: 0; }
-.studio-v2 .s-budget-section > summary {
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  padding: 20px 24px; min-height: 64px; cursor: pointer;
-  font-weight: 650; list-style: none;
-}
-.studio-v2 .s-budget-section > summary::-webkit-details-marker { display: none; }
-.studio-v2 .s-budget-section > summary::marker { content: ""; }
-.studio-v2 .s-budget-section > summary svg { flex-shrink: 0; transition: transform 150ms; }
-.studio-v2 .s-budget-section[open] > summary svg { transform: rotate(180deg); }
-.studio-v2 .s-budget-section > summary:focus-visible { outline: 2px solid var(--s-accent); outline-offset: -4px; }
-.studio-v2 .s-budget-section-body { border-top: 1px solid var(--s-line); padding: 20px; }
-.studio-v2 .s-budget-section-body > .s-panel { border: 0; box-shadow: none; border-radius: 0; }
-.studio-v2 .s-budget-section-body > .s-panel-padding { padding: 0; }
+/* Spending stays visible while one settings panel is open. */
+.studio-v2 .s-budget-layout { display: grid; gap: 18px; min-width: 0; }
+.studio-v2 .s-budget-layout > [role="tabpanel"] { min-width: 0; }
+.studio-v2 .s-budget-tabs { display: flex; flex-wrap: wrap; gap: 7px; padding-bottom: 12px; border-bottom: 1px solid var(--s-line); }
+.studio-v2 .s-budget-tabs [aria-selected="true"] { color: var(--s-accent-ink); background: var(--s-accent); border-color: var(--s-accent); }
+.studio-v2 .s-budget-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 12px 16px; color: var(--s-muted); }
+.studio-v2 .s-budget-layout .s-budget-stats { margin: 0; }
 @media (max-width: 600px) {
-  .studio-v2 .s-budget-layout { gap: 18px; }
-  .studio-v2 .s-budget-section > summary { padding: 18px; }
-  .studio-v2 .s-budget-section-body { padding: 16px; }
+  .studio-v2 .s-budget-layout .s-budget-stats { grid-template-columns: 1fr; }
 }
 .studio-v2 dialog.s-idea-composer[open] {
   display: flex;
