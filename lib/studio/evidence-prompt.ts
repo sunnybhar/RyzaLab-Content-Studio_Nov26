@@ -83,7 +83,11 @@ export function evidencePrompt(
   let failure: unknown;
   for (const tier of [
     { sources: Infinity, bytes: Infinity },
-    { sources: 12, bytes: 2500 },
+    { sources: 15, bytes: 1800 },
+    { sources: 15, bytes: 950 },
+    { sources: 15, bytes: 500 },
+    { sources: 15, bytes: 250 },
+    { sources: 12, bytes: 1200 },
     { sources: 8, bytes: 1400 },
     { sources: 6, bytes: 800 },
     { sources: 3, bytes: 400 },

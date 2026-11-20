@@ -1,3 +1,4 @@
+import { requireResearchCoverage, researchCoverage, researchSourceMinimum } from "./research-methodology";
 import { isRyzaLabSource } from "./source-policy";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -116,7 +117,7 @@ const localTextPricing = [
   { provider: "anthropic", model: "claude-opus-5-5", inputCentsPerMillion: 400, outputCentsPerMillion: 2000 },
 ] as const;
 
-function localRates(state: StudioState): Rate[] {
+function localRates(state: StudioState, maxOutputTokens = 4096): Rate[] {
   const rates: Rate[] = [
     ...effectiveRates(state),
     ...localTextPricing.map((rate): Rate => ({
@@ -124,7 +125,7 @@ function localRates(state: StudioState): Rate[] {
       function: "text",
       currency: "USD",
       maxInputBytes: 65536,
-      maxOutputTokens: 4096,
+      maxOutputTokens,
       source: localTextPricingSource,
       verifiedAt: "2026-11-19",
       qualified: true,
@@ -138,7 +139,7 @@ function localRates(state: StudioState): Rate[] {
       inputCentsPerMillion: RESEARCH_PRICE.inputCentsPerMillion,
       outputCentsPerMillion: RESEARCH_PRICE.outputCentsPerMillion,
       maxInputBytes: 65536,
-      maxOutputTokens: 4096,
+      maxOutputTokens,
       source: RESEARCH_PRICE.tokenSource,
       verifiedAt: RESEARCH_PRICE.verifiedAt,
       qualified: true,
@@ -189,7 +190,7 @@ const retrieveLocalReferences: typeof retrieveBroadReferences = async (
       retrieveBroadReferences(
         query, boundedFetch, now, profile, sourceUrls,
         (url) => readPublicPage(url, 0, Math.min(deadline, Date.now() + 7000)),
-        true,
+        true, true,
       ),
     ]);
   } finally {
@@ -500,7 +501,7 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
       defaults.ideas ??= defaults.text;
       defaults.review ??= defaults.text;
     }
-    next.settings.qualifiedRates = localRates(source);
+    next.settings.qualifiedRates = localRates(source, kind === "text" && source.contents.some((draft) => draft.id === contentId && draft.channel === "Newsletter") ? 6000 : 4096);
     next.settings.requestCap ||= next.settings.monthlyCap;
     for (const connection of next.connections) {
       if (!textFunctions.safeParse(connection.function).success) continue;
@@ -526,9 +527,8 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
 
   let configured = configureLocalState(state);
   let prepared;
-  let researchUnavailable = false;
   if (parsed.type === "idea.generate") {
-    if (parsed.automaticResearch) {
+    if (parsed.automaticResearch || !parsed.researchJobIds?.length || researchCoverage(ideaJobInput(configured, DEMO_ACTOR, parsed).prompt) < researchSourceMinimum) {
       try {
         const researched = await automaticIdeaResearch(configured, DEMO_ACTOR, parsed, retrieveLocalReferences, undefined, async (snapshot) => {
           const saved = withDatabase((db) => write(db, currentRevision, restoreLocalConfiguration(structuredClone(snapshot))));
@@ -538,15 +538,7 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
         prepared = ideaJobInput(configured, DEMO_ACTOR, researched.command);
       } catch (error) {
         if (!publicEvidenceUnavailable(error)) throw error;
-        researchUnavailable = true;
-        prepared = ideaJobInput(configured, DEMO_ACTOR, {
-          ...parsed,
-          research: false,
-          researchJobIds: [],
-          sourceText: [parsed.sourceText,
-            "Public research returned no usable evidence. Propose provisional angles and questions to verify. Do not invent citations or state unverified claims as facts.",
-          ].filter(Boolean).join("\n\n"),
-        });
+        throw new StudioError(503, "Online research found no usable sources for this idea. Try a more specific public topic. No paid idea request was sent.");
       }
     } else {
       prepared = ideaJobInput(configured, DEMO_ACTOR, parsed);
@@ -575,12 +567,13 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
     const newsletter = draft?.channel === "Newsletter" && parsed.kind === "text";
     const requestedQuery = typeof publicQuery === "string" ? publicQuery.trim() : "";
     const title = draft?.title.trim() ?? "";
-    const query = requestedQuery || (newsletter ? (title.length >= 5 ? title : `${title} background`.trim()) : "");
+    const query = requestedQuery || (title.length >= 5 ? title : `${title} background`.trim());
     const sourceUrls = newsletter && Array.isArray(publicSourceUrls)
       ? publicSourceUrls.filter((url) => typeof url !== "string" || !isRyzaLabSource(url))
       : publicSourceUrls;
     const hasLinks = Array.isArray(sourceUrls) && sourceUrls.length > 0;
-    if (draft && parsed.kind === "text" && (query || hasLinks)) {
+    if (draft && parsed.kind === "text" && (newsletter || requestedQuery || hasLinks ||
+      researchCoverage(prepared.prompt) < researchSourceMinimum)) {
       // Check the monthly budget before spending time on public retrieval.
       enqueue(configured, prepared);
       const input = commandSchema.parse({
@@ -609,16 +602,12 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
         }
       } catch (error) {
         if (!publicEvidenceUnavailable(error)) throw error;
-        if (newsletter && !prepared.researchJobIds.length)
-          throw new StudioError(503, "Online search found no usable independent sources for this newsletter. Try a more specific research topic or add an accessible external article. No paid writing request was sent.");
-        researchUnavailable = true;
-        prepared = generationInput(configured, DEMO_ACTOR, {
-          ...writing,
-          notes: [parsed.notes, "Fresh public research was unavailable. Write a working draft using the idea, supplied material, and saved references. Do not invent citations, statistics, or personal experiences. Flag factual details that need confirmation."].filter(Boolean).join("\n\n"),
-        });
+        if (!researchCoverage(prepared.prompt))
+          throw new StudioError(503, `Online search found no usable ${newsletter ? "independent " : ""}sources for this ${newsletter ? "newsletter" : "draft"}. Try a more specific research topic or add an accessible external article. No paid writing request was sent.`);
       }
     }
   }
+  if (prepared.kind === "ideas" || prepared.kind === "text") requireResearchCoverage(prepared.prompt);
   const connection = configured.connections.find((c) => c.id === prepared.connectionId);
   if (!connection) throw new StudioError(409, "Select a validated model in AI Connections.");
   const key = withDatabase((db) => storedKey(db, connection.id));
@@ -626,7 +615,6 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
   const job = next.jobs.find((j) => j.idempotencyKey === prepared.idempotencyKey)!;
   job.state = "running";
   job.attempt = 1;
-  if (researchUnavailable) job.researchUnavailable = true;
   job.leaseId = crypto.randomUUID();
   job.dispatchStartedAt = new Date().toISOString();
   withDatabase((db) => write(db, currentRevision, next));

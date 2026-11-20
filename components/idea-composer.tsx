@@ -237,7 +237,7 @@ export function IdeaComposer({
         When automatic drafting is enabled, opening writing also starts its
         first AI draft within the founder-approved post allowance.
       </p>
-      {local && <p>If no public evidence is usable, Studio still generates provisional ideas for you to verify.</p>}
+      {local && <p>Studio checks at least 10 relevant sources before generating ideas. Put each public source link on its own line in the source field.</p>}
       {!!selectedResearch.length&&<p role="status">Using {selectedResearch.length} saved research result(s). Generating ideas will reuse these sources without another public search.</p>}
       {submitted&&<IdeaRunProgress job={job} busy={busy} startedAt={startedAt} sourceCount={evidenceIds.length} readyCount={mode==="manual"?(proposal?1:0):cards.length} targetCount={mode==="manual"?1:quantity} lastChecked={lastChecked} syncError={syncError} requestError={error} refresh={()=>checkStatus(true)} confirm={confirmRequest}/>}
       {relevanceWarning&&<p className="s-alert s-error" role="alert">These saved references do not match the current topic/audience well. They are retained for audit; inspect the ideas before using them. This request will not be regenerated automatically.</p>}

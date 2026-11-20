@@ -1,3 +1,4 @@
+import { researchSourceKey, researchSourceTarget } from "./research-methodology";
 import {investigationPlan} from "./research-plan";
 import { readPublicPage, publicPageUrl } from "./public-page";
 import {
@@ -26,6 +27,7 @@ export async function discoverWeb(
   query: string,
   request: typeof fetch = fetch,
   timeoutMs=10000,
+  resultLimit = 3,
 ) {
   if (query.trim().length < 5 || new TextEncoder().encode(query).length > 2000)
     throw new StudioError(400, "Enter a public question of 5–2000 bytes.");
@@ -43,7 +45,7 @@ export async function discoverWeb(
     );
     url.searchParams.set("q", query);
     url.searchParams.set("format", "rss");
-    url.searchParams.set("count", "3");
+    url.searchParams.set("count", String(resultLimit));
     try {
       const response = await request(url.toString(), {
         redirect: "error",
@@ -76,7 +78,7 @@ export async function discoverWeb(
       const before = citations.length;
       for (const item of [
         ...xml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi),
-      ].slice(0, 3)) {
+      ].slice(0, resultLimit)) {
         const field = (tag: string) =>
           plain(
             new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i").exec(
@@ -86,13 +88,15 @@ export async function discoverWeb(
         const title = field("title").slice(0, 300),
           excerpt = field("description").slice(0, 1400);
         let link = field("link");
-        const parsed = new URL(link);
+        let parsed: URL;
+        try { parsed = new URL(link); } catch { continue; }
         if (
           parsed.hostname === "www.bing.com" &&
           parsed.pathname === "/news/apiclick.aspx"
         )
           link = parsed.searchParams.get("url") || link;
-        const source = new URL(link);
+        let source: URL;
+        try { source = new URL(link); } catch { continue; }
         if (
           source.protocol !== "https:" ||
           source.username ||
@@ -145,6 +149,7 @@ export async function retrieveBroadReferences(
   sourceUrls: string[] = [],
   pageReader?: typeof readPublicPage,
   quick = false,
+  comprehensive = false,
 ) {
   const supplied = [
     ...new Set(sourceUrls.map((value) => publicPageUrl(value).href)),
@@ -164,9 +169,11 @@ export async function retrieveBroadReferences(
       "A supplied link is excluded by the research source policy. Remove it or update Source Preferences; Wikipedia cannot be enabled.",
     );
   const started=Date.now(), deadline=started+(quick ? 50000 : 65000);
-  const plan=investigationPlan(query,profile),limit=profile.depth==="focused"?6:profile.depth==="deep"?12:20;
+  const plan = investigationPlan(query, comprehensive ? { ...profile, depth: "extended" } : profile);
+  const limit = comprehensive ? researchSourceTarget : profile.depth === "focused" ? 6 : profile.depth === "deep" ? 12 : 20;
+  if (comprehensive) plan.searches[3] = { purpose: "expert and video coverage", query: `${query} expert demonstration video YouTube trade magazine blog` };
   const search = (item: (typeof plan.searches)[number]) => {
-    const discovery = discoverWeb(item.query, request, 6000);
+    const discovery = discoverWeb(item.query, request, 6000, comprehensive ? 8 : 3);
     return quick
       ? withinResearchStep(discovery, 13000, "Web and news discovery").catch(() => ({
           citations: [], bytes: 0, gaps: ["Web and news discovery did not finish."],
@@ -175,12 +182,23 @@ export async function retrieveBroadReferences(
   };
   const initialSearch = search(plan.searches[0]);
   const follow = () => Promise.all(plan.searches.slice(1).map(async (item) => ({ search: item, result: await search(item) })));
-  const [initial, followups] = quick
+  const [initial, followups] = quick || comprehensive
     ? await Promise.all([initialSearch, follow()])
     : [await initialSearch, await follow()] as const;
   let requests=2,bytes=initial.bytes;
-  const gaps=[...initial.gaps],found=[...initial.citations];
-  for(const {search,result} of followups){requests+=2;bytes+=result.bytes;found.push(...result.citations);gaps.push(...result.gaps.map(g=>search.purpose+": "+g));}
+  const gaps = [...initial.gaps];
+  const groups = [initial.citations];
+  for (const { search, result } of followups) {
+    requests += 2;
+    bytes += result.bytes;
+    groups.push(result.citations);
+    gaps.push(...result.gaps.map((gap) => search.purpose + ": " + gap));
+  }
+  const found = comprehensive
+    ? Array.from({ length: Math.max(...groups.map((group) => group.length)) }, (_, index) =>
+        groups.flatMap((group) => group[index] ? [group[index]] : [])).flat()
+    : groups.flat();
+  const distinctCandidateUrls = new Set<string>();
   const direct = new Set(supplied),
     byDomain = new Map<string, number>();
   const candidates = [
@@ -192,13 +210,13 @@ export async function retrieveBroadReferences(
     })),
     ...found,
   ]
-    .filter(
-      (c, i, a) =>
-        !excluded(c.url) &&
-        a.findIndex((other) => other.url === c.url) === i &&
-        (direct.has(c.url) ||
-          articleCandidate(c.url, c.title, c.citedText, query)),
-    )
+    .filter((c) => {
+      if (excluded(c.url) || (!direct.has(c.url) && !articleCandidate(c.url, c.title, c.citedText, query))) return false;
+      const key = researchSourceKey(c.url);
+      if (distinctCandidateUrls.has(key)) return false;
+      distinctCandidateUrls.add(key);
+      return true;
+    })
     .filter((c) => {
       const domain = host(c.url),
         count = byDomain.get(domain) || 0;
@@ -218,7 +236,7 @@ export async function retrieveBroadReferences(
       candidates.slice(index, index + 3).map(async (c, offset) => {
         if ((request !== fetch && !pageReader) || bytes > 5 * 1024 * 1024 ||
             Date.now() + (quick ? 7000 : 12000) > deadline ||
-            (quick && index + offset >= Math.max(6, supplied.length))) {
+            (quick && !comprehensive && index + offset >= Math.max(6, supplied.length))) {
           if (!c.citedText) {
             gaps.push(
               `Supplied source at ${host(c.url)} was not read within this retrieval invocation/budget.`,
@@ -268,7 +286,7 @@ export async function retrieveBroadReferences(
     );
     citations.push(...(batch.filter(Boolean) as Record<string, unknown>[]));
   }
-  if (citations.length < 3 && (!quick || Date.now() + 12000 < deadline)) {
+  if (citations.length < (comprehensive ? limit : 3) && (!quick || Date.now() + 12000 < deadline)) {
     requests++;
     try {
       const lookup = retrievePublicReferences(query, request, now);
@@ -279,7 +297,13 @@ export async function retrieveBroadReferences(
       gaps.push("No additional accessible scholarly abstracts available.");
     }
   }
-  const uniqueUrls=citations.filter((c,i,a)=>a.findIndex(other=>other.url===c.url)===i);
+  const finalUrls = new Set<string>();
+  const uniqueUrls = citations.filter((citation) => {
+    const key = researchSourceKey(String(citation.url));
+    if (finalUrls.has(key)) return false;
+    finalUrls.add(key);
+    return true;
+  });
   const fingerprints=new Set<string>();let duplicatePassages=0;
   const unique=uniqueUrls.filter(c=>{const fingerprint=String(c.citedText).toLowerCase().replace(/\W+/g," ").trim();if(fingerprints.has(fingerprint)){duplicatePassages++;return false;}fingerprints.add(fingerprint);return true;}).slice(0,limit);
   if(duplicatePassages)gaps.push(`${duplicatePassages} repeated source passage(s) removed; different domains do not guarantee independent origins.`);

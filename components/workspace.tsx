@@ -17,7 +17,7 @@ import {activeStudioView, ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active
 import { IDEA_TEXT_ALTERNATIVES, type IdeaTextAlternative } from "@/lib/studio/idea-alternatives";
 import {ideaStage} from "@/lib/studio/idea-board";
 import {GenerationRulesStatus} from "./generation-rules-status";
-import {isLongForm} from "@/lib/studio/channel-writing";
+import {isLongForm, writingWordCount, writingWordTarget} from "@/lib/studio/channel-writing";
 import { AuthorizedJobProgress } from "./authorized-job-progress";
 import { JobCost } from "./job-cost";
 import { budgetMonth } from "@/lib/studio/time";
@@ -790,10 +790,10 @@ export default function Workspace() {
           value: "Text post",
           options: [
             "Text post",
+            "Article",
             "Carousel",
             "Image",
             "Video",
-            "Article",
             "Blog",
             "Newsletter",
             "Audio",
@@ -4556,6 +4556,8 @@ function Editor({
   const externalChange=draftSave.conflict;
   const linkedIdea = state.ideas.find((idea) => idea.id === c.ideaId);
   const savedResearchIds = c.researchJobIds ?? linkedIdea?.researchJobIds;
+  const wordTarget = writingWordTarget(c.channel, writeFormat);
+  const wordCount = wordTarget ? writingWordCount(text) : text.trim().split(/\s+/).filter(Boolean).length;
   const usedResearchFallback = local && state.jobs.some((job) =>
     job.id === c.generatedBy?.jobId && job.researchUnavailable,
   );
@@ -4803,7 +4805,7 @@ function Editor({
             />
             <p>
               {c.format} · {c.channel} {c.account ? `· ${c.account}` : ""}
-            </p><label className="s-field">Write as<select aria-label="Write as" value={writeFormat} disabled={readOnly||draftSave.busy} onChange={e=>setWriteFormat(e.target.value)}>{[...new Set([c.format,"Text post","Blog","Newsletter","Carousel","Image","Video","Audio"])].map(value=><option key={value}>{value}</option>)}</select></label><p className="s-muted">Changing format preserves your text. Save first, then explicitly revise with AI to adapt it. Blog: 4–10 min · Newsletter: 8–15 min, estimated at 200 words/minute. Estimated current read: {Math.max(1,Math.ceil(text.trim().split(/\s+/).filter(Boolean).length/200))} min.</p>
+            </p><label className="s-field">Write as<select aria-label="Write as" value={writeFormat} disabled={readOnly||draftSave.busy} onChange={e=>setWriteFormat(e.target.value)}>{[...new Set([c.format,"Text post","Article","Blog","Newsletter","Carousel","Image","Video","Audio"])].map(value=><option key={value} value={value}>{c.channel === "LinkedIn" && value === "Article" ? "LinkedIn article" : value}</option>)}</select></label><p className="s-muted">Changing format preserves your text. Save first, then explicitly revise with AI to adapt it. LinkedIn article: 800–1,200 words · Newsletter: 1,600–3,000 words. Estimated current read: {Math.max(1,Math.ceil(text.trim().split(/\s+/).filter(Boolean).length/200))} min.</p>
           </div>
           <div className="s-view-tabs s-editor-tabs">
             {[
@@ -4850,7 +4852,7 @@ function Editor({
                         "Generate with instructions",
                         [
                           field("notes", "Instructions and source material", "", "textarea"),
-                          field("publicQuery", c.channel === "Newsletter" ? "Public research topic (defaults to newsletter title)" : "Public research topic (optional)", defaultPublicQuery),
+                          field("publicQuery", "Public research topic (defaults to draft title)", defaultPublicQuery),
                           field("publicSourceUrls", "Public source links (one HTTPS URL per line)", "", "textarea"),
                         ],
                         (data) => draftGenerationCommand({
@@ -4962,7 +4964,7 @@ function Editor({
               {media.imageUrl&&<section className="s-version" aria-label="Attached main image"><AssetMedia source={media.imageUrl}/><p>{media.imageAlt||"AI-generated concept illustration"}</p><button className="s-btn" disabled={readOnly} onClick={()=>updateMedia({imageUrl:undefined,imageAlt:undefined,imageCaption:undefined})}>Remove main image</button><p>Save after removing. The stored original remains available in image request history.</p></section>}
 
               <div className="s-editor-wordcount">
-                {text.trim() ? text.trim().split(/\s+/).length : 0} words{" "}
+                {wordCount.toLocaleString("en-US")} words{wordTarget ? " before Sources" : ""}{" "}
                 <span>{text.length} characters</span>
               </div>
               <details className="s-version" open={notesOpen} onToggle={event => setNotesOpen(event.currentTarget.open)}><summary>Publication notes (optional)</summary>

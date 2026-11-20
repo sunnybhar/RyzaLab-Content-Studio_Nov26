@@ -14,14 +14,28 @@ export function isLongForm(channel?: Channel, format?: string) {
     (typeof format === "string" && /newsletter|article|blog/i.test(format))
   );
 }
+export function writingWordTarget(channel?: Channel, format?: string) {
+  if (channel === "Newsletter") return { label: "Newsletter", min: 1600, max: 3000 };
+  if (channel === "LinkedIn" && /article/i.test(format || ""))
+    return { label: "LinkedIn article", min: 800, max: 1200 };
+  if (isLongForm(channel, format)) return /blog/i.test(format || "")
+    ? { label: "Blog", min: 800, max: 2000 }
+    : { label: "Article", min: 1600, max: 3000 };
+  return undefined;
+}
+
+export function writingWordCount(text: string) {
+  const prose = text.split(/^\s*(?:#{1,6}\s+)?(?:Sources|References)\s*:?\s*$/im, 1)[0]
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/^\s*#{1,6}\s*/gm, "");
+  return prose.match(/[\p{L}\p{N}]+(?:[’'-][\p{L}\p{N}]+)*/gu)?.length ?? 0;
+}
+
 export function channelWritingContract(channel?: Channel, prompt?: string) {
   const format = writingFormat(prompt);
-  if (channel === "Newsletter" && prompt && newsletterTemplateFromPrompt(prompt)) {
-    return "NEWSLETTER: follow the selected template’s sections, tables, length and editorial guidance. Return one complete newsletter. Preserve supplied evidence and distinguish facts from inference. Flag missing facts and do not invent experiences, claims or citations.";
-  }
-  if (isLongForm(channel, format)) {
-    const blog = /blog/i.test(format || "");
-    return `${blog ? "BLOG: target 800–2,000 words, an estimated 4–10 minute read" : "NEWSLETTER / ARTICLE: target 1,600–3,000 words, an estimated 8–15 minute read"} at 200 words per minute. Write substantive evidence-led prose, not padding to meet a count. Include a title, background/introduction, descriptive Markdown ## section headings (preserve headings linked to existing images), relevant data when supported, reasoning, practical implications, limitations and conclusion. Use the selected structure/template when supplied. Cite only actual supplied source URLs or document sections and include a readable Sources section. Distinguish supported facts from inference; never invent numbers, dates, quotes, personal experiences or source access. If essential facts are missing, identify the specific gap rather than fabricate. Return an imageBrief, without claiming that any image was generated or verified. Output one complete ${blog ? "focused blog article" : "coherent newsletter with several related sections when multiple inputs are supplied"}, not a pack of alternative posts. PDF page count depends on the chosen layout, not word count alone.`;
+  const target = writingWordTarget(channel, format);
+  if (target) {
+    return `${target.label.toUpperCase()}: write ${target.min.toLocaleString("en-US")}–${target.max.toLocaleString("en-US")} words of original substantive copy, excluding the Sources bibliography (about ${target.min / 200}–${target.max / 200} minutes at 200 words per minute). Use the selected template for structure, sections, tables and design; the Studio word range takes precedence over the template’s length guidance. Use the supplied evidence for practical insights, comparisons and qualified numbers. Include an introduction, readable Markdown section headings and a Sources section. Distinguish facts, inference and uncertainty. Never invent data, sources, quotes, access or experience. Return one complete piece with an optional imageBrief.`;
   }
   return "SOCIAL POST: write one concise platform-appropriate post; for LinkedIn default to 180–250 words unless the user requests another length. Do not put a Sources bibliography or research report in the post body. Keep provenance in the separate sources field for editorial checking. No invented claims or personal experience.";
 }

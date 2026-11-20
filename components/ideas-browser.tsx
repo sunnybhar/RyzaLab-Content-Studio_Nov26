@@ -106,7 +106,7 @@ export function IdeasBrowser({
         !content.deletedAt,
     );
     setFormat(
-      existing?.format ||
+      onGenerateAlternatives && (targetChannel ?? idea.channel) === "LinkedIn" && (existing?.format ?? idea.format) !== "Article" ? "Text post" : existing?.format ||
         ([
           "Text post",
           "Carousel",
@@ -126,13 +126,15 @@ export function IdeasBrowser({
   function close() {
     dialog.current?.close();
   }
+  const linkedInFormat = (targetChannel ?? selected?.channel) === "LinkedIn";
+  const draftFormat = onGenerateAlternatives && !linkedInFormat ? (targetChannel === "Newsletter" ? "Newsletter" : "Text post") : format;
   const linkedDraft =
     selected &&
     contents.find(
       (content) =>
         content.ideaId === selected.id && !content.ideaTextAlternative &&
         (!targetChannel || content.channel === targetChannel) &&
-        content.format === (onGenerateAlternatives ? targetChannel === "Newsletter" ? "Newsletter" : "Text post" : format) &&
+        content.format === draftFormat &&
         content.account === account.trim() &&
         content.createdBy === actorEmail &&
         !content.deletedAt,
@@ -219,14 +221,14 @@ export function IdeasBrowser({
               )}
               {selected.state !== "rejected" && (
                 <div className="s-idea-create-options">
-                  {!onGenerateAlternatives && (
+                  {(!onGenerateAlternatives || linkedInFormat) && (
                   <label>
                     Draft format
                     <select
                       value={format}
                       onChange={(event) => setFormat(event.target.value)}
                     >
-                      {[
+                      {(onGenerateAlternatives ? ["Text post", "Article"] : [
                         "Text post",
                         "Carousel",
                         "Image",
@@ -235,8 +237,8 @@ export function IdeasBrowser({
           "Blog",
                         "Newsletter",
                         "Audio",
-                      ].map((option) => (
-                        <option key={option}>{option}</option>
+                      ]).map((option) => (
+                        <option key={option} value={option}>{linkedInFormat && option === "Article" ? "LinkedIn article · 800–1,200 words" : option}</option>
                       ))}
                     </select>
                   </label>
@@ -304,7 +306,7 @@ export function IdeasBrowser({
                       !canUse(selected, account.trim())
                     }
                     onClick={async () => {
-                      if (await onUse(selected, onGenerateAlternatives ? "Text post" : format, account.trim()))
+                      if (await onUse(selected, draftFormat, account.trim()))
                         close();
                     }}
                   >

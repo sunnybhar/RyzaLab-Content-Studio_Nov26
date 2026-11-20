@@ -1,7 +1,7 @@
 import {jobHasExcludedSupport,containsExcludedSource} from "./source-policy";
 import {suppliedReviewReferences} from "./review-references";
 import {correctionIsCurrent} from "./review-correction";
-import {isLongForm, newsletterTemplateFromPrompt} from "./channel-writing";
+import {isLongForm, newsletterTemplateFromPrompt, writingWordCount, writingWordTarget} from "./channel-writing";
 import {incompleteDraftBody,applyRecoveredWorkingText} from "./incomplete-draft";
 import { citesRyzaLab, retainNewsletterLinks } from "./newsletter-source";
 import { newsletterStructureIssue } from "./newsletter-outline";
@@ -151,10 +151,14 @@ export function settleWrittenOutput(
     if (template) {
       const issue = newsletterStructureIssue(template.sections, job.candidate.body);
       if (issue) job.candidate.questions.push(issue);
-    } else if(isLongForm(c.channel,c.format)){
-      const minWords=/blog/i.test(c.format)?800:1600;
-      if(job.candidate.body.trim().split(/\s+/).length<minWords)job.candidate.questions.push(`Expand this ${/blog/i.test(c.format)?"blog":"newsletter"} to at least ${minWords.toLocaleString("en-US")} substantive words with background, evidence, reasoning and practical guidance before review.`);
-      if(!job.candidate.sources.length&&!/^#{0,3}\s*(Sources|References)\s*:?$/im.test(job.candidate.body))job.candidate.questions.push("Add relevant source citations and a readable Sources section for this article before review.");
+    }
+    const target = writingWordTarget(c.channel, c.format);
+    if (target) {
+      const count = writingWordCount(job.candidate.body);
+      if (count < target.min || count > target.max)
+        job.candidate.questions.push(`Revise this ${target.label.toLowerCase()} to ${target.min.toLocaleString("en-US")}–${target.max.toLocaleString("en-US")} words. The draft has ${count.toLocaleString("en-US")} words before Sources.`);
+      if (!template && !job.candidate.sources.length && !/^#{0,3}\s*(Sources|References)\s*:?$/im.test(job.candidate.body))
+        job.candidate.questions.push("Add relevant source citations and a readable Sources section for this article before review.");
     }
     job.outputStatus = "ready";
     if (job.candidate.questions.length) {

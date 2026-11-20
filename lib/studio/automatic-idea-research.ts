@@ -1,3 +1,4 @@
+import { excludedResearchUrl } from "./source-policy";
 import {researchProfile} from "./research-profile";
 import {ideaResearchQuery,screenIdeaResearch} from "./idea-research-query";
 import type { Actor, StudioState } from "./types";
@@ -77,7 +78,17 @@ export async function automaticIdeaResearch(
     ).join("");
   const query=ideaResearchQuery(input.topic,input.audience);
   const saved=state.jobs.find(job=>job.idempotencyKey===researchKey&&job.createdBy===actor.email);
-  const result = screenIdeaResearch(saved?.result?JSON.parse(saved.result):await retrieve(query, undefined, now,researchProfile(state,input.channel)),input.topic,input.audience);
+  const profile = researchProfile(state, input.channel);
+  const sourceUrls = [...new Set((input.sourceText || "").split(/\r?\n/).map((line) => line.trim())
+    .filter((line) => /^https:\/\/\S+$/.test(line))
+    .filter((line) => !excludedResearchUrl(line) && !profile.excludedDomains.some((domain) => {
+      const host = new URL(line).hostname.toLowerCase();
+      return host === domain || host.endsWith(`.${domain}`);
+    })))].slice(0, 10);
+  const result = screenIdeaResearch(
+    saved?.result ? JSON.parse(saved.result) : await retrieve(query, undefined, now, profile, sourceUrls),
+    input.topic, input.audience,
+  );
   const next = applyCommand(
     state,
     actor,
@@ -85,6 +96,7 @@ export async function automaticIdeaResearch(
       type: "research.retrieve",
       channel: input.channel,
       query,
+      ...(sourceUrls.length ? { sourceUrls } : {}),
       idempotencyKey: researchKey,
     },
     { retrievalResult: result, now },
@@ -98,7 +110,8 @@ export async function automaticIdeaResearch(
         (job) =>
           job.createdBy === actor.email && job.idempotencyKey === researchKey,
       )!.id,
-    ],
+      ...(input.researchJobIds || []),
+    ].filter((id, index, all) => all.indexOf(id) === index).slice(0, 5),
   }) as Input;
   return { state: next, command, existing: false };
 }

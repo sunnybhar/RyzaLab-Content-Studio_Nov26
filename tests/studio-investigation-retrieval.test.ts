@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { jsPDF } from "jspdf";
 import { investigationPlan } from "../lib/studio/research-plan";
+import { requireResearchCoverage } from "../lib/studio/research-methodology";
 import { researchProfileSchema } from "../lib/studio/research-profile";
 import { retrieveBroadReferences } from "../lib/studio/web-discovery";
 import { publicPdfEvidence } from "../lib/studio/pdf-evidence";
@@ -97,4 +98,41 @@ test("searchable public PDFs retain page locators; unreadable or overlong PDFs f
     () => publicPdfEvidence(new Uint8Array(long.output("arraybuffer"))),
     /20-page/,
   );
+});
+
+test("comprehensive research examines fifteen distinct results across six search angles", async () => {
+  const queries: string[] = [];
+  const checked: string[] = [];
+  const request: typeof fetch = async (input) => {
+    const url = new URL(String(input));
+    queries.push(url.searchParams.get("q") || "");
+    const index = queries.length;
+    assert.equal(url.searchParams.get("count"), "8");
+    const items = Array.from({ length: 5 }, (_, offset) => {
+      const n = index * 5 + offset;
+      return `<item><title>Household control handoff source ${n}</title><link>https://publication${n}.example.org/reports/handoff</link><description>Household control handoff research shows specific methods, supported routines and explicit limitations for sample number ${n}.</description></item>`;
+    }).join("");
+    return new Response(`<rss><channel>${items}</channel></rss>`);
+  };
+  const result = await retrieveBroadReferences(
+    "household control handoff", request, "2026-11-20T02:00:00.000Z",
+    researchProfileSchema.parse({}), [], async (url) => {
+      checked.push(url);
+      return {
+        url, title: "Household control handoff", bytes: 500, requests: 1, publishedAt: "2026-01-01", author: "Researcher",
+        sourceKind: "article_text",
+        text: `Original household control handoff findings from ${url} measured routines with clearly described methods and limitations.`,
+      };
+    }, true, true,
+  );
+  assert.equal(queries.length, 12);
+  assert.ok(queries.some((query) => query.includes("YouTube")));
+  assert.equal(checked.length, 15);
+  assert.equal(result.citations.length, 15);
+  assert.equal(result.retrieval.coverage?.sourcesRead, 15);
+  const prompt = JSON.stringify({ webEvidence: [{ citations: result.citations }] });
+  assert.doesNotThrow(() => requireResearchCoverage(prompt));
+  const insufficient = JSON.stringify({ webEvidence: [{ citations: [...result.citations.slice(0, 9),
+    { url: result.citations[0].url + "?utm_source=duplicate#details" }] }] });
+  assert.throws(() => requireResearchCoverage(insufficient), /9 of 10 required/);
 });
