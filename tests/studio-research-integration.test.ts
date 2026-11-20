@@ -6,6 +6,7 @@ import {
   researchEvidence,
   researchJobInput,
 } from "../lib/studio/research-link";
+import { researchProfile } from "../lib/studio/research-profile";
 import { generationInput } from "../lib/studio/generation";
 import { ideaJobInput } from "../lib/studio/idea-generation";
 import { canDispatchJob } from "../lib/studio/dispatch-permissions";
@@ -378,7 +379,12 @@ test("a newsletter made from a post inherits its research and preserves idea lin
   let state = researchFixture();
   const original = state.contents[0];
   const idea = state.ideas[0];
-  idea.sources = ["An idea reference https://example.org/idea", "https://en.wikipedia.org/wiki/Excluded"];
+  idea.sources = ["An idea reference https://example.org/idea", "https://en.wikipedia.org/wiki/Excluded", "https://ryzalab.com/notes/house"];
+  assert.ok(researchProfile(state, "Newsletter").excludedDomains.includes("ryzalab.com"));
+  const stored = state.jobs.find((entry) => entry.id === "cited")!;
+  const evidence = JSON.parse(stored.result!);
+  evidence.citations.push({ url: "https://www.ryzalab.com/notes/house", title: "Brand reference", citedText: "Our own editorial article." });
+  stored.result = JSON.stringify(evidence);
   idea.researchJobIds = ["cited"];
   original.ideaId = idea.id;
   state.settings.defaultConnections = { text: "text" };
@@ -402,8 +408,11 @@ test("a newsletter made from a post inherits its research and preserves idea lin
     ...research, ...input, id: "newsletter-writer", outputContract: "draft_v1",
     researchSnapshots: [{ jobId: research.id, raw: research.result! }],
   };
-  const body = "A useful newsletter with a sourced observation.\n\n## Sources\n- [Existing article](https://example.com/source)";
-  settleWrittenOutput(state, job, { completion: "complete", text: JSON.stringify({ body }) }, now);
+  assert.equal(JSON.parse(input.prompt).webEvidence[0].citations.length, 1);
+  const body = "A useful newsletter with a sourced observation.\n\n## Sources\n- [Existing article](https://example.com/source)\n- RyzaLab, [House note](https://ryzalab.com/notes/house)";
+  settleWrittenOutput(state, job, { completion: "complete", text: JSON.stringify({ body, sources: ["RyzaLab, https://ryzalab.com/notes/house"] }) }, now);
+  assert.doesNotMatch(job.candidate?.body ?? "", /ryzalab/i);
+  assert.deepEqual(job.candidate?.sources, []);
   assert.match(job.candidate?.body ?? "", /## Sources\n\n- https:\/\/example.org\/idea/);
   assert.equal(job.candidate?.body?.match(/https:\/\/example.com\/source/g)?.length, 1);
 });

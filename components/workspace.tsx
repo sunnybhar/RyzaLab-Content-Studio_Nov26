@@ -4850,7 +4850,7 @@ function Editor({
                         "Generate with instructions",
                         [
                           field("notes", "Instructions and source material", "", "textarea"),
-                          field("publicQuery", "Public research topic (optional)", defaultPublicQuery),
+                          field("publicQuery", c.channel === "Newsletter" ? "Public research topic (defaults to newsletter title)" : "Public research topic (optional)", defaultPublicQuery),
                           field("publicSourceUrls", "Public source links (one HTTPS URL per line)", "", "textarea"),
                         ],
                         (data) => draftGenerationCommand({

@@ -1,5 +1,5 @@
 import type { Actor, Content, StudioState } from "./types";
-import { excludedResearchUrl } from "./source-policy";
+import { excludedResearchUrl, isRyzaLabSource } from "./source-policy";
 import { can } from "./permissions";
 
 /** Linked source is an intentional snapshot; generation still requires current source access. */
@@ -84,7 +84,7 @@ export function newsletterSourceProvenance(state: StudioState, content: Content)
 
 export function newsletterLinks(values: string[]) {
   const urls = values.flatMap((value) =>
-    (value.match(/https?:[^\s<>"\[\]]+/gi) || []).map((url) =>
+    (value.match(/https?:\/\/[^\s<>"\[\]]+/gi) || []).map((url) =>
       url.replace(/[.,;:!?]+$/, "").replace(/\)+$/, ""),
     ),
   );
@@ -98,16 +98,19 @@ export function newsletterLinks(values: string[]) {
   }))];
 }
 
+export function citesRyzaLab(value: string) {
+  return newsletterLinks([value]).some(isRyzaLabSource) || /^\s*(?:[-*]\s+)?RyzaLab\s*[,.:]/i.test(value);
+}
+
 export function retainNewsletterLinks(body: string, links: string[]) {
-  if (!links.length) return body;
   const lines = body.split("\n");
   const start = lines.findIndex((line) => /^\s*(?:#{1,6}\s+)?(?:Sources|References)\s*:?\s*$/i.test(line));
-  const end = start < 0 ? -1 : lines.findIndex((line, index) => index > start && /^\s*#{1,6}\s+/.test(line));
-  const existing = new Set(start < 0 ? [] : newsletterLinks(lines.slice(start + 1, end < 0 ? undefined : end)));
-  const remaining = newsletterLinks(links).filter((url) => !existing.has(url));
-  if (!remaining.length) return body;
-  const bullets = remaining.map((url) => `- ${url}`);
-  if (start < 0) return [body.trimEnd(), "## Sources", bullets.join("\n")].join("\n\n");
-  lines.splice(start + 1, 0, "", ...bullets, "");
+  const nextHeading = start < 0 ? -1 : lines.findIndex((line, index) => index > start && /^\s*#{1,6}\s+/.test(line));
+  const end = nextHeading < 0 ? lines.length : nextHeading;
+  const citations = start < 0 ? [] : lines.slice(start + 1, end).filter((line) => !citesRyzaLab(line));
+  const existing = new Set(newsletterLinks(citations));
+  const bullets = newsletterLinks(links).filter((url) => !isRyzaLabSource(url) && !existing.has(url)).map((url) => `- ${url}`);
+  if (start < 0) return bullets.length ? [body.trimEnd(), "## Sources", bullets.join("\n")].join("\n\n") : body;
+  lines.splice(start + 1, end - start - 1, ...(bullets.length ? ["", ...bullets] : []), ...citations);
   return lines.join("\n");
 }

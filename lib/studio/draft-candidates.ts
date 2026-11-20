@@ -3,7 +3,7 @@ import {suppliedReviewReferences} from "./review-references";
 import {correctionIsCurrent} from "./review-correction";
 import {isLongForm, newsletterTemplateFromPrompt} from "./channel-writing";
 import {incompleteDraftBody,applyRecoveredWorkingText} from "./incomplete-draft";
-import { retainNewsletterLinks } from "./newsletter-source";
+import { citesRyzaLab, retainNewsletterLinks } from "./newsletter-source";
 import { newsletterStructureIssue } from "./newsletter-outline";
 import type { Content, Job, StudioState } from "./types";
 import {
@@ -144,6 +144,7 @@ export function settleWrittenOutput(
         if (Array.isArray(values)) links = values.filter((value): value is string => typeof value === "string");
       } catch {}
       job.candidate.body = retainNewsletterLinks(job.candidate.body, links);
+      job.candidate.sources = job.candidate.sources.filter((line) => !citesRyzaLab(line));
     }
     if(job.candidate.imageCaptions?.some(image=>!(image.imageId==="hero"&&c.media.imageUrl)&&!c.media.sectionImages?.some(existing=>existing.id===image.imageId))){job.outputStatus="invalid";job.error="The candidate referenced an image that was not supplied. Original copy and assets were preserved.";return;}
     const template = c.channel === "Newsletter" ? newsletterTemplateFromPrompt(job.prompt) : undefined;

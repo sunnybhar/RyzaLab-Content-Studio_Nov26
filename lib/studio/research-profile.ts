@@ -1,4 +1,4 @@
-import { excludedResearchUrl } from "./source-policy";
+import { excludedResearchUrl, isRyzaLabSource, ryzaLabDomain } from "./source-policy";
 import { z } from "zod";
 import type { Channel, StudioState } from "./types";
 export const researchProfileSchema = z
@@ -49,9 +49,14 @@ export function researchProfile(state: StudioState, channel: Channel) {
   const file = state.agentRuleFiles?.find(
     (f) => f.channel === channel && f.slot === "source_preferences",
   );
-  if (!file?.extractedText) return researchProfileSchema.parse({});
   try {
-    return researchProfileSchema.parse(JSON.parse(file.extractedText));
+    const profile = researchProfileSchema.parse(file?.extractedText ? JSON.parse(file.extractedText) : {});
+    if (channel !== "Newsletter") return profile;
+    return {
+      ...profile,
+      preferredDomains: profile.preferredDomains.filter((domain) => !isRyzaLabSource(`https://${domain}`)),
+      excludedDomains: [...new Set([...profile.excludedDomains, ryzaLabDomain])],
+    };
   } catch {
     throw Error(
       "Source Preferences must contain valid JSON using the supplied template. Edit and save it in Agent Rules.",

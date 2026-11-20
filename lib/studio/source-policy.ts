@@ -10,6 +10,17 @@ export function excludedResearchUrl(value: string) {
     return true;
   }
 }
+export const ryzaLabDomain = "ryzalab.com";
+
+export function isRyzaLabSource(url: string) {
+  try {
+    const host = new URL(url).hostname.toLowerCase().replace(/\.$/, "");
+    return host === ryzaLabDomain || host.endsWith(`.${ryzaLabDomain}`);
+  } catch {
+    return false;
+  }
+}
+
 export function articleCandidate(
   url: string,
   title: string,
@@ -70,11 +81,11 @@ export function eligibleEvidence<
     claims?: { sourceUrls: string[]; text?: string }[];
     summary?: string;
   },
->(items: T[]): T[] {
+>(items: T[], additionalExclusion?: (url: string) => boolean): T[] {
   return items
     .map((item) => {
       const citations = item.citations.filter(
-          (c) => !excludedResearchUrl(c.url),
+          (c) => !excludedResearchUrl(c.url) && !additionalExclusion?.(c.url),
         ),
         allowed = new Set(citations.map((c) => c.url));
       const claims = item.claims?.filter(

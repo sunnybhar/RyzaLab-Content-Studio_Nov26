@@ -1,3 +1,4 @@
+import { isRyzaLabSource } from "./source-policy";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -571,8 +572,14 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
       newsletterTemplate: templateBytes instanceof Uint8Array ? await newsletterWritingGuidance(templateBytes) : undefined,
     };
     prepared = generationInput(configured, DEMO_ACTOR, writing);
-    const query = typeof publicQuery === "string" ? publicQuery.trim() : "";
-    const hasLinks = Array.isArray(publicSourceUrls) && publicSourceUrls.length > 0;
+    const newsletter = draft?.channel === "Newsletter" && parsed.kind === "text";
+    const requestedQuery = typeof publicQuery === "string" ? publicQuery.trim() : "";
+    const title = draft?.title.trim() ?? "";
+    const query = requestedQuery || (newsletter ? (title.length >= 5 ? title : `${title} background`.trim()) : "");
+    const sourceUrls = newsletter && Array.isArray(publicSourceUrls)
+      ? publicSourceUrls.filter((url) => typeof url !== "string" || !isRyzaLabSource(url))
+      : publicSourceUrls;
+    const hasLinks = Array.isArray(sourceUrls) && sourceUrls.length > 0;
     if (draft && parsed.kind === "text" && (query || hasLinks)) {
       // Check the monthly budget before spending time on public retrieval.
       enqueue(configured, prepared);
@@ -582,7 +589,7 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
         contentId: draft.id,
         expectedRevision: parsed.expectedRevision,
         query: query || draft.title,
-        sourceUrls: publicSourceUrls,
+        sourceUrls,
         idempotencyKey: `writing-research:${parsed.idempotencyKey}`,
       });
       if (input.type !== "research.retrieve") throw new StudioError(400, "Invalid research request.");
@@ -602,6 +609,8 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
         }
       } catch (error) {
         if (!publicEvidenceUnavailable(error)) throw error;
+        if (newsletter && !prepared.researchJobIds.length)
+          throw new StudioError(503, "Online search found no usable independent sources for this newsletter. Try a more specific research topic or add an accessible external article. No paid writing request was sent.");
         researchUnavailable = true;
         prepared = generationInput(configured, DEMO_ACTOR, {
           ...writing,
