@@ -137,3 +137,20 @@ test("non-commercial uses of free do not block approval", () => {
   assert.deepEqual(packageReadiness(state.contents[0], state, true).priceLines, []);
   assert.equal(approve(state).packages.length, 1);
 });
+
+test("returning a newsletter to draft preserves the saved material and invalidates the review revision", () => {
+  const state = fixture();
+  const draft = state.contents[0];
+  draft.channel = "Newsletter";
+  draft.state = "review";
+  draft.reviewSubmission = { id: "submission", identity: "reviewed", actor: DEMO_ACTOR.email, at: draft.updatedAt };
+  const command = { type: "content.returnToDraft", id: draft.id, expectedRevision: draft.revision };
+  assert.throws(() => applyCommand(state, DEMO_ACTOR, { ...command, expectedRevision: draft.revision + 1 }), /changed/);
+
+  const next = applyCommand(state, DEMO_ACTOR, command).contents[0];
+  assert.equal(next.state, "draft");
+  assert.equal(next.revision, draft.revision + 1);
+  assert.equal(next.reviewSubmission, undefined);
+  assert.equal(next.text, draft.text);
+  assert.deepEqual(next.media, draft.media);
+});

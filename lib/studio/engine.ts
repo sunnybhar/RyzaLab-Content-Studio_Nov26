@@ -1032,6 +1032,18 @@ export function applyCommand(
       const saved = applyCommand(input, actor, {type:"content.save",id:d.id,expectedRevision:c.expectedRevision,title:d.title,text:c.text,metadata:c.metadata,media:d.media,collection:d.collection},ctx);
       return applyCommand(saved, actor, {type:"content.submit",id:d.id},ctx);
     }
+    case "content.returnToDraft": {
+      const d = content(c.id);
+      if (d.deletedAt || (d.state !== "review" && d.state !== "changes"))
+        bad("Only content in review or with requested changes can return to draft.");
+      if (d.revision !== c.expectedRevision)
+        throw new StudioError(409, "This newsletter changed. Reopen it before returning it to draft.");
+      remember(d, "Returned to draft for editing");
+      d.reviewSubmission = undefined;
+      d.automaticReview = undefined;
+      d.reviewCycle = undefined;
+      break;
+    }
     case "content.submit": {
       const d = content(c.id);
       if (!soloPolicy(s) && inputRequirements(d).length) bad("Resolve the highlighted items in Needs your input before submitting for review. Replace them with verified details or rewrite the unsupported passage.");

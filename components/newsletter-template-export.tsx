@@ -36,7 +36,7 @@ export async function downloadTemplatedNewsletter(templateId: string, title: str
 }
 
 export function NewsletterTemplateExport({
-  contentId, title, text, children, onAdapt, generationBusy, adaptingSince, adaptDisabled, draftDirty, savingDraft, adaptError,
+  contentId, title, text, children, onAdapt, generationBusy, adaptingSince, adaptDisabled, draftDirty, savingDraft, adaptError, returnToDraft,
 }: {
   contentId: string;
   title: string;
@@ -49,6 +49,7 @@ export function NewsletterTemplateExport({
   draftDirty: boolean;
   savingDraft: boolean;
   adaptError?: string;
+  returnToDraft?: () => void;
 }) {
   const [library, setLibrary] = useState<Library>({ templates: [], selected: null, outline: [] });
   const [busy, setBusy] = useState(false);
@@ -141,7 +142,16 @@ export function NewsletterTemplateExport({
               ))}</ol>
             </details>
           )}
-          {structureIssue && <p role="status">Write with this template before downloading. {structureIssue}</p>}
+          {structureIssue && (
+            <>
+              <p role="status">{structureIssue}</p>
+              {returnToDraft ? (
+                <button type="button" className="s-btn" disabled={busy || generationBusy} onClick={returnToDraft}>
+                  Return to draft to fix template
+                </button>
+              ) : <p>Write with this template before downloading.</p>}
+            </>
+          )}
           <div className="s-actions">
             <button type="button" className="s-btn" disabled={busy || generationBusy || !!structureIssue || !text.trim()} onClick={() => void perform(() => downloadTemplatedNewsletter(library.selected!, title, text, "docx"))}>Download newsletter DOCX</button>
             <button type="button" className="s-btn s-primary" disabled={busy || generationBusy || !!structureIssue || !text.trim()} onClick={() => void perform(() => downloadTemplatedNewsletter(library.selected!, title, text, "pdf"))}>Download newsletter PDF</button>

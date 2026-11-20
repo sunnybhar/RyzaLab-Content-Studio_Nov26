@@ -203,6 +203,7 @@ export const commandSchema = z.discriminatedUnion("type", [
   command("content.image.apply", { contentId: id, jobId: id, expectedRevision: z.number().int().positive(), alt: z.string().trim().min(1).max(1000), caption:z.string().max(1000).optional(), sectionKey:z.string().max(600).optional(), slideId: id.optional() }),
   command("content.reviewEdit", { id, expectedRevision: z.number().int().positive(), text, metadata: text }),
   command("content.submit", { id }),
+  command("content.returnToDraft", { id, expectedRevision: z.number().int().positive() }),
   command("content.restore", { id, revisionId: id }),
   command("content.trash", { id }),
   command("content.untrash", { id }),

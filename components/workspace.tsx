@@ -2910,7 +2910,15 @@ export default function Workspace() {
                       <Badge tone="amber">Review requested</Badge>
                     </div>
                     <h2>{c.title}</h2>
-                    <ReviewPostPreview key={c.revision} content={c} local={local} AssetMedia={AssetMedia} />
+                    <ReviewPostPreview key={c.revision} content={c} local={local} AssetMedia={AssetMedia}
+                      returnToDraft={local && c.channel === "Newsletter" && allowed("content.edit", { channel: c.channel, account: c.account, contentId: c.id, assignedTo: c.assignedTo })
+                        ? async () => {
+                          const returned = await execute({ type: "content.returnToDraft", id: c.id, expectedRevision: c.revision }, "Newsletter returned to draft.");
+                          if (returned) openContent(c);
+                          return returned;
+                        }
+                        : undefined}
+                    />
                     <ReviewContentEditor AssetMedia={AssetMedia} content={c} canEdit={allowed("content.edit", {channel:c.channel,account:c.account,contentId:c.id,assignedTo:c.assignedTo})} send={send} onEditing={editing=>setReviewEditing(editing ? c.id : null)} openDraft={()=>openContent(c)} />
                     {reviewEditing === c.id ? <p>Save and submit your changes above to continue the review.</p> : (
                       <SoloReview key={`${c.id}:${c.revision}`} content={c} state={state} actor={actor} send={send} refresh={() => refresh(true)} progressJob={progressAuthorizedJob} demo={mode === "demo"} local={local}
@@ -4914,6 +4922,9 @@ function Editor({
                   draftDirty={dirty}
                   savingDraft={draftSave.busy}
                   adaptError={draftGenerationError?.kind === "template" ? draftGenerationError.message : undefined}
+                  returnToDraft={!editorReadOnly && !dirty && !externalChange && (c.state === "review" || c.state === "changes")
+                    ? () => void run({ type: "content.returnToDraft", id: c.id, expectedRevision: c.revision }, "Newsletter returned to draft.")
+                    : undefined}
                   adaptDisabled={readOnly || externalChange || busy || draftSave.busy || draftSave.status === "unknown" || c.state !== "draft"}
                 >
                   {documentDownloads}

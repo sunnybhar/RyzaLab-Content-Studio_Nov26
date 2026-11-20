@@ -6,15 +6,17 @@ import { checkedNewsletterResponse, downloadTemplatedNewsletter, newsletterTempl
 import { PostPreview } from "./post-preview";
 
 export function ReviewPostPreview({
-  content, local, AssetMedia,
+  content, local, AssetMedia, returnToDraft,
 }: {
   content: Content;
   local: boolean;
+  returnToDraft?: () => Promise<boolean>;
   AssetMedia: ComponentType<{ source: string; kind?: "image" | "video" | "audio" }>;
 }) {
   const [open, setOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
+  const [returning, setReturning] = useState(false);
   const { id, title, text, channel, format, account, media } = content;
   const newsletter = local && channel === "Newsletter";
 
@@ -48,7 +50,23 @@ export function ReviewPostPreview({
           {newsletter ? "Show reading preview" : "Preview post"}
         </button>
       </div>
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <div className="s-alert s-error" role="alert">
+          <p>{error}</p>
+          {returnToDraft && (
+            <button type="button" className="s-btn" disabled={returning} onClick={async () => {
+              setReturning(true);
+              try {
+                if (!await returnToDraft()) setError("Could not return this newsletter to draft. Refresh and try again.");
+              } finally {
+                setReturning(false);
+              }
+            }}>
+              {returning ? "Returning to draft…" : "Return to draft to fix template"}
+            </button>
+          )}
+        </div>
+      )}
       {open && <PostPreview title={title} text={text} account={account} channel={channel} format={format}
         media={media} unsaved={false} AssetMedia={AssetMedia} onClose={() => setOpen(false)} />}
     </>
