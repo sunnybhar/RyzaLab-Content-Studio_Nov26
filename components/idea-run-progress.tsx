@@ -60,8 +60,10 @@ export function IdeaRunProgress({
   const stages = [
     [
       "1. Research",
-      sourceCount
-        ? `${sourceCount} saved research result(s)`
+      job?.researchUnavailable
+        ? "No usable public evidence"
+        : sourceCount
+          ? `${sourceCount} saved research result(s)`
         : job
           ? "No linked research"
           : requestError
@@ -119,6 +121,9 @@ export function IdeaRunProgress({
             </p>
           )}
         </div>
+      )}
+      {job?.researchUnavailable && (
+        <p role="status">These ideas are provisional. Verify factual claims and add sources before using them.</p>
       )}
       <ol>
         {stages.map(([name, status]) => (

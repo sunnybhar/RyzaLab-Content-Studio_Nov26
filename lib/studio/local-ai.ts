@@ -412,6 +412,8 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
     return { ...current, job: previousJob };
   }
 
+  if (state.settings.monthlyCap === 0)
+    throw new StudioError(409, "Set a positive Monthly AI budget in Spending before generating.");
   function configureLocalState(source: StudioState) {
     const next = structuredClone(source);
     const defaults = next.settings.defaultConnections ??= {};
@@ -445,14 +447,33 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
 
   let configured = configureLocalState(state);
   let prepared;
+  let researchUnavailable = false;
   if (parsed.type === "idea.generate") {
     if (parsed.automaticResearch) {
-      const researched = await automaticIdeaResearch(configured, DEMO_ACTOR, parsed, retrieveLocalReferences, undefined, async (snapshot) => {
-        const saved = withDatabase((db) => write(db, currentRevision, restoreLocalConfiguration(structuredClone(snapshot))));
-        currentRevision = saved.revision;
-      });
-      configured = researched.state;
-      prepared = ideaJobInput(configured, DEMO_ACTOR, researched.command);
+      try {
+        const researched = await automaticIdeaResearch(configured, DEMO_ACTOR, parsed, retrieveLocalReferences, undefined, async (snapshot) => {
+          const saved = withDatabase((db) => write(db, currentRevision, restoreLocalConfiguration(structuredClone(snapshot))));
+          currentRevision = saved.revision;
+        });
+        configured = researched.state;
+        prepared = ideaJobInput(configured, DEMO_ACTOR, researched.command);
+      } catch (error) {
+        const noPublicEvidence = error instanceof StudioError && (
+          (error.code === 504 && error.message.startsWith("Public research took longer")) ||
+          (error.code === 503 && error.message.startsWith("No relevant non-Wikipedia evidence")) ||
+          (error.code === 422 && error.message.startsWith("The retrieved references did not match"))
+        );
+        if (!noPublicEvidence) throw error;
+        researchUnavailable = true;
+        prepared = ideaJobInput(configured, DEMO_ACTOR, {
+          ...parsed,
+          research: false,
+          researchJobIds: [],
+          sourceText: [parsed.sourceText,
+            "Public research returned no usable evidence. Propose provisional angles and questions to verify. Do not invent citations or state unverified claims as facts.",
+          ].filter(Boolean).join("\n\n"),
+        });
+      }
     } else {
       prepared = ideaJobInput(configured, DEMO_ACTOR, parsed);
     }
@@ -505,6 +526,7 @@ export async function localAI(withDatabase: Database, revision: number, unknown:
   const job = next.jobs.find((j) => j.idempotencyKey === prepared.idempotencyKey)!;
   job.state = "running";
   job.attempt = 1;
+  if (researchUnavailable) job.researchUnavailable = true;
   job.leaseId = crypto.randomUUID();
   job.dispatchStartedAt = new Date().toISOString();
   withDatabase((db) => write(db, currentRevision, next));

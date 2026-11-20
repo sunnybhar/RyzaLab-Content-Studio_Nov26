@@ -96,6 +96,7 @@ export interface Idea {
   audience?: string;
   format?: string;
   generationRunId?: string;
+  researchUnavailable?: true;
 }
 export type SlideLayer = {
   id: string;
@@ -411,6 +412,7 @@ export interface Job {
   leaseUntil?: string;
   dispatchStartedAt?: string;
   localVideoOperation?: string;
+  researchUnavailable?: true;
 }
 export interface Notice {
   id: string;

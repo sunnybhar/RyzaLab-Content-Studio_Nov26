@@ -202,6 +202,7 @@ export function IdeasBrowser({
                   <p className="s-idea-detail-text">{selected.rejection}</p>
                 </>
               )}
+              {selected.researchUnavailable && <p role="status">Provisional idea · public evidence wasn’t available.</p>}
               {renderResearch?.(selected)}
               {!!selected.sources?.length && (
                 <>
