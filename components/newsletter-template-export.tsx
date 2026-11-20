@@ -1,5 +1,6 @@
 "use client";
 
+import { DraftGenerationProgress } from "./draft-generation-progress";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { newsletterStructureIssue, type NewsletterSection } from "@/lib/studio/newsletter-outline";
@@ -21,14 +22,15 @@ export function newsletterFilename(title: string, format: "pdf" | "docx") {
 }
 
 export function NewsletterTemplateExport({
-  contentId, title, text, children, onAdapt, adapting, adaptDisabled,
+  contentId, title, text, children, onAdapt, generationBusy, adaptingSince, adaptDisabled,
 }: {
   contentId: string;
   title: string;
   text: string;
   children: ReactNode;
   onAdapt: () => void;
-  adapting: boolean;
+  generationBusy: boolean;
+  adaptingSince?: number;
   adaptDisabled: boolean;
 }) {
   const [library, setLibrary] = useState<Library>({ templates: [], selected: null, outline: [] });
@@ -102,7 +104,7 @@ export function NewsletterTemplateExport({
       <h3>Newsletter template</h3>
       <label className="s-field">
         Upload Word templates
-        <input type="file" multiple accept=".docx" disabled={busy || loading || adapting}
+        <input type="file" multiple accept=".docx" disabled={busy || loading || generationBusy}
           onChange={(event) => {
             const files = Array.from(event.currentTarget.files || []);
             event.currentTarget.value = "";
@@ -111,7 +113,7 @@ export function NewsletterTemplateExport({
       </label>
       <label className="s-field">
         Template for this newsletter
-        <select value={library.selected ?? ""} disabled={busy || loading || adapting}
+        <select value={library.selected ?? ""} disabled={busy || loading || generationBusy}
           onChange={(event) => void perform(() => choose(event.target.value))}>
           <option value="">Standard layout</option>
           {library.templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
@@ -121,9 +123,10 @@ export function NewsletterTemplateExport({
       {message && <p role="status">{message}</p>}
       {loading ? <p role="status">Loading newsletter template…</p> : library.selected ? (
         <>
-          <button type="button" className="s-btn" disabled={busy || adapting || adaptDisabled} onClick={onAdapt}>
-            {adapting ? "Writing with template…" : "Write with this template"}
+          <button type="button" className="s-btn" disabled={busy || generationBusy || adaptDisabled} onClick={onAdapt}>
+            {adaptingSince != null ? "Writing with template…" : "Write with this template"}
           </button>
+          {adaptingSince != null && <DraftGenerationProgress label="Writing with this template…" startedAt={adaptingSince} />}
           <p>Studio uses the template’s sections and editorial instructions to revise the saved draft. Review the result before exporting.</p>
           {library.outline.length > 0 && (
             <details>
@@ -135,8 +138,8 @@ export function NewsletterTemplateExport({
           )}
           {structureIssue && <p role="status">Write with this template before downloading. {structureIssue}</p>}
           <div className="s-actions">
-            <button type="button" className="s-btn" disabled={busy || adapting || !!structureIssue || !text.trim()} onClick={() => void perform(() => download("docx"))}>Download newsletter DOCX</button>
-            <button type="button" className="s-btn s-primary" disabled={busy || adapting || !!structureIssue || !text.trim()} onClick={() => void perform(() => download("pdf"))}>Download newsletter PDF</button>
+            <button type="button" className="s-btn" disabled={busy || generationBusy || !!structureIssue || !text.trim()} onClick={() => void perform(() => download("docx"))}>Download newsletter DOCX</button>
+            <button type="button" className="s-btn s-primary" disabled={busy || generationBusy || !!structureIssue || !text.trim()} onClick={() => void perform(() => download("pdf"))}>Download newsletter PDF</button>
           </div>
           <p>Uses the Word template’s embedded cover and styles. PDF export uses LibreOffice installed on this computer.</p>
         </>

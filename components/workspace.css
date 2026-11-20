@@ -4379,3 +4379,10 @@
 .studio-v2 .s-solo-review > :is(details,p,section) + :is(details,p,section){margin-top:16px}
 .studio-v2 .s-modal .s-actions,.studio-v2 .s-editor-main .s-actions{gap:12px;flex-wrap:wrap}
 @media(max-width:640px){.studio-v2 .pipeline-import,.studio-v2 .existing-pipeline{padding:16px}.studio-v2 .s-main-content > :is(.s-panel,.s-toolbar,.s-calendar-toolbar,.s-info-strip,.s-review-grid) + :is(.s-panel,.s-toolbar,.s-calendar-toolbar,.s-info-strip,.s-review-grid){margin-block-start:20px}}
+
+.studio-v2 .s-draft-generation-progress progress {
+  display: block;
+  width: 100%;
+  height: 0.75rem;
+  accent-color: var(--s-accent);
+}

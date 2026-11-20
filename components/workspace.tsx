@@ -85,6 +85,7 @@ import {IdeaEvidence} from "./idea-evidence";
 import { researchEvidence } from "@/lib/studio/research-link";
 import { copyIdentity } from "@/lib/studio/solo-quality";
 import { ReviewPostPreview } from "./review-post-preview";
+import { DraftGenerationProgress } from "./draft-generation-progress";
 import { PostPreview } from "./post-preview";
 import { HighlightedTextarea } from "./highlighted-textarea";
 import { ReviewContentEditor } from "./review-content-editor";
@@ -167,6 +168,7 @@ type Dialog = {
   description?: string;
   fields: Field[];
   submit: string;
+  writing?: boolean;
   onSubmit: (data: FormData) => Promise<void>;
 };
 const nav = [
@@ -662,6 +664,7 @@ export default function Workspace() {
     command: (d: FormData) => Command,
     description?: string,
     submit = "Save changes",
+    writing = false,
   ) {
     document
       .querySelector<HTMLDialogElement>(".s-review-dialog[open]")
@@ -672,6 +675,7 @@ export default function Workspace() {
       fields,
       description,
       submit,
+      writing,
       onSubmit: async (d) => {
         if (await execute(command(d))) setDialog(null);
       },
@@ -4121,6 +4125,7 @@ export default function Workspace() {
               {dialog.fields.map((f) => (
                 <FieldInput key={f.name} item={f} />
               ))}
+              {busy && dialog.writing && <DraftGenerationProgress />}
               <div className="s-modal-actions">
                 <button
                   type="button"
@@ -4131,7 +4136,7 @@ export default function Workspace() {
                   Cancel
                 </button>
                 <button className="s-btn s-primary" disabled={busy}>
-                  {busy ? "Saving…" : dialog.submit}
+                  {busy ? (dialog.writing ? "Generating…" : "Saving…") : dialog.submit}
                 </button>
               </div>
             </form>
@@ -4505,6 +4510,7 @@ function Editor({
     command: (d: FormData) => Command,
     description?: string,
     submit?: string,
+    writing?: boolean,
   ) => void;
   onError: (e: string) => void;
   refresh: (force?:boolean) => Promise<void>;
@@ -4512,12 +4518,12 @@ function Editor({
   queue: (kind?: FunctionKind) => void;
   newsletter?: () => Promise<boolean>;
 }) {
-  const [generatingDraft, setGeneratingDraft] = useState(false);
+  const [generatingDraft, setGeneratingDraft] = useState<{ kind: "draft" | "template"; startedAt: number }>();
   const [draftGenerationError, setDraftGenerationError] = useState("");
   const generationLock = useRef(false);
   const writingInFlight = state.settings.reviewPolicy?.mode === "two_step" && state.jobs.some((job) => job.contentId === c.id && job.kind === "text" && job.outputContract === "draft_v1" && ["queued", "running"].includes(job.state));
   // Prevent local edits while the worker may apply a result to the saved revision.
-  const readOnly = editorReadOnly || generatingDraft || Boolean(writingInFlight) || (state.settings.reviewPolicy?.mode === "two_step" && busy);
+  const readOnly = editorReadOnly || Boolean(generatingDraft) || Boolean(writingInFlight) || (state.settings.reviewPolicy?.mode === "two_step" && busy);
   const [writeFormat,setWriteFormat]=useState(c.format);
   const [title, setTitle] = useState(c.title);
   const [text, setText] = useState(c.text);
@@ -4566,7 +4572,7 @@ function Editor({
   async function generateSavedDraft(useExistingSources = false) {
     if (generationLock.current || readOnly || dirty || externalChange || busy) return;
     generationLock.current = true;
-    setGeneratingDraft(true);
+    setGeneratingDraft({ kind: useExistingSources ? "template" : "draft", startedAt: Date.now() });
     setDraftGenerationError("");
     try {
       await send(draftGenerationCommand({ publicQuery: useExistingSources ? "" : defaultPublicQuery }));
@@ -4574,7 +4580,7 @@ function Editor({
       setDraftGenerationError(error instanceof Error ? error.message : "Draft generation failed. Check Generation activity.");
     } finally {
       generationLock.current = false;
-      setGeneratingDraft(false);
+      setGeneratingDraft(undefined);
     }
   }
   const documentDownloads = isLongForm(c.channel,c.format)&&<section aria-label={/blog/i.test(c.format)?"Download blog":"Download newsletter"} className="s-actions"><button className="s-btn" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"docx",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined,imageAlt:media.imageAlt,imageCaption:media.imageCaption,sectionImages:includeNewsletterImage?media.sectionImages:undefined,onExported:result=>setExportPages(result.pages)}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} DOCX</button><button className="s-btn s-primary" disabled={!text.trim()} onClick={()=>void exportContentDocument(title,text,c.revision,"pdf",{layout:documentLayout,imageUrl:includeNewsletterImage?media.imageUrl:undefined,imageAlt:media.imageAlt,imageCaption:media.imageCaption,sectionImages:includeNewsletterImage?media.sectionImages:undefined,onExported:result=>setExportPages(result.pages)}).catch(e=>onError(String(e)))}>Export {/blog/i.test(c.format)?"blog":"newsletter"} PDF</button>{(media.imageUrl||media.sectionImages?.length)&&<label><input type="checkbox" checked={includeNewsletterImage} onChange={e=>setIncludeNewsletterImage(e.target.checked)}/> Include attached images</label>}<p>Downloads use the content above automatically. No copy/paste or image is required.</p>{exportPages&&<p>Last PDF: {exportPages} pages in the selected layout.</p>}{documentLayoutFile&&!documentLayout&&<p>The uploaded layout is reference guidance. Export uses the default design until valid layout JSON settings are saved in Agent Rules.</p>}</section>;
@@ -4836,11 +4842,12 @@ function Editor({
                         }),
                         "Studio uses your saved sources and instructions. The model request uses your monthly AI budget.",
                         "Generate draft",
+                        true,
                       )}>
                       Add instructions or sources
                     </button>
                   </div>
-                  {generatingDraft && <p role="status">Generating copy with your writing model. It will appear here when saved.</p>}
+                  {generatingDraft?.kind === "draft" && <DraftGenerationProgress startedAt={generatingDraft.startedAt} />}
                   {draftGenerationError && <p role="alert">{draftGenerationError}</p>}
                 </>
               )}
@@ -4892,7 +4899,8 @@ function Editor({
               {local && c.channel === "Newsletter" ? (
                 <NewsletterTemplateExport key={c.id} contentId={c.id} title={title} text={text}
                   onAdapt={() => void generateSavedDraft(true)}
-                  adapting={generatingDraft}
+                  generationBusy={Boolean(generatingDraft) || busy}
+                  adaptingSince={generatingDraft?.kind === "template" ? generatingDraft.startedAt : undefined}
                   adaptDisabled={readOnly || dirty || externalChange || busy || c.state !== "draft"}
                 >
                   {documentDownloads}
@@ -4905,7 +4913,7 @@ function Editor({
                   {templateCandidate.candidate.questions.length > 0 && (
                     <ul>{templateCandidate.candidate.questions.map((question, index) => <li key={index}>{question}</li>)}</ul>
                   )}
-                  <button type="button" className="s-btn" disabled={readOnly || dirty || externalChange || busy || generatingDraft}
+                  <button type="button" className="s-btn" disabled={readOnly || dirty || externalChange || busy || Boolean(generatingDraft)}
                     onClick={() => void run({
                       type: "job.editDraft", jobId: templateCandidate.id, expectedRevision: c.revision,
                     }, "Template revision opened for editing.")}>
