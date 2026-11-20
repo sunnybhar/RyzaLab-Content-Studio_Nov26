@@ -4814,7 +4814,7 @@ function Editor({
                 onChange={(e) => setText(e.target.value)}
               />
               {local && c.channel === "Newsletter" ? (
-                <NewsletterTemplateExport contentId={c.id} title={title} text={text}
+                <NewsletterTemplateExport key={c.id} contentId={c.id} title={title} text={text}
                   onAdapt={() => void generateSavedDraft(true)}
                   adapting={generatingDraft}
                   adaptDisabled={readOnly || dirty || externalChange || busy || c.state !== "draft"}

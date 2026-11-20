@@ -5,7 +5,7 @@ import { DatabaseSync } from "node:sqlite";
 import { z } from "zod";
 import { allowedLocalRequest } from "@/lib/studio/local-request";
 import { newsletterPdf } from "@/lib/studio/newsletter-pdf";
-import { newsletterTemplateLimit, renderNewsletterTemplate, validateNewsletterTemplate } from "@/lib/studio/newsletter-template";
+import { newsletterTemplateLimit, newsletterTemplateOutline, renderNewsletterTemplate, validateNewsletterTemplate } from "@/lib/studio/newsletter-template";
 import { StudioError } from "@/lib/studio/permissions";
 import type { StudioState } from "@/lib/studio/types";
 
@@ -52,14 +52,22 @@ function respond(error: unknown) {
   return Response.json({ error: message }, { status: code, headers });
 }
 
-export function GET(request: Request) {
+export async function GET(request: Request) {
   if (!allowedLocalRequest(request)) return new Response(null, { status: 404 });
   try {
     const draft = contentId.parse(new URL(request.url).searchParams.get("contentId"));
-    return Response.json(templates((db) => ({
+    const library = templates((db) => ({
       templates: db.prepare("SELECT id, name FROM newsletter_templates ORDER BY name, id").all(),
-      selected: db.prepare("SELECT template_id FROM newsletter_template_choices WHERE content_id = ?").get(draft)?.template_id ?? null,
-    })), { headers });
+      selected: db.prepare(`
+        SELECT t.id, t.data FROM newsletter_template_choices c
+        JOIN newsletter_templates t ON t.id = c.template_id WHERE c.content_id = ?
+      `).get(draft),
+    }));
+    return Response.json({
+      templates: library.templates,
+      selected: library.selected?.id ?? null,
+      outline: library.selected?.data instanceof Uint8Array ? await newsletterTemplateOutline(library.selected.data) : [],
+    }, { headers });
   } catch (error) {
     return respond(error);
   }

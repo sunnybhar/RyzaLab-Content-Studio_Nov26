@@ -2,8 +2,10 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 
+import { newsletterStructureIssue, type NewsletterSection } from "@/lib/studio/newsletter-outline";
+
 type Template = { id: string; name: string };
-type Library = { templates: Template[]; selected: string | null };
+type Library = { templates: Template[]; selected: string | null; outline: NewsletterSection[] };
 const endpoint = "/api/studio/local/newsletter";
 
 async function checked(response: Response) {
@@ -25,18 +27,20 @@ export function NewsletterTemplateExport({
   adapting: boolean;
   adaptDisabled: boolean;
 }) {
-  const [library, setLibrary] = useState<Library>({ templates: [], selected: null });
+  const [library, setLibrary] = useState<Library>({ templates: [], selected: null, outline: [] });
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [libraryLoaded, setLibraryLoaded] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const structureIssue = library.selected && text.trim() ? newsletterStructureIssue(library.outline, text) : undefined;
   const libraryUrl = `${endpoint}?contentId=${encodeURIComponent(contentId)}`;
 
   useEffect(() => {
     const controller = new AbortController();
     fetch(libraryUrl, { signal: controller.signal, cache: "no-store" })
       .then(checked).then((response) => response.json())
-      .then(setLibrary)
+      .then((next) => { setLibrary(next); setLibraryLoaded(true); })
       .catch((cause) => { if (!controller.signal.aborted) setError(String(cause.message)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
@@ -62,16 +66,17 @@ export function NewsletterTemplateExport({
       method: "POST", body: form, signal: AbortSignal.timeout(60000),
     }))).json();
     setLibrary(await (await checked(await fetch(libraryUrl, { cache: "no-store" }))).json());
+    setLibraryLoaded(true);
     setMessage(result.added ? `${result.added} template${result.added === 1 ? "" : "s"} added.` : "These templates are already in Studio.");
   }
 
   async function choose(templateId: string) {
-    const result = await (await checked(await fetch(endpoint, {
+    await checked(await fetch(endpoint, {
       method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contentId, templateId: templateId || null }),
       signal: AbortSignal.timeout(15000),
-    }))).json();
-    setLibrary((previous) => ({ ...previous, selected: result.selected }));
+    }));
+    setLibrary(await (await checked(await fetch(libraryUrl, { cache: "no-store" }))).json());
   }
 
   async function download(format: "pdf" | "docx") {
@@ -110,19 +115,28 @@ export function NewsletterTemplateExport({
       </label>
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
-      {library.selected ? (
+      {loading ? <p role="status">Loading newsletter template…</p> : library.selected ? (
         <>
           <button type="button" className="s-btn" disabled={busy || adapting || adaptDisabled} onClick={onAdapt}>
             {adapting ? "Writing with template…" : "Write with this template"}
           </button>
           <p>Studio uses the template’s sections and editorial instructions to revise the saved draft. Review the result before exporting.</p>
+          {library.outline.length > 0 && (
+            <details>
+              <summary>Template sections</summary>
+              <ol>{library.outline.map(({ heading, columns }, index) => (
+                <li key={index}>{heading}{columns && ` · table: ${columns.join(", ")}`}</li>
+              ))}</ol>
+            </details>
+          )}
+          {structureIssue && <p role="status">Write with this template before downloading. {structureIssue}</p>}
           <div className="s-actions">
-            <button type="button" className="s-btn" disabled={busy || adapting || !text.trim()} onClick={() => void perform(() => download("docx"))}>Download newsletter DOCX</button>
-            <button type="button" className="s-btn s-primary" disabled={busy || adapting || !text.trim()} onClick={() => void perform(() => download("pdf"))}>Download newsletter PDF</button>
+            <button type="button" className="s-btn" disabled={busy || adapting || !!structureIssue || !text.trim()} onClick={() => void perform(() => download("docx"))}>Download newsletter DOCX</button>
+            <button type="button" className="s-btn s-primary" disabled={busy || adapting || !!structureIssue || !text.trim()} onClick={() => void perform(() => download("pdf"))}>Download newsletter PDF</button>
           </div>
           <p>Uses the Word template’s embedded cover and styles. PDF export uses LibreOffice installed on this computer.</p>
         </>
-      ) : children}
+      ) : libraryLoaded ? children : null}
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
 import JSZip from "jszip";
+import { newsletterBlocks, newsletterHeading, newsletterStructureIssue, type NewsletterSection } from "./newsletter-outline";
 import { StudioError } from "./permissions";
 
 export const newsletterTemplateLimit = 8 * 1024 * 1024;
@@ -61,24 +62,55 @@ export async function validateNewsletterTemplate(bytes: Uint8Array) {
   await openTemplate(bytes);
 }
 
+const elements = (node: Element) => Array.from(node.childNodes).filter((child): child is Element => child.nodeType === 1);
+const pText = (node: Element) => Array.from(node.getElementsByTagNameNS(word, "t")).map((text) => text.textContent).join("");
+const pStyle = (node: Element) => node.getElementsByTagNameNS(word, "pStyle").item(0)?.getAttributeNS(word, "val");
+
+function templateSections(body: Element) {
+  const sections: Array<{ outline: NewsletterSection; paragraph: Element; table?: Element }> = [];
+  for (const node of elements(body)) {
+    if (node.localName === "p" && /^heading\d+$/i.test(pStyle(node) || "")) {
+      const heading = pText(node).trim();
+      if (/^(?:about this template|before you publish|when to use this template)$/i.test(heading)) {
+        if (sections.length) break;
+        continue;
+      }
+      if (heading) sections.push({ outline: { heading }, paragraph: node });
+    } else if (node.localName === "tbl") {
+      const section = sections.at(-1);
+      const header = elements(node).find((element) => element.localName === "tr");
+      const columns = header && elements(header).filter((element) => element.localName === "tc").map((cell) => pText(cell).trim());
+      if (section && !section.table && columns?.length && columns.every(Boolean)) {
+        section.table = node;
+        section.outline.columns = columns;
+      }
+    }
+  }
+  return sections;
+}
+
+export async function newsletterTemplateOutline(bytes: Uint8Array) {
+  const { body } = await openTemplate(bytes);
+  return templateSections(body).map((section) => section.outline);
+}
+
 export async function newsletterWritingGuidance(bytes: Uint8Array) {
   const { body } = await openTemplate(bytes);
   const lines = Array.from(body.getElementsByTagNameNS(word, "p")).flatMap((paragraph) => {
-    const value = Array.from(paragraph.getElementsByTagNameNS(word, "t"))
-      .map((node) => node.textContent).join("").trim();
+    const value = pText(paragraph).trim();
     if (!value) return [];
-    const style = paragraph.getElementsByTagNameNS(word, "pStyle").item(0)?.getAttributeNS(word, "val");
-    return [/^heading/i.test(style || "") ? `## ${value}` : value];
+    return [/^heading/i.test(pStyle(paragraph) || "") ? `## ${value}` : value];
   });
   if (!lines.length) throw new StudioError(400, "This newsletter template has no readable writing guidance.");
-  return lines.join("\n").slice(0, 12000);
+  return { guidance: lines.join("\n").slice(0, 12000), sections: templateSections(body).map((section) => section.outline) };
 }
 
 export async function renderNewsletterTemplate(bytes: Uint8Array, title: string, text: string, now = new Date()) {
   const { zip, document, body } = await openTemplate(bytes);
-  const original = Array.from(body.childNodes).filter((node): node is Element => node.nodeType === 1);
-  const pText = (p: Element) => Array.from(p.getElementsByTagNameNS(word, "t")).map((node) => node.textContent).join("");
-  const pStyle = (p: Element) => p.getElementsByTagNameNS(word, "pStyle").item(0)?.getAttributeNS(word, "val");
+  const sections = templateSections(body);
+  const issue = newsletterStructureIssue(sections.map((section) => section.outline), text);
+  if (issue) throw new StudioError(409, `Adapt the newsletter to this template before exporting. ${issue}`);
+  const original = elements(body);
   const titleAt = original.findIndex((p) => p.localName === "p" &&
     (pStyle(p)?.toLowerCase() === "title" || /^\[(?:headline|title)\b/i.test(pText(p).trim()) ||
       /\{\{\s*title\s*\}\}/i.test(pText(p))));
@@ -138,21 +170,51 @@ export async function renderNewsletterTemplate(bytes: Uint8Array, title: string,
     }
   }
   body.appendChild(titleAt < 0 ? paragraph(title, "Title") : replaceText(original[titleAt], title));
+  const firstLines = text.trim().split(/\r?\n/).filter((line) => line.trim()).slice(0, 2);
+  const subtitle = firstLines.find((line) => /^subtitle:\s/i.test(line.trim()));
+  const subtitleSlot = titleAt >= 0 ? original[titleAt + 1] : undefined;
+  const hasSubtitleSlot = subtitleSlot && /^\[subtitle\b/i.test(pText(subtitleSlot).trim());
   if (titleAt >= 0) {
+    if (subtitle && subtitleSlot && hasSubtitleSlot)
+      body.appendChild(replaceText(subtitleSlot, subtitle.trim().replace(/^subtitle:\s*/i, "")));
     const byline = original.slice(titleAt + 1, titleAt + 5).find((item) =>
       item.localName === "p" && /^By\s+.+\[X\]\s+min read/i.test(pText(item).trim()));
     if (byline) body.appendChild(replaceText(byline, pText(byline).replace(/\[X\]/i, String(readTime))));
   }
 
-  const lines = text.replace(/\r\n?/g, "\n").split("\n");
-  const first = lines.findIndex((line) => line.trim());
-  for (const [index, raw] of lines.entries()) {
-    const line = raw.trim();
-    if (!line) continue;
-    const heading = /^#{1,6}\s+(.+)$/.exec(line);
-    if (heading && index === first && heading[1].trim().toLowerCase() === title.trim().toLowerCase()) continue;
-    const value = heading ? heading[1] : line.replace(/^[-*]\s+/, "• ");
-    body.appendChild(paragraph(value, heading ? "Heading2" : "Normal"));
+  const blocks = newsletterBlocks(text);
+  let activeSection: typeof sections[number] | undefined;
+  for (const [index, block] of blocks.entries()) {
+    if (block.kind === "heading") {
+      if (index === 0 && newsletterHeading(block.text) === newsletterHeading(title)) continue;
+      const match = sections.find((section) => newsletterHeading(section.outline.heading) === newsletterHeading(block.text));
+      if (match) activeSection = match;
+      body.appendChild(match ? match.paragraph.cloneNode(true) : paragraph(block.text, "Heading2"));
+    } else if (block.kind === "table") {
+      const columns = activeSection?.outline.columns;
+      if (activeSection?.table && columns && columns.length === block.columns.length &&
+        columns.every((column, index) => newsletterHeading(column) === newsletterHeading(block.columns[index]))) {
+        const table = activeSection.table.cloneNode(true) as Element;
+        const rows = elements(table).filter((item) => item.localName === "tr");
+        const sample = rows[1] ?? rows[0];
+        rows.slice(1).forEach((row) => table.removeChild(row));
+        for (const values of block.rows) {
+          const row = sample.cloneNode(true) as Element;
+          elements(row).filter((item) => item.localName === "tc").forEach((cell, index) => {
+            const paragraphs = elements(cell).filter((item) => item.localName === "p");
+            if (paragraphs[0]) cell.replaceChild(replaceText(paragraphs[0], values[index]), paragraphs[0]);
+            else cell.appendChild(paragraph(values[index]));
+            paragraphs.slice(1).forEach((item) => cell.removeChild(item));
+          });
+          table.appendChild(row);
+        }
+        body.appendChild(table);
+      } else {
+        for (const row of [block.columns, ...block.rows]) body.appendChild(paragraph(row.join(" · "), "Normal"));
+      }
+    } else if (!(index <= 1 && /^subtitle:\s/i.test(block.text) && hasSubtitleSlot)) {
+      body.appendChild(paragraph(block.text.replace(/^[-*]\s+/, "• "), "Normal"));
+    }
   }
   const section = original.find((item) => item.localName === "sectPr");
   if (section) body.appendChild(section);

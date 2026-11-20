@@ -1,8 +1,9 @@
 import {jobHasExcludedSupport,containsExcludedSource} from "./source-policy";
 import {suppliedReviewReferences} from "./review-references";
 import {correctionIsCurrent} from "./review-correction";
-import {isLongForm} from "./channel-writing";
+import {isLongForm, newsletterTemplateFromPrompt} from "./channel-writing";
 import {incompleteDraftBody,applyRecoveredWorkingText} from "./incomplete-draft";
+import { newsletterStructureIssue } from "./newsletter-outline";
 import type { Content, Job, StudioState } from "./types";
 import {
   draftResultSchema,
@@ -135,7 +136,11 @@ export function settleWrittenOutput(
     }
     if([job.candidate.body,job.candidate.metadata,...job.candidate.sources,...(job.candidate.imageCaptions||[]).flatMap(image=>[image.alt,image.caption])].some(containsExcludedSource)){job.outputStatus="invalid";job.error="The candidate includes an excluded Wikipedia source URL. Original copy and saved output were retained; no automatic paid retry.";return;}
     if(job.candidate.imageCaptions?.some(image=>!(image.imageId==="hero"&&c.media.imageUrl)&&!c.media.sectionImages?.some(existing=>existing.id===image.imageId))){job.outputStatus="invalid";job.error="The candidate referenced an image that was not supplied. Original copy and assets were preserved.";return;}
-    if(isLongForm(c.channel,c.format)){
+    const template = c.channel === "Newsletter" ? newsletterTemplateFromPrompt(job.prompt) : undefined;
+    if (template) {
+      const issue = newsletterStructureIssue(template.sections, job.candidate.body);
+      if (issue) job.candidate.questions.push(issue);
+    } else if(isLongForm(c.channel,c.format)){
       const minWords=/blog/i.test(c.format)?800:1600;
       if(job.candidate.body.trim().split(/\s+/).length<minWords)job.candidate.questions.push(`Expand this ${/blog/i.test(c.format)?"blog":"newsletter"} to at least ${minWords.toLocaleString("en-US")} substantive words with background, evidence, reasoning and practical guidance before review.`);
       if(!job.candidate.sources.length&&!/^#{0,3}\s*(Sources|References)\s*:?$/im.test(job.candidate.body))job.candidate.questions.push("Add relevant source citations and a readable Sources section for this article before review.");
@@ -147,7 +152,7 @@ export function settleWrittenOutput(
         job.candidate.questions.join(" ").slice(0, 3000);
       // An untouched empty editor can receive an unfinished working draft.
       // Existing human copy still needs explicit comparison before replacement.
-      if (c.text.trim()) return;
+      if (c.text.trim() || template) return;
     }
     const correction=Boolean(job.reviewCorrection&&correctionIsCurrent(state,c,job));
     if (
