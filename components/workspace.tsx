@@ -4925,9 +4925,6 @@ function Editor({
                   unsavedImage={media.imageUrl !== c.media.imageUrl || media.imageAlt !== c.media.imageAlt || media.imageCaption !== c.media.imageCaption}
                   savingDraft={draftSave.busy}
                   adaptError={draftGenerationError?.kind === "template" ? draftGenerationError.message : undefined}
-                  returnToDraft={!editorReadOnly && !dirty && !externalChange && (c.state === "review" || c.state === "changes")
-                    ? () => void run({ type: "content.returnToDraft", id: c.id, expectedRevision: c.revision }, "Newsletter returned to draft.")
-                    : undefined}
                   adaptDisabled={readOnly || externalChange || busy || draftSave.busy || draftSave.status === "unknown" || c.state !== "draft"}
                 >
                   {documentDownloads}

@@ -1,6 +1,6 @@
 import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
 import JSZip from "jszip";
-import { newsletterBlocks, newsletterHeading, newsletterStructureIssue, type NewsletterSection } from "./newsletter-outline";
+import { newsletterBlocks, newsletterHeading, type NewsletterSection } from "./newsletter-outline";
 import { StudioError } from "./permissions";
 
 export const newsletterTemplateLimit = 8 * 1024 * 1024;
@@ -170,8 +170,6 @@ async function embedNewsletterImage(zip: JSZip, document: Document, image: Newsl
 export async function renderNewsletterTemplate(bytes: Uint8Array, title: string, text: string, now = new Date(), image?: NewsletterImage) {
   const { zip, document, body } = await openTemplate(bytes);
   const sections = templateSections(body);
-  const issue = newsletterStructureIssue(sections.map((section) => section.outline), text);
-  if (issue) throw new StudioError(409, `Adapt the newsletter to this template before exporting. ${issue}`);
   const original = elements(body);
   const titleAt = original.findIndex((p) => p.localName === "p" &&
     (pStyle(p)?.toLowerCase() === "title" || /^\[(?:headline|title)\b/i.test(pText(p).trim()) ||
@@ -257,7 +255,7 @@ export async function renderNewsletterTemplate(bytes: Uint8Array, title: string,
       if (index === 0 && newsletterHeading(block.text) === newsletterHeading(title)) continue;
       const match = sections.find((section) => newsletterHeading(section.outline.heading) === newsletterHeading(block.text));
       if (match) activeSection = match;
-      body.appendChild(match ? match.paragraph.cloneNode(true) : paragraph(block.text, "Heading2"));
+      body.appendChild(match ? replaceText(match.paragraph, block.text) : paragraph(block.text, "Heading2"));
     } else if (block.kind === "table") {
       const columns = activeSection?.outline.columns;
       if (activeSection?.table && columns && columns.length === block.columns.length &&
@@ -278,7 +276,24 @@ export async function renderNewsletterTemplate(bytes: Uint8Array, title: string,
         }
         body.appendChild(table);
       } else {
-        for (const row of [block.columns, ...block.rows]) body.appendChild(paragraph(row.join(" · "), "Normal"));
+        const table = make("tbl");
+        const grid = make("tblGrid");
+        for (const _column of block.columns) {
+          const column = make("gridCol");
+          column.setAttributeNS(word, "w:w", String(Math.floor(9000 / block.columns.length)));
+          grid.appendChild(column);
+        }
+        table.appendChild(grid);
+        for (const values of [block.columns, ...block.rows]) {
+          const row = make("tr");
+          for (const value of values) {
+            const cell = make("tc");
+            cell.appendChild(paragraph(value, "Normal"));
+            row.appendChild(cell);
+          }
+          table.appendChild(row);
+        }
+        body.appendChild(table);
       }
     } else if (!(index <= 1 && /^subtitle:\s/i.test(block.text) && hasSubtitleSlot)) {
       body.appendChild(paragraph(block.text.replace(/^[-*]\s+/, "• "), "Normal"));

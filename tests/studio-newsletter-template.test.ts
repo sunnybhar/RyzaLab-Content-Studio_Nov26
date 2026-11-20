@@ -3,7 +3,7 @@ import { test } from "node:test";
 import JSZip from "jszip";
 import { newsletterWritingGuidance, renderNewsletterTemplate } from "../lib/studio/newsletter-template";
 
-test("template export requires the ordered editorial sections and fills the original Word table", async () => {
+test("template export preserves existing copy and uses matching Word table styles", async () => {
   const zip = new JSZip();
   const paragraph = (text: string, style?: string) => `<w:p>${style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : ""}<w:r><w:t>${text}</w:t></w:r></w:p>`;
   const row = (...cells: string[]) => `<w:tr>${cells.map((cell) => `<w:tc>${paragraph(cell)}</w:tc>`).join("")}</w:tr>`;
@@ -23,11 +23,11 @@ test("template export requires the ordered editorial sections and fills the orig
   const { sections } = await newsletterWritingGuidance(bytes);
   assert.deepEqual(sections, [{ heading: "What changed" }, { heading: "What to check", columns: ["Check", "Result"] }]);
 
-  await assert.rejects(() => renderNewsletterTemplate(bytes, "New issue", "Generic newsletter."), /What changed/);
-  await assert.rejects(() => renderNewsletterTemplate(bytes, "New issue",
-    "## What to check\nFirst.\n## What changed\nSecond."), /What to check/);
-  await assert.rejects(() => renderNewsletterTemplate(bytes, "New issue",
-    "## What changed\nDetails.\n## What to check\nThis section is missing its table."), /template table/);
+  const custom = await renderNewsletterTemplate(bytes, "New issue",
+    "## My opening\nMy wording stays exactly here.\n\n| Action | Outcome |\n| --- | --- |\n| Save | Keep existing copy |\n\n## Sources\n- https://example.org/source");
+  const customXml = await (await JSZip.loadAsync(custom)).file("word/document.xml")!.async("string");
+  assert.match(customXml, /My opening.*My wording stays exactly here.*<w:tbl>.*Action.*Outcome.*Keep existing copy.*Sources.*https:\/\/example.org\/source/s);
+  assert.doesNotMatch(customXml, /What changed|What to check|Internal notes|\[Sample/);
 
   const result = await renderNewsletterTemplate(bytes, "New issue",
     "Subtitle: A practical guide\n\n## What changed\nDetails.\n## What to check\n| Check | Result |\n| --- | --- |\n| Local controls | Still work |");

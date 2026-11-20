@@ -36,7 +36,7 @@ export async function downloadTemplatedNewsletter(contentId: string, templateId:
 }
 
 export function NewsletterTemplateExport({
-  contentId, title, text, children, onAdapt, generationBusy, adaptingSince, adaptDisabled, draftDirty, savingDraft, adaptError, returnToDraft, unsavedImage,
+  contentId, title, text, children, onAdapt, generationBusy, adaptingSince, adaptDisabled, draftDirty, savingDraft, adaptError, unsavedImage,
 }: {
   contentId: string;
   title: string;
@@ -49,7 +49,6 @@ export function NewsletterTemplateExport({
   draftDirty: boolean;
   savingDraft: boolean;
   adaptError?: string;
-  returnToDraft?: () => void;
   unsavedImage: boolean;
 }) {
   const [library, setLibrary] = useState<Library>({ templates: [], selected: null, outline: [] });
@@ -129,12 +128,13 @@ export function NewsletterTemplateExport({
       {message && <p role="status">{message}</p>}
       {loading ? <p role="status">Loading newsletter template…</p> : library.selected ? (
         <>
-          <button type="button" className="s-btn" disabled={busy || generationBusy || adaptDisabled} onClick={onAdapt}>
-            {adaptingSince != null ? (savingDraft ? "Saving draft…" : "Writing with template…") : draftDirty ? "Save draft and write with this template" : "Write with this template"}
-          </button>
+          {!text.trim() && (
+            <button type="button" className="s-btn" disabled={busy || generationBusy || adaptDisabled} onClick={onAdapt}>
+              {adaptingSince != null ? (savingDraft ? "Saving draft…" : "Writing with template…") : draftDirty ? "Save draft and write with this template" : "Write with this template"}
+            </button>
+          )}
           {adaptingSince != null && <DraftGenerationProgress label={savingDraft ? "Saving draft…" : "Writing with this template…"} startedAt={adaptingSince} />}
           {adaptError && <p role="alert">{adaptError}</p>}
-          <p>Studio uses the template’s sections and editorial instructions to revise the saved draft. Review the result before exporting.</p>
           {library.outline.length > 0 && (
             <details>
               <summary>Template sections</summary>
@@ -143,19 +143,10 @@ export function NewsletterTemplateExport({
               ))}</ol>
             </details>
           )}
-          {structureIssue && (
-            <>
-              <p role="status">{structureIssue}</p>
-              {returnToDraft ? (
-                <button type="button" className="s-btn" disabled={busy || generationBusy} onClick={returnToDraft}>
-                  Return to draft to fix template
-                </button>
-              ) : <p>Write with this template before downloading.</p>}
-            </>
-          )}
+          {structureIssue && <p>Export keeps your existing section order and applies the template’s cover and styles. Matching sections and tables use the template’s layout.</p>}
           <div className="s-actions">
-            <button type="button" className="s-btn" disabled={busy || generationBusy || !!structureIssue || unsavedImage || !text.trim()} onClick={() => void perform(() => downloadTemplatedNewsletter(contentId, library.selected!, title, text, "docx"))}>Download newsletter DOCX</button>
-            <button type="button" className="s-btn s-primary" disabled={busy || generationBusy || !!structureIssue || unsavedImage || !text.trim()} onClick={() => void perform(() => downloadTemplatedNewsletter(contentId, library.selected!, title, text, "pdf"))}>Download newsletter PDF</button>
+            <button type="button" className="s-btn" disabled={busy || generationBusy || unsavedImage || !text.trim()} onClick={() => void perform(() => downloadTemplatedNewsletter(contentId, library.selected!, title, text, "docx"))}>Download newsletter DOCX</button>
+            <button type="button" className="s-btn s-primary" disabled={busy || generationBusy || unsavedImage || !text.trim()} onClick={() => void perform(() => downloadTemplatedNewsletter(contentId, library.selected!, title, text, "pdf"))}>Download newsletter PDF</button>
           </div>
           {unsavedImage && <p role="status">Save the draft to export changes to the main image.</p>}
           <p>Export includes the template cover and the saved Studio main image. PDF export uses LibreOffice.</p>
