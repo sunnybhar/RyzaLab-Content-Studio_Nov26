@@ -47,7 +47,7 @@ try {
   await sections.getByRole("button", { name: "Newsletter", exact: true }).click();
   await page.getByLabel("Combined newsletter title").waitFor();
   await sections.getByRole("button", { name: "Drafts", exact: true }).click();
-  assert.equal(await page.getByRole("button", { name: "Production board" }).getAttribute("aria-pressed"), "true");
+  assert.equal(await page.getByRole("button", { name: "Production board", exact: true }).getAttribute("aria-pressed"), "true");
   assert.equal(await page.getByLabel("Channel", { exact: false }).inputValue(), "Instagram");
   await page.setViewportSize({ width: 390, height: 844 });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
