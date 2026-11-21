@@ -215,3 +215,27 @@ test("saved receipt survives failed workspace settlement and replays after an ex
   assert.equal(writes, 2);
   assert.equal(state.contents[0].history.length, 1);
 });
+
+test("hosted generated images attach only to the unchanged draft and settle once", () => {
+  const state = fixture();
+  const draft = state.contents[0];
+  draft.state = "draft";
+  const job = state.jobs[0];
+  job.kind = "image";
+  job.autoAttachImage = true;
+  job.mediaRevision = draft.mediaRevision ?? 1;
+  job.outputContract = undefined;
+  const assetUrl = "/api/studio/assets?id=28e35c89-8127-45ee-b5e5-ed47ee553885";
+  const imageReceipt = { ...receipt, mediaReturned: true, storedMedia: assetUrl };
+
+  const attached = applyWorkerReceipt(state, imageReceipt);
+  assert.equal(attached.contents[0].media.imageUrl, assetUrl);
+  assert.equal(attached.contents[0].text, draft.text);
+  assert.equal(applyWorkerReceipt(attached, imageReceipt), attached);
+
+  const edited = structuredClone(state);
+  edited.contents[0].revision++;
+  const preserved = applyWorkerReceipt(edited, imageReceipt);
+  assert.equal(preserved.contents[0].media.imageUrl, draft.media.imageUrl);
+  assert.equal(preserved.jobs[0].result, assetUrl);
+});
