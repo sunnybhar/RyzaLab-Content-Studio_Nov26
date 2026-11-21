@@ -166,6 +166,42 @@ export function pipelineSnapshot(
   const { history: _history, ...snapshot } = brief;
   return structuredClone(snapshot);
 }
+function pipelineRevision(brief: PipelineBrief) {
+  return {
+    version: brief.version,
+    at: brief.updatedAt,
+    data: pipelineRowSchema.parse(Object.fromEntries(
+      Object.keys(pipelineRowSchema.shape).map(key => [key, brief[key as keyof PipelineRow]]),
+    )),
+  };
+}
+
+/** Change calendar timing while preserving the imported copy and linked draft snapshots. */
+export function reschedulePipelineBrief(
+  state: StudioState, actor: Actor,
+  change: { id: string; expectedVersion: number; plannedDate: string; plannedTime?: string },
+  now: string,
+) {
+  const brief = state.pipelineBriefs?.find(item => item.id === change.id);
+  if (!brief) throw new StudioError(404, "Pipeline brief not found.");
+  const scope = { channel: brief.channel, account: brief.account };
+  requirePermission(state, actor, "idea.edit", scope);
+  requirePermission(state, actor, "schedule.manage", scope);
+  if (brief.version !== change.expectedVersion)
+    throw new StudioError(409, "This brief changed. Open its current version and try again.");
+  if (brief.historical) throw new StudioError(409, "Historical briefs cannot be rescheduled.");
+  const row = pipelineRevision(brief).data;
+  const plannedAt = validatePipelineRow({ ...row, plannedDate: change.plannedDate, plannedTime: change.plannedTime });
+  if (brief.plannedDate === change.plannedDate && brief.plannedTime === change.plannedTime) return false;
+  brief.history = [...(brief.history ?? []), pipelineRevision(brief)].slice(-5);
+  brief.plannedDate = change.plannedDate;
+  brief.plannedTime = change.plannedTime;
+  brief.plannedAt = plannedAt;
+  brief.version++;
+  brief.updatedAt = now;
+  return true;
+}
+
 export function importPipeline(
   input: StudioState,
   actor: Actor,
@@ -240,21 +276,7 @@ export function importPipeline(
       );
     const brief: PipelineBrief = {
       history: previous
-        ? [
-            ...(previous.history || []),
-            {
-              version: previous.version,
-              at: previous.updatedAt,
-              data: pipelineRowSchema.parse(
-                Object.fromEntries(
-                  Object.keys(pipelineRowSchema.shape).map((key) => [
-                    key,
-                    previous[key as keyof PipelineRow],
-                  ]),
-                ),
-              ),
-            },
-          ].slice(-5)
+        ? [...(previous.history || []), pipelineRevision(previous)].slice(-5)
         : [],
       ...row,
       plannedAt,

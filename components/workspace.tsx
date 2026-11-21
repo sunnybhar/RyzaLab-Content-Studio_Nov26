@@ -43,8 +43,6 @@ import {
   CalendarDays,
   Check,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   CircleHelp,
   ClipboardList,
   Clock3,
@@ -127,6 +125,7 @@ import { StudioAnalytics } from "./studio-analytics";
 import { IdeaGenerationStatus } from "./idea-generation-status";
 import { IdeasBrowser } from "./ideas-browser";
 import { GenerationActivity } from "./generation-activity";
+import { CalendarWorkspace, type CalendarItem, type CalendarView } from "./calendar-workspace";
 import { CalendarPackagePreview } from "./calendar-package-preview";
 import {PublicationHandoff} from "./publication-handoff";
 import { StageTracker } from "./stage-tracker";
@@ -505,13 +504,11 @@ export default function Workspace() {
   const [libraryTab, setLibraryTab] = useState("Content");
   const [showIdeaPipeline, setShowIdeaPipeline] = useState(false);
   const [ideaTab, setIdeaTab] = useState("All ideas");
-  const [calendarView, setCalendarView] = useState("Month");
+  const [calendarView, setCalendarView] = useState<CalendarView>("Month & Day Agenda");
+  const [calendarDay, setCalendarDay] = useState<string>();
   const [readyPackage, setReadyPackage] = useState<Package | null>(null);
   const [reviewEditing, setReviewEditing] = useState<string | null>(null);
   const [calendarPreview, setCalendarPreview] = useState<string | null>(null);
-  const [month, setMonth] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-  );
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNavigation, setMobileNavigation] = useState(false);
   useEffect(() => {
@@ -719,21 +716,10 @@ export default function Workspace() {
   const admin = founder || roles.includes("administrator");
   const readOnly = roles.length === 0 || roles.every((r) => r === "viewer");
   const liveContents = state.contents.filter((c) => !c.deletedAt);
-  const calendarMonth = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
-  const importedBriefs = page === "Calendar" ? visiblePipeline(state, actor) : [];
-  const importedMonths = new Map<string, number>();
-  for (const brief of importedBriefs) {
-    if (!brief.plannedDate) continue;
-    const key = brief.plannedDate.slice(0, 7);
-    importedMonths.set(key, (importedMonths.get(key) ?? 0) + 1);
-  }
-  const filteredBriefs = importedBriefs.filter((brief) => channel === "All channels" || brief.channel === channel);
-  const monthBriefs = filteredBriefs.filter((brief) => brief.plannedDate?.startsWith(calendarMonth))
-    .sort((a, b) => `${a.plannedDate} ${a.plannedTime ?? ""}`.localeCompare(`${b.plannedDate} ${b.plannedTime ?? ""}`));
-  const unscheduledBriefs = filteredBriefs.filter((brief) => !brief.plannedDate);
-  function showImportedMonth(date: string) {
-    const [year, monthNumber] = date.split("-").map(Number);
-    setMonth(new Date(year, monthNumber - 1, 1));
+  const calendarToday = dateKey(new Date().toISOString(), state.settings.timezone);
+  const activeCalendarDay = calendarDay ?? calendarToday;
+  function showImportedDate(date: string) {
+    setCalendarDay(date);
     setChannel("All channels");
     setSearch("");
   }
@@ -914,7 +900,7 @@ export default function Workspace() {
       newContent(undefined, post.title, "LinkedIn", "Article");
     }
   }
-  const scheduleForm = (contentId?: string, initialPackageId?: string, exactPackage?: Package) => {
+  const scheduleForm = (contentId?: string, initialPackageId?: string, exactPackage?: Package, day?: string) => {
     const packages = (exactPackage ? [exactPackage] : activePackages).filter((p) => {
       const draft = state.contents.find((c) => c.id === p.contentId);
       return (!contentId || p.contentId === contentId) && Boolean(draft && allowed("schedule.manage", {channel:p.channel,account:p.account,contentId:p.contentId,assignedTo:draft.assignedTo}));
@@ -950,6 +936,7 @@ export default function Workspace() {
           name: "at",
           label: `Publication time (${state.settings.timezone})`,
           type: "datetime-local",
+          value: day ? day + "T09:00" : undefined,
           required: true,
         },
         field("groupId", "Campaign group (optional)"),
@@ -967,8 +954,10 @@ export default function Workspace() {
             },
             "Publication planned",
           )
-        )
+        ) {
+          setCalendarDay(val(d, "at").slice(0, 10));
           setDialog(null);
+        }
       },
     });
   };
@@ -1084,7 +1073,7 @@ export default function Workspace() {
         const kind = val(data, "kind");
         if (kind === "Approved publication") {
           setDialog(null);
-          scheduleForm();
+          scheduleForm(undefined, undefined, undefined, day);
         } else
           taskForm(
             kind === "Workflow work"
@@ -1105,6 +1094,94 @@ export default function Workspace() {
       setWorkflowChannel(task.channel);
       move("Workflow settings");
     }
+  }
+  function calendarItems(): CalendarItem[] {
+    const snapshot = state!;
+    const timezone = snapshot.settings.timezone;
+    const clock = new Intl.DateTimeFormat("en-US", { timeZone: timezone, hour: "numeric", minute: "2-digit" });
+    const order = new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+    const timing = (at: string) => ({ day: dateKey(at, timezone), time: clock.format(new Date(at)), timeOrder: order.format(new Date(at)) });
+    const drafts = new Map(liveContents.map(draft => [draft.id, draft]));
+    const packages = new Map(snapshot.packages.map(item => [item.id, item]));
+    const tasks: CalendarItem[] = (snapshot.planningTasks ?? []).filter(task => task.state !== "cancelled" && matches(task)).map(task => {
+      const draft = task.contentId ? drafts.get(task.contentId) : undefined;
+      const canEdit = !readOnly && (task.kind === "workflow" ? allowed("workflow.edit", { channel: task.channel }) :
+        Boolean(draft && allowed("content.edit", { channel: draft.channel, contentId: draft.id, account: draft.account, assignedTo: draft.assignedTo })));
+      return {
+        id: `task:${task.id}`, title: task.title, channel: task.channel,
+        kind: task.kind === "draft" ? "Drafting" : task.kind === "editing" ? "Editing" : "Workflow",
+        status: task.state === "done" ? "Done" : "Planned", ...timing(task.at),
+        notes: task.notes, onOpen: () => openPlanningTask(task), openLabel: task.kind === "workflow" ? "Open workflow" : "Open draft",
+        actions: task.state === "planned" && canEdit ? close => <>
+          <button className="s-btn" onClick={() => {
+            close();
+            openForm("Move planning task", [{ ...field("at", `New task time (${timezone})`, "", "datetime-local"), required: true }],
+              data => ({ type: "task.update", id: task.id, at: workspaceTime(val(data, "at"), timezone) }));
+          }}>Move task</button>
+          <button className="s-btn" onClick={() => { close(); void execute({ type: "task.update", id: task.id, state: "done" }); }}>Mark done</button>
+          <button className="s-btn" onClick={() => { close(); void execute({ type: "task.update", id: task.id, state: "cancelled" }); }}>Cancel task</button>
+        </> : undefined,
+      };
+    });
+    const publications: CalendarItem[] = snapshot.schedules.flatMap(schedule => {
+      const draft = drafts.get(schedule.contentId);
+      const approved = schedule.packageId ? packages.get(schedule.packageId) : undefined;
+      if (!draft || !matches(approved ?? draft)) return [];
+      const scope = { channel: approved?.channel ?? draft.channel, account: approved?.account ?? draft.account,
+        contentId: draft.id, assignedTo: draft.assignedTo };
+      const canEdit = !readOnly && allowed("schedule.manage", scope);
+      const replacements = activePackages.filter(item => item.contentId === draft.id);
+      return [{
+        id: `publication:${schedule.id}`, title: approved?.title ?? draft.title, channel: scope.channel,
+        kind: "Publication", status: schedule.state === "published" ? "Published · human confirmed" :
+          schedule.state === "blocked" ? "Blocked" : "Ready for manual publication", ...timing(schedule.at),
+        publicationUrl: safeUrl(schedule.publicationUrl),
+        onOpen: () => setCalendarPreview(schedule.id), openLabel: "View approved publication",
+        actions: canEdit && schedule.state !== "published" ? close => <>
+          <button className="s-btn" onClick={() => {
+            close();
+            openForm("Move publication", [{ ...field("at", `New publication time (${timezone})`, "", "datetime-local"), required: true }],
+              data => ({ type: "schedule.move", id: schedule.id, at: workspaceTime(val(data, "at"), timezone) }));
+          }}>Move</button>
+          <button className="s-btn" disabled={!replacements.length} onClick={() => {
+            close();
+            openForm("Replace approved package", [{
+              name: "packageId", label: "Approved package", value: schedule.packageId,
+              options: replacements.map(item => item.id),
+              optionLabels: Object.fromEntries(replacements.map(item => [item.id, `${item.title} · Revision ${item.revision}`])),
+            }], data => ({ type: "schedule.replace", id: schedule.id, packageId: val(data, "packageId"), expectedPackageId: schedule.packageId }),
+            "This changes the exact approved revision scheduled for manual publication.", "Replace package");
+          }}>Replace</button>
+          <button className="s-btn" onClick={() => { close(); void execute({ type: "schedule.block", id: schedule.id }); }}>Block</button>
+          <button className="s-btn s-primary" disabled={schedule.state === "blocked"} onClick={() => {
+            close();
+            openForm("Confirm manual publication", [{ ...field("url", "Public publication URL", "", "url"), required: true }],
+              data => ({ type: "schedule.confirm", id: schedule.id, url: val(data, "url"), expectedPackageId: schedule.packageId }),
+              `Confirm only after you have manually published revision ${approved?.revision || "missing"} of “${draft.title}”.`, "Confirm published");
+          }}>Confirm published</button>
+        </> : undefined,
+      }];
+    });
+    const briefs: CalendarItem[] = visiblePipeline(snapshot, actor!).filter(matches).map(brief => {
+      const scope = { channel: brief.channel, account: brief.account };
+      const canEdit = !readOnly && !brief.historical && allowed("idea.edit", scope) && allowed("schedule.manage", scope);
+      return {
+        id: `brief:${brief.id}`, title: brief.title, channel: brief.channel, kind: "Imported brief",
+        status: brief.historical ? "Historical" : brief.plannedDate ? "Planned" : "Needs date",
+        ...(brief.plannedAt ? timing(brief.plannedAt) : { day: brief.plannedDate }),
+        notes: brief.angle, onOpen: () => pipelineOpen(brief), openLabel: "Open brief",
+        actions: canEdit ? close => <button className="s-btn s-primary" onClick={() => {
+          close();
+          openForm("Set brief date", [
+            { ...field("date", "Date", brief.plannedDate ?? activeCalendarDay, "date"), required: true },
+            field("time", `Time (${brief.timezone}, optional)`, brief.plannedTime ?? "", "time"),
+          ], data => ({ type: "pipeline.reschedule", id: brief.id, expectedVersion: brief.version,
+            plannedDate: val(data, "date"), plannedTime: val(data, "time") || undefined }),
+          "Save a planning date for this imported brief.", "Save brief date");
+        }}>{brief.plannedDate ? "Edit date" : "Set date"}</button> : undefined,
+      };
+    });
+    return [...tasks, ...publications, ...briefs];
   }
   async function pricingRequest(body?: unknown) {
     const session = await supabase?.auth.getSession();
@@ -1692,7 +1769,7 @@ export default function Workspace() {
                 <button
                   disabled={readOnly}
                   className="s-btn s-primary"
-                  onClick={() => calendarChoice()}
+                  onClick={() => calendarChoice(activeCalendarDay)}
                 >
                   <Plus size={16} /> Add to calendar
                 </button>
@@ -2137,589 +2214,36 @@ export default function Workspace() {
           )}
           {page === "Calendar" && (
             <>
-              <details className="s-panel" open={calendarImportOpen} onToggle={(event) => setCalendarImportOpen(event.currentTarget.open)}>
-                <summary>Upload content calendar / download template</summary>
-                <CalendarImport state={state} actor={actor} send={send} onImported={(date) => {
-                  if (date) {
-                    showImportedMonth(date);
-                    setCalendarView("Month");
-                  } else {
-                    setChannel("All channels");
-                  }
-                  setNotice("Calendar import saved. Find the same briefs in Existing Pipeline under Ideas and Create.");
-                }} />
-              </details>
-              {importedBriefs.length > 0 && (
-                <section className="s-panel" aria-label="Imported pipeline">
-                  <div className="s-section-heading">
-                    <div>
-                      <h2>Imported pipeline</h2>
-                      <p>{monthBriefs.length} dated this month · {unscheduledBriefs.length} unscheduled</p>
-                    </div>
-                    {importedMonths.size > 0 && (
-                      <label>
-                        Jump to imported month
-                        <select value="" onChange={(event) => showImportedMonth(event.target.value)}>
-                          <option value="">Choose a month</option>
-                          {[...importedMonths].sort(([a], [b]) => a.localeCompare(b)).map(([key, count]) => {
-                            const [year, index] = key.split("-").map(Number);
-                            const label = new Date(year, index - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
-                            return <option key={key} value={key}>{label} · {count} {count === 1 ? "brief" : "briefs"}</option>;
-                          })}
-                        </select>
-                      </label>
-                    )}
-                  </div>
-                  {!monthBriefs.length && importedMonths.size > 0 && <p>No imported briefs match this month and channel. Choose an imported month to show its briefs across all channels.</p>}
-                  <div className="pipeline-calendar">
-                    {[...(calendarView === "Month" ? monthBriefs : []), ...unscheduledBriefs].slice(0, 30).map((brief) => (
-                      <button key={brief.id} onClick={() => pipelineOpen(brief)}>
-                        <small>{brief.plannedDate || "Unscheduled"} {brief.plannedTime} · {brief.channel}{brief.historical ? " · Historical" : ""}</small>
-                        <strong>{brief.title}</strong>
-                        <small>Open brief → Ideas or writing</small>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              <div className="s-calendar-toolbar">
-                <div className="s-inline">
-                  <h2>
-                    {month.toLocaleDateString("en-US", {
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </h2>
-                  <button
-                    className="s-icon-button"
-                    aria-label="Previous month"
-                    onClick={() =>
-                      setMonth(
-                        new Date(month.getFullYear(), month.getMonth() - 1, 1),
-                      )
-                    }
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-                  <button
-                    className="s-icon-button"
-                    aria-label="Next month"
-                    onClick={() =>
-                      setMonth(
-                        new Date(month.getFullYear(), month.getMonth() + 1, 1),
-                      )
-                    }
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                  <button
-                    className="s-btn s-small-btn"
-                    onClick={() =>
-                      setMonth(
-                        new Date(
-                          new Date().getFullYear(),
-                          new Date().getMonth(),
-                          1,
-                        ),
-                      )
-                    }
-                  >
-                    Today
-                  </button>
-                </div>
-                <div className="s-view-tabs">
-                  {["Month", "Agenda"].map((v) => (
-                    <button
-                      key={v}
-                      className={v === calendarView ? "s-selected" : ""}
-                      aria-pressed={v === calendarView}
-                      onClick={() => setCalendarView(v)}
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="s-info-strip">
-                <ShieldCheck size={16} />
-                <span>
-                  Planned content is published by a person. Confirm the final
-                  public URL after publishing.
-                </span>
-                <span className="s-timezone">{state.settings.timezone}</span>
-              </div>
-              {readyToPlan.length > 0 && (
-                <section className="s-panel s-calendar-ready" aria-label="Ready to plan">
-                  <h2>Ready to plan</h2>
-                  <p>Choose when and where to publish each approved package.</p>
-                  {readyToPlan.map((p) => (
-                    <div className="s-calendar-ready-item" key={p.id}>
-                      <div><strong>{p.title}</strong><p>{p.channel} · {p.account || "Account not specified"} · Approved revision {p.revision}</p></div>
-                      <button className="s-btn" onClick={() => scheduleForm(p.contentId, p.id)}>Choose date and time</button>
-                    </div>
-                  ))}
-                </section>
-              )}
-              <div className="s-calendar-quick-actions">
-                <button
-                  className="s-btn"
-                  disabled={readOnly}
-                  onClick={() => taskForm("draft")}
-                >
-                  Plan drafting
-                </button>
-                <button
-                  className="s-btn"
-                  disabled={readOnly}
-                  onClick={() => taskForm("editing")}
-                >
-                  Plan editing
-                </button>
-                <button
-                  className="s-btn"
-                  disabled={readOnly}
-                  onClick={() => taskForm("workflow")}
-                >
-                  Plan workflow
-                </button>
-                <button
-                  className="s-btn"
-                  disabled={readOnly}
-                  onClick={() => scheduleForm()}
-                >
-                  Plan publication
-                </button>
-              </div>
-              {calendarView === "Month" ? (
-                <section className="s-calendar">
-                  <div className="s-weekdays">
-                    {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map(
-                      (d) => (
-                        <span key={d}>{d}</span>
-                      ),
-                    )}
-                  </div>
-                  <div className="s-calendar-grid">
-                    {Array.from({ length: 42 }, (_, i) => {
-                      const d = new Date(
-                        month.getFullYear(),
-                        month.getMonth(),
-                        i - month.getDay() + 1,
-                      );
-                      const today =
-                        d.toDateString() === new Date().toDateString();
-                      return (
-                        <div
-                          className={`s-calendar-day ${d.getMonth() !== month.getMonth() ? "s-other-month" : ""}`}
-                          key={i}
-                        >
-                          <button
-                            className={`s-calendar-date ${today ? "s-today" : ""}`}
-                            aria-label={`Plan work on ${dateKey(d.toISOString(), "UTC")}`}
-                            disabled={readOnly}
-                            onClick={() =>
-                              calendarChoice(
-                                `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
-                              )
-                            }
-                          >
-                            {d.getDate()} <Plus size={12} />
-                          </button>
-                          {filteredBriefs.filter(b=>b.plannedDate===`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`).map(b=><button className="s-calendar-event s-planning-event pipeline-calendar-event" key={b.id} onClick={()=>pipelineOpen(b)}><span>{b.plannedTime||"Date only"} · {b.channel}{b.historical?" · History":" · Brief"}</span><strong>{b.title}</strong></button>)}
-                          {(state.planningTasks || [])
-                            .filter(
-                              (t) =>
-                                t.state !== "cancelled" &&
-                                dateKey(t.at, state.settings.timezone) ===
-                                  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` &&
-                                (channel === "All channels" ||
-                                  t.channel === channel),
-                            )
-                            .map((t) => (
-                              <button
-                                className="s-calendar-event s-planning-event"
-                                key={t.id}
-                                onClick={() => openPlanningTask(t)}
-                              >
-                                <span>
-                                  {t.kind} · {t.state}
-                                </span>
-                                <strong>{t.title}</strong>
-                              </button>
-                            ))}
-                          {state.schedules
-                            .filter(
-                              (s) =>
-                                dateKey(s.at, state.settings.timezone) ===
-                                `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
-                            )
-                            .map((s) => {
-                              const c = state.contents.find(
-                                (c) => c.id === s.contentId,
-                              );
-                              const p = state.packages.find((p) => p.id === s.packageId);
-                              if (!c || !matches(p || c)) return null;
-                              return (
-                                <button
-                                  className={`s-calendar-event s-event-${s.state}`}
-                                  key={s.id}
-                                  onClick={() => {
-                                    setCalendarPreview(s.id);
-                                  }}
-                                >
-                                  <span>
-                                    {new Date(s.at).toLocaleTimeString(
-                                      "en-US",
-                                      {
-                                        hour: "numeric",
-                                        minute: "2-digit",
-                                        timeZone: state.settings.timezone,
-                                      },
-                                    )}{" "}
-                                    · {p?.channel || c.channel}
-                                  </span>
-                                  <strong>{p?.title || c.title}</strong>
-                                  <small>
-                                    {s.state === "published"
-                                      ? "Published · human confirmed"
-                                      : s.state === "blocked"
-                                        ? "Blocked"
-                                        : "Ready for manual publication"}
-                                  </small>
-                                </button>
-                              );
-                            })}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              ) : (
-                <section className="s-panel">
-                  {monthBriefs.length > 0 && (
-                    <section aria-label="Imported calendar briefs">
-                      <h3>Imported calendar briefs</h3>
-                      {monthBriefs.map((brief) => (
-                        <div className="s-schedule-row" key={brief.id}>
-                          <div className="s-schedule-main">
-                            <button className="s-link-button" onClick={() => pipelineOpen(brief)}>{brief.title}</button>
-                            <p>{brief.plannedDate} · {brief.plannedTime || "Date only"} · {brief.channel}{brief.historical ? " · Historical" : " · Planned brief"}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </section>
-                  )}
-                  {state.schedules
-                    .filter((s) => {
-                      const c = state.contents.find(
-                        (c) => c.id === s.contentId,
-                      );
-                      const p = state.packages.find((p) => p.id === s.packageId);
-                      return c && matches(p || c);
-                    })
-                    .sort((a, b) => a.at.localeCompare(b.at))
-                    .map((s) => {
-                      const c = state.contents.find(
-                        (c) => c.id === s.contentId,
-                      )!;
-                      const p = state.packages.find(
-                        (p) => p.id === s.packageId,
-                      );
-                      const replacements = state.packages.filter(
-                        (p) => p.contentId === c.id,
-                      );
-                      return (
-                        <div className="s-schedule-row" key={s.id}>
-                          <span className="s-date-tile">
-                            <small>
-                              {new Date(s.at).toLocaleDateString("en-US", {
-                                month: "short",
-                              })}
-                            </small>
-                            <strong>{new Date(s.at).getDate()}</strong>
-                          </span>
-                          <div className="s-schedule-main">
-                            <button
-                              className="s-link-button"
-                              onClick={() => setCalendarPreview(s.id)}
-                            >
-                              {p?.title || c.title}
-                            </button>
-                            <p>
-                              {p?.channel || c.channel} ·{" "}
-                              {new Date(s.at).toLocaleString("en-US", {
-                                timeZone: state.settings.timezone,
-                              })}{" "}
-                              · Approved revision {p?.revision || "missing"}
-                            </p>
-                            <Badge
-                              tone={
-                                s.state === "published"
-                                  ? "green"
-                                  : s.state === "blocked"
-                                    ? "red"
-                                    : "amber"
-                              }
-                            >
-                              {s.state === "published"
-                                ? "Published · human confirmed"
-                                : s.state}
-                            </Badge>
-                            {s.publicationUrl && (
-                              <a
-                                href={s.publicationUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                View publication ↗
-                              </a>
-                            )}
-                          </div>
-                          <div className="s-actions">
-                            {s.state !== "published" && (
-                              <>
-                                <button
-                                  disabled={readOnly}
-                                  className="s-btn s-small-btn"
-                                  onClick={() =>
-                                    openForm(
-                                      "Move publication",
-                                      [
-                                        {
-                                          name: "at",
-                                          label: "New publication time",
-                                          type: "datetime-local",
-                                          required: true,
-                                        },
-                                      ],
-                                      (d) => ({
-                                        type: "schedule.move",
-                                        id: s.id,
-                                        at: workspaceTime(
-                                          val(d, "at"),
-                                          state.settings.timezone,
-                                        ),
-                                      }),
-                                    )
-                                  }
-                                >
-                                  Move
-                                </button>
-                                <button
-                                  disabled={readOnly}
-                                  className="s-btn s-small-btn"
-                                  onClick={() =>
-                                    setDialog({
-                                      title: "Replace approved package",
-                                      description:
-                                        "This changes the exact approved revision scheduled for manual publication.",
-                                      fields: [
-                                        {
-                                          name: "packageId",
-                                          label: "Approved package",
-                                          options: replacements.map(
-                                            (p) => p.id,
-                                          ),
-                                          optionLabels: Object.fromEntries(
-                                            replacements.map((p) => [
-                                              p.id,
-                                              `${p.title} · Revision ${p.revision}`,
-                                            ]),
-                                          ),
-                                          hint: replacements
-                                            .map(
-                                              (p) =>
-                                                `${p.id}: v${p.revision} · ${p.title}`,
-                                            )
-                                            .join("\n"),
-                                        },
-                                      ],
-                                      submit: "Replace package",
-                                      onSubmit: async (d) => {
-                                        if (
-                                          await execute({
-                                            type: "schedule.replace",
-                                            id: s.id,
-                                            packageId: val(d, "packageId"),
-                                            expectedPackageId: s.packageId,
-                                          })
-                                        )
-                                          setDialog(null);
-                                      },
-                                    })
-                                  }
-                                >
-                                  Replace
-                                </button>
-                                <button
-                                  disabled={readOnly}
-                                  className="s-btn s-small-btn"
-                                  onClick={() =>
-                                    void execute({
-                                      type: "schedule.block",
-                                      id: s.id,
-                                    })
-                                  }
-                                >
-                                  Block
-                                </button>
-                                <button
-                                  disabled={readOnly || s.state === "blocked"}
-                                  className="s-btn s-primary s-small-btn"
-                                  onClick={() =>
-                                    openForm(
-                                      "Confirm manual publication",
-                                      [
-                                        {
-                                          name: "url",
-                                          label: "Public publication URL",
-                                          type: "url",
-                                          required: true,
-                                        },
-                                      ],
-                                      (d) => ({
-                                        type: "schedule.confirm",
-                                        id: s.id,
-                                        url: val(d, "url"),
-                                        expectedPackageId: s.packageId,
-                                      }),
-                                      `Confirm only after you have manually published revision ${p?.revision || "missing"} of “${c.title}”. The selected approved package must stay unchanged.`,
-                                      "Confirm published",
-                                    )
-                                  }
-                                >
-                                  Confirm published
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  {!state.schedules.length && (
-                    <Empty
-                      icon={CalendarDays}
-                      title="Your calendar is a clean slate"
-                    >
-                      Approve a draft, then choose when a person will publish
-                      it.
-                    </Empty>
-                  )}
-                </section>
-              )}
+              <CalendarWorkspace items={calendarItems()} timezone={state.settings.timezone} today={calendarToday}
+                day={activeCalendarDay} setDay={setCalendarDay} view={calendarView} setView={setCalendarView}
+                importOpen={calendarImportOpen} setImportOpen={setCalendarImportOpen}
+                importer={<CalendarImport state={state} actor={actor} send={send} onImported={(date) => {
+                  if (date) showImportedDate(date);
+                  else setChannel("All channels");
+                  setCalendarView(date ? "Month & Day Agenda" : "Pipeline Intake");
+                  setNotice("Calendar import saved.");
+                }} />}
+                onPlan={readOnly ? undefined : calendarChoice}
+                ready={readyToPlan.length > 0 && (
+                  <details className="s-panel s-calendar-ready">
+                    <summary>Ready to plan ({readyToPlan.length})</summary>
+                    <BudgetPagedList rows={readyToPlan.map(item => (
+                      <div className="s-calendar-ready-item" key={item.id}>
+                        <div><strong>{item.title}</strong><p>{item.channel} · {item.account} · Revision {item.revision}</p></div>
+                        <button className="s-btn" onClick={() => scheduleForm(item.contentId, item.id, undefined, activeCalendarDay)}>Choose date and time</button>
+                      </div>
+                    ))} />
+                  </details>
+                )}
+              />
               {previewSchedule && <CalendarPackagePreview
-                key={previewSchedule.id}
-                schedule={previewSchedule}
-                approved={state.packages.find((p) => p.id === previewSchedule.packageId)}
-                timezone={state.settings.timezone}
-                AssetMedia={AssetMedia}
+                key={previewSchedule.id} schedule={previewSchedule}
+                approved={state.packages.find(item => item.id === previewSchedule.packageId)}
+                timezone={state.settings.timezone} AssetMedia={AssetMedia}
                 onClose={() => setCalendarPreview(null)}
-                onEdit={(id) => { setCalendarPreview(null); openDraft(id); }}
+                onEdit={id => { setCalendarPreview(null); openDraft(id); }}
               />}
             </>
-          )}
-          {page === "Calendar" && (
-            <section className="s-panel s-planning-list">
-              <h2>Draft, editing and workflow tasks</h2>
-              {!(state.planningTasks || []).filter(
-                (t) => t.state !== "cancelled",
-              ).length && (
-                <p>
-                  No work tasks yet. Use Add to calendar or select a date to
-                  plan work.
-                </p>
-              )}
-              {(state.planningTasks || [])
-                .filter(
-                  (t) =>
-                    t.state !== "cancelled" &&
-                    (channel === "All channels" || t.channel === channel),
-                )
-                .sort((a, b) => a.at.localeCompare(b.at))
-                .map((t) => (
-                  <div className="s-list-row" key={t.id}>
-                    <div>
-                      <button
-                        className="s-link-button"
-                        onClick={() => openPlanningTask(t)}
-                      >
-                        {t.title}
-                      </button>
-                      <p>
-                        {t.kind} · {t.channel} ·{" "}
-                        {new Date(t.at).toLocaleString("en-US", {
-                          timeZone: state.settings.timezone,
-                        })}{" "}
-                        · {t.state}
-                      </p>
-                      {t.notes && <p>{t.notes}</p>}
-                    </div>
-                    <div className="s-actions">
-                      <button
-                        className="s-btn"
-                        onClick={() => openPlanningTask(t)}
-                      >
-                        Open {t.kind === "workflow" ? "workflow" : "draft"}
-                      </button>
-                      {t.state === "planned" && !readOnly && (
-                        <>
-                          <button
-                            className="s-btn"
-                            onClick={() =>
-                              openForm(
-                                "Move planning task",
-                                [
-                                  {
-                                    name: "at",
-                                    label: "New task time",
-                                    type: "datetime-local",
-                                    required: true,
-                                  },
-                                ],
-                                (d) => ({
-                                  type: "task.update",
-                                  id: t.id,
-                                  at: workspaceTime(
-                                    val(d, "at"),
-                                    state.settings.timezone,
-                                  ),
-                                }),
-                              )
-                            }
-                          >
-                            Move task
-                          </button>
-                          <button
-                            className="s-btn"
-                            onClick={() =>
-                              void execute({
-                                type: "task.update",
-                                id: t.id,
-                                state: "done",
-                              })
-                            }
-                          >
-                            Mark done
-                          </button>
-                          <button
-                            className="s-btn"
-                            onClick={() =>
-                              void execute({
-                                type: "task.update",
-                                id: t.id,
-                                state: "cancelled",
-                              })
-                            }
-                          >
-                            Cancel task
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-            </section>
           )}
           {page === "Training & QA" && (
             <section className="s-panel s-account-panel">

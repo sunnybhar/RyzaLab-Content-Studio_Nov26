@@ -34,7 +34,7 @@ try {
   await navigate("Calendar");
   await page.locator(".s-channel-tabs").getByRole("button", { name: /Newsletter$/ }).click();
   await page
-    .getByText("Upload content calendar / download template", { exact: true })
+    .getByRole("button", { name: "Import calendar", exact: true })
     .click();
   const importer = page.getByRole("region", {
     name: "Import content calendar",
@@ -135,17 +135,27 @@ try {
     .getByRole("button", { name: "Confirm import · 2 selected" })
     .click();
   await importer.getByText(/Imported 2 new briefs/).waitFor();
-  const datedBrief = page.locator(".s-calendar-grid").getByRole("button", { name: /Browser imported construction brief/ });
+  await page.getByRole("dialog", { name: "Import calendar" }).getByRole("button", { name: "Close", exact: true }).click();
+  const datedBrief = page.getByRole("complementary", { name: "Selected day agenda" })
+    .getByRole("button", { name: rows[0][1], exact: true });
   await datedBrief.waitFor();
   assert.equal(await page.locator(".s-channel-tabs").getByRole("button", { name: "All channels", exact: true }).getAttribute("aria-pressed"), "true");
   await page.getByRole("button", { name: "Previous month" }).click();
-  await page.getByText(/No imported briefs match this month and channel/).waitFor();
+  await datedBrief.waitFor({ state: "hidden" });
   await page.getByLabel("Jump to imported month").selectOption("2026-11");
   await datedBrief.waitFor();
-  await page.getByRole("button", { name: "Agenda", exact: true }).click();
-  await page.getByRole("region", { name: "Imported calendar briefs" })
-    .getByRole("button", { name: rows[0][1] }).waitFor();
-  await page.getByRole("button", { name: "Month", exact: true }).click();
+  await page.getByRole("button", { name: "Weekly Agenda", exact: true }).click();
+  await page.getByRole("region", { name: "Weekly agenda" }).getByRole("button", { name: rows[0][1], exact: true }).waitFor();
+  await page.getByRole("button", { name: "Workflow Planner", exact: true }).click();
+  await page.getByRole("region", { name: "Drafting", exact: true }).waitFor();
+  await page.getByRole("button", { name: "Pipeline Intake", exact: true }).click();
+  const briefName = "Unscheduled newsletter brief";
+  await page.getByRole("region", { name: "Needs a date" }).getByRole("button", { name: briefName }).click();
+  await page.getByRole("button", { name: "Set date", exact: true }).click();
+  await page.getByLabel("Date", { exact: true }).fill("2026-11-11");
+  await page.getByRole("button", { name: "Save brief date", exact: true }).click();
+  await page.getByRole("region", { name: "Dated briefs" }).getByRole("button", { name: briefName }).waitFor();
+  assert.equal((await saved()).pipelineBriefs.find((brief: { title: string }) => brief.title === briefName).plannedDate, "2026-11-11");
   let state = await saved();
   assert.equal(state.pipelineBriefs.length, 2);
   assert.equal(state.pipelineBriefs[0].plannedAt, "2026-11-10T17:15:00.000Z");
@@ -188,7 +198,7 @@ try {
   assert.equal((await saved()).contents.length, state.contents.length);
   await navigate("Calendar");
   await page
-    .getByText("Upload content calendar / download template", { exact: true })
+    .getByRole("button", { name: "Import calendar", exact: true })
     .click();
   await importer.locator('input[type="file"]').setInputFiles({
     name: "test-calendar.xlsx",

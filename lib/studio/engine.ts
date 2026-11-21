@@ -4,7 +4,7 @@ import {documentSections} from "./document-sections";
 import {blogArticleLengthIssue, isLongForm, newsletterTemplateFromPrompt} from "./channel-writing";
 import {newsletterSources} from "./newsletter-bundle";
 import {draftSavePayload,savedOperation} from "./save-operation";
-import {importPipeline,pipelineSnapshot} from "./pipeline";
+import {importPipeline,pipelineSnapshot,reschedulePipelineBrief} from "./pipeline";
 import {validateWritingFollowup} from "./writing-followup";
 import {ideaStage} from "./idea-board";
 import {completeSavedIdeaCards} from "./idea-recovery";
@@ -473,6 +473,11 @@ export function applyCommand(
       break;
     }
     case "pipeline.import": return importPipeline(input,actor,c,now,id);
+    case "pipeline.reschedule": {
+      if (!reschedulePipelineBrief(s, actor, c, now)) return structuredClone(input);
+      s.audit.push({ id: id(), actor: actor.email, action: "pipeline.reschedule", target: c.id, at: now });
+      break;
+    }
     case "pipeline.draft": {
       const brief=pipelineSnapshot(s,actor,c.briefId)!;
       need("content.create",{channel:c.channel,account:brief.account});

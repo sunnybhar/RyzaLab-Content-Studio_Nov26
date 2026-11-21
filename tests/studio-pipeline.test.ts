@@ -276,3 +276,24 @@ test("mixed workbook preview skips blank titles, flags unsupported channels and 
   assert.match(preview[1].warning!, /LinkedIn only/);
   assert.match(preview[2].error!, /unsupported destination/);
 });
+
+test("reschedule a pipeline brief without changing its imported copy or linked draft snapshot", () => {
+  const base = upload();
+  const original = base.pipelineBriefs![0];
+  const withDraft = applyCommand(base, DEMO_ACTOR, {
+    type: "pipeline.draft", briefId: original.id, channel: "LinkedIn", requestKey: "linked",
+  });
+  const move = { type: "pipeline.reschedule", id: original.id, expectedVersion: original.version,
+    plannedDate: "2026-11-12", plannedTime: "13:30" };
+  const moved = applyCommand(withDraft, DEMO_ACTOR, move);
+  const brief = moved.pipelineBriefs![0];
+  assert.equal(brief.plannedAt, "2026-11-12T18:30:00.000Z");
+  assert.equal(brief.version, 2);
+  assert.equal(brief.history?.at(-1)?.data.plannedDate, original.plannedDate);
+  assert.equal(brief.existingCopy, original.existingCopy);
+  assert.deepEqual(moved.contents, withDraft.contents);
+  assert.deepEqual(moved.jobs, withDraft.jobs);
+  assert.throws(() => applyCommand(moved, DEMO_ACTOR, move), /brief changed/i);
+  const dateOnly = applyCommand(moved, DEMO_ACTOR, { ...move, expectedVersion: brief.version, plannedTime: undefined });
+  assert.equal(dateOnly.pipelineBriefs![0].plannedAt, undefined);
+});

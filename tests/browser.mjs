@@ -630,6 +630,7 @@ async function main() {
 
     // A selected package is scheduled, then a person confirms that exact package.
     await navigate("Calendar");
+    await page.getByText(/^Ready to plan \(/).click();
     await page
       .locator(".s-calendar-ready-item")
       .filter({ hasText: title })
@@ -646,21 +647,22 @@ async function main() {
       .click();
     await dialog().waitFor({ state: "hidden" });
     await navigate("Calendar");
-    await page.getByRole("button", { name: "Agenda", exact: true }).click();
+    await page.getByRole("button", { name: "Weekly Agenda", exact: true }).click();
     const scheduledRow = page
       .locator(".s-schedule-row")
       .filter({ hasText: title });
     const beforeCalendarPreview = await state();
     await scheduledRow.getByRole("button", { name: title, exact: true }).click();
+    await page.getByRole("button", { name: "View approved publication", exact: true }).click();
     const calendarPreview = page.getByRole("dialog");
     await calendarPreview.getByRole("heading", { name: "Approved publication" }).waitFor();
     assert.equal(await calendarPreview.locator(".s-calendar-snapshot-copy").first().innerText(), approved.text);
     assert.equal(await calendarPreview.locator("textarea").count(), 0);
     await calendarPreview.getByRole("button", { name: "Close", exact: true }).click();
     assert.deepEqual(await state(), beforeCalendarPreview, "Opening a scheduled snapshot is read only");
-    await scheduledRow
-      .getByRole("button", { name: "Confirm published", exact: true })
-      .click();
+    await scheduledRow.getByRole("button", { name: title, exact: true }).click();
+    await page.getByRole("dialog", { name: "Calendar item" })
+      .getByRole("button", { name: "Confirm published", exact: true }).click();
     await dialog()
       .getByText(new RegExp(`manually published revision ${approved.revision}`))
       .waitFor();
@@ -671,7 +673,7 @@ async function main() {
       .getByRole("button", { name: "Confirm published", exact: true })
       .click();
     await scheduledRow
-      .getByText("Published · human confirmed", { exact: true })
+      .getByText(/Published · human confirmed/)
       .waitFor();
     const published = (await state()).schedules.find(
       (schedule) => schedule.contentId === saved.id,

@@ -1,6 +1,6 @@
 import {sectionImageSchema} from "./document-sections";
 import {newsletterInputSchema} from "./newsletter-bundle";
-import { pipelineImportSchema } from "./pipeline";
+import { pipelineImportSchema, pipelineRowSchema } from "./pipeline";
 import {agentArchiveSchema} from "./agent-archives";
 import {storedAgentFileSchema,AGENT_FILE_SLOTS} from "./agent-rule-files";
 import { z } from "zod";
@@ -90,6 +90,11 @@ const command = <T extends string, S extends z.ZodRawShape>(
 ) => z.object({ type: z.literal(type), ...shape }).strict();
 export const commandSchema = z.discriminatedUnion("type", [
   command("pipeline.import", pipelineImportSchema),
+  command("pipeline.reschedule", {
+    id, expectedVersion: z.number().int().positive(),
+    plannedDate: pipelineRowSchema.shape.plannedDate.unwrap(),
+    plannedTime: pipelineRowSchema.shape.plannedTime,
+  }),
   command("pipeline.draft", { briefId:id, channel:z.enum(["LinkedIn","Newsletter","Instagram","YouTube","Reddit"]), requestKey:id }),
   command("connection.disconnect", {
     id,
