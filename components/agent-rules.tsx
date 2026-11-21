@@ -27,6 +27,16 @@ type RuleResource = {
   slot?: AgentFileSlot;
 };
 
+type PackageDraft = {
+  instructions: string;
+  context: string;
+  files: string[];
+  ignored: string[];
+  archives?: import("@/lib/studio/agent-archives").AgentArchiveInput[];
+  expectedInstructionsId?: string;
+  expectedContextId?: string;
+};
+
 export function AgentRules({
   state,
   actor,
@@ -42,15 +52,7 @@ export function AgentRules({
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
-  const [packageDraft, setPackageDraft] = useState<{
-    instructions: string;
-    context: string;
-    files: string[];
-    ignored: string[];
-    archives?: import("@/lib/studio/agent-archives").AgentArchiveInput[];
-    expectedInstructionsId?: string;
-    expectedContextId?: string;
-  } | null>(null);
+  const [packageDraft, setPackageDraft] = useState<PackageDraft | null>(null);
   const allowed = can(state, actor, "workflow.edit", { channel });
   const dialog = useRef<HTMLDialogElement>(null);
   const [category, setCategory] = useState<Category>("Instructions");
@@ -505,7 +507,7 @@ export function AgentRules({
               {slot==="instructions"&&<label className="s-field">Upload skill ZIP (SKILL.md and references)
                 <input aria-label="Skill ZIP package" type="file" accept=".zip" disabled={busy||!allowed} onChange={async event=>{const file=event.target.files?.[0];event.target.value="";if(!file)return;setBusy(true);setError("");try{
                   if(file.size>1048576)throw Error("Choose a skill ZIP up to 1 MB.");const skill=await readAgentPackage(await file.arrayBuffer(),"skill");
-                  const draft:NonNullable<typeof packageDraft>=packageDraft||{instructions:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="instructions")?.extractedText||"",context:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="context")?.extractedText||"",files:[],ignored:[],expectedInstructionsId:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="instructions")?.id,expectedContextId:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="context")?.id};
+                  const draft:PackageDraft=packageDraft||{instructions:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="instructions")?.extractedText||"",context:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="context")?.extractedText||"",files:[],ignored:[],expectedInstructionsId:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="instructions")?.id,expectedContextId:state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="context")?.id};
                   const instructions=draft.instructions+"\n\n# Skill guidance\n"+skill.instructions,context=draft.context+"\n\n"+skill.context;
                   if(instructions.length>60000||context.length>60000)throw Error("Combined skill and channel material exceeds 60,000 characters per section. Edit older material first.");
                   setPackageDraft({...draft,instructions,context,archives:[...(draft.archives||[]).filter(a=>a.kind!=="skill"),await originalArchive(file,"skill")],files:[...draft.files,...skill.files],ignored:[...draft.ignored,...skill.ignored]});
