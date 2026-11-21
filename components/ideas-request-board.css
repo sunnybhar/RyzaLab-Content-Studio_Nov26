@@ -321,6 +321,7 @@
 .studio-v2 .s-iw-table-wrap table {
   width: 100%;
   min-width: 650px;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 12px;
 }
@@ -339,10 +340,14 @@
   vertical-align: top;
   color: var(--s-muted);
 }
-.studio-v2 .s-iw-table-wrap td:first-child {
-  width: 43%;
-}
-.studio-v2 .s-iw-table-wrap td:first-child > button {
+.studio-v2 .s-iw-rank-col { width: 52px; }
+.studio-v2 .s-iw-stage-col { width: 143px; }
+.studio-v2 .s-iw-sources-col { width: 66px; }
+.studio-v2 .s-iw-date-col { width: 127px; }
+.studio-v2 .s-iw-action-col { width: 98px; }
+.studio-v2 .s-iw-table-wrap td:first-child { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.studio-v2 .s-iw-idea-cell > button {
+  display: block;
   border: 0;
   background: transparent;
   color: var(--s-text);
@@ -350,7 +355,11 @@
   cursor: pointer;
   text-align: left;
   font: inherit;
+  overflow-wrap: anywhere;
 }
+.studio-v2 .s-iw-idea-cell > small { display:block; margin-top:5px; }
+.studio-v2 .s-iw-table-wrap td select { width:100%; }
+.studio-v2 .s-iw-table-wrap td:last-child button { white-space:nowrap; }
 .studio-v2 .s-iw-table-wrap td strong {
   font-size: 14px;
   line-height: 1.5;
@@ -474,8 +483,8 @@
 .studio-v2 .s-iw-view-toolbar select { margin-left:6px; padding:7px; color:var(--s-text); background:var(--s-paper); border:1px solid var(--s-line); border-radius:6px; }
 .studio-v2 .s-iw-count { margin:8px 0; font-size:13px; }
 .studio-v2 .s-iw-view-board,.studio-v2 .s-iw-view-research { grid-template-columns:minmax(0,1fr); min-height:0; }
-.studio-v2 .s-iw-research { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(220px,1fr); gap:12px; }
+.studio-v2 .s-iw-research { display:grid; grid-template-columns:minmax(0,1fr) minmax(200px,27%); gap:12px; }
 .studio-v2 .s-iw-preview { padding:14px; margin:12px; border:1px solid var(--s-line); background:var(--s-raised); border-radius:9px; min-width:0; align-self:start; overflow-wrap:anywhere; }
 .studio-v2 .s-iw-preview-body { max-height:380px; overflow:auto; margin:10px 0; }
-@media(max-width:900px) { .studio-v2 .s-iw-research { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:1150px) { .studio-v2 .s-iw-research { grid-template-columns:minmax(0,1fr); } }
 .studio-v2 .s-iw-filters { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }

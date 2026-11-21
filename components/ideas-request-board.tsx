@@ -405,6 +405,11 @@ export function IdeasRequestBoard({
               <div className={view === "research" ? "s-iw-research" : undefined}>
               <div className="s-iw-table-wrap">
                 <table>
+                  <colgroup>
+                    <col className="s-iw-rank-col" /><col />
+                    <col className="s-iw-stage-col" /><col className="s-iw-sources-col" />
+                    <col className="s-iw-date-col" /><col className="s-iw-action-col" />
+                  </colgroup>
                   <thead>
                     <tr>
                       <th>#</th><th>Idea</th>
@@ -418,7 +423,7 @@ export function IdeasRequestBoard({
                     {selectedIdeas.slice(currentIdeaPage * 6, currentIdeaPage * 6 + 6).map((idea) => (
                       <tr key={idea.id}>
                         <td>#{ranks.get(idea.id)}</td>
-                        <td>
+                        <td className="s-iw-idea-cell">
                           <button onClick={() => view === "research" ? setPreviewId(idea.id) : onSelect(idea)}>
                             <strong role="heading" aria-level={3}>
                               {idea.title}
@@ -432,7 +437,7 @@ export function IdeasRequestBoard({
                           </small>
                         </td>
                         <td>{idea.state==="rejected"?"Changes requested":stageSelect(idea)}</td>
-                        <td>{idea.sources.length} references</td>
+                        <td>{idea.sources.length}</td>
                         <td>
                           <time dateTime={idea.createdAt}>
                             {date(idea.createdAt)}

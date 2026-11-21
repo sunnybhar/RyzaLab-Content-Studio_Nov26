@@ -7,10 +7,19 @@ fixture.ideas=[];fixture.ideas.unshift(...["A new outage idea","A shortlisted de
 const browser=await chromium.launch({executablePath:"/usr/bin/chromium",headless:true,args:["--no-sandbox"]});
 try{const page=await browser.newPage({viewport:{width:1512,height:1100}}),errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));await page.addInitScript(({key,fixture})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(fixture));},{key,fixture});const base=process.env.TEST_BASE_URL||"http://127.0.0.1:3074";
 async function navigate(){await page.goto(base+"/preview");await page.locator(".s-sidebar nav").getByRole("button",{name:"Ideas",exact:true}).click();await page.getByRole("region",{name:"Ideas workspace",exact:true}).waitFor();}
-await navigate();const workspace=page.getByRole("region",{name:"Ideas workspace",exact:true});await workspace.locator(".s-iw-heading h2").filter({hasText:brief}).waitFor();await workspace.getByText("IDEA-A32F810C",{exact:true}).first().waitFor();await workspace.getByRole("button",{name:"Editorial Board",exact:true}).click();
+async function assertIdeaColumns() {
+  const firstRow = page.locator(".s-iw-table-wrap tbody tr").first();
+  const dimensions = await firstRow.locator("td").evaluateAll(cells => cells.slice(0, 3)
+    .map(cell => cell.getBoundingClientRect().width));
+  assert.ok(dimensions[0] <= 60, "rank stays compact");
+  assert.ok(dimensions[1] > dimensions[0] * 2, "the title receives the flexible column");
+  assert.ok(dimensions[2] >= 130, "stage label has room");
+}
+await navigate();const workspace=page.getByRole("region",{name:"Ideas workspace",exact:true});await workspace.locator(".s-iw-heading h2").filter({hasText:brief}).waitFor();await workspace.getByText("IDEA-A32F810C",{exact:true}).first().waitFor();await assertIdeaColumns();await workspace.getByRole("button",{name:"Editorial Board",exact:true}).click();
 const card=workspace.locator(".s-iw-card").filter({has:page.getByRole("heading",{name:title,exact:true})});await card.getByRole("button",{name:"Shortlist →",exact:true}).click();await workspace.locator(".s-iw-column-shortlisted").getByRole("heading",{name:title,exact:true}).waitFor();await card.getByRole("button",{name:"Ready to write →",exact:true}).click();await workspace.locator(".s-iw-column-ready").getByRole("heading",{name:title,exact:true}).waitFor();
 await page.screenshot({path:"/tmp/ryza-0326-board.png",fullPage:true});await workspace.getByRole("button",{name:"Request Inbox",exact:true}).click();await workspace.getByLabel(`Stage for ${title}`,{exact:true}).selectOption("new");await page.reload();await page.locator(".s-sidebar nav").getByRole("button",{name:"Ideas",exact:true}).click();assert.equal(await workspace.getByRole("button",{name:"Request Inbox",exact:true}).getAttribute("aria-pressed"),"true");assert.equal(await workspace.getByLabel(`Stage for ${title}`,{exact:true}).inputValue(),"new");await page.screenshot({path:"/tmp/ryza-0326-table.png",fullPage:true});
 await workspace.getByRole("button",{name:"Research Workspace",exact:true}).click();
+await assertIdeaColumns();
 await workspace.getByRole("heading",{name:title,exact:true}).click();
 const preview=workspace.getByRole("complementary",{name:"Idea and research preview"});
 await preview.getByRole("link",{name:"https://example.com/source",exact:true}).waitFor();
