@@ -1,4 +1,5 @@
 "use client";
+import { CreateDrafts, type CreateLayout } from "./create-drafts";
 import {ArticleImages} from "./article-images";
 import {NewsletterSources} from "./newsletter-sources";
 import {NewsletterComposer} from "./newsletter-composer";
@@ -472,6 +473,8 @@ export default function Workspace() {
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [pipelineIdea,setPipelineIdea]=useState<{id:string;channel:Channel}|null>(null);
   const [pipelineFocus,setPipelineFocus]=useState("");
+  const [createSection, setCreateSection] = useState<"Drafts" | "Pipeline briefs" | "Newsletter">("Drafts");
+  const [createLayout, setCreateLayout] = useState<CreateLayout>("Editorial workspace");
   const [newsletterSelection, setNewsletterSelection] = useState<{ key: string; source?: string }>();
   const [calendarImportOpen,setCalendarImportOpen]=useState(false);
   const [ideaComposer,setIdeaComposer]=useState<"generate"|"manual"|null>(null);
@@ -684,6 +687,7 @@ export default function Workspace() {
   }
   function move(next: Page) {
     setPage(next);
+    if (next === "Create") setCreateSection("Drafts");
     setNewsletterSelection(undefined);
     setSelected(null);
     setMenuOpen(false);
@@ -888,11 +892,12 @@ export default function Workspace() {
     try{const result=await send({type:"pipeline.draft",briefId:brief.id,channel:target,requestKey});const draft=result.state.contents.find(d=>d.pipelineRequestKey===requestKey&&d.createdBy===actor!.email);if(!draft)throw new Error("Could not open the linked draft. Refresh and check Create.");setPage("Create");setSelected(draft.id);setChannel(target);setSearch("");setNotice("Draft created from the pipeline brief. No AI request or publishing started.");}catch(e){setLocalError((e as Error).message);}finally{setBusy(false);}
   }
   function pipelineImport(){setPage("Calendar");setSelected(null);setCalendarImportOpen(true);}
-  function pipelineOpen(brief:PipelineBrief){setPage("Create");setSelected(null);setPipelineFocus(brief.id);setChannel(brief.channel);setSearch("");}
+  function pipelineOpen(brief:PipelineBrief){setCreateSection("Pipeline briefs");setPage("Create");setSelected(null);setPipelineFocus(brief.id);setChannel(brief.channel);setSearch("");}
   function openNewsletterComposer(source?: string) {
     if (!allowed("content.create", { channel: "Newsletter", account: "RyzaLab" }) || readOnly) return false;
     const keepSelection = !source && page === "Create" && !activeContent;
     if (!keepSelection) move("Create");
+    setCreateSection("Newsletter");
     setChannel("Newsletter");
     setNewsletterSelection({
       key: crypto.randomUUID(),
@@ -1709,9 +1714,9 @@ export default function Workspace() {
                   <button
                     disabled={readOnly || (channel === "Newsletter" && (busy || !allowed("content.create", { channel: "Newsletter", account: "RyzaLab" })))}
                     className="s-btn s-primary"
-                    onClick={() => channel === "Newsletter" ? openNewsletterComposer() : newContent()}
+                    onClick={() => channel === "Newsletter" || (page === "Create" && createSection === "Newsletter") ? openNewsletterComposer() : newContent()}
                   >
-                    <Plus size={16} /> {channel === "Newsletter" ? "Create Brand Newsletter" : "Create content"}
+                    <Plus size={16} /> {channel === "Newsletter" || (page === "Create" && createSection === "Newsletter") ? "Create Brand Newsletter" : "Create content"}
                   </button>
                 )
               )}
@@ -1721,7 +1726,6 @@ export default function Workspace() {
             "Home",
             "Ideas",
             "Calendar",
-            "Create",
             "Reviews",
             "Library",
           ].includes(page) && (
@@ -1744,7 +1748,7 @@ export default function Workspace() {
                   <ChannelIcon channel={c} small />
                   {c}
                 </button>,
-                c === "LinkedIn" && (page === "Create" || page === "Ideas") &&
+                c === "LinkedIn" && page === "Ideas" &&
                   allowed("content.create", { channel: "LinkedIn" }) && (
                     <button key="create-linkedin-article" type="button" aria-label="Create Blog Article" onClick={() => {
                       move("Create");
@@ -2890,7 +2894,7 @@ export default function Workspace() {
                 local={local}
                 quoteMedia={(command) => requestLocalAI<{ cost: number; model: string }>(command)}
                 run={execute}
-                back={() => {setSelected(null);setSearch("");setChannel(activeContent.channel);}}
+                back={() => {setCreateSection("Drafts");setSelected(null);setSearch("");setChannel(activeContent.channel);}}
                 form={openForm}
                 onError={setLocalError}
                 refresh={(force=false) => refresh(!force)}
@@ -2904,16 +2908,39 @@ export default function Workspace() {
             ) : (
               <>
                 {notice.startsWith("Submitted for review")&&<div className="s-info-strip" role="status">Submitted for review — now under review.<button className="s-btn" onClick={()=>move("Reviews")}>View in Reviews</button></div>}
-                <ExistingPipeline key={`create:${pipelineFocus}`} initialId={pipelineFocus} state={state} channel={channel} disabled={readOnly||busy} onIdeas={pipelineIdeas} onWrite={(b,c)=>void pipelineWrite(b,c)} onImport={pipelineImport}/>
-                {allowed("content.create",{channel:"Newsletter",account:"RyzaLab"})&&<NewsletterComposer key={newsletterSelection?.source} focusRequest={newsletterSelection?.key} initialSource={newsletterSelection?.source} startOpen={channel === "Newsletter"} state={state} send={send} disabled={readOnly||busy} demo={mode==="demo"} open={id=>{setNewsletterSelection(undefined);setSelected(id);setChannel("Newsletter");setSearch("");setNotice("Combined newsletter outline saved. Write manually or explicitly request AI drafting.");}}/>}
-                <div className="s-toolbar">
-                  <div className="s-inline">
-                    <h2>Your workbench</h2>
-                    <Badge>{filtered.length} stories</Badge>
-                  </div>
-                  <SearchBox value={search} set={setSearch} />
+                <nav className="s-create-tabs" aria-label="Create sections">
+                  {(["Drafts", "Pipeline briefs", ...(allowed("content.create", { channel: "Newsletter", account: "RyzaLab" }) ? ["Newsletter"] : [])] as (typeof createSection)[]).map(section => (
+                    <button key={section} type="button" className="s-btn" aria-pressed={createSection === section}
+                      onClick={() => setCreateSection(section)}>{section}</button>
+                  ))}
+                  {createSection === "Drafts" && allowed("content.create", { channel: "LinkedIn" }) && (
+                    <button type="button" className="s-btn" disabled={readOnly || busy}
+                      onClick={() => newContent(undefined, undefined, "LinkedIn", "Article")}>
+                      <FileText size={15} /> Create Blog Article
+                    </button>
+                  )}
+                </nav>
+                <div hidden={createSection !== "Drafts"}>
+                  <CreateDrafts contents={liveContents} packages={state.packages} schedules={state.schedules}
+                    channel={channel} setChannel={setChannel} layout={createLayout} setLayout={setCreateLayout} open={openContent} />
                 </div>
-                {contentRows(filtered)}
+                {createSection === "Pipeline briefs" && (
+                  <ExistingPipeline key={`create:${pipelineFocus}`} initialId={pipelineFocus} state={state} channel={channel}
+                    disabled={readOnly || busy} onIdeas={pipelineIdeas} onWrite={(brief, target) => void pipelineWrite(brief, target)} onImport={pipelineImport} />
+                )}
+                {allowed("content.create", { channel: "Newsletter", account: "RyzaLab" }) && (
+                  <div hidden={createSection !== "Newsletter"}>
+                    <NewsletterComposer key={newsletterSelection?.source} focusRequest={newsletterSelection?.key}
+                      initialSource={newsletterSelection?.source} startOpen state={state} send={send}
+                      disabled={readOnly || busy} demo={mode === "demo"} open={id => {
+                        setNewsletterSelection(undefined);
+                        setSelected(id);
+                        setChannel("Newsletter");
+                        setSearch("");
+                        setNotice("Combined newsletter outline saved. Write manually or explicitly request AI drafting.");
+                      }} />
+                  </div>
+                )}
               </>
             ))}
           {readyPackage && <PublicationHandoff pkg={readyPackage} onClose={()=>setReadyPackage(null)}/> }
