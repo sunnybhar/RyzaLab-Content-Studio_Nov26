@@ -182,7 +182,7 @@ try {
   await newsletterBrief.getByLabel("Create for").selectOption("Newsletter");
   await newsletterBrief.getByRole("button", { name: "Use brief in Brand Newsletter" }).click();
   await page.getByLabel("Combined newsletter title").waitFor();
-  const chosenBrief = page.getByRole("checkbox", { name: new RegExp(rows[1][1]) });
+  const chosenBrief = page.getByRole("checkbox", { name: /Unscheduled newsletter brief/ });
   assert.equal(await chosenBrief.isChecked(), true);
   assert.equal((await saved()).contents.length, state.contents.length);
   await navigate("Calendar");
