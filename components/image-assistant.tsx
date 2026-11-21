@@ -11,6 +11,7 @@ import { downloadImageAsset } from "@/lib/studio/exports";
 const money = (value: number) => `$${(value / 100).toFixed(2)}`;
 export function ImageAssistant({
   content,
+  hosted = false,
   state,
   actor,
   dirty,
@@ -23,6 +24,7 @@ export function ImageAssistant({
 }: {
   AssetMedia: ComponentType<{ source: string }>;
   content: Content;
+  hosted?: boolean;
   state: StudioState;
   actor: Actor;
   dirty: boolean;
@@ -102,8 +104,8 @@ export function ImageAssistant({
       <h3>Images for this content</h3>
       {downloadError && <p role="alert">{downloadError}</p>}
       <p>
-        Use one OpenAI image connection across posts, Blogs and Newsletters.
-        Images are optional.
+        {hosted ? "Uses the saved draft title and copy. A finished image is attached to the current draft when the saved revision still matches." :
+          "Use one OpenAI image connection across posts, Blogs and Newsletters. Images are optional."}
       </p>
       {!configured && (
         <p role="status">
@@ -113,11 +115,11 @@ export function ImageAssistant({
         </p>
       )}
       <label className="s-field">
-        Image brief
+        {hosted ? "Visual direction (optional)" : "Image brief"}
         <textarea
-          aria-label="Image brief"
+          aria-label={hosted ? "Visual direction (optional)" : "Image brief"}
           value={prompt}
-          maxLength={12000}
+          maxLength={hosted ? 1200 : 12000}
           onChange={(e) => {
             setPrompt(e.target.value);
             setConsent(false);
@@ -173,12 +175,16 @@ export function ImageAssistant({
             needsAuthorization ||
             !!pending ||
             !consent ||
-            prompt.trim().length < 12
+            (!hosted && prompt.trim().length < 12) ||
+            (hosted && content.state !== "draft")
           }
           onClick={async () => {
             if (
               await run(
-                {
+                hosted ? {
+                  type: "content.generateImage", contentId: content.id, expectedRevision: content.revision,
+                  direction: prompt, maximumCents: maximum, idempotencyKey: crypto.randomUUID(),
+                } : {
                   type: "job.enqueue",
                   kind: "image",
                   channel: content.channel,
@@ -240,7 +246,7 @@ export function ImageAssistant({
             /^\/api\/studio\/assets\?id=/.test(job.result || "") && (
               <>
                 <AssetMedia source={job.result!} />
-                <p>AI-generated concept; not a real installation.</p>
+                <p>{content.media.imageUrl === job.result ? "Attached to this draft · AI-generated concept." : "AI-generated concept; not a real installation."}</p>
                 <label className="s-field">
                   Image description
                   <input

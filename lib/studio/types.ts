@@ -256,6 +256,7 @@ export interface Content {
   ideaTextAlternative?: import("./idea-alternatives").IdeaTextAlternative;
   newsletterSources?: import("./newsletter-bundle").NewsletterSourceSnapshot[];
   newsletterOutline?: string;
+  newsletterTemplateId?: string;
   newsletterRequestKey?: string;
   newsletterRequestHash?: string;
   newsletterSource?: { kind: "idea" | "content"; id: string; channel: Channel; title: string; text: string; metadata: string; revision?: number; researchJobIds?: string[]; sourceReferences?: string[]; capturedAt: string };
@@ -346,6 +347,7 @@ export interface Connection {
   updatedAt: string;
 }
 export interface Job {
+  autoAttachImage?: boolean;
   researchSourceUrls?: string[];
   reviewCorrection?: {reviewJobId:string;rootSubmissionId:string;round:number};
   uncertainPredecessorIds?: string[];

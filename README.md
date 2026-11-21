@@ -51,6 +51,12 @@ npm run dev
 
 The dev/start scripts use port3005. Without public Supabase settings the app opens an explicit isolated browser demo. It never calls paid APIs, sends email, uploads files, or pretends to fetch Google Docs. Demo changes are stored in this browser; demo API-key entries are discarded. Clear browser storage to reset.
 
+### Hosted newsletter exports and draft images
+
+Apply `supabase/migrations/20261121_studio_newsletter_templates.sql` to the hosted project after the existing Studio migrations. Newsletter templates use the existing private `studio-assets` bucket. Create can upload and select a Word template, and Create and Review can download the saved newsletter using the selected template. Hosted template uploads and downloads are limited to 4 MB. The template export embeds a saved Studio PNG main image when present. Hosted template export is available as DOCX.
+
+Configure the Studio worker and a priced OpenAI image connection to generate images in the hosted editor. Studio uses the saved title and copy, plus optional visual direction. The worker saves the result privately and attaches it if the draft is still current. If the draft changed, the result remains available to attach from the editor.
+
 ## Existing Supabase migration — do not replace the live database blindly
 
 1. Back up your current database and review the migration on a preview project first.

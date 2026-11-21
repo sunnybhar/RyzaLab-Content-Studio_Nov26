@@ -172,10 +172,15 @@ export const commandSchema = z.discriminatedUnion("type", [
   }),
   command("idea.use", { id, targetChannel: z.enum(["LinkedIn","Instagram","Reddit","YouTube","Newsletter"]).optional(), format: short, account: z.string().max(200), textAlternative: z.enum(["story", "practical", "perspective"]).optional() }),
   command("idea.chooseTextAlternative", { ideaId: id, contentId: id }),
+  command("content.generateImage", {
+    contentId: id, expectedRevision: z.number().int().positive(),
+    direction: z.string().trim().max(1200).optional(), maximumCents: money, idempotencyKey: short,
+  }),
   command("content.generate", {
     contentId: id,
     kind: z.enum(["text", "review"]),
     expectedRevision: z.number().int().positive(),
+    newsletterExportTemplateId: z.string().regex(/^[a-f0-9]{64}$/).optional(),
     notes: text.optional(),
     researchJobIds: z.array(id).max(5).optional(),
     idempotencyKey: short,
@@ -366,6 +371,7 @@ export const commandSchema = z.discriminatedUnion("type", [
     connectionId: id,
     estimate: money,
     idempotencyKey: id,
+    autoAttachImage: z.boolean().optional(),
     confirmed: z.boolean().optional(),
     uncertainPredecessorIds: z.array(id).min(1).max(30).optional(),
   }),

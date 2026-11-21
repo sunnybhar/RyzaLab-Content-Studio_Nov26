@@ -3,7 +3,7 @@ import { CreateDrafts, type CreateLayout } from "./create-drafts";
 import {ArticleImages} from "./article-images";
 import {NewsletterSources} from "./newsletter-sources";
 import {NewsletterComposer} from "./newsletter-composer";
-import { NewsletterTemplateExport, prepareNewsletterExport } from "./newsletter-template-export";
+import { NewsletterTemplateExport, prepareNewsletterExport, prepareHostedNewsletterExport } from "./newsletter-template-export";
 import { LocalMediaAssistant } from "./local-media-assistant";
 import {ImageAssistant} from "./image-assistant";
 import {parseDocumentLayout} from "@/lib/studio/document-layout";
@@ -2505,9 +2505,13 @@ export default function Workspace() {
                       <Badge tone="amber">Review requested</Badge>
                     </div>
                     <h2>{c.title}</h2>
-                    <ReviewPostPreview key={c.revision} content={c} local={local} AssetMedia={AssetMedia}
-                      onFormatExport={(templateId) => prepareNewsletterExport(send, c, templateId)}
-                      returnToDraft={local && c.channel === "Newsletter" && allowed("content.edit", { channel: c.channel, account: c.account, contentId: c.id, assignedTo: c.assignedTo })
+                    <ReviewPostPreview key={c.revision} content={c} local={local} hosted={mode === "live"} AssetMedia={AssetMedia}
+                      onFormatExport={async templateId => {
+                        if (local) return prepareNewsletterExport(send, c, templateId);
+                        await prepareHostedNewsletterExport(send, c, templateId);
+                        return c.text;
+                      }}
+                      returnToDraft={(local || mode === "live") && c.channel === "Newsletter" && allowed("content.edit", { channel: c.channel, account: c.account, contentId: c.id, assignedTo: c.assignedTo })
                         ? async () => {
                           const returned = await execute({ type: "content.returnToDraft", id: c.id, expectedRevision: c.revision }, "Newsletter returned to draft.");
                           if (returned) openContent(c);
@@ -4534,13 +4538,19 @@ function Editor({
                 value={text}
                 onChange={(e) => setText(e.target.value)}
               />
-              {local && c.channel === "Newsletter" ? (
+              {(local || mode === "live") && c.channel === "Newsletter" ? (
                 <NewsletterTemplateExport key={c.id} contentId={c.id} title={title} text={text}
+                  local={local} revision={c.revision} selectionDisabled={readOnly || c.state !== "draft"}
+                  onTemplateChange={local ? undefined : () => refresh(true)}
                   onAdapt={() => void generateSavedDraft(true)}
                   generationBusy={Boolean(generatingDraft) || busy}
                   adaptingSince={generatingDraft?.kind === "template" ? generatingDraft.startedAt : undefined}
                   draftDirty={dirty}
-                  onFormatExport={(templateId) => prepareNewsletterExport(send, c, templateId)}
+                  onFormatExport={async templateId => {
+                    if (local) return prepareNewsletterExport(send, c, templateId);
+                    await prepareHostedNewsletterExport(send, c, templateId);
+                    return c.text;
+                  }}
                   unsavedImage={media.imageUrl !== c.media.imageUrl || media.imageAlt !== c.media.imageAlt || media.imageCaption !== c.media.imageCaption}
                   savingDraft={draftSave.busy}
                   adaptError={draftGenerationError?.kind === "template" ? draftGenerationError.message : undefined}
@@ -4574,7 +4584,7 @@ function Editor({
                   attach={(imageUrl, imagePrompt) => updateMedia({ imageUrl, imagePrompt, imageAlt: "AI-generated concept illustration", imageCaption: "AI-generated concept illustration." })}
                 />
               ) : (
-                <ImageAssistant content={c} state={state} actor={actor} dirty={dirty||externalChange} readOnly={readOnly} busy={busy} run={run} refresh={refresh} progressJob={progressJob} AssetMedia={AssetMedia}/>
+                <ImageAssistant hosted={mode === "live"} content={c} state={state} actor={actor} dirty={dirty||externalChange} readOnly={readOnly} busy={busy} run={run} refresh={refresh} progressJob={progressJob} AssetMedia={AssetMedia}/>
               )}
               <ArticleImages text={text} media={media} update={updateMedia} disabled={readOnly} AssetMedia={AssetMedia}/>
               {media.imageUrl&&<section className="s-version" aria-label="Attached main image"><AssetMedia source={media.imageUrl}/><p>{media.imageAlt||"AI-generated concept illustration"}</p><button className="s-btn" disabled={readOnly} onClick={()=>updateMedia({imageUrl:undefined,imageAlt:undefined,imageCaption:undefined})}>Remove main image</button><p>Save after removing. The stored original remains available in image request history.</p></section>}

@@ -1,3 +1,5 @@
+import { applyCommand } from "./engine";
+import { currentCopyAcceptance } from "./solo-quality";
 import {orchestrateReviewPreparation} from "./review-preparation";
 import { z } from "zod";
 import type { StudioState, Job } from "./types";
@@ -206,6 +208,22 @@ export function applyWorkerReceipt(
     target: j.id,
     at: receipt.receivedAt,
   });
+  if (j.kind === "image" && j.autoAttachImage && j.state === "succeeded" && receipt.storedMedia) {
+    const draft = next.contents.find(content => content.id === j.contentId);
+    const member = next.members.find(member => member.email === j.createdBy && !member.revoked);
+    if (draft && member && draft.state === "draft" && !draft.deletedAt && draft.revision === j.targetRevision &&
+        (draft.mediaRevision ?? 1) === j.mediaRevision && !currentCopyAcceptance(draft, next)) {
+      try {
+        return applyCommand(next, { email: member.email, id: member.id }, {
+          type: "content.image.apply", contentId: draft.id, jobId: j.id, expectedRevision: draft.revision,
+          alt: "AI-generated concept illustration", caption: "AI-generated concept illustration.",
+        }, { now: receipt.receivedAt });
+      } catch (error) {
+        if (!(error instanceof StudioError)) throw error;
+      }
+    }
+    j.error = "Image saved. The current draft could not be updated automatically. Open the result to attach it.";
+  }
   return next;
 }
 

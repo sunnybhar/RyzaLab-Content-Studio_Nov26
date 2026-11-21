@@ -2061,6 +2061,8 @@ export function applyCommand(
         bad(
           "This connection is not the active workflow binding for this function. A permitted administrator must activate the desired mapping.",
         );
+      if (c.autoAttachImage && (!ctx.canonicalGeneration || c.kind !== "image" || !d || d.state !== "draft" || d.deletedAt))
+        bad("Automatic image attachment requires a current working draft.");
       const outputContract =
         ctx.canonicalGeneration && d
           ? c.kind === "text"
@@ -2071,6 +2073,7 @@ export function applyCommand(
           : undefined;
       const payloadHash = fingerprint({
         outputContract,
+        autoAttachImage: c.autoAttachImage,
         uncertainPredecessorIds:c.uncertainPredecessorIds,
         ideaPurpose:c.ideaPurpose,
         kind: c.kind,
@@ -2152,6 +2155,7 @@ export function applyCommand(
         targetRevision: d?.revision,
         targetIdentity: d ? copyIdentity(d, s) : undefined,
         targetAccepted: d ? Boolean(currentCopyAcceptance(d, s)) : false,
+        autoAttachImage: c.autoAttachImage,
         outputContract,
         connectionSnapshot: {
           provider: connection.provider,

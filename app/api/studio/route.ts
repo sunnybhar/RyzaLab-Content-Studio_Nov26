@@ -19,6 +19,8 @@ import {
 } from "@/lib/studio/store";
 import { retrieveBroadReferences } from "@/lib/studio/web-discovery";
 import { publicRetrievalTarget, researchJobInput } from "@/lib/studio/research-link";
+import { hostedNewsletterGuidance, newsletterDraft } from "@/lib/studio/hosted-newsletter";
+import { draftImageInput } from "@/lib/studio/draft-image";
 import { generationInput } from "@/lib/studio/generation";
 import { ideaJobInput } from "@/lib/studio/idea-generation";
 import { loadChannelPreset } from "@/lib/studio/preset-store";
@@ -102,10 +104,24 @@ export async function POST(req: NextRequest) {
 
     const contextChannel=parsed.type==="idea.generate"?parsed.channel:parsed.type==="content.generate"?state.contents.find(c=>c.id===parsed.contentId)?.channel:parsed.type==="idea.use"?state.ideas.find(i=>i.id===parsed.id)?.channel:["content.submit","content.reviewEdit"].includes(parsed.type)?state.contents.find(c=>c.id===(parsed as {id:string}).id)?.channel:undefined;
     if(contextChannel){if(!["content.submit","content.reviewEdit"].includes(parsed.type))requirePermission(state,actor,"job.create",{channel:contextChannel,function:parsed.type==="idea.generate"?"ideas":"text"});state=await hydrateAgentFiles(state,contextChannel);}
+    let generation = parsed;
+    if (parsed.type === "content.generate" && parsed.kind === "text") {
+      const draft = state.contents.find(item => item.id === parsed.contentId && !item.deletedAt);
+      const templateId = draft?.newsletterTemplateId;
+      if (parsed.newsletterExportTemplateId && (parsed.newsletterExportTemplateId !== templateId || !draft?.text.trim()))
+        throw new StudioError(409, "Save the newsletter and select its current template before formatting.");
+      if (draft?.channel === "Newsletter" && templateId) {
+        newsletterDraft(state, actor, draft.id, "content.edit");
+        const guidance = await hostedNewsletterGuidance(db, templateId);
+        generation = { ...parsed, newsletterTemplate: guidance, templateExportId: parsed.newsletterExportTemplateId } as typeof parsed;
+      }
+    } else if (parsed.type === "content.generate" && parsed.newsletterExportTemplateId) {
+      throw new StudioError(400, "Newsletter formatting requires a writing request.");
+    }
     let command = commandSchema.parse(
-      parsed.type === "content.generate"
-        ? generationInput(state, actor, parsed)
-        : parsed.type === "research.start" ? researchJobInput(state,actor,parsed) : parsed,
+      generation.type === "content.generate" ? generationInput(state, actor, generation) :
+        generation.type === "content.generateImage" ? draftImageInput(state, actor, generation) :
+          generation.type === "research.start" ? researchJobInput(state, actor, generation) : generation,
     );
     if(command.type==="idea.generate"&&command.automaticResearch) {
       diagnostics.stage("research_and_prepare_ideas");
@@ -172,7 +188,7 @@ export async function POST(req: NextRequest) {
     let next = applyCommand(state, actor, command, {
       hash,
       retrievalResult,
-      canonicalGeneration: parsed.type === "content.generate" || parsed.type === "research.start",
+      canonicalGeneration: parsed.type === "content.generate" || parsed.type === "content.generateImage" || parsed.type === "research.start",
       quotedCost: priced?.cost,
       pricingSnapshot: priced?.pricingSnapshot,
       assetManifest,
