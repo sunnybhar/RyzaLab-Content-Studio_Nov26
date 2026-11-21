@@ -176,17 +176,15 @@ try {
   assert.equal(state.jobs.length, originalJobs);
   await page.reload();
   await navigate("Create");
-  await page
-    .getByRole("region", { name: "Existing Pipeline" })
-    .getByLabel("Search titles and angles")
-    .fill("newsletter");
-  await page
-    .getByRole("region", { name: "Existing Pipeline" })
-    .getByRole("button", { name: "Write directly" })
-    .click();
-  state = await saved();
-  assert.equal(state.contents[0].channel, "Newsletter");
-  assert.equal(state.contents[0].pipelineSnapshot.externalId, "TEST-04");
+  await page.getByRole("button", { name: "Pipeline briefs", exact: true }).click();
+  const newsletterBrief = page.getByRole("region", { name: "Existing Pipeline" });
+  await newsletterBrief.getByLabel("Search titles and angles").fill("newsletter");
+  await newsletterBrief.getByLabel("Create for").selectOption("Newsletter");
+  await newsletterBrief.getByRole("button", { name: "Use brief in Brand Newsletter" }).click();
+  await page.getByLabel("Combined newsletter title").waitFor();
+  const chosenBrief = page.getByRole("checkbox", { name: new RegExp(rows[1][1]) });
+  assert.equal(await chosenBrief.isChecked(), true);
+  assert.equal((await saved()).contents.length, state.contents.length);
   await navigate("Calendar");
   await page
     .getByText("Upload content calendar / download template", { exact: true })
