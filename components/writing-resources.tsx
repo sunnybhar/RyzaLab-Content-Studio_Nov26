@@ -5,7 +5,7 @@ import type {
   AgentRuleFile,
 } from "@/lib/studio/agent-rule-files";
 import type { Channel, Command, StudioState } from "@/lib/studio/types";
-const resources: {
+export const writingResources: {
   slot: AgentFileSlot;
   title: string;
   description: string;
@@ -84,11 +84,13 @@ export function WritingResources({
   channel,
   send,
   allowed,
+  slot,
 }: {
   state: StudioState;
   channel: Channel;
   send: (c: Command) => Promise<unknown>;
   allowed: boolean;
+  slot: AgentFileSlot;
 }) {
   const [editing, setEditing] = useState<AgentFileSlot>(),
     [text, setText] = useState(""),
@@ -141,33 +143,21 @@ export function WritingResources({
   }
   return (
     <section
-      className="s-panel"
-      style={{ padding: 20, marginTop: 24 }}
+      className="s-rule-form"
       aria-label="Research and writing resources"
     >
-      <h2>Research, Humanizer and long-form templates</h2>
       <p>
         Resources for {channel}. Original downloads and the previous three file
         versions remain available. No AI request starts when you upload.
       </p>
       {message && <p role="status">{message}</p>}
-      {resources.map((resource) => {
+      {writingResources.filter(resource => resource.slot === slot).map((resource) => {
         const file = state.agentRuleFiles?.find(
           (f) => f.channel === channel && f.slot === resource.slot,
         );
         return (
-          <details
-            key={resource.slot}
-            style={{
-              marginTop: 18,
-              padding: 14,
-              border: "1px solid var(--s-line)",
-              borderRadius: 8,
-            }}
-          >
-            <summary>
-              {resource.title} · {file ? "Saved" : "Not uploaded"}
-            </summary>
+          <article key={resource.slot}>
+            <h3>{resource.title}</h3>
             <p>{resource.description}</p>
             {file && (
               <p>
@@ -244,7 +234,7 @@ export function WritingResources({
                 ))}
               </details>
             )}
-          </details>
+          </article>
         );
       })}
     </section>

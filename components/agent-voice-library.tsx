@@ -9,11 +9,13 @@ export function AgentVoiceLibrary({
   channel,
   send,
   local = false,
+  entryId,
 }: {
   state: StudioState;
   actor: Actor;
   channel: Channel;
   local?: boolean;
+  entryId?: string;
   send: (command: Command) => Promise<unknown>;
 }) {
   const [title, setTitle] = useState(""),
@@ -34,7 +36,7 @@ export function AgentVoiceLibrary({
       channel: shared ? undefined : channel,
     });
   const examples = (state.agentVoiceExamples || []).filter(
-    (e) => e.channel === "Shared" || e.channel === channel,
+    (e) => e.id === entryId && (e.channel === "Shared" || e.channel === channel),
   );
   function change() {
     pending.current = undefined;
@@ -110,10 +112,10 @@ export function AgentVoiceLibrary({
   }
   return (
     <section
-      className="s-agent-voice-library s-panel s-panel-padding"
+      className="s-rule-form"
       aria-label="RyzaLab tone and original content voice"
     >
-      <h2>RyzaLab tone and original content voice</h2>
+      {!entryId && <>
       <p>
         Collect original articles, posts and newsletters as future examples of
         voice, tone, structure and format. Add multiple examples by pasting text
@@ -281,14 +283,9 @@ export function AgentVoiceLibrary({
           {busy ? "Saving…" : "Save original content example"}
         </button>
       </form>
+      </>}
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
-      <p>
-        {examples.length} example(s) available for {channel}, including
-        brand-wide examples. Pasted text: up to 60,000 characters. Files: up to
-        256 KB each. The library supports up to 100 examples within workspace
-        storage limits.
-      </p>
       {examples.map((entry) => (
         <article className="s-version" key={entry.id}>
           <h3>{entry.title}</h3>
@@ -297,20 +294,7 @@ export function AgentVoiceLibrary({
             {entry.channel === "Shared" ? "Brand-wide" : entry.channel} · Stored
             for new AI requests
           </p>
-          {entry.text && (
-            <details>
-              <summary>Read original content</summary>
-              <p style={{ whiteSpace: "pre-wrap" }}>{entry.text}</p>
-            </details>
-          )}
-          {entry.file && (
-            <>
-              <p>{entry.file.fileName}</p>
-              <button className="s-btn" onClick={() => download(entry)}>
-                Download original file
-              </button>
-            </>
-          )}
+          {entry.file && <button className="s-btn" onClick={() => download(entry)}>Download original file</button>}
           <button
             className="s-btn"
             disabled={

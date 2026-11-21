@@ -1,0 +1,22 @@
+.studio-v2 .s-rule-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; }
+.studio-v2 .s-rule-toolbar h2,.studio-v2 .s-rule-toolbar h3,.studio-v2 .s-rule-preview h3 { margin:0; }
+.studio-v2 .s-rule-toolbar select { padding:8px; border:1px solid var(--s-line); border-radius:6px; color:var(--s-text); background:var(--s-paper); }
+.studio-v2 .s-rule-workspace { display:grid; grid-template-columns:minmax(130px,.55fr) minmax(0,1.5fr) minmax(0,1fr); gap:16px; margin-top:20px; min-width:0; }
+.studio-v2 .s-rule-categories { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.studio-v2 .s-rule-categories button { text-align:left; justify-content:flex-start; }
+.studio-v2 .s-rule-categories [aria-pressed="true"] { color:var(--s-accent-ink); background:var(--s-accent); border-color:var(--s-accent); }
+.studio-v2 .s-rule-list,.studio-v2 .s-rule-preview { min-width:0; border:1px solid var(--s-line); border-radius:9px; padding:14px; }
+.studio-v2 .s-rule-preview { background:var(--s-raised); align-self:start; overflow-wrap:anywhere; }
+.studio-v2 .s-rule-preview > strong { display:block; margin-top:10px; }
+.studio-v2 .s-rule-row { display:grid; gap:3px; width:100%; text-align:left; padding:10px; border:0; border-bottom:1px solid var(--s-line); color:var(--s-text); background:transparent; overflow-wrap:anywhere; }
+.studio-v2 .s-rule-row:hover,.studio-v2 .s-rule-row[aria-pressed="true"] { background:var(--s-raised); }
+.studio-v2 .s-rule-row small { color:var(--s-muted); }
+.studio-v2 .s-rule-excerpt { max-height:260px; overflow:auto; white-space:pre-wrap; padding:10px; margin:10px 0; background:var(--s-panel); border:1px solid var(--s-line); border-radius:6px; }
+.studio-v2 .s-rule-dialog { width:min(820px,calc(100vw - 24px)); }
+.studio-v2 .s-rule-dialog .s-panel { margin:0; }
+.studio-v2 .s-rule-form .s-field { margin:12px 0; }
+@media(max-width:850px) {
+  .studio-v2 .s-rule-workspace { grid-template-columns:minmax(0,1fr) minmax(0,.85fr); }
+  .studio-v2 .s-rule-categories { grid-column:1 / -1; flex-direction:row; flex-wrap:wrap; }
+}
+@media(max-width:560px) { .studio-v2 .s-rule-workspace { grid-template-columns:minmax(0,1fr); } }

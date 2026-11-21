@@ -10,7 +10,7 @@ try{
  await page.addInitScript(({fixture})=>{if(!localStorage.getItem('ryzalab-studio-v2'))localStorage.setItem('ryzalab-studio-v2',JSON.stringify(fixture));},{fixture});
  await page.goto((process.env.TEST_BASE_URL||'http://127.0.0.1:3061')+'/preview');
  const nav=async(name:string)=>page.locator('.s-sidebar nav').getByRole('button',{name,exact:true}).click();
- await nav('Create');await page.locator('.s-content-title').filter({hasText:c.title}).click();
+ await nav('Create');await page.getByRole('button',{name:`Open ${c.title}`,exact:true}).click();
  assert.equal(await page.getByLabel('Newsletter image brief',{exact:true}).count(),0);assert.equal(await page.getByText('Newsletter image and exports',{exact:true}).count(),0);assert.ok(await page.getByRole('region',{name:'Download newsletter',exact:true}).evaluate(node=>Boolean(node.previousElementSibling?.querySelector('textarea[aria-label="Content text"]'))));
  for(const format of ['DOCX','PDF']){
   const pending=page.waitForEvent('download');await page.getByRole('button',{name:`Export newsletter ${format}`,exact:true}).click();const download=await pending;const bytes=await fs.readFile((await download.path())!);
@@ -23,17 +23,21 @@ try{
  await page.getByLabel('Content text',{exact:true}).fill(c.text);
  await nav('Agent Rules');let zip=new JSZip();zip.file('LinkedIn/00-START-HERE-agent-instructions.md','Original user-owned instructions');zip.file('__MACOSX/LinkedIn/knowledge/._company.md','\0AppleDouble metadata');zip.file('LinkedIn/.DS_Store','\0Finder metadata');zip.file('LinkedIn/knowledge/company.md','Original company background');zip.file('LinkedIn/skill/archive.zip','skipped');
  const channelZip=await zip.generateAsync({type:'nodebuffer'});
+ const ruleDialog=page.getByRole('dialog');const closeRules=()=>ruleDialog.getByRole('button',{name:'Close',exact:true}).click();await page.getByRole('button',{name:'Channel package',exact:true}).click();
  await page.getByLabel('Agent Rules ZIP package',{exact:true}).setInputFiles({name:'my-channel.zip',mimeType:'application/zip',buffer:channelZip});
  await page.getByLabel('Package Instructions',{exact:true}).fill('User edited these instructions before saving');assert.match(await page.getByLabel('Package context',{exact:true}).inputValue(),/Original company background/);assert.doesNotMatch(await page.getByLabel('Package context',{exact:true}).inputValue(),/AppleDouble|MACOSX|\u0000/);
  await page.getByRole('button',{name:'Save package for LinkedIn',exact:true}).click();await page.getByRole('status').filter({hasText:'Instructions and context saved together'}).waitFor();
+ await closeRules();await page.getByRole('button',{name:/^linkedin-instructions.md/}).click();await page.getByRole('button',{name:'Manage resource'}).click();
  zip=new JSZip();zip.file('brand/SKILL.md','Check claims and retain uncertainty');zip.file('brand/references/facts.md','Supplied brand facts');zip.file('brand/scripts/check.py','not executed');
  await page.getByLabel('Skill ZIP package',{exact:true}).setInputFiles({name:'brand-skill.zip',mimeType:'application/zip',buffer:await zip.generateAsync({type:'nodebuffer'})});
  assert.match(await page.getByLabel('Package Instructions',{exact:true}).inputValue(),/Check claims/);assert.match(await page.getByLabel('Package context',{exact:true}).inputValue(),/Supplied brand facts/);
  await page.getByRole('button',{name:'Save package for LinkedIn',exact:true}).click();await page.getByRole('status').filter({hasText:'Instructions and context saved together'}).waitFor();
- const originalDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Download original uploaded ZIP · my-channel.zip',exact:true}).click();const originalFile=await originalDownload;assert.equal(originalFile.suggestedFilename(),'my-channel.zip');assert.deepEqual(await fs.readFile((await originalFile.path())!),channelZip);
+ await closeRules();await page.getByRole('button',{name:'ZIP history',exact:true}).click();await page.getByRole('button',{name:/^my-channel.zip/}).click();
+ const originalDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Download original',exact:true}).click();const originalFile=await originalDownload;assert.equal(originalFile.suggestedFilename(),'my-channel.zip');assert.deepEqual(await fs.readFile((await originalFile.path())!),channelZip);
+ await page.getByRole('button',{name:'Channel package',exact:true}).click();
  const packageDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Download saved package ZIP',exact:true}).click();const packageFile=await packageDownload;const reimport=await JSZip.loadAsync(await fs.readFile((await packageFile.path())!));assert.match(await reimport.file('LinkedIn/INSTRUCTIONS.md')!.async('string'),/User edited/);
  const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('ryzalab-studio-v2')!));assert.equal(state.agentRuleFiles.length,2);assert.match(state.agentRuleFiles.find((f:any)=>f.slot==='instructions').extractedText,/User edited/);assert.equal(state.jobs.length,0);
  state.jobs.unshift({id:'writing-progress',contentId:c.id,channel:'Newsletter',kind:'text',outputContract:'draft_v1',state:'running',createdBy:DEMO_ACTOR.email,createdAt:new Date().toISOString(),prompt:'Fixture',connectionId:'fixture',estimate:18,reserved:18,attempt:1,idempotencyKey:'progress'});
- await page.evaluate(state=>localStorage.setItem('ryzalab-studio-v2',JSON.stringify(state)),state);await page.reload();await nav('Create');await page.locator('.s-content-title').filter({hasText:c.title}).click();await page.getByRole('region',{name:'Writing progress',exact:true}).getByRole('heading',{name:'AI is writing your newsletter'}).waitFor();
+ await page.evaluate(state=>localStorage.setItem('ryzalab-studio-v2',JSON.stringify(state)),state);await page.reload();await nav('Create');await page.getByRole('button',{name:`Open ${c.title}`,exact:true}).click();await page.getByRole('region',{name:'Writing progress',exact:true}).getByRole('heading',{name:'AI is writing your newsletter'}).waitFor();
  assert.deepEqual(errors,[]);console.log('PASS: user ZIP preview/edit, skill ZIP guidance, atomic save, multi-page PDF and DOCX with embedded image/source, visible newsletter writing progress; no provider calls');
 }finally{await browser.close();}

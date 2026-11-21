@@ -1,6 +1,89 @@
-import {chromium} from 'playwright';import assert from 'node:assert/strict';import fs from 'node:fs/promises';
-const base=process.env.TEST_BASE_URL||'http://127.0.0.1:3057',browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
-try{const page=await browser.newPage({viewport:{width:1440,height:1100},acceptDownloads:true});const errors:string[]=[],calls:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.route('**/api/studio/**',route=>{calls.push(route.request().url());return route.abort();});await page.goto(base);const nav=async(name:string)=>page.locator('.s-sidebar nav').getByRole('button',{name,exact:true}).click();await nav('Agent Rules');await page.getByRole('heading',{name:'Instructions and Context',exact:true}).waitFor();
-await page.getByLabel('Upload Instructions file',{exact:true}).setInputFiles({name:'LinkedIn-instructions.txt',mimeType:'text/plain',buffer:Buffer.from('Original instructions: stored only.')});await page.getByRole('status').filter({hasText:'Instructions saved for LinkedIn.'}).waitFor();await page.getByLabel('Upload Markdown context (.md) file',{exact:true}).setInputFiles({name:'LinkedIn-context.md',mimeType:'text/markdown',buffer:Buffer.from('# LinkedIn background and context.')});await page.getByRole('status').filter({hasText:'Markdown context (.md) saved for LinkedIn.'}).waitFor();const download=page.waitForEvent('download');await page.getByRole('button',{name:'Download Markdown context (.md)',exact:true}).click();const file=await download;assert.equal(file.suggestedFilename(),'LinkedIn-context.md');assert.equal(await fs.readFile((await file.path())!,'utf8'),'# LinkedIn background and context.');
-const voice=page.getByRole('region',{name:'RyzaLab tone and original content voice',exact:true});await voice.getByLabel('Voice example title').fill('Original voice post');await voice.getByLabel('Original voice example content').fill('An original post with <script>untrusted data</script> kept as plain text.');await voice.getByRole('button',{name:'Save original content example',exact:true}).click();await voice.getByRole('heading',{name:'Original voice post',exact:true}).waitFor();await voice.getByLabel('Voice example title').fill('Original newsletter');await voice.getByLabel('Voice example content type').selectOption('newsletter');await voice.getByLabel('Voice example source').selectOption('file');await voice.getByLabel('Voice example file').setInputFiles({name:'newsletter.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\nOriginal newsletter fixture; stored only.')});await voice.getByRole('button',{name:'Save original content example',exact:true}).click();await voice.getByRole('heading',{name:'Original newsletter',exact:true}).waitFor();
-await page.getByLabel('Agent Rules channel',{exact:true}).selectOption('Newsletter');await page.getByText('No instructions file uploaded for Newsletter.',{exact:true}).waitFor();await voice.getByRole('heading',{name:'Original voice post',exact:true}).waitFor();await voice.getByRole('heading',{name:'Original newsletter',exact:true}).waitFor();await page.getByLabel('Agent Rules channel',{exact:true}).selectOption('LinkedIn');await nav('Home');await nav('Agent Rules');await page.getByText('LinkedIn-instructions.txt · 0.0 KB',{exact:true}).waitFor();await page.reload();await nav('Agent Rules');await voice.getByRole('heading',{name:'Original voice post',exact:true}).waitFor();await voice.getByRole('heading',{name:'Original newsletter',exact:true}).waitFor();const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('ryzalab-studio-v2')!));assert.equal(state.agentRuleFiles.length,2);assert.equal(state.agentVoiceExamples.length,2);assert.equal(state.jobs.length,0,'uploads must not create research or generation jobs');assert.equal(calls.length,0,'storage-only page must not call agents');assert.deepEqual(errors,[]);await page.screenshot({path:'/tmp/ryzalab-agent-rules-0313.png',fullPage:true});console.log('PASS: per-channel instruction/context originals, exact download, multiple pasted/uploaded voice examples, brand-wide display and reload persistence; no agent calls');}finally{await browser.close();}
+import { chromium } from "playwright";
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import JSZip from "jszip";
+
+const base = process.env.TEST_BASE_URL || "http://127.0.0.1:3057";
+const browser = await chromium.launch({ executablePath: "/usr/bin/chromium", args: ["--no-sandbox"] });
+try {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
+  page.setDefaultTimeout(15000);
+  page.setDefaultNavigationTimeout(60000);
+  const errors: string[] = [], calls: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.route("**/api/studio/**", route => {
+    calls.push(route.request().url());
+    return route.abort();
+  });
+  await page.goto(base + "/preview");
+  const nav = page.locator(".s-sidebar nav");
+  await nav.getByRole("button", { name: "Agent Rules", exact: true }).click();
+  await page.getByRole("heading", { name: "Rule workspace", exact: true }).waitFor();
+  const categories = page.getByRole("navigation", { name: "Rule categories" });
+  const preview = page.getByRole("complementary", { name: "Resource preview" });
+  const dialog = page.getByRole("dialog");
+  const close = () => dialog.getByRole("button", { name: "Close", exact: true }).click();
+
+  await page.getByRole("button", { name: /^Instructions ·|^Instructions LinkedIn/ }).click();
+  await preview.getByRole("button", { name: "Manage resource" }).click();
+  await dialog.getByLabel("Upload Instructions file", { exact: true }).setInputFiles({
+    name: "instructions.txt", mimeType: "text/plain", buffer: Buffer.from("Stored instructions."),
+  });
+  await dialog.getByRole("status").filter({ hasText: "Instructions saved for LinkedIn." }).waitFor();
+  await close();
+  await categories.getByRole("button", { name: "Knowledge" }).click();
+  await page.getByRole("button", { name: /^Context LinkedIn/ }).click();
+  await preview.getByRole("button", { name: "Manage resource" }).click();
+  await dialog.getByLabel("Upload Markdown context (.md) file").setInputFiles({
+    name: "context.md", mimeType: "text/markdown", buffer: Buffer.from("# Brand context"),
+  });
+  await dialog.getByRole("status").filter({ hasText: "saved for LinkedIn." }).waitFor();
+  await close();
+  const download = page.waitForEvent("download");
+  await preview.getByRole("button", { name: "Download original" }).click();
+  assert.equal(await fs.readFile((await (await download).path())!, "utf8"), "# Brand context");
+
+  await page.getByRole("button", { name: "Channel package" }).click();
+  const zip = new JSZip();
+  zip.file("INSTRUCTIONS.md", "Package instructions");
+  zip.file("knowledge/background.md", "# Package background");
+  const bytes = await zip.generateAsync({ type: "nodebuffer" });
+  await dialog.getByLabel("Agent Rules ZIP package").setInputFiles({
+    name: "channel.zip", mimeType: "application/zip", buffer: bytes,
+  });
+  await dialog.getByLabel("Package Instructions").fill("Edited package instructions");
+  await dialog.getByRole("button", { name: "Save package for LinkedIn" }).click();
+  await dialog.getByRole("status").filter({ hasText: "saved together" }).waitFor();
+  await close();
+  await categories.getByRole("button", { name: "ZIP history" }).click();
+  await page.getByRole("button", { name: /^channel.zip/ }).click();
+  const original = page.waitForEvent("download");
+  await preview.getByRole("button", { name: "Download original" }).click();
+  assert.deepEqual(await fs.readFile((await (await original).path())!), bytes);
+
+  await categories.getByRole("button", { name: "Voice examples" }).click();
+  await page.getByRole("button", { name: "Add voice example", exact: true }).click();
+  await dialog.getByLabel("Voice example title").fill("Original post");
+  await dialog.getByLabel("Original voice example content").fill("A sample <script> kept as plain text.");
+  await dialog.getByRole("button", { name: "Save original content example" }).click();
+  await dialog.getByRole("status").filter({ hasText: "example saved" }).waitFor();
+  await close();
+  await page.getByLabel("Search resources").fill("original");
+  await page.getByRole("button", { name: /^Original post/ }).click();
+  await preview.getByText("A sample <script> kept as plain text.").waitFor();
+  await page.getByLabel("Agent Rules channel").selectOption("Newsletter");
+  await page.getByRole("button", { name: /^Original post/ }).waitFor();
+  await categories.getByRole("button", { name: "Knowledge" }).click();
+  assert.equal(await page.getByRole("button", { name: /^newsletter-context.md/ }).count(), 0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  const state = await page.evaluate(() => JSON.parse(localStorage.getItem("ryzalab-studio-v2")!));
+  assert.equal(state.agentRuleFiles.length, 2);
+  assert.equal(state.agentVoiceExamples.length, 1);
+  assert.equal(state.jobs.length, 0);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(calls, []);
+  console.log("PASS: Rule Workspace categories, search, preview, upload, ZIP history, shared voice examples, and mobile width");
+} finally {
+  await browser.close();
+}

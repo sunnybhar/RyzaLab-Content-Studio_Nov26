@@ -1,9 +1,12 @@
 "use client";
-import {WritingResources} from "./writing-resources";
+import { WritingResources, writingResources } from "./writing-resources";
+import { BudgetPagination } from "./budget-section";
+import type { AgentFileSlot } from "@/lib/studio/agent-rule-files";
+import "./agent-rules.css";
 import {ACTIVE_CHANNELS as CHANNELS} from "@/lib/studio/active-channels";
 import { readAgentPackage } from "@/lib/studio/agent-package";
 import { AgentVoiceLibrary } from "./agent-voice-library";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   type Actor,
   type Channel,
@@ -11,6 +14,19 @@ import {
   type StudioState,
 } from "@/lib/studio/types";
 import { can } from "@/lib/studio/permissions";
+const categories = ["Instructions", "Knowledge", "Voice examples", "Research", "Templates", "ZIP history"] as const;
+type Category = (typeof categories)[number];
+type RuleResource = {
+  id: string;
+  title: string;
+  scope: string;
+  note: string;
+  text?: string;
+  file?: { fileName: string; base64: string };
+  date?: string;
+  slot?: AgentFileSlot;
+};
+
 export function AgentRules({
   state,
   actor,
@@ -36,6 +52,53 @@ export function AgentRules({
     expectedContextId?: string;
   } | null>(null);
   const allowed = can(state, actor, "workflow.edit", { channel });
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [category, setCategory] = useState<Category>("Instructions");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
+  const [selected, setSelected] = useState<string>();
+  const [editor, setEditor] = useState<{ kind: "package" | "voice" | "file"; resource?: RuleResource }>();
+  const files = (state.agentRuleFiles ?? []).filter(file => file.channel === channel);
+  const slotRow = (slot: AgentFileSlot, label: string): RuleResource => {
+    const file = files.find(entry => entry.slot === slot);
+    return {
+      id: slot, title: file?.fileName ?? label, scope: channel,
+      note: file ? label : "Ready to set up",
+      date: file?.uploadedAt, text: file?.extractedText, file, slot,
+    };
+  };
+  const rows: Record<Category, RuleResource[]> = {
+    Instructions: [slotRow("instructions", "Instructions"), slotRow("humanizer", "Ryan’s Humanizer")],
+    Knowledge: [slotRow("context", "Context")],
+    "Voice examples": (state.agentVoiceExamples ?? []).filter(entry =>
+      entry.channel === "Shared" || entry.channel === channel,
+    ).map(entry => ({
+      id: entry.id, title: entry.title, scope: entry.channel === "Shared" ? "Brand-wide" : channel,
+      note: entry.contentType, text: entry.text ?? entry.extractedText, file: entry.file, date: entry.createdAt,
+    })),
+    Research: writingResources.filter(item => item.slot === "research_instructions" || item.slot === "source_preferences")
+      .map(item => slotRow(item.slot, item.title)),
+    Templates: writingResources.filter(item => item.slot === "newsletter_structure" || item.slot === "newsletter_layout")
+      .map(item => slotRow(item.slot, item.title)),
+    "ZIP history": (state.agentPackageArchives ?? []).filter(entry => entry.channel === channel).map(entry => ({
+      id: entry.id, title: entry.fileName, scope: channel, note: entry.kind === "skill" ? "Skill ZIP" : "Channel ZIP",
+      file: entry, date: entry.uploadedAt,
+    })),
+  };
+  const visible = rows[category].filter(row =>
+    [row.title, row.note, row.scope].some(value => value.toLowerCase().includes(query.trim().toLowerCase())),
+  );
+  const pages = Math.max(1, Math.ceil(visible.length / 6));
+  const activePage = Math.min(page, pages - 1);
+  const preview = visible.find(row => row.id === selected);
+  const voiceAllowed = can(state, actor, "workflow.edit") || allowed;
+  function openEditor(next: NonNullable<typeof editor>) {
+    setEditor(next);
+    setError("");
+    setMessage("");
+    dialog.current?.showModal();
+  }
+
   async function upload(slot: "instructions" | "context", file: File) {
     setBusy(true);
     setError("");
@@ -91,31 +154,73 @@ export function AgentRules({
   }
   return (
     <section className="s-panel s-panel-padding" aria-label="Agent Rules files">
-      <h2>Instructions and Context</h2>
-      <p>
-        Store two separate files for each channel: how its agent should work,
-        and the background it will need. New idea and writing requests use the
-        saved channel files. Upload Instructions and Markdown context
-        separately.
-      </p>
-      <label className="s-field">
-        Social channel
-        <select
-          aria-label="Agent Rules channel"
-          value={channel}
-          disabled={busy}
-          onChange={(event) => {
-            setChannel(event.target.value as Channel);
-            setPackageDraft(null);
-            setError("");
-            setMessage("");
-          }}
-        >
-          {CHANNELS.map((value) => (
-            <option key={value}>{value}</option>
+      <div className="s-rule-toolbar">
+        <h2>Rule workspace</h2>
+        <div className="s-actions">
+          <label>Channel <select aria-label="Agent Rules channel" value={channel} disabled={busy}
+            onChange={event => {
+              setChannel(event.target.value as Channel);
+              setSelected(undefined); setPage(0); setQuery(""); setMessage(""); setError("");
+            }}>
+            {CHANNELS.map(value => <option key={value}>{value}</option>)}
+          </select></label>
+          <button type="button" className="s-btn" onClick={() => openEditor({ kind: "package" })}>Channel package</button>
+        </div>
+      </div>
+      {!editor && error && <p role="alert">{error}</p>}
+      {!editor && message && <p role="status">{message}</p>}
+      <div className="s-rule-workspace">
+        <nav className="s-rule-categories" aria-label="Rule categories">
+          {categories.map(item => <button type="button" key={item} className="s-btn" aria-pressed={item === category}
+            onClick={() => { setCategory(item); setPage(0); setQuery(""); setSelected(undefined); }}>{item}</button>)}
+        </nav>
+        <section className="s-rule-list" aria-label={category}>
+          <div className="s-rule-toolbar">
+            <h3>{category}</h3>
+            {category === "Voice examples" && <button type="button" className="s-btn s-primary"
+              disabled={!voiceAllowed} onClick={() => openEditor({ kind: "voice" })}>Add voice example</button>}
+          </div>
+          <label className="s-field">Search resources
+            <input type="search" value={query} onChange={event => { setQuery(event.target.value); setPage(0); }} />
+          </label>
+          {visible.slice(activePage * 6, activePage * 6 + 6).map(row => (
+            <button type="button" className="s-rule-row" key={row.id} aria-pressed={selected === row.id}
+              onClick={() => setSelected(row.id)}>
+              <strong>{row.title}</strong><small>{row.scope} · {row.note}</small>
+            </button>
           ))}
-        </select>
-      </label>
+          {!visible.length && <p className="s-muted">{query.trim() ? "No matching resources." :
+            category === "ZIP history" ? "No original ZIPs saved for this channel." : "No voice examples saved for this channel."}</p>}
+          <BudgetPagination page={activePage} pages={pages} onPage={setPage} />
+        </section>
+        <aside className="s-rule-preview" aria-label="Resource preview">
+          <h3>Resource preview</h3>
+          {preview ? <>
+            <strong>{preview.title}</strong>
+            <p className="s-muted">{preview.scope} · {preview.note}</p>
+            {preview.date && <p className="s-muted">{new Date(preview.date).toLocaleString()}</p>}
+            {preview.text && <div className="s-rule-excerpt" tabIndex={0} aria-label="Saved text">{preview.text}</div>}
+            {!preview.text && preview.slot && <p className="s-muted">{preview.file ? "Extracted text is unavailable for this file." : "Choose Manage resource to add guidance."}</p>}
+            <div className="s-actions">
+              {preview.file && <button type="button" className="s-btn" onClick={() => download(preview.file!)}>Download original</button>}
+              {category !== "ZIP history" && <button type="button" className="s-btn"
+                onClick={() => openEditor({ kind: preview.slot ? "file" : "voice", resource: preview })}>Manage resource</button>}
+            </div>
+          </> : <p className="s-muted">Select a resource to preview it.</p>}
+        </aside>
+      </div>
+      <dialog ref={dialog} className="s-review-dialog s-rule-dialog"
+        aria-label={editor?.kind === "package" ? "Channel package" : editor?.resource ? "Manage resource" : "Add voice example"}
+        onCancel={event => { if (busy) event.preventDefault(); }}
+        onClose={() => { setEditor(undefined); setPackageDraft(null); }}>
+        <div className="s-review-dialog-heading">
+          <h2>{editor?.kind === "package" ? "Channel package" : editor?.resource?.title ?? "Add voice example"}</h2>
+          <button type="button" className="s-btn" disabled={busy} onClick={() => dialog.current?.close()}>Close</button>
+        </div>
+        <div className="s-review-dialog-body">
+          {error && <p role="alert">{error}</p>}
+          {message && <p role="status">{message}</p>}
+          {(editor?.kind === "package" || packageDraft) && (
       <section
         className="s-panel s-panel-padding"
         aria-label="Upload agent ZIP package"
@@ -183,10 +288,6 @@ export function AgentRules({
           Edit saved Instructions and context
         </button>
         <button className="s-btn" disabled={busy||!state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="instructions")?.extractedText||!state.agentRuleFiles?.find(f=>f.channel===channel&&f.slot==="context")?.extractedText} onClick={async()=>{try{const {default:JSZip}=await import("jszip");const zip=new JSZip();zip.file(`${channel}/INSTRUCTIONS.md`,state.agentRuleFiles!.find(f=>f.channel===channel&&f.slot==="instructions")!.extractedText!);zip.file(`${channel}/knowledge/context.md`,state.agentRuleFiles!.find(f=>f.channel===channel&&f.slot==="context")!.extractedText!);const url=URL.createObjectURL(await zip.generateAsync({type:"blob"}));const a=document.createElement("a");a.href=url;a.download=`${channel.toLowerCase()}-agent-package.zip`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(error){setError(String(error));}}}>Download saved package ZIP</button>
-        <section aria-label="Original uploaded ZIPs"><h3>Original uploaded ZIPs</h3><p>These are exact original uploads, before preview edits. Download the current saved package above for edited Instructions and context.</p>
-          {(state.agentPackageArchives||[]).filter(a=>a.channel===channel).map(archive=><div key={archive.id}><p>{archive.fileName} · {(archive.byteSize/1024).toFixed(1)} KB · {archive.kind==="skill"?"Skill":"Channel"} · Uploaded {new Date(archive.uploadedAt).toLocaleString()}</p><button className="s-btn" onClick={()=>download(archive)}>Download original uploaded ZIP · {archive.fileName}</button></div>)}
-          {!(state.agentPackageArchives||[]).some(a=>a.channel===channel)&&<p>No original ZIP retained yet. Re-upload and save once to enable exact-original downloads. Your saved Markdown files remain downloadable.</p>}
-        </section>
         {packageDraft?.archives?.map(archive=><button key={archive.kind} className="s-btn" onClick={()=>download(archive)}>Download selected original ZIP · {archive.fileName}</button>)}
         {packageDraft && (
           <>
@@ -279,9 +380,9 @@ export function AgentRules({
             </button>
           </>
         )}
-      </section>
-      <div className="s-agent-rule-grid">
-        {(["instructions", "context"] as const).map((slot) => {
+      </section>)}
+      {editor?.kind === "file" && !packageDraft &&
+        (["instructions", "context"] as const).filter(slot => slot === editor.resource?.slot).map((slot) => {
           const label =
               slot === "instructions"
                 ? "Instructions"
@@ -482,24 +583,16 @@ export function AgentRules({
             </article>
           );
         })}
-      </div>
-      <p>
-        DOCX, PDF, TXT and Markdown are supported, up to 256 KB per file. The
-        original file is preserved for download. New requests use extracted
-        text; existing running requests retain their saved context. Scanned PDFs
-        need OCR first.
-      </p>
-      {error && <p role="alert">{error}</p>}
-      {message && <p role="status">{message}</p>}
-      <WritingResources state={state} channel={channel} send={send} allowed={allowed}/>
-      <AgentVoiceLibrary
-        key={channel}
-        state={state}
-        actor={actor}
-        channel={channel}
-        local={local}
-        send={send}
-      />
+          {editor?.kind === "file" && !packageDraft && editor.resource?.slot &&
+            editor.resource.slot !== "instructions" && editor.resource.slot !== "context" && (
+              <WritingResources state={state} channel={channel} send={send} allowed={allowed} slot={editor.resource.slot} />
+            )}
+          {editor?.kind === "voice" && (
+            <AgentVoiceLibrary key={channel} state={state} actor={actor} channel={channel}
+              local={local} send={send} entryId={editor.resource?.id} />
+          )}
+        </div>
+      </dialog>
     </section>
   );
 }
