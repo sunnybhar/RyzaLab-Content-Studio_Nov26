@@ -151,6 +151,7 @@ try {
   assert.equal(state.pipelineBriefs[0].plannedAt, "2026-11-10T17:15:00.000Z");
   const originalJobs = state.jobs.length;
   await navigate("Ideas");
+  await page.getByRole("button", { name: "Pipeline briefs", exact: true }).click();
   const pipeline = page.getByRole("region", { name: "Existing Pipeline" });
   await pipeline.getByLabel("Search titles and angles").fill("construction");
   await pipeline

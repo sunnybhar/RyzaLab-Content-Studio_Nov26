@@ -343,8 +343,8 @@ async function main() {
     await page.getByRole("heading", { name: title, exact: true }).waitFor();
     await page.reload();
     await navigate("Ideas");
-    await page.getByRole("button", { name: "Table view", exact: true }).click();
-    assert.equal(await page.getByRole("button", { name: "Table view", exact: true }).getAttribute("aria-pressed"), "true");
+    await page.getByRole("button", { name: "Request Inbox", exact: true }).click();
+    assert.equal(await page.getByRole("button", { name: "Request Inbox", exact: true }).getAttribute("aria-pressed"), "true");
     const idea = page.locator(".s-iw-table-wrap td:first-child button").filter({ hasText: title });
     await idea.click();
     const ideaDialog = page.locator(".s-idea-detail");

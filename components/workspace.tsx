@@ -503,6 +503,7 @@ export default function Workspace() {
   const [approvalTarget, setApprovalTarget] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [libraryTab, setLibraryTab] = useState("Content");
+  const [showIdeaPipeline, setShowIdeaPipeline] = useState(false);
   const [ideaTab, setIdeaTab] = useState("All ideas");
   const [calendarView, setCalendarView] = useState("Month");
   const [readyPackage, setReadyPackage] = useState<Package | null>(null);
@@ -1961,8 +1962,16 @@ export default function Workspace() {
           )}
           {page === "Ideas" && (
             <>
+              <nav className="s-create-tabs" aria-label="Ideas sections">
+                <button type="button" className="s-btn" aria-pressed={!showIdeaPipeline}
+                  onClick={() => setShowIdeaPipeline(false)}>Ideas</button>
+                <button type="button" className="s-btn" aria-pressed={showIdeaPipeline}
+                  onClick={() => setShowIdeaPipeline(true)}>Pipeline briefs</button>
+              </nav>
+              {showIdeaPipeline && (
               <ExistingPipeline key={`ideas:${pipelineFocus}`} initialId={pipelineFocus} state={state} channel={channel} disabled={readOnly||busy} onIdeas={pipelineIdeas} onWrite={(b,c)=>void pipelineWrite(b,c)} onImport={pipelineImport}/>
-
+              )}
+              <div hidden={showIdeaPipeline}>
               <div className="s-toolbar">
                 <div className="s-view-tabs">
                   {[
@@ -2096,7 +2105,7 @@ export default function Workspace() {
                   onStage={(idea,stage)=>execute({type:"idea.stage",id:idea.id,stage,expectedStage:ideaStage(idea)})}
                   renderRequestStatus={job=><IdeaGenerationStatus state={state} actor={actor} channel={channel} requestId={job.id} live={mode==="live"} refresh={()=>refresh(true)} send={send}/>}
                   renderResearch={idea=><IdeaEvidence state={state} actor={actor} channel={idea.channel} ids={idea.researchJobIds}/>}
-                  ideas={state.ideas.filter((idea) => (!search||idea.title.toLowerCase().includes(search.toLowerCase())) && (ideaTab === "All ideas" || idea.state.toLowerCase() === ideaTab.toLowerCase()))}
+                  ideas={state.ideas.filter((idea) => (channel === "All channels" || idea.channel === channel) && (!search||idea.title.toLowerCase().includes(search.toLowerCase())) && (ideaTab === "All ideas" || idea.state.toLowerCase() === ideaTab.toLowerCase()))}
                   allIdeas={state.ideas}
                   contents={state.contents}
                   schedules={state.schedules}
@@ -2123,6 +2132,7 @@ export default function Workspace() {
                   onReuse={(idea, mode) => execute({ type: "idea.reuse", id: idea.id, mode })}
                 />
               )}
+              </div>
             </>
           )}
           {page === "Calendar" && (

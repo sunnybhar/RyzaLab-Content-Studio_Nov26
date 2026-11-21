@@ -8,14 +8,21 @@ import {
   IDEA_STAGES,
   type IdeaStage,
 } from "@/lib/studio/idea-board";
+import { SourceReferences } from "./idea-evidence";
+import { BudgetPagination } from "./budget-section";
 import "./ideas-request-board.css";
+const views = [
+  ["inbox", "Request Inbox"], ["board", "Editorial Board"], ["research", "Research Workspace"],
+] as const;
+type View = (typeof views)[number][0];
 const labels: Record<IdeaStage, string> = {
   new: "New ideas",
   shortlisted: "Shortlisted",
   ready: "Ready to write",
 };
 const date = (at: string) =>
-  new Date(at).toLocaleString(undefined, {
+  new Date(at).toLocaleString("en-US", {
+    timeZone: "America/New_York",
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -31,6 +38,7 @@ export function IdeasRequestBoard({
   onStage,
   canStage,
   renderRequestStatus,
+  renderResearch,
   includeEmptyRequests = true,
 }: {
   ideas: Idea[];
@@ -41,17 +49,29 @@ export function IdeasRequestBoard({
   onStage?: (idea: Idea, stage: IdeaStage) => Promise<boolean>;
   canStage?: (idea: Idea) => boolean;
   renderRequestStatus?: (job: Job) => ReactNode;
+  renderResearch?: (idea: Idea) => ReactNode;
   includeEmptyRequests?: boolean;
 }) {
-  const [view, setView] = useState<"board" | "table">("board"),
+  const [view, setView] = useState<View>("inbox"),
     [selected, setSelected] = useState<string>(),
     [query, setQuery] = useState(""),
     [moving, setMoving] = useState(false),
     [error, setError] = useState("");
   useEffect(() => {
     const saved = localStorage.getItem("ryzalab-ideas-view");
-    if (saved === "board" || saved === "table") setView(saved);
+    if (saved === "board" || saved === "inbox" || saved === "research") setView(saved);
+    if (saved === "table") setView("inbox");
   }, []);
+  const [ideaPage, setIdeaPage] = useState(0);
+  const [requestPage, setRequestPage] = useState(0);
+  const [lanePages, setLanePages] = useState<Record<string, number>>({});
+  const [previewId, setPreviewId] = useState<string>();
+  const [sort, setSort] = useState("Newest first");
+  const [stageFilter, setStageFilter] = useState<IdeaStage | "all" | "rejected">("all");
+  const ranked = useMemo(() => allIdeas.slice().sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id)), [allIdeas]);
+  const ranks = new Map(ranked.map((idea, i) => [idea.id, i + 1]));
+  function resetPages() { setIdeaPage(0); setLanePages({}); }
   const visibleIds = new Set(ideas.map((idea) => idea.id));
   const allGroups = useMemo(
     () => ideaRequestGroups(allIdeas, jobs),
@@ -85,10 +105,24 @@ export function IdeasRequestBoard({
       group.job.error ||
       (expected && group.ideas.length !== expected)),
   );
-  const selectedIdeas =
-    group?.ideas.filter((idea) => visibleIds.has(idea.id)) || [];
-  const usable = selectedIdeas.filter((idea) => idea.state !== "rejected"),
-    rejected = selectedIdeas.filter((idea) => idea.state === "rejected");
+  const requestPages = Math.max(1, Math.ceil(groups.length / 5));
+  const currentRequestPage = Math.min(requestPage, requestPages - 1);
+  const selectedIdeas = (view === "inbox" ? group?.ideas ?? [] : ideas).filter(idea =>
+    visibleIds.has(idea.id) && (stageFilter === "all" ||
+      (idea.state === "rejected" ? stageFilter === "rejected" : ideaStage(idea) === stageFilter)))
+    .sort((a, b) => sort === "Title A–Z" ? a.title.localeCompare(b.title) :
+      ((ranks.get(a.id) ?? 0) - (ranks.get(b.id) ?? 0)) * (sort === "Oldest first" ? -1 : 1));
+  const usable = selectedIdeas.filter(idea => idea.state !== "rejected");
+  const rejected = selectedIdeas.filter(idea => idea.state === "rejected");
+  const pages = Math.max(1, Math.ceil(selectedIdeas.length / 6));
+  const currentIdeaPage = Math.min(ideaPage, pages - 1);
+  const preview = selectedIdeas.find(idea => idea.id === previewId);
+  function lane(items: Idea[], key: string) {
+    const pages = Math.max(1, Math.ceil(items.length / 3));
+    const page = Math.min(lanePages[key] ?? 0, pages - 1);
+    return <>{items.slice(page * 3, page * 3 + 3).map(card)}
+      <BudgetPagination page={page} pages={pages} onPage={next => setLanePages(previous => ({ ...previous, [key]: next }))} /></>;
+  }
   const locked = busy || moving;
   async function move(idea: Idea, stage: IdeaStage) {
     if (!onStage) return;
@@ -102,7 +136,8 @@ export function IdeasRequestBoard({
       setMoving(false);
     }
   }
-  function changeView(next: "board" | "table") {
+  function changeView(next: View) {
+    resetPages();
     setView(next);
     localStorage.setItem("ryzalab-ideas-view", next);
   }
@@ -129,7 +164,7 @@ export function IdeasRequestBoard({
     return (
       <article className="s-iw-card" key={idea.id}>
         <span className="s-iw-format">
-          {idea.channel} · {idea.format || "Idea"}
+          #{ranks.get(idea.id)} · {idea.channel} · {idea.format || "Idea"}
         </span>
         <button className="s-iw-card-title" onClick={() => onSelect(idea)}>
           <strong role="heading" aria-level={3}>
@@ -148,7 +183,7 @@ export function IdeasRequestBoard({
                 : "No sources attached"}
           </span>
           <time dateTime={idea.createdAt}>
-            {new Date(idea.createdAt).toLocaleDateString()}
+            {date(idea.createdAt)}
           </time>
         </div>
         <div className="s-iw-card-actions">
@@ -182,8 +217,28 @@ export function IdeasRequestBoard({
     );
   }
   return (
-    <section className="s-ideas-inbox" aria-label="Ideas workspace">
-      <aside className="s-iw-inbox">
+    <section aria-label="Ideas workspace">
+      <div className="s-iw-view-toolbar">
+        <div className="s-ideas-view" role="group" aria-label="Idea layout">
+          {views.map(([value, label]) => <button type="button" key={value}
+            aria-pressed={view === value} className={view === value ? "s-selected" : ""}
+            onClick={() => changeView(value)}>{label}</button>)}
+        </div>
+        <div className="s-iw-filters">
+          <label>Idea stage <select value={stageFilter}
+            onChange={event => { setStageFilter(event.target.value as typeof stageFilter); resetPages(); }}>
+            <option value="all">All stages</option>
+            {IDEA_STAGES.map(stage => <option key={stage} value={stage}>{labels[stage]}</option>)}
+            <option value="rejected">Changes requested</option>
+          </select></label>
+        <label>Sort ideas <select value={sort} onChange={event => { setSort(event.target.value); resetPages(); }}>
+          {["Newest first", "Oldest first", "Title A–Z"].map(option => <option key={option}>{option}</option>)}
+        </select></label>
+        </div>
+      </div>
+      <p className="s-muted s-iw-count">#1 is the newest idea · Times shown in ET</p>
+      <div className={`s-ideas-inbox s-iw-view-${view}`}>
+      {view === "inbox" && <aside className="s-iw-inbox">
         <div className="s-iw-inbox-heading">
           <strong>Idea requests</strong>
           <span>{groups.length}</span>
@@ -193,15 +248,15 @@ export function IdeasRequestBoard({
           aria-label="Search idea requests"
           placeholder="Search topic or request no…"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => { setQuery(e.target.value); setRequestPage(0); resetPages(); }}
         />
         <div className="s-iw-requests">
-          {groups.map((request) => (
+          {groups.slice(currentRequestPage * 5, currentRequestPage * 5 + 5).map((request) => (
             <button
               key={request.id}
               className="s-iw-request"
               aria-pressed={group?.id === request.id}
-              onClick={() => setSelected(request.id)}
+              onClick={() => { setSelected(request.id); resetPages(); }}
             >
               <span className="s-iw-request-meta">
                 <span>{request.number}</span>
@@ -248,13 +303,12 @@ export function IdeasRequestBoard({
           ))}
         </div>
         {!groups.length && <p>No requests match your filters.</p>}
-        <p className="s-iw-inbox-note">
-          Original topics, dates and request numbers stay with their ideas.
-        </p>
-      </aside>
+        <BudgetPagination page={currentRequestPage} pages={requestPages} onPage={setRequestPage} />
+      </aside>}
       <div className="s-iw-main">
-        {group ? (
+        {view !== "inbox" || group ? (
           <>
+          {view === "inbox" && group && <>
             <header className="s-iw-heading">
               <div>
                 <span>{group.number}</span>
@@ -311,29 +365,7 @@ export function IdeasRequestBoard({
                 {renderRequestStatus(group.job)}
               </details>
             )}
-            <div className="s-iw-toolbar">
-              <div
-                className="s-ideas-view"
-                role="group"
-                aria-label="Idea layout"
-              >
-                <button
-                  aria-pressed={view === "board"}
-                  className={view === "board" ? "s-selected" : ""}
-                  onClick={() => changeView("board")}
-                >
-                  Board view
-                </button>
-                <button
-                  aria-pressed={view === "table"}
-                  className={view === "table" ? "s-selected" : ""}
-                  onClick={() => changeView("table")}
-                >
-                  Table view
-                </button>
-              </div>
-              <span>Select an idea to inspect its angle and sources.</span>
-            </div>
+          </>}
             {error && (
               <p role="alert" className="s-alert s-error">
                 {error}
@@ -341,7 +373,7 @@ export function IdeasRequestBoard({
             )}
             {view === "board" ? (
               <div className="s-iw-board">
-                {IDEA_STAGES.map((stage) => (
+                {IDEA_STAGES.filter(stage => stageFilter === "all" || stageFilter === stage).map((stage) => (
                   <section
                     key={stage}
                     className={`s-iw-column s-iw-column-${stage}`}
@@ -356,13 +388,11 @@ export function IdeasRequestBoard({
                         }
                       </span>
                     </div>
-                    {usable
-                      .filter((idea) => ideaStage(idea) === stage)
-                      .map(card)}
+                    {lane(usable.filter(idea => ideaStage(idea) === stage), stage)}
                     {!usable.some((idea) => ideaStage(idea) === stage) && (
                       <p className="s-iw-empty">
                         {stage === "new"
-                          ? "No new ideas in this request."
+                          ? "No new ideas match your filters."
                           : stage === "shortlisted"
                             ? "Shortlist a promising idea to keep it here."
                             : "Move an idea here when you want to begin writing."}
@@ -372,11 +402,12 @@ export function IdeasRequestBoard({
                 ))}
               </div>
             ) : (
+              <div className={view === "research" ? "s-iw-research" : undefined}>
               <div className="s-iw-table-wrap">
                 <table>
                   <thead>
                     <tr>
-                      <th>Idea / angle</th>
+                      <th>#</th><th>Idea</th>
                       <th>Stage</th>
                       <th>Sources</th>
                       <th>Generated / added</th>
@@ -384,15 +415,15 @@ export function IdeasRequestBoard({
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedIdeas.map((idea) => (
+                    {selectedIdeas.slice(currentIdeaPage * 6, currentIdeaPage * 6 + 6).map((idea) => (
                       <tr key={idea.id}>
+                        <td>#{ranks.get(idea.id)}</td>
                         <td>
-                          <button onClick={() => onSelect(idea)}>
+                          <button onClick={() => view === "research" ? setPreviewId(idea.id) : onSelect(idea)}>
                             <strong role="heading" aria-level={3}>
                               {idea.title}
                             </strong>
                           </button>
-                          <p>{idea.brief}</p>
                           <small>
                             {idea.channel}
                             {idea.state === "rejected"
@@ -421,21 +452,32 @@ export function IdeasRequestBoard({
                 </table>
                 {!selectedIdeas.length && (
                   <p className="s-iw-empty">
-                    No ideas match your filters in this request.
+                    No ideas match your filters.
                   </p>
                 )}
+                <BudgetPagination page={currentIdeaPage} pages={pages} onPage={setIdeaPage} />
+              </div>
+              {view === "research" && <aside className="s-iw-preview" aria-label="Idea and research preview">
+                <h3>{preview?.title ?? "Idea and research preview"}</h3>
+                {preview ? <>
+                  <p className="s-muted">{preview.channel} · {preview.state === "rejected" ? "Changes requested" : labels[ideaStage(preview)]}</p>
+                  <div className="s-iw-preview-body" tabIndex={0} aria-label="Idea and research">
+                    <p>{preview.brief}</p>
+                    {renderResearch?.(preview)}
+                    {preview.sources.length > 0 && <SourceReferences sources={preview.sources} />}
+                    {!preview.sources.length && !preview.researchJobIds?.length && <p>No research attached.</p>}
+                  </div>
+                  <button type="button" className="s-btn" onClick={() => onSelect(preview)}>Open idea</button>
+                </> : <p>Select an idea title to review its angle and sources.</p>}
+              </aside>}
               </div>
             )}
             {view === "board" && !!rejected.length && (
               <details className="s-iw-rejected" open={usable.length === 0}>
                 <summary>Changes requested ({rejected.length})</summary>
-                <div>{rejected.map(card)}</div>
+                <div>{lane(rejected, "rejected")}</div>
               </details>
             )}
-            <footer className="s-iw-footer">
-              Research stays attached when you create a draft. Moving a card
-              organises your ideas; it does not publish or approve content.
-            </footer>
           </>
         ) : (
           <div className="s-empty">
@@ -443,6 +485,7 @@ export function IdeasRequestBoard({
             <p>Generate ideas, add one manually, or clear your filters.</p>
           </div>
         )}
+      </div>
       </div>
     </section>
   );

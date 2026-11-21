@@ -152,6 +152,7 @@ export function IdeasBrowser({
         onStage={onStage}
         canStage={canStage}
         renderRequestStatus={renderRequestStatus}
+        renderResearch={renderResearch}
         includeEmptyRequests={includeEmptyRequests}
       />
       <dialog
